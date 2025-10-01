@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
@@ -640,7 +642,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         // Step 3: Mark SI as submitted
-        si.setStatus(ShippingInstructionStatus.SiSubmitted);
+        si.setStatus(Requested);
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(si));
@@ -734,7 +736,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
         // Step 3: Mark SI as amended
-        shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
+        shippingInstruction.setStatus(ShippingInstructionStatus.Changed);
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
@@ -758,6 +760,49 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     @Override
+    public void updateShippingInstructionsStatus(ShippingInstructionEventDto shippingInstructionEvent, String fileName) {
+        if (Objects.nonNull(fileName) && StringUtility.isNotEmpty(shippingInstructionEvent.getSiId())) {
+            if (fileName.startsWith(ShippingInstructionsConstants.APERAK_PREFIX) && fileName.endsWith(ShippingInstructionsConstants.XML_SUFFIX)) {
+                //received status updated from carrier
+                Optional<ShippingInstruction> shippingInstructionOptional = repository.findById(Long.valueOf(shippingInstructionEvent.getSiId()));
+                if (shippingInstructionOptional.isEmpty()) {
+                    log.error("received invalid shipping instruction id from carrier {}", shippingInstructionEvent.getSiId());
+                    return;
+                }
+                ShippingInstruction shippingInstruction = shippingInstructionOptional.get();
+                ShippingInstructionStatus shippingInstructionStatus = parseIntraStatus(shippingInstructionEvent.getStatus());
+                shippingInstruction.setStatus(shippingInstructionStatus);
+                shippingInstruction.setComments(shippingInstructionEvent.getComments());
+                repository.save(shippingInstruction);
+                carrierBookingInttraUtil.createTransactionHistory(shippingInstructionStatus.name(), FlowType.Outbound, shippingInstructionStatus.getDescription() + Constants.EMPTY_STRING + shippingInstruction.getSailingInformation().getCarrier(), SourceSystem.Carrier, shippingInstruction.getId(), EntityTypeTransactionHistory.SI);
+            } else if (fileName.startsWith(ShippingInstructionsConstants.CONTRLX_PREFIX) && fileName.endsWith(ShippingInstructionsConstants.XML_SUFFIX)) {
+                //received status updated from inttra
+                Optional<ShippingInstruction> shippingInstructionOptional = repository.findById(Long.valueOf(shippingInstructionEvent.getSiId()));
+                if (shippingInstructionOptional.isEmpty()) {
+                    log.error("received invalid shipping instruction id from inttra {}", shippingInstructionEvent.getSiId());
+                    return;
+                }
+                ShippingInstruction shippingInstruction = shippingInstructionOptional.get();
+                ShippingInstructionStatus shippingInstructionStatus = getShippingInstructionStatus(shippingInstructionEvent);
+                shippingInstruction.setStatus(shippingInstructionStatus);
+                shippingInstruction.setComments(shippingInstructionEvent.getComments());
+                repository.save(shippingInstruction);
+                carrierBookingInttraUtil.createTransactionHistory(shippingInstructionStatus.name(), FlowType.Outbound, shippingInstructionStatus.getDescription(), SourceSystem.INTTRA, shippingInstruction.getId(), EntityTypeTransactionHistory.SI);
+            }
+        }
+    }
+
+    private ShippingInstructionStatus getShippingInstructionStatus(ShippingInstructionEventDto shippingInstructionEvent) {
+        String status = shippingInstructionEvent.getStatus();
+        if (StringUtility.isNotEmpty(shippingInstructionEvent.getStatus()) && ShippingInstructionsConstants.ACCEPTED.equals(shippingInstructionEvent.getStatus())) {
+            status = ShippingInstructionsConstants.PROCESSED;
+        } else if (StringUtility.isNotEmpty(shippingInstructionEvent.getStatus()) && ShippingInstructionsConstants.REJECTED.equals(shippingInstructionEvent.getStatus())) {
+            status = ShippingInstructionsConstants.REJECTED_BY_CARRIER;
+        }
+        return parseIntraStatus(status);
+    }
+
+    @Override
     public void cancelShippingInstruction(Long id) {
         ShippingInstruction shippingInstruction = repository.findById(id)
                 .orElseThrow(() -> new ValidationException("INVALID_SI:" + id));
@@ -774,7 +819,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("SI does not belong to INTTRA");
         }
 
-        if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.getStatus())) {
+        if (!(Requested == shippingInstructionEntity.getStatus() || ShippingInstructionStatus.AcceptedByCarrier == shippingInstructionEntity.getStatus())) {
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
@@ -825,6 +870,22 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         } catch (RunnerException e) {
             log.error("Exception while calling bridge. {}", e.getMessage());
         }
+    }
+
+    private ShippingInstructionStatus parseIntraStatus(String type) {
+
+        return switch (type) {
+            case "ConditionallyAccepted" -> ShippingInstructionStatus.ConditionallyAccepted;
+            case "Processed" -> ShippingInstructionStatus.AcceptedByCarrier;
+            case "Accepted" -> ShippingInstructionStatus.ConfirmedByCarrier;
+            case "Rejected" -> ShippingInstructionStatus.DeclinedByCarrier;
+            case "RejectedByCarrier" -> ShippingInstructionStatus.RejectedByCarrier;
+            case "Replaced" -> ShippingInstructionStatus.ReplacedByCarrier;
+            case "ChangeSIRequested" -> ShippingInstructionStatus.Changed;
+            case "NewSIRequested" -> ShippingInstructionStatus.Requested;
+            default -> ShippingInstructionStatus.PendingFromCarrier;
+        };
+
     }
 
 }

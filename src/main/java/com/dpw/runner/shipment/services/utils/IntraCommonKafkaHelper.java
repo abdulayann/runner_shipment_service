@@ -17,7 +17,7 @@ public class IntraCommonKafkaHelper {
     @Autowired
     private KafkaProducer producer;
 
-    @Value("${bridge.inttra.messages.kafka.producer.topic}")
+    @Value("${bridge.inttra.messages.kafka.producer.topic:default}")
     String topic;
 
     public void sendDataToKafka(String payload, GenericKafkaMsgType msgType, IntraKafkaOperationType operationType) {

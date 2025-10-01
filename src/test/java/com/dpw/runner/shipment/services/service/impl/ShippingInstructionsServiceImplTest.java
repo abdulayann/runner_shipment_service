@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -309,7 +311,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.submitShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.Requested));
     }
 
     @Test
@@ -347,7 +349,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.submitShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiSubmitted));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.Requested));
     }
 
     @Test
@@ -364,7 +366,7 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void amendShippingInstruction_success_changesStatusAndSendsDownstream() throws RunnerException {
         Long id = 5L;
-        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CONSOLIDATION, 100L);
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Requested, EntityType.CONSOLIDATION, 100L);
         si.setId(id);
         ConsolidationDetails consolidationDetails = buildConsolidationDetails("CONSOL123", "BOOKING123");
 
@@ -379,7 +381,7 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.amendShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.Changed));
     }
 
     @Test
@@ -884,7 +886,7 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void submitShippingInstruction_shouldThrow_whenConsolidationNotInDraft() {
         Long id = 4L;
-        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiAccepted, EntityType.CONSOLIDATION, 200L);
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.AcceptedByCarrier, EntityType.CONSOLIDATION, 200L);
         si.setId(id);
 
         when(repository.findById(id)).thenReturn(Optional.of(si));
@@ -923,7 +925,7 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void amendShippingInstruction_success_forCarrierBookingType() throws RunnerException {
         Long id = 7L;
-        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CARRIER_BOOKING, 100L);
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Requested, EntityType.CARRIER_BOOKING, 100L);
         si.setId(id);
         CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
 
@@ -938,14 +940,14 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstructionResponse resp = service.amendShippingInstruction(id);
 
         assertNotNull(resp);
-        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.SiAmendRequested));
+        verify(repository).save(argThat(s -> s.getStatus() == ShippingInstructionStatus.Changed));
         verify(bridgeServiceAdapter).bridgeApiIntegration(any(), eq("SI_AMEND"), any(), any());
     }
 
     @Test
     void amendShippingInstruction_handlesBridgeException() throws RunnerException {
         Long id = 8L;
-        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CONSOLIDATION, 100L);
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Requested, EntityType.CONSOLIDATION, 100L);
         si.setId(id);
         ConsolidationDetails consolidationDetails = buildConsolidationDetails("CONSOL123", "BOOKING123");
 
@@ -993,7 +995,7 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void amendShippingInstruction_shouldThrow_whenBookingNotConfirmedForNonStandalone() {
         Long id = 8L;
-        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.SiSubmitted, EntityType.CARRIER_BOOKING, 100L);
+        ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Requested, EntityType.CARRIER_BOOKING, 100L);
         si.setId(id);
         CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.Draft); // Not confirmed
 
@@ -1014,7 +1016,7 @@ class ShippingInstructionsServiceImplTest {
     @Test
     void checkIfAllowed_success_whenBookingConfirmedForNonStandalone() {
         ShippingInstruction si = new ShippingInstruction();
-        si.setStatus(ShippingInstructionStatus.SiSubmitted);
+        si.setStatus(ShippingInstructionStatus.Requested);
         CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
 
         assertDoesNotThrow(() -> {
@@ -1169,6 +1171,139 @@ class ShippingInstructionsServiceImplTest {
         } catch (Exception e) {
             fail("Reflection failed: " + e.getMessage());
         }
+    }
+    @Test
+    void testUpdateStatus_AperakFile_ValidInstruction() {
+        ShippingInstructionEventDto eventDto = new ShippingInstructionEventDto();
+        eventDto.setSiId("123");
+        eventDto.setStatus("Accepted");
+        eventDto.setComments("Sample comment");
+
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(123L);
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setCarrier("MAERSK");
+        shippingInstruction.setSailingInformation(sailingInfo);
+        // Given
+        String fileName = ShippingInstructionsConstants.APERAK_PREFIX + "123" + ShippingInstructionsConstants.XML_SUFFIX;
+        when(repository.findById(123L)).thenReturn(Optional.of(shippingInstruction));
+
+        // When
+        service.updateShippingInstructionsStatus(eventDto, fileName);
+
+        // Then
+        verify(repository, times(1)).save(any(ShippingInstruction.class));
+        verify(carrierBookingInttraUtil, times(1))
+                .createTransactionHistory(
+                        eq(ShippingInstructionStatus.ConfirmedByCarrier.name()),
+                        eq(FlowType.Outbound),
+                        contains("MAERSK"),
+                        eq(SourceSystem.Carrier),
+                        eq(123L),
+                        eq(EntityTypeTransactionHistory.SI)
+                );
+    }
+
+    @Test
+    void testUpdateStatus_AperakFile_InvalidInstruction() {
+        ShippingInstructionEventDto eventDto = new ShippingInstructionEventDto();
+        eventDto.setSiId("123");
+        eventDto.setStatus("Accepted");
+        eventDto.setComments("Sample comment");
+
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(123L);
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setCarrier("MAERSK");
+        shippingInstruction.setSailingInformation(sailingInfo);
+        // Given
+        String fileName = ShippingInstructionsConstants.APERAK_PREFIX + "123" + ShippingInstructionsConstants.XML_SUFFIX;
+        when(repository.findById(123L)).thenReturn(Optional.empty());
+
+        // When
+        service.updateShippingInstructionsStatus(eventDto, fileName);
+
+        // Then
+        verify(repository, never()).save(any());
+        verify(carrierBookingInttraUtil, never()).createTransactionHistory(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testUpdateStatus_ContrlxFile_ValidInstruction() {
+        ShippingInstructionEventDto eventDto = new ShippingInstructionEventDto();
+        eventDto.setSiId("123");
+        eventDto.setStatus("Accepted");
+        eventDto.setComments("Sample comment");
+
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(123L);
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setCarrier("MAERSK");
+        shippingInstruction.setSailingInformation(sailingInfo);
+        // Given
+        String fileName = ShippingInstructionsConstants.CONTRLX_PREFIX + "123" + ShippingInstructionsConstants.XML_SUFFIX;
+        when(repository.findById(123L)).thenReturn(Optional.of(shippingInstruction));
+
+        // When
+        service.updateShippingInstructionsStatus(eventDto, fileName);
+
+        // Then
+        verify(repository, times(1)).save(any(ShippingInstruction.class));
+        verify(carrierBookingInttraUtil, times(1))
+                .createTransactionHistory(
+                        eq(ShippingInstructionStatus.AcceptedByCarrier.name()),
+                        eq(FlowType.Outbound),
+                        anyString(),
+                        eq(SourceSystem.INTTRA),
+                        eq(123L),
+                        eq(EntityTypeTransactionHistory.SI)
+                );
+    }
+
+    @Test
+    void testUpdateStatus_FileNameNull_NoAction() {
+        ShippingInstructionEventDto eventDto = new ShippingInstructionEventDto();
+        eventDto.setSiId("123");
+        eventDto.setStatus("ConfirmedByCarrier");
+        eventDto.setComments("Sample comment");
+
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(123L);
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setCarrier("MAERSK");
+        shippingInstruction.setSailingInformation(sailingInfo);
+        // When
+        service.updateShippingInstructionsStatus(eventDto, null);
+
+        // Then
+        verify(repository, never()).findById(any());
+        verify(repository, never()).save(any());
+        verify(carrierBookingInttraUtil, never()).createTransactionHistory(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testUpdateStatus_SiIdEmpty_NoAction() {
+        ShippingInstructionEventDto eventDto = new ShippingInstructionEventDto();
+        eventDto.setSiId("123");
+        eventDto.setStatus("ConfirmedByCarrier");
+        eventDto.setComments("Sample comment");
+
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(123L);
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setCarrier("MAERSK");
+        shippingInstruction.setSailingInformation(sailingInfo);
+        // Given
+        eventDto.setSiId(""); // empty
+
+        String fileName = ShippingInstructionsConstants.APERAK_PREFIX + "file.xml";
+
+        // When
+        service.updateShippingInstructionsStatus(eventDto, fileName);
+
+        // Then
+        verify(repository, never()).findById(any());
+        verify(repository, never()).save(any());
     }
 
     @Test
