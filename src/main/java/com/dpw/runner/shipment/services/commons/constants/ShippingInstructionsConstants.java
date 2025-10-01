@@ -28,6 +28,15 @@ public class ShippingInstructionsConstants {
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
     public static final String SI_TABLE = "ShippingInstruction";
     public static final String SAILING_INFORMATION = "sailingInformation";
+    public static final String SHIPPING_INSTRUCTION = "SHIPPING_INSTRUCTION";
+    public static final String APERAK_PREFIX = "APERAK_";
+    public static final String CONTRLX_PREFIX = "CONTRLX_";
+    public static final String XML_SUFFIX = ".xml";
+    public static final String ACCEPTED = "Accepted";
+    public static final String REJECTED = "Rejected";
+    public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
+    public static final String PROCESSED = "Processed";
+
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("status", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
