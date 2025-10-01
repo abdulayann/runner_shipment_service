@@ -4863,9 +4863,9 @@ public class CommonUtils {
             log.info("Getting unLocationData from v1 for plcData : {}", plcData.stream().toList());
             Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(plcData);
             if (!unlocationsMap.isEmpty()) {
-                unlocationsMap.forEach((key, value) -> {
-                    log.info("UnlocCode for : {} is  : {} ", key, value.getLocCode());
-                });
+                unlocationsMap.forEach((key, value) ->
+                    log.info("UnlocCode for : {} is  : {} ", key, value.getLocCode())
+                );
             }
             if (isCarrierLocCodeAdded && Objects.nonNull(carrierDetails)) {
                 setCarrierData(carrierDetails, unlocationsMap);
