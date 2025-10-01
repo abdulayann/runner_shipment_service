@@ -3186,6 +3186,9 @@ public class CommonUtils {
     }
 
     private static boolean validateRoute(List<Routings> routings, boolean isRoutingLocCodeAdded, Set<String> plcData) {
+        if (Objects.isNull(routings) || routings.isEmpty()) {
+            return isRoutingLocCodeAdded;
+        }
         for (Routings route : routings) {
             if (null == route.getOriginPortLocCode() && null != route.getPol()){
                 isRoutingLocCodeAdded = true;
@@ -3200,12 +3203,19 @@ public class CommonUtils {
     }
 
     private void setIfLocCodeExist(Set<String> plcData, boolean isCarrierLocCodeAdded, CarrierDetails carrierDetails, boolean isRoutingLocCodeAdded, List<Routings> routings) {
+
         if (!CollectionUtils.isEmpty(plcData)) {
+            log.info("Getting unLocationData from v1 for plcData : {}", plcData.stream().toList());
             Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(plcData);
-            if (isCarrierLocCodeAdded) {
+            if (!unlocationsMap.isEmpty()) {
+                unlocationsMap.forEach((key, value) ->
+                    log.info("UnlocCode for : {} is  : {} ", key, value.getLocCode())
+                );
+            }
+            if (isCarrierLocCodeAdded && Objects.nonNull(carrierDetails)) {
                 setCarrierData(carrierDetails, unlocationsMap);
             }
-            if (isRoutingLocCodeAdded) {
+            if (isRoutingLocCodeAdded && Objects.nonNull(routings) && !routings.isEmpty()) {
                 setRoutingData(routings, unlocationsMap);
             }
         }
