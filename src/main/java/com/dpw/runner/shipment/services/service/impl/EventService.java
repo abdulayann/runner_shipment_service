@@ -745,7 +745,6 @@ public class EventService implements IEventService {
         String eventCode = safeString(event.getEventCode());
         String shipmentType = shipmentDetails.getShipmentType();
         String transportMode = shipmentDetails.getTransportMode();
-
         // Log the input values for debugging
         log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
 
