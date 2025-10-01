@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -358,6 +359,54 @@ class CommonUtilsTest {
         mockUser.setUsername("TestUser");
         mockUser.setTenantDisplayName("Test Tenant");
         UserContext.setUser(mockUser);
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNamePresentInAddressData_UsesCompanyName() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.COMPANY_NAME, "My Company");
+        addressData.put(PartiesConstants.ADDRESS1, "123 Street");
+        addressData.put(PartiesConstants.CITY, "City");
+        addressData.put(PartiesConstants.STATE, "ST");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        String result = CommonUtils.constructAddress(addressData, null);
+
+        assertTrue(result.startsWith("MY COMPANY"));
+        assertTrue(result.contains("123 STREET"));
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNameNotPresent_UsesOrgFullName() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "456 Avenue");
+        addressData.put(PartiesConstants.CITY, "Metropolis");
+        addressData.put(PartiesConstants.STATE, "CA");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "98765");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Organization Full Name");
+
+        String result = CommonUtils.constructAddress(addressData, orgData);
+
+        assertTrue(result.startsWith("ORGANIZATION FULL NAME"));
+        assertTrue(result.contains("456 AVENUE"));
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNameNotPresent_UsesNullOrg() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "456 Avenue");
+        addressData.put(PartiesConstants.CITY, "Metropolis");
+        addressData.put(PartiesConstants.STATE, "CA");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "98765");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        String result = CommonUtils.constructAddress(addressData, null);
+
+        assertTrue(result.contains("456 AVENUE"));
     }
 
     @Test
