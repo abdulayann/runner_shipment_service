@@ -6,15 +6,18 @@ import lombok.Getter;
 @SuppressWarnings("java:S115")
 public enum ShippingInstructionStatus {
     Draft(0, "Draft"),
-    Requested(1, "Booking Requested"),
-    SiAccepted(2, "SI accepted"),
-    RejectedByCarrier(3, "Rejected By INTTRA"),
-    ConfirmedByCarrier(4, "Confirmed By Carrier"),
-    DeclinedByCarrier(5, "Declined By Carrier"),
+    Requested(1, "SI Requested"),
+    AcceptedByCarrier(2, "SI Accepted By INTTRA"),
+    RejectedByCarrier(3, "SI Rejected By INTTRA"),
+    ConfirmedByCarrier(4, "SI Confirmed By Carrier"),
+    DeclinedByCarrier(5, "SI Declined By Carrier"),
     ConditionallyAccepted(6, "Confirmed - Conditionally Accepted"),
-    SiAmendRequested(7, "SI Amend Requested"),
+    PendingFromCarrier(7, "Pending From Carrier"),
     Cancelled(8, "Cancelled"),
-    SiSubmitted(10, "SI Submitted");
+    Changed(9,"Changed"),
+    ReplacedByCarrier(10, "Replaced By Carrier"),
+    ChangeSI(11, "Change SI");
+
     private final int value;
     private final String description;
 

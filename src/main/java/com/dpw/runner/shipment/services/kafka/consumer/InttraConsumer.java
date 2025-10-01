@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
 import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.InttraEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -31,13 +33,15 @@ public class InttraConsumer {
     private final IV1Service v1Service;
     private final ICarrierBookingService carrierBookingService;
     private final IVerifiedGrossMassService verifiedGrossMassService;
+    private final IShippingInstructionsService shippingInstructionsService;
 
     @Autowired
-    InttraConsumer(ObjectMapper objectMapper, IV1Service v1Service, ICarrierBookingService carrierBookingService, IVerifiedGrossMassService verifiedGrossMassService) {
+    InttraConsumer(ObjectMapper objectMapper, IV1Service v1Service, ICarrierBookingService carrierBookingService, IVerifiedGrossMassService verifiedGrossMassService, IShippingInstructionsService shippingInstructionsService) {
         this.objectMapper = objectMapper;
         this.v1Service = v1Service;
         this.carrierBookingService = carrierBookingService;
         this.verifiedGrossMassService = verifiedGrossMassService;
+        this.shippingInstructionsService = shippingInstructionsService;
     }
 
     @KafkaListener(
@@ -50,16 +54,17 @@ public class InttraConsumer {
                         @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
                         @Header(KafkaHeaders.OFFSET) long offset,
                         @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
-                        @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String transactionId,
                         Acknowledgment acknowledgment) {
 
-        logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);
+        logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, "");
         try {
             InttraEventDto inttraEventDto = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), InttraEventDto.class);
             if (CarrierBookingConstants.CARRIER_BOOKING.equals(inttraEventDto.getEntityType())) {
                 carrierBookingService.updateCarrierDataToBooking(inttraEventDto.getCarrierBooking());
             } else if (VerifiedGrossMassConstants.VERIFIED_GROSS_MASS.equals(inttraEventDto.getEntityType())) {
                 verifiedGrossMassService.updateVgmStatus(inttraEventDto.getVgm());
+            } else if(ShippingInstructionsConstants.SHIPPING_INSTRUCTION.equals(inttraEventDto.getEntityType())) {
+                shippingInstructionsService.updateShippingInstructionsStatus(inttraEventDto.getShippingInstruction(), inttraEventDto.getFileName());
             }
             log.info("{} entityType: {}| Passed", inttraEventDto.getEntityType(), LoggerEvent.BRIDGE_SERVICE_INTTRA_INTEGRATION);
         } catch (Exception ex) {
