@@ -9,5 +9,8 @@ import java.io.Serializable;
 @Setter
 public class InttraEventDto implements Serializable {
     private String entityType;
+    private String fileName;
     private InttraCarrierBookingEventDto carrierBooking;
+    private VgmEventDto vgm;
+    private ShippingInstructionEventDto shippingInstruction;
 }

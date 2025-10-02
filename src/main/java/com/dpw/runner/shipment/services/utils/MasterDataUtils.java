@@ -323,44 +323,69 @@ public class MasterDataUtils{
 
     private void getCarriersFromResponse(IRunnerResponse response, Set<String> carriers, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine())) {
+            if (hasValidCarrierDetails(shipmentListResponse.getCarrierDetails())) {
                 carriers.addAll(createInBulkCarriersRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
             }
         }
         else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine())) {
+            if (hasValidCarrierDetails(consolidationListResponse.getCarrierDetails())) {
                 carriers.addAll(createInBulkCarriersRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
             }
         }
-        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && hasValidCarrierDetails(consolidationDetailsResponse.getCarrierDetails())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
         }
-        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && hasValidCarrierDetails(customerBookingV3Response.getCarrierDetails())) {
             carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())){
+        }
+        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && hasValidSailingInfo(carrierBookingListResponse.getSailingInformation())){
             carriers.addAll(createInBulkCarriersRequest(carrierBookingListResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId(), cacheMap));
         }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse && hasValidSailingInfo(shippingInstructionResponse.getSailingInformation())){
+            carriers.addAll(createInBulkCarriersRequest(shippingInstructionResponse.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName() + shippingInstructionResponse.getSailingInformation().getId(), cacheMap));
+        }
+    }
+
+    private boolean hasValidCarrierDetails(CarrierDetailResponse carrierDetails) {
+        return carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getShippingLine());
+    }
+
+    private boolean hasValidSailingInfo(SailingInformationResponse sailingInfo) {
+        return sailingInfo != null && StringUtility.isEmpty(sailingInfo.getCarrier());
     }
 
     private void setCarriersMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine()))
-                shipmentListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+            if (hasValidCarrierDetails(shipmentListResponse.getCarrierDetails()))
+                applyCarrierMasterData(shipmentListResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         }
         else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine()))
-                consolidationListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+            if (hasValidCarrierDetails(consolidationListResponse.getCarrierDetails()))
+                applyCarrierMasterData(consolidationListResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         }
-        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
-            consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && hasValidCarrierDetails(consolidationDetailsResponse.getCarrierDetails())) {
+            applyCarrierMasterData(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         }
-        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
-            customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
-        } else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && carrierBookingListResponse.getSailingInformation() != null && StringUtility.isEmpty(carrierBookingListResponse.getSailingInformation().getCarrier())) {
-            carrierBookingListResponse.getSailingInformation().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(SailingInformation.class.getSimpleName() + carrierBookingListResponse.getSailingInformation().getId()), CacheConstants.CARRIER, cacheMap));
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && hasValidCarrierDetails(customerBookingV3Response.getCarrierDetails())) {
+            applyCarrierMasterData(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        }
+        else if (response instanceof CarrierBookingListResponse carrierBookingListResponse && hasValidSailingInfo(carrierBookingListResponse.getSailingInformation())) {
+            applySailingMasterData(carrierBookingListResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
+        }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse && hasValidSailingInfo(shippingInstructionResponse.getSailingInformation())) {
+            applySailingMasterData(shippingInstructionResponse.getSailingInformation(), fieldNameKeyMap, cacheMap);
         }
     }
 
+    private void applyCarrierMasterData(CarrierDetailResponse carrierDetails, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        String key = CarrierDetails.class.getSimpleName() + carrierDetails.getId();
+        carrierDetails.setCarrierMasterData(setMasterData(fieldNameKeyMap.get(key), CacheConstants.CARRIER, cacheMap));
+    }
+
+    private void applySailingMasterData(SailingInformationResponse sailingInfo, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        String key = SailingInformation.class.getSimpleName() + sailingInfo.getId();
+        sailingInfo.setCarrierMasterData(setMasterData(fieldNameKeyMap.get(key), CacheConstants.CARRIER, cacheMap));
+    }
 
 
     private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap,
@@ -379,6 +404,9 @@ public class MasterDataUtils{
                 r -> setCarrierDetailsVessels(r.getCarrierDetails(), fieldNameKeyMap, cacheMap));
 
         applyIfApplicable(response, CarrierBookingListResponse.class,
+                r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
+
+        applyIfApplicable(response, ShippingInstructionResponse.class,
                 r -> setSailingInfoVessels(r.getSailingInformation(), fieldNameKeyMap, cacheMap));
     }
 
@@ -408,26 +436,33 @@ public class MasterDataUtils{
 
     private void getVesselsFromResponse(IRunnerResponse response, Set<String> vessels, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (response instanceof ShipmentListResponse shipmentListResponse) {
-            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
+            if (hasValidVessel(shipmentListResponse.getCarrierDetails())) {
                 vessels.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
             }
         }
         else if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
-            if (attachListShipmentResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(attachListShipmentResponse.getCarrierDetails().getVessel())) {
+            if (hasValidVessel(attachListShipmentResponse.getCarrierDetails())) {
                 vessels.addAll(createInBulkVesselsRequest(attachListShipmentResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + attachListShipmentResponse.getCarrierDetails().getId(), cacheMap));
             }
         }
         else if (response instanceof ConsolidationListResponse consolidationListResponse) {
-            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
+            if (hasValidVessel(consolidationListResponse.getCarrierDetails())) {
                 vessels.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
             }
         }
-        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && hasValidVessel(consolidationDetailsResponse.getCarrierDetails())) {
             vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
         }
         else if (response instanceof CarrierBookingResponse carrierBookingResponse) {
             addCarrierRoutingVessels(carrierBookingResponse.getSailingInformation(), vessels, fieldNameKeyMap, cacheMap);
         }
+        else if (response instanceof ShippingInstructionResponse shippingInstructionResponse) {
+            addCarrierRoutingVessels(shippingInstructionResponse.getSailingInformation(), vessels, fieldNameKeyMap, cacheMap);
+        }
+    }
+
+    private boolean hasValidVessel(CarrierDetailResponse carrierDetails) {
+        return carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getVessel());
     }
 
     private void addCarrierRoutingVessels(SailingInformationResponse sailingInformationResponse, Set<String> vessels,

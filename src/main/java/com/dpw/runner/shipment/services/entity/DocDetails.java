@@ -25,4 +25,7 @@ public class DocDetails extends MultiTenancy {
     @Column(name = "entity_id")
     private Long entityId;
 
+    @Column(name = "file_id")
+    private String fileId;
+
 }

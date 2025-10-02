@@ -4,6 +4,7 @@ public class ApiConstants {
 
     public static final String API_DEFAULT_BOOKING = "/getDefaultBooking";
     public static final String SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS = "/update/transport-status";
+    public static final String CONSOLIDATED_API_LIST = "/consolidatedList";
 
     private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
@@ -49,6 +50,7 @@ public class ApiConstants {
     public  static final String API_RETRIEVE_BY_ID_EXT_PARTIAL = "/retrieve/external/partial/id";
     public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
     public static final String API_RETRIEVE_BY_UUID = "/retrieve/mdm/uuid";
+    public static final String SYNC_CONTAINERS = "/syncContainers";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";

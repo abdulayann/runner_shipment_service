@@ -23,13 +23,16 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendIn
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -40,6 +43,8 @@ import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
@@ -47,13 +52,18 @@ import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.InttraFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.CarrierBookingMasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.DateInfo;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Equipment;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Haulage;
@@ -66,13 +76,10 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -80,7 +87,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingUtil;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingValidationUtil;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -110,12 +117,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.BOOKING_DETAILS;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_BOOKING_ADDITIONAL_PARTIES;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.ERR_INTTRA_MISSING_KEY;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INTTRA_REFERENCE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INVALID_CARRIER_BOOKING_ID;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MESSAGE;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.PAYLOAD;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.SERVICE_HTTP_STATUS_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.SERVICE_RESPONSE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_INTTRA_AMEND;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_INTTRA_CREATE;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Changed;
@@ -136,7 +152,6 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final CarrierBookingValidationUtil carrierBookingValidationUtil;
     private final CommonUtils commonUtils;
     private final INotificationService notificationService;
-    private final IV1Service iv1Service;
     private final CarrierBookingUtil carrierBookingUtil;
     private final MasterDataUtils masterDataUtils;
     private final ExecutorService executorServiceMasterData;
@@ -149,6 +164,8 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final BridgeServiceConfig bridgeServiceConfig;
     private final CarrierBookingInttraUtil carrierBookingInttraUtil;
     private final IRoutingsV3Service routingsV3Service;
+    private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
+    private final ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
 
 
     @Override
@@ -183,6 +200,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setCarrierBlNo(null);
         carrierBookingEntity.setCarrierBookingNo(null);
         carrierBookingEntity.setStatus(CarrierBookingStatus.Draft);
+        carrierBookingUtil.populateLocCode(carrierBookingInttraUtil.fetchUnLocationMap(carrierBookingEntity), carrierBookingEntity);
+
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
 
         if (request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()) {
@@ -295,6 +314,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         if (!CarrierBookingStatus.ChangeDraft.equals(carrierBookingEntity.getStatus())) {
             carrierBookingEntity.setStatus(existingCarrierBooking.getStatus());
         }
+        carrierBookingUtil.populateLocCode(carrierBookingInttraUtil.fetchUnLocationMap(carrierBookingEntity), carrierBookingEntity);
         CarrierBooking savedEntity = carrierBookingDao.create(carrierBookingEntity);
 
         if (request.getAdditionalParties() != null && !request.getAdditionalParties().isEmpty()) {
@@ -583,7 +603,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
 
-    private void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
+    public void convertWeightVolumeToRequiredUnit(CarrierBookingBridgeRequest carrierBooking) throws RunnerException {
         if (carrierBooking == null || carrierBooking.getContainersList() == null || carrierBooking.getContainersList().isEmpty()) {
             return;
         }
@@ -604,34 +624,187 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBooking carrierBooking = carrierBookingDao.findById(submitAmendInttraRequest.getId())
                 .orElseThrow(() -> new ValidationException("Invalid booking Id: " + submitAmendInttraRequest.getId()));
 
+        Parties[] partiesToCheck = {carrierBooking.getRequester(), carrierBooking.getShipper(),
+                carrierBooking.getForwardingAgent()};
+        String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
+
+        if (null == remoteId) {
+            throw new ValidationException("Atleast one party must have inttra remoteId.");
+        }
+
         String integrationCode = CARRIER_BOOKING_INTTRA_AMEND;
         IntegrationType integrationType = BRIDGE_CB_AMEND;
         if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
             integrationCode = CARRIER_BOOKING_INTTRA_CREATE;
             integrationType = BRIDGE_CB_SUBMIT;
-            carrierBooking.setStatus(CarrierBookingStatus.Requested);
+            carrierBooking.setStatus(Requested);
             carrierBooking.setSubmitByUserEmail(UserContext.getUser().getEmail());
         } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
-            carrierBooking.setStatus(CarrierBookingStatus.Changed);
+            carrierBooking.setStatus(Changed);
         }
 
-        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
-        CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(savedCarrierBooking, CarrierBookingBridgeRequest.class);
+        CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
 
+        carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
 
-        carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
-
+        BridgeServiceResponse bridgeResponse = carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
+        processInttraResponse(bridgeResponse,  carrierBooking);
+        CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
+        //Make it async
         sendNotification(savedCarrierBooking);
+    }
+
+    @Override
+    public CarrierBookingCloneResponse cloneBooking(Long carrierBookingId) {
+        CarrierBooking carrierBooking = carrierBookingDao.findById(carrierBookingId)
+                .orElseThrow(() -> new ValidationException("Invalid carrier booking Id: " + carrierBookingId));
+        ShippingInstruction shippingInstruction = carrierBooking.getShippingInstruction();
+        if (Objects.nonNull(shippingInstruction) && (ShippingInstructionStatus.Draft.equals(shippingInstruction.getStatus()) || !ShippingInstructionStatus.Cancelled.equals(shippingInstruction.getStatus()))) {
+            throw new ValidationException("SI status is " + shippingInstruction.getStatus().getDescription() + " Please cancel the submitted booking  along with SI to clone booking");
+        }
+        VerifiedGrossMass verifiedGrossMass = carrierBooking.getVerifiedGrossMass();
+        if (Objects.nonNull(verifiedGrossMass) && (VerifiedGrossMassStatus.Draft.equals(verifiedGrossMass.getStatus()) || !VerifiedGrossMassStatus.Cancelled.equals(verifiedGrossMass.getStatus()))) {
+            throw new ValidationException("VGM status is " + verifiedGrossMass.getStatus().getDescription() + " Please cancel the submitted booking  along with VGM to clone booking");
+        }
+        CarrierBookingCloneResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class);
+        carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
+        return carrierBookingResponse;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> consolidatedList(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
+        if (listCommonRequest == null) {
+            throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
+        }
+        Pair<Specification<CarrierBooking>, Pageable> tuple = fetchData(listCommonRequest, CarrierBooking.class, CarrierBookingConstants.tableNames);
+        Page<CarrierBooking> carrierBookingPage = carrierBookingDao.findAll(tuple.getLeft(), tuple.getRight());
+        List<CarrierBooking> carrierBookings = carrierBookingPage.getContent();
+        List<IRunnerResponse> carrierBookingResponses = convertEntityListToDtoList(carrierBookings, getMasterData, new HashSet<>());
+        List<ShippingInstruction> shippingInstructionList = new ArrayList<>();
+        List<VerifiedGrossMass> verifiedGrossMassList = new ArrayList<>();
+        List<IRunnerResponse> finalResponses = new ArrayList<>(carrierBookingResponses);
+        for (CarrierBooking carrierBooking : carrierBookings) {
+            if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
+                shippingInstructionList.add(carrierBooking.getShippingInstruction());
+            }
+            if (Objects.nonNull(carrierBooking.getVerifiedGrossMass())) {
+                verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
+            }
+        }
+        if (!CollectionUtils.isEmpty(shippingInstructionList)) {
+            List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
+            for (ShippingInstruction shippingInstruction : shippingInstructionList) {
+                ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+                shippingInstructionResponses.add(shippingInstructionResponse);
+            }
+            List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
+            shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
+            finalResponses.addAll(responseList);
+        }
+
+        if (!CollectionUtils.isEmpty(verifiedGrossMassList)) {
+            List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
+
+            for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
+                VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
+                verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
+            }
+            List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
+            verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
+            finalResponses.addAll(responseList);
+        }
+        return ResponseHelper.buildListSuccessResponse(finalResponses);
+    }
+
+
+    private void processInttraResponse(BridgeServiceResponse bridgeServiceResponse, CarrierBooking carrierBooking) throws InttraFailureException {
+
+        Map<String, Object> extraParams = bridgeServiceResponse.getExtraResponseParams();
+
+        if (extraParams == null) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, "extra param"));
+        }
+
+        String serviceResponse = (String) extraParams.get(SERVICE_RESPONSE);
+        String serviceHttpStatus = (String) extraParams.get(SERVICE_HTTP_STATUS_CODE);
+
+        if (serviceResponse == null || serviceResponse.trim().isEmpty()) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, SERVICE_RESPONSE));
+        }
+
+        if (serviceHttpStatus == null || serviceHttpStatus.trim().isEmpty()) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, SERVICE_HTTP_STATUS_CODE));
+        }
+
+        // Parse INTTRA response
+        JsonNode responseNode = jsonHelper.readTreeFromJson(serviceResponse.trim());
+
+        // Check if bridge service call was successful
+        if (!"200".equals(serviceHttpStatus)) {
+            handleInttraError(responseNode, carrierBooking.getId());
+        }
+        setBookingReferencesFromPayload(responseNode, carrierBooking);
+    }
+
+    private void handleInttraError(JsonNode responseNode, Long id) throws InttraFailureException {
+        String concatenatedErrors = "";
+
+        if (responseNode.isArray()) {
+            concatenatedErrors = StreamSupport.stream(responseNode.spliterator(), false)
+                    .map(errorNode -> errorNode.path(MESSAGE).asText())
+                    .collect(Collectors.joining(" | "));
+        } else if (responseNode.has(MESSAGE)) {
+            concatenatedErrors = responseNode.path(MESSAGE).asText();
+        } else {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, MESSAGE));
+        }
+
+        log.error("INTTRA booking failed - Carrier Booking ID: {}, Errors: {}",
+                id, concatenatedErrors);
+        throw new InttraFailureException("INTTRA booking failed: " + concatenatedErrors);
+    }
+
+    private void setBookingReferencesFromPayload(JsonNode responseNode, CarrierBooking carrierBooking) throws InttraFailureException {
+
+        JsonNode bookingDetails = responseNode.path(BOOKING_DETAILS);
+        if (!bookingDetails.isArray() || bookingDetails.isEmpty()) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, BOOKING_DETAILS));
+        }
+
+        // Get payload from first bookingDetail
+        JsonNode payload = bookingDetails.get(0).path(PAYLOAD);
+        if (payload.isMissingNode()) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, PAYLOAD));
+        }
+
+        // Helper to extract required fields
+        String inttraReference = getRequiredField(payload, INTTRA_REFERENCE);
+        String carrierReferenceNumber = getRequiredField(payload, CARRIER_REFERENCE_NUMBER);
+
+        // Set values in carrierBooking
+        carrierBooking.setCarrierBookingNo(carrierReferenceNumber);
+        carrierBooking.setInttraReference(inttraReference);
+        log.info("INTTRA booking successful - Carrier Booking ID: {}, CarrierBookingNo: {}, InttraReference: {}",
+                carrierBooking.getId(), carrierBooking.getCarrierBookingNo(), carrierBooking.getInttraReference());
+    }
+
+    private String getRequiredField(JsonNode node, String fieldName) {
+        String value = node.path(fieldName).asText(null);
+        if (value == null || value.isEmpty()) {
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, fieldName));
+        }
+        return value;
     }
 
     private void saveTransactionHistory(CarrierBooking carrierBooking, FlowType flowType, SourceSystem sourceSystem) {
         String description = carrierBooking.getStatus().getDescription() + "by: " + UserContext.getUser().getUsername();
         carrierBookingInttraUtil.createTransactionHistory(carrierBooking.getStatus().getDescription(),
-                flowType, description, sourceSystem, carrierBooking.getId(), EntityTypeTransactionHistory.VGM);
+                flowType, description, sourceSystem, carrierBooking.getId(), EntityTypeTransactionHistory.CARRIER_BOOKING);
     }
 
     @NotNull
@@ -859,15 +1032,15 @@ public class CarrierBookingService implements ICarrierBookingService {
         try {
             List<String> requests = new ArrayList<>(
                     List.of(Constants.CARRIER_BOOKING_EMAIL_TEMPLATE));
-            List<EmailTemplatesRequest> emailTemplates = getCarrierBookingEmailTemplate(requests);
+            List<EmailTemplatesRequest> emailTemplates = carrierBookingInttraUtil.fetchEmailTemplate(requests);
             EmailTemplatesRequest carrierBookingTemplate = emailTemplates.stream()
                     .filter(Objects::nonNull)
                     .filter(template -> Constants.CARRIER_BOOKING_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
-                notificationService.sendEmail(request);
+                List<String> toEmails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails ,new ArrayList<>());
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {
@@ -875,18 +1048,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
     }
 
-    public List<EmailTemplatesRequest> getCarrierBookingEmailTemplate(List<String> templateCodes) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(templateCodes)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
-        if (v1DataResponse != null && v1DataResponse.entities != null) {
-            return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-        }
-        return new ArrayList<>();
-    }
 
     private void mismatchDetection(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
         Object entity = carrierBookingValidationUtil.validateRequest(

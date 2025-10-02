@@ -24,6 +24,7 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private PartiesResponse shipper;
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
+    private PartiesResponse requestor;
     private List<PartiesResponse> additionalParties;
     private BigDecimal shipperDeclaredValue;
     private String shipperDeclaredValueCurrency;
@@ -49,5 +50,11 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private SailingInformationResponse sailingInformation;
     private List<ShippingInstructionContainerWarningResponse> containerDiff;
     private List<ShippingInstructionContainerWarningResponse> packageDiff;
-
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
+    private String createByUserEmail;
+    private String submitByUserEmail;
+    private String comments;
 }

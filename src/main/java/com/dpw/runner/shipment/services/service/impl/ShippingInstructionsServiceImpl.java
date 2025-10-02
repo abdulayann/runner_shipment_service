@@ -2,21 +2,45 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.CommonPackages;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.FreightDetail;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
+import com.dpw.runner.shipment.services.entity.ShippingInstructionResponseMapper;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.FlowType;
+import com.dpw.runner.shipment.services.entity.enums.PayerType;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -24,11 +48,16 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
@@ -45,7 +74,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -54,7 +94,12 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.INVALID_ENTITY_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.tableNames;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -120,7 +165,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         List<Parties> additionalPartiesList = shippingInstruction.getAdditionalParties();
         if (additionalPartiesList != null) {
             List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(additionalPartiesList,
-                    Parties.class, false), shippingInstruction.getId(), ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
+                    Parties.class, false), shippingInstruction.getId(), SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
             savedInfo.setAdditionalParties(updatedParties);
         }
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
@@ -130,6 +175,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         validateSIRequest(shippingInstruction);
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         mapper.setShippingInstruction(shippingInstruction);
+        if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
+            List<CarrierBookingInfoProjection> cbInfoProjection = repository.findBookingByConsolId(shippingInstruction.getEntityNumber());
+            if (!cbInfoProjection.isEmpty()) {
+                throw new ValidationException("SI creation not allowed. Consolidation linked with a Booking already!!");
+            }
+        }
         setDefaultValues(shippingInstruction.getEntityType(), shippingInstruction.getEntityId(), mapper, isCreate);
         return mapper.getShippingInstruction();
     }
@@ -208,6 +259,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setContract(partiesResponse);
+        }
+        if (Objects.nonNull(carrierBooking.getRequester())) {
+            Parties partiesResponse = carrierBooking.getRequester();
+            partiesResponse.setId(null);
+            partiesResponse.setGuid(null);
+            shippingInstruction.setRequestor(partiesResponse);
         }
     }
 
@@ -384,7 +441,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             ShippingInstruction shippingInstruction = shippingInstructionOpt.get();
             long start = System.currentTimeMillis();
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShippingInstruction.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
-            includeColumns.addAll(ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS);
+            includeColumns.addAll(LIST_INCLUDE_COLUMNS);
             ShippingInstructionResponse shippingInstructionResponse = (ShippingInstructionResponse) commonUtils.setIncludedFieldsToResponse(shippingInstruction, new HashSet<>(includeColumns), new ShippingInstructionResponse());
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(shippingInstructionResponse);
@@ -406,7 +463,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
 
-        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, ShippingInstructionsConstants.tableNames);
+        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
         Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
@@ -432,12 +489,18 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         populateFreightDetails(shippingInstruction, consolidationDetails);
+        shippingInstruction.setCarrierBookingNo(consolidationDetails.getBookingNumber());
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
-        if (shippingInstruction == null || shippingInstruction.getSailingInformation() == null) {
+        if (shippingInstruction == null) {
             return; // nothing to populate
         }
+
+        if (shippingInstruction.getSailingInformation() == null) {
+            shippingInstruction.setSailingInformation(new SailingInformation());
+        }
+
         if (consolidationDetails != null && consolidationDetails.getCarrierDetails() != null) {
 
             CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
@@ -588,29 +651,61 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new GenericException("Shipping Instruction not found");
         }
 
+        Parties[] partiesToCheck = {si.getRequestor(), si.getShipper(), si.getForwardingAgent()};
+        String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
+
+        if (null == remoteId) {
+            throw new ValidationException("SI does not belong to INTTRA");
+        }
+
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
             CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
-            // Step 1: Check booking status
-            if (!(CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) || CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
-                throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
-            }
+            validateSubmissionCriteria(booking, si);
         } else if (si.getEntityType() == EntityType.CONSOLIDATION) {
             if (si.getStatus() != ShippingInstructionStatus.Draft) {
-                throw new ValidationException("Submit not allowed. Shipping Instruction is not Submitted.");
+                throw new ValidationException("Submit not allowed. Shipping Instruction not in draft state.");
             }
+
+            ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(si.getEntityId());
+            fillDetailsFromConsol(si, consolidationDetails);
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
         // Step 3: Mark SI as submitted
-        si.setStatus(ShippingInstructionStatus.SiSubmitted);
+        si.setStatus(Requested);
         si.setPayloadJson(createPackageAndContainerPayload(si));
+        ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
+        instructionInttraRequest.setFileName(getFileName(si));
+        try {
+            shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        } catch (Exception e) {
+            log.error("Error in setting volume/mass details", e);
+        }
+        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
+        try {
+            callBridge(instructionInttraRequest, "SI_CREATE");
+        } catch (Exception e) {
+            log.error("Error in calling bridge", e);
+            throw e;
+        }
         ShippingInstruction saved = repository.save(si);
-        callBridge(si, "SI_CREATE");
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Requested", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    private void validateSubmissionCriteria(CarrierBooking booking, ShippingInstruction si) {
+        // Step 1: Check booking status
+        if (!(CarrierBookingStatus.ConditionallyAccepted.equals(booking.getStatus()) || CarrierBookingStatus.ConfirmedByCarrier.equals(booking.getStatus()))) {
+            throw new ValidationException("Submit not allowed. Carrier Booking is not Confirmed/Conditionally Accepted.");
+        }
+
+        List<CarrierBookingInfoProjection> projectionList = repository.findConfimedBookingByConsolId(si.getEntityNumber());
+        if (projectionList.size() > 1) {
+            throw new ValidationException("Only one booking of all booking linked with a consolidation can be in confirmed state!!");
+        }
     }
 
     private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {
@@ -650,21 +745,122 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Invalid shipping instruction id");
         }
         ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
+        ConsolidationDetails consolidationDetails;
 
+        Parties[] partiesToCheck = {shippingInstruction.getRequestor(), shippingInstruction.getShipper(), shippingInstruction.getForwardingAgent()};
+        String remoteId = carrierBookingInttraUtil.getInttraRemoteId(partiesToCheck);
 
-        if (!(ShippingInstructionStatus.SiSubmitted == shippingInstructionEntity.get().getStatus() || ShippingInstructionStatus.SiAccepted == shippingInstructionEntity.get().getStatus())) {
+        CarrierBooking booking = null;
+        if (shippingInstruction.getEntityType() == EntityType.CARRIER_BOOKING) {
+            booking = carrierBookingDao.findById(shippingInstruction.getEntityId())
+                    .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
+        } else if (shippingInstruction.getEntityType() == EntityType.CONSOLIDATION) {
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
+            fillDetailsFromConsol(shippingInstruction, consolidationDetails);
+        } else {
+            throw new ValidationException(INVALID_ENTITY_TYPE);
+        }
+
+        checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING);
+        validateSIRequest(shippingInstruction);
+
+        if (booking != null) {
+            shippingInstruction.setCarrierBookingNo(booking.getCarrierBookingNo());
+        }
+
+        // Step 3: Mark SI as amended
+        shippingInstruction.setStatus(ShippingInstructionStatus.Changed);
+        shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
+        ShippingInstruction saved = repository.save(shippingInstruction);
+        ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
+        instructionInttraRequest.setFileName(getFileName(shippingInstruction));
+        try {
+            shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
+        } catch (Exception e) {
+            log.error("Exception during conversion of volume / mass ", e);
+        }
+        shippingInstructionUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(instructionInttraRequest.getSailingInformation()), instructionInttraRequest);
+
+        try {
+            callBridge(instructionInttraRequest, "SI_AMEND");
+        } catch (Exception e) {
+            log.error("Exception in calling bridge {}", e.getMessage());
+            carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, e.getMessage(), SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
+            throw e;
+        }
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
+        return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    @Override
+    public void updateShippingInstructionsStatus(ShippingInstructionEventDto shippingInstructionEvent, String fileName) {
+        if (Objects.nonNull(fileName) && StringUtility.isNotEmpty(shippingInstructionEvent.getSiId())) {
+            if (fileName.startsWith(ShippingInstructionsConstants.APERAK_PREFIX) && fileName.endsWith(ShippingInstructionsConstants.XML_SUFFIX)) {
+                //received status updated from carrier
+                Optional<ShippingInstruction> shippingInstructionOptional = repository.findById(Long.valueOf(shippingInstructionEvent.getSiId()));
+                if (shippingInstructionOptional.isEmpty()) {
+                    log.error("received invalid shipping instruction id from carrier {}", shippingInstructionEvent.getSiId());
+                    return;
+                }
+                ShippingInstruction shippingInstruction = shippingInstructionOptional.get();
+                ShippingInstructionStatus shippingInstructionStatus = parseIntraStatus(shippingInstructionEvent.getStatus());
+                shippingInstruction.setStatus(shippingInstructionStatus);
+                shippingInstruction.setComments(shippingInstructionEvent.getComments());
+                repository.save(shippingInstruction);
+                carrierBookingInttraUtil.createTransactionHistory(shippingInstructionStatus.name(), FlowType.Outbound, shippingInstructionStatus.getDescription() + Constants.EMPTY_STRING + shippingInstruction.getSailingInformation().getCarrier(), SourceSystem.Carrier, shippingInstruction.getId(), EntityTypeTransactionHistory.SI);
+            } else if (fileName.startsWith(ShippingInstructionsConstants.CONTRLX_PREFIX) && fileName.endsWith(ShippingInstructionsConstants.XML_SUFFIX)) {
+                //received status updated from inttra
+                Optional<ShippingInstruction> shippingInstructionOptional = repository.findById(Long.valueOf(shippingInstructionEvent.getSiId()));
+                if (shippingInstructionOptional.isEmpty()) {
+                    log.error("received invalid shipping instruction id from inttra {}", shippingInstructionEvent.getSiId());
+                    return;
+                }
+                ShippingInstruction shippingInstruction = shippingInstructionOptional.get();
+                ShippingInstructionStatus shippingInstructionStatus = getShippingInstructionStatus(shippingInstructionEvent);
+                shippingInstruction.setStatus(shippingInstructionStatus);
+                shippingInstruction.setComments(shippingInstructionEvent.getComments());
+                repository.save(shippingInstruction);
+                carrierBookingInttraUtil.createTransactionHistory(shippingInstructionStatus.name(), FlowType.Outbound, shippingInstructionStatus.getDescription(), SourceSystem.INTTRA, shippingInstruction.getId(), EntityTypeTransactionHistory.SI);
+            }
+        }
+    }
+
+    private ShippingInstructionStatus getShippingInstructionStatus(ShippingInstructionEventDto shippingInstructionEvent) {
+        String status = shippingInstructionEvent.getStatus();
+        if (StringUtility.isNotEmpty(shippingInstructionEvent.getStatus()) && ShippingInstructionsConstants.ACCEPTED.equals(shippingInstructionEvent.getStatus())) {
+            status = ShippingInstructionsConstants.PROCESSED;
+        } else if (StringUtility.isNotEmpty(shippingInstructionEvent.getStatus()) && ShippingInstructionsConstants.REJECTED.equals(shippingInstructionEvent.getStatus())) {
+            status = ShippingInstructionsConstants.REJECTED_BY_CARRIER;
+        }
+        return parseIntraStatus(status);
+    }
+
+    private static void checkIfAllowed(String remoteId, ShippingInstruction shippingInstructionEntity, CarrierBooking booking,
+                                       boolean isStandAlone) {
+        if (null == remoteId) {
+            throw new ValidationException("SI does not belong to INTTRA");
+        }
+
+        if (!(Requested == shippingInstructionEntity.getStatus() || ShippingInstructionStatus.AcceptedByCarrier == shippingInstructionEntity.getStatus())) {
             throw new ValidationException("Amendment not allowed. Shipping Instruction is not Submitted.");
         }
 
-        validateSIRequest(shippingInstruction);
+        if (!isStandAlone && booking != null && !CarrierBookingStatus.ConfirmedByCarrier.name().equalsIgnoreCase(booking.getStatus().name())) {
+            throw new ValidationException("Amendment not allowed. Carrier booking is not submitted.");
+        }
+    }
 
-        // Step 3: Mark SI as amended
-        shippingInstruction.setStatus(ShippingInstructionStatus.SiAmendRequested);
-        shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
-        ShippingInstruction saved = repository.save(shippingInstruction);
-        callBridge(shippingInstruction, "SI_AMEND");
-        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
-        return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    private String getFileName(ShippingInstruction si) {
+        // Format timestamp in UTC
+        String timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneOffset.UTC)
+                .format(Instant.now());
+
+        return "SIRequest_" + si.getId() + "_"
+                + si.getCarrierBookingNo()  // use carrier booking number
+                + "_"
+                + timestamp
+                + ".xml";
     }
 
 
@@ -689,13 +885,29 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return jsonHelper.convertToJson(packageSiPayload);
     }
 
-    private void callBridge(ShippingInstruction shippingInstruction, String integrationCode) {
+    private void callBridge(ShippingInstructionInttraRequest shippingInstruction, String integrationCode) {
         UUID transactionId = UUID.randomUUID();
         try {
-            bridgeServiceAdapter.bridgeApiIntegration(jsonHelper.convertToJson(shippingInstruction), integrationCode, transactionId.toString(), transactionId.toString());
+            bridgeServiceAdapter.bridgeApiIntegration(shippingInstruction, integrationCode, transactionId.toString(), transactionId.toString());
         } catch (RunnerException e) {
-            log.error("Exception while calling bridge. id {} {}", shippingInstruction.getId(), e.getMessage());
+            log.error("Exception while calling bridge. {}", e.getMessage());
         }
+    }
+
+    private ShippingInstructionStatus parseIntraStatus(String type) {
+
+        return switch (type) {
+            case "ConditionallyAccepted" -> ShippingInstructionStatus.ConditionallyAccepted;
+            case "Processed" -> ShippingInstructionStatus.AcceptedByCarrier;
+            case "Accepted" -> ShippingInstructionStatus.ConfirmedByCarrier;
+            case "Rejected" -> ShippingInstructionStatus.DeclinedByCarrier;
+            case "RejectedByCarrier" -> ShippingInstructionStatus.RejectedByCarrier;
+            case "Replaced" -> ShippingInstructionStatus.ReplacedByCarrier;
+            case "ChangeSIRequested" -> ShippingInstructionStatus.Changed;
+            case "NewSIRequested" -> ShippingInstructionStatus.Requested;
+            default -> ShippingInstructionStatus.PendingFromCarrier;
+        };
+
     }
 
 }

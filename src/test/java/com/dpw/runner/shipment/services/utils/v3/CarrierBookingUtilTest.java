@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMisMatchWarning;
@@ -14,7 +13,7 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingGenerationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.junit.jupiter.api.Assertions;
@@ -317,52 +316,6 @@ class CarrierBookingUtilTest {
     }
 
     @Test
-    void test_getSendEmailBaseRequest_CreateAndSubmitUserSame() {
-        // Arrange
-        CarrierBooking carrierBooking = new CarrierBooking();
-        carrierBooking.setInternalEmails("internal@test.com");
-        carrierBooking.setCreateByUserEmail("creator@test.com");
-        carrierBooking.setSubmitByUserEmail("creator@test.com");
-
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        template.setSubject("Test Subject");
-        template.setName("TestTemplate");
-        template.setBody("<p>Body</p>");
-
-        // Act
-        SendEmailBaseRequest result = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, template);
-
-        // Assert
-        assertEquals("internal@test.com,creator@test.com", result.getTo());
-        assertEquals("Test Subject", result.getSubject());
-        assertEquals("TestTemplate", result.getTemplateName());
-        assertEquals("<p>Body</p>", result.getHtmlBody());
-    }
-
-    @Test
-    void test_getSendEmailBaseRequest_CreateAndSubmitUserDifferent() {
-        // Arrange
-        CarrierBooking carrierBooking = new CarrierBooking();
-        carrierBooking.setInternalEmails(null);
-        carrierBooking.setCreateByUserEmail("creator@test.com");
-        carrierBooking.setSubmitByUserEmail("submitter@test.com");
-
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        template.setSubject("Another Subject");
-        template.setName("AnotherTemplate");
-        template.setBody("Another body");
-
-        // Act
-        SendEmailBaseRequest result = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, template);
-
-        // Assert
-        assertEquals("creator@test.com,submitter@test.com", result.getTo());
-        assertEquals("Another Subject", result.getSubject());
-        assertEquals("AnotherTemplate", result.getTemplateName());
-        assertEquals("Another body", result.getHtmlBody());
-    }
-
-    @Test
     void test_mapSailingToConsolidation_AllFieldsMapped() {
         // Arrange
         SailingInformation sailing = new SailingInformation();
@@ -497,4 +450,122 @@ class CarrierBookingUtilTest {
         Assertions.assertNotNull(bridgeRequest);
     }
 
+    @Test
+    void test_populateLocCode_AllValuesPresent() {
+        // Prepare CarrierBooking with SailingInformation
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPol("POL");
+        sailingInfo.setPod("POD");
+        sailingInfo.setCarrierReceiptPlace("REC");
+        sailingInfo.setCarrierDeliveryPlace("DEL");
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice("BOOK");
+
+        // Prepare unlocations map with locCodes
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("POL", new EntityTransferUnLocations());
+        unlocationsMap.put("POD", new EntityTransferUnLocations());
+
+
+        // Call method
+        carrierBookingUtil.populateLocCode(unlocationsMap, carrierBooking);
+
+        // Verify updates
+        assertEquals("POL", sailingInfo.getPol());
+    }
+
+    @Test
+    void test_populateLocCode_MissingValues_NoExceptionThrown() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        SailingInformation sailingInfo = new SailingInformation();
+        sailingInfo.setPol("POL");
+        sailingInfo.setPod("POD");
+        sailingInfo.setCarrierReceiptPlace("REC");
+        sailingInfo.setCarrierDeliveryPlace("DEL");
+        carrierBooking.setSailingInformation(sailingInfo);
+        carrierBooking.setBookingOffice("BOOK");
+
+        // Empty map (no entries found)
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+
+        // Should not throw exception
+        carrierBookingUtil.populateLocCode(unlocationsMap, carrierBooking);
+
+        // Verify nothing is set
+        Assertions.assertNull(carrierBooking.getSailingInformation().getCarrierReceiptLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getCarrierDeliveryLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getOriginPortLocCode());
+        Assertions.assertNull(carrierBooking.getSailingInformation().getDestinationPortLocCode());
+        Assertions.assertNull(carrierBooking.getBookingOfficeLocCode());
+    }
+
+    @Test
+    void test_populateLocCode_ExceptionHandledGracefully() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setSailingInformation(null); // This will cause NullPointerException
+
+        // Should not throw exception despite sailingInfo being null
+        carrierBookingUtil.populateLocCode(new HashMap<>(), carrierBooking);
+
+        // Just verify booking is still not null
+        Assertions.assertNotNull(carrierBooking);
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_WithInternalEmailsAndDifferentSubmitter() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails("ops@test.com,support@test.com");
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("submitter@test.com");
+
+        List<String> emails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+
+        assertEquals(4, emails.size());
+        assertTrue(emails.contains("ops@test.com"));
+        assertTrue(emails.contains("support@test.com"));
+        assertTrue(emails.contains("creator@test.com"));
+        assertTrue(emails.contains("submitter@test.com"));
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_NoInternalEmails_SubmitterSameAsCreator() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails(null);
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("creator@test.com");
+
+        List<String> emails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+
+        assertEquals(1, emails.size());
+        assertEquals("creator@test.com", emails.get(0));
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_WithInternalEmails_SubmitterSameAsCreator() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails("ops@test.com");
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("creator@test.com");
+
+        List<String> emails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+
+        assertEquals(2, emails.size());
+        assertTrue(emails.contains("ops@test.com"));
+        assertTrue(emails.contains("creator@test.com"));
+    }
+
+    @Test
+    void test_getSendEmailBaseRequest_RemovesBlanksAndDuplicates() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setInternalEmails("ops@test.com, ,creator@test.com"); // duplicate + blank
+        carrierBooking.setCreateByUserEmail("creator@test.com");
+        carrierBooking.setSubmitByUserEmail("creator@test.com");
+
+        List<String> emails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+
+        assertEquals(2, emails.size());
+        assertTrue(emails.contains("ops@test.com"));
+        assertTrue(emails.contains("creator@test.com"));
+    }
 }

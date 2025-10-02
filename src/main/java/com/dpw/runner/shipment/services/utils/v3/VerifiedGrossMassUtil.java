@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
@@ -9,9 +10,11 @@ import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,12 +32,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.GROSS_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.NET_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.TARE_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VGM_WEIGHT;
 
 @Slf4j
 @Component
@@ -150,7 +156,8 @@ public class VerifiedGrossMassUtil {
         return response;
     }
 
-    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse) {
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map,
+                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse, String externalEmails) {
 
         if (Objects.isNull(carrierDatav1Map)) return;
 
@@ -168,6 +175,15 @@ public class VerifiedGrossMassUtil {
             verifiedGrossMassInttraResponse.setCarrierDescription(carrierDescription);
             NotificationContactResponse notificationContactResponse = new NotificationContactResponse();
             notificationContactResponse.setUsername(carrierContactPerson);
+
+            // Adding Inttra emails (VGM external emails) to carrierNotificationContact with comma separation
+            if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+                if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
+                    carrierNotificationContact += "," + externalEmails;
+                } else {
+                    carrierNotificationContact = externalEmails;
+                }
+            }
             notificationContactResponse.setEmails(carrierNotificationContact);
             verifiedGrossMassInttraResponse.setCarrierNotificationContact(notificationContactResponse);
         }
@@ -188,8 +204,8 @@ public class VerifiedGrossMassUtil {
             Map<Long, CommonContainers> submittedContainersVGMMap = submittedVGMContainersList.stream()
                     .collect(Collectors.toMap(CommonContainers::getId, Function.identity(), (a, b) -> a));
 
-            Map<Long, Containers> consolContainersMap = consolContainersList.stream()
-                    .collect(Collectors.toMap(Containers::getId, Function.identity(), (a, b) -> a));
+            Map<UUID, Containers> consolContainersMap = consolContainersList.stream()
+                    .collect(Collectors.toMap(BaseEntity::getGuid, Function.identity(), (a, b) -> a));
 
             for (CommonContainers currentContainer : currentVGMContainersList) {
 
@@ -201,7 +217,7 @@ public class VerifiedGrossMassUtil {
                 }
 
                 // Compare with consol container (if exists)
-                Containers consolContainer = consolContainersMap.get(currentContainer.getId());
+                Containers consolContainer = consolContainersMap.get(currentContainer.getContainerRefGuid());
                 if (Objects.nonNull(consolContainer) && hasAnyWeightDifference(currentContainer, consolContainer)) {
                     warnings.add(buildVGMContainerWarning(null, currentContainer, consolContainer));
                 }
@@ -223,10 +239,10 @@ public class VerifiedGrossMassUtil {
         String containerNo = getContainerNumber(submittedContainer, consolContainer);
         vgmContainerWarningResponse.setContainerNumber(containerNo);
 
-        // Extracted logic for VGM weight (Gross Weight) comparison
-        String vgmOldWeight = getWeight(submittedContainer, consolContainer, GROSS_WEIGHT);
+        // Extracted logic for VGM weight
+        String vgmOldWeight = getWeight(submittedContainer, consolContainer, VGM_WEIGHT);
         vgmContainerWarningResponse.setVgmOldWeightValue(vgmOldWeight);
-        String vgmNewWeight = formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit());
+        String vgmNewWeight = formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit());
         vgmContainerWarningResponse.setVgmNewWeightValue(vgmNewWeight);
 
         // Set Gross Weight Value
@@ -260,29 +276,38 @@ public class VerifiedGrossMassUtil {
     }
 
     private String getWeight(CommonContainers submittedContainer, Containers consolContainer, String weightType) {
-        switch (weightType) {
-            case GROSS_WEIGHT :
-                return getFormattedWeight(submittedContainer, consolContainer);
-            case NET_WEIGHT:
-                return getFormattedWeight(submittedContainer, consolContainer);
-            case TARE_WEIGHT:
-                return getFormattedWeight(submittedContainer, consolContainer);
-            default:
-                return null;
-        }
-    }
-
-    private String getFormattedWeight(CommonContainers submittedContainer, Containers consolContainer) {
         if (Objects.nonNull(submittedContainer)) {
-            return formatWeight(submittedContainer.getGrossWeight(), submittedContainer.getGrossWeightUnit());
+            switch (weightType) {
+                case VGM_WEIGHT:
+                    return formatWeight(submittedContainer.getVgmWeight(), submittedContainer.getVgmWeightUnit());
+                case GROSS_WEIGHT:
+                    return formatWeight(submittedContainer.getGrossWeight(), submittedContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(submittedContainer.getNetWeight(), submittedContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(submittedContainer.getTareWeight(), submittedContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
         } else if (Objects.nonNull(consolContainer)) {
-            return formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit());
+            switch (weightType) {
+                case VGM_WEIGHT, GROSS_WEIGHT:
+                    return formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit());
+                case NET_WEIGHT:
+                    return formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit());
+                case TARE_WEIGHT:
+                    return formatWeight(consolContainer.getTareWeight(), consolContainer.getTareWeightUnit());
+                default:
+                    return null;
+            }
         }
         return null;
     }
 
     private boolean hasAnyWeightDifference(CommonContainers currentVGMContainer, CommonContainers submittedVGMContainer) {
-        return hasWeightChanged(formatWeight(currentVGMContainer.getGrossWeight(), currentVGMContainer.getGrossWeightUnit()),
+        return hasWeightChanged(formatWeight(currentVGMContainer.getVgmWeight(), currentVGMContainer.getVgmWeightUnit()),
+                formatWeight(submittedVGMContainer.getVgmWeight(), submittedVGMContainer.getVgmWeightUnit()))
+                || hasWeightChanged(formatWeight(currentVGMContainer.getGrossWeight(), currentVGMContainer.getGrossWeightUnit()),
                 formatWeight(submittedVGMContainer.getGrossWeight(), submittedVGMContainer.getGrossWeightUnit()))
                 || hasWeightChanged(formatWeight(currentVGMContainer.getNetWeight(), currentVGMContainer.getNetWeightUnit()),
                 formatWeight(submittedVGMContainer.getNetWeight(), submittedVGMContainer.getNetWeightUnit()))
@@ -291,7 +316,9 @@ public class VerifiedGrossMassUtil {
     }
 
     private boolean hasAnyWeightDifference(CommonContainers currentContainer, Containers consolContainer) {
-        return hasWeightChanged(formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit()),
+        return hasWeightChanged(formatWeight(currentContainer.getVgmWeight(), currentContainer.getVgmWeightUnit()),
+                formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
+                || hasWeightChanged(formatWeight(currentContainer.getGrossWeight(), currentContainer.getGrossWeightUnit()),
                 formatWeight(consolContainer.getGrossWeight(), consolContainer.getGrossWeightUnit()))
                 || hasWeightChanged(formatWeight(currentContainer.getNetWeight(), currentContainer.getNetWeightUnit()),
                 formatWeight(consolContainer.getNetWeight(), consolContainer.getNetWeightUnit()))
@@ -306,4 +333,40 @@ public class VerifiedGrossMassUtil {
     private boolean hasWeightChanged(String currentValue, String previousValue) {
         return !StringUtils.equals(currentValue, previousValue);
     }
+
+    public List<String> getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass) {
+        StringBuilder toEmails = new StringBuilder();
+
+        // Add internal emails if present
+        if (Objects.nonNull(verifiedGrossMass.getInternalEmails()) && !verifiedGrossMass.getInternalEmails().trim().isEmpty()) {
+            toEmails.append(verifiedGrossMass.getInternalEmails());
+        }
+
+        // Add the 'createByUserEmail' only if it's not blank
+        String createByUserEmail = verifiedGrossMass.getCreateByUserEmail();
+        if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(createByUserEmail);
+        }
+
+        // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
+        String submitByUserEmail = verifiedGrossMass.getSubmitByUserEmail();
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty()
+                && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(submitByUserEmail);
+        }
+
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(toEmails.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // remove duplicates if any
+                .toList();
+    }
+
 }
