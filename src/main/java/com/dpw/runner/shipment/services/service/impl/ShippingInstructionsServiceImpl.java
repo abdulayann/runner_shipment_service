@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -13,7 +12,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageS
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
@@ -56,9 +54,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -78,6 +73,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     @Autowired
     IPackingV3Service packingV3Service;
+
+    @Autowired
+    IVerifiedGrossMassDao vgmDao;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -351,6 +349,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             instruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
         }
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
+        response.setVgmStatus(getVgmStatus(instruction));
         if (Objects.nonNull(instruction.getPayloadJson())) {
             ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
@@ -365,6 +364,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             response.setBookingStatus(mapper.getBookingStatus());
         }
         return response;
+    }
+
+    private String getVgmStatus(ShippingInstruction instruction) {
+        VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getId());
+        return vgmEntity.getStatus().name();
     }
 
     public ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest shippingInstructionRequest) {
@@ -418,14 +422,14 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         if (listCommonRequest == null) {
-            log.error(CARRIER_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(CARRIER_LIST_REQUEST_NULL_ERROR);
+            log.error(SI_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(SI_LIST_REQUEST_NULL_ERROR);
         }
 
 
         Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
         Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
-        log.info(CARRIER_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+        log.info(SI_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
         List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
 
@@ -528,6 +532,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+            shippingInstructionResponse.setVgmStatus(getVgmStatus(shippingInstruction));
             shippingInstructionResponses.add(shippingInstructionResponse);
         }
 
@@ -750,6 +755,17 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Amended", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
         return jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
+    }
+
+    @Override
+    public void cancelShippingInstruction(Long id) {
+        ShippingInstruction shippingInstruction = repository.findById(id)
+                .orElseThrow(() -> new ValidationException("INVALID_SI:" + id));
+
+        shippingInstruction.setStatus(ShippingInstructionStatus.Cancelled);
+        ShippingInstruction savedCarrierBooking = repository.save(shippingInstruction);
+        log.info("SI with id :{} cancelled ", savedCarrierBooking.getId());
+        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Cancelled", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
     }
 
     private static void checkIfAllowed(String remoteId, ShippingInstruction shippingInstructionEntity, CarrierBooking booking,

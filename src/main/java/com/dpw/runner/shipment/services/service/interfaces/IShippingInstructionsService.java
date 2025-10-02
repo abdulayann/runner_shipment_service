@@ -27,4 +27,6 @@ public interface IShippingInstructionsService {
 
     ShippingInstructionResponse amendShippingInstruction(Long shippingInstId);
 
+    void cancelShippingInstruction(Long id);
+
 }

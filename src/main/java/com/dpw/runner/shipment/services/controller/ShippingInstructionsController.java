@@ -163,4 +163,17 @@ public class ShippingInstructionsController {
         }
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShippingInstructionsConstants.CANCELLED),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PutMapping(ApiConstants.CANCEL)
+    // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
+    public ResponseEntity<IRunnerResponse> cancel(@RequestParam Long id) {
+        log.info("Received Carrier Booking Cancel request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        service.cancelShippingInstruction(id);
+        log.info("Carrier Booking Cancel successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        return ResponseHelper.buildSuccessResponse();
+    }
+
 }

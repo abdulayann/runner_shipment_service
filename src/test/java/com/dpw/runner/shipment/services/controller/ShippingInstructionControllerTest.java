@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -158,6 +159,44 @@ class ShippingInstructionControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
         verify(service).getAllMasterData(2L);
+    }
+
+    @Test
+    void testAmendSIFailure() {
+        Long siId = 456L;
+
+        doThrow(new RuntimeException("Amend failed")).when(service).amendShippingInstruction(siId);
+
+        ResponseEntity<IRunnerResponse> response = controller.amendSI(siId);
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(service, times(1)).amendShippingInstruction(siId);
+    }
+
+    // ---------- cancel tests ----------
+
+    @Test
+    void testCancelSuccess() {
+        Long siId = 789L;
+
+        doNothing().when(service).cancelShippingInstruction(siId);
+
+        ResponseEntity<IRunnerResponse> response = controller.cancel(siId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(service, times(1)).cancelShippingInstruction(siId);
+    }
+
+    @Test
+    void testCancelFailure() {
+        Long siId = 999L;
+
+        doThrow(new ValidationException("Cancel failed")).when(service).cancelShippingInstruction(siId);
+
+        // Since your controller doesn't catch exceptions in cancel(), this will bubble up
+        assertThrows(ValidationException.class, () -> controller.cancel(siId));
+
+        verify(service, times(1)).cancelShippingInstruction(siId);
     }
 
 }

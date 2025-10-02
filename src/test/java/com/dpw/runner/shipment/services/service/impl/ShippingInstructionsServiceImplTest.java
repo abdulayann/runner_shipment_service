@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
+import com.dpw.runner.shipment.services.dao.impl.VerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
@@ -60,6 +61,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.*;
@@ -116,6 +118,8 @@ class ShippingInstructionsServiceImplTest {
     private IShipmentDao shipmentDao;
     @Mock
     private IBridgeServiceAdapter bridgeServiceAdapter;
+    @Mock
+    private VerifiedGrossMassDao vgmDao;
 
     @InjectMocks
     private ShippingInstructionUtil shippingInstructionUtil;
@@ -411,6 +415,9 @@ class ShippingInstructionsServiceImplTest {
         when(repository.findById(1L)).thenReturn(Optional.of(entity));
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(ShippingInstructionResponse.builder().carrierBookingNo("CB-001").build());
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(entity.getEntityType(), entity.getId())).thenReturn(vgm);
 
         ShippingInstructionResponse out = service.getShippingInstructionsById(1L);
 
@@ -607,6 +614,10 @@ class ShippingInstructionsServiceImplTest {
                 .thenReturn(new PageImpl<>(List.of(shippingInstruction)));
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(shippingInstruction.getEntityType(), shippingInstruction.getId())).thenReturn(vgm);
+
 
         ResponseEntity<IRunnerResponse> response = service.list(commonRequestModel, true);
 
@@ -628,6 +639,9 @@ class ShippingInstructionsServiceImplTest {
         when(bad.getShippingInstructionType()).thenReturn(ShippingInstructionType.EXPRESS);
         when(bad.getSailingInformation()).thenReturn(new SailingInformation());
         when(jsonHelper.convertValue(req, ShippingInstruction.class)).thenReturn(bad);
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+
 
         assertThatThrownBy(() -> service.createShippingInstruction(req))
                 .isInstanceOf(ValidationException.class)
@@ -825,6 +839,10 @@ class ShippingInstructionsServiceImplTest {
         when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(si.getEntityType(), si.getId())).thenReturn(vgm);
+
 
         ShippingInstructionResponse result = service.getShippingInstructionsById(id);
 
@@ -849,6 +867,10 @@ class ShippingInstructionsServiceImplTest {
         when(siUtil.comparePackageDetails(any(), any())).thenReturn(List.of());
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(new ShippingInstructionResponse());
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(si.getEntityType(), si.getId())).thenReturn(vgm);
+
 
         ShippingInstructionResponse result = service.getShippingInstructionsById(id);
 
@@ -1147,5 +1169,49 @@ class ShippingInstructionsServiceImplTest {
         } catch (Exception e) {
             fail("Reflection failed: " + e.getMessage());
         }
+    }
+
+    @Test
+    void testCancelShippingInstruction_success() {
+        Long siId = 123L;
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(siId);
+        si.setStatus(ShippingInstructionStatus.Draft);
+
+        // Mock repo behavior
+        when(repository.findById(siId)).thenReturn(Optional.of(si));
+        when(repository.save(any(ShippingInstruction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Call method
+        service.cancelShippingInstruction(siId);
+
+        // Verify SI status is updated
+        assertEquals(ShippingInstructionStatus.Cancelled, si.getStatus());
+
+        // Verify repository.save was called
+        verify(repository, times(1)).save(si);
+
+        // Verify transaction history creation
+        verify(carrierBookingInttraUtil, times(1)).createTransactionHistory(
+                (Requested.getDescription()),
+                (FlowType.Inbound),
+                ("SI Cancelled"),
+                (SourceSystem.CargoRunner),
+                (siId),
+                (EntityTypeTransactionHistory.SI)
+        );
+    }
+
+
+    @Test
+    void testCancelShippingInstruction_notFound() {
+        Long siId = 999L;
+        when(repository.findById(siId)).thenReturn(Optional.empty());
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> service.cancelShippingInstruction(siId));
+        assertEquals("INVALID_SI:" + siId, ex.getMessage());
+
+        verify(repository, never()).save(any());
+        verify(carrierBookingInttraUtil, never()).createTransactionHistory(any(), any(), any(), any(), any(), any());
     }
 }
