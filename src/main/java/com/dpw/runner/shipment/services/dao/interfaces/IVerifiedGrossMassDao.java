@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,6 +23,8 @@ public interface IVerifiedGrossMassDao {
     boolean existsById(Long id);
 
     VerifiedGrossMass findByCarrierBookingNo(String carrierBookingNo);
+
+    VerifiedGrossMass findByEntityIdType(EntityType type, Long id);
 }
 
 
