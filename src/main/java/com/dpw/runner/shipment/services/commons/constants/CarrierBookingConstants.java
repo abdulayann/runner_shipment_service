@@ -75,7 +75,6 @@ public class CarrierBookingConstants {
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(CarrierBookingStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("bookingNo", RunnerEntityMapping.builder()
@@ -229,14 +228,12 @@ public class CarrierBookingConstants {
                     .tableName(SHIPPING_INSTRUCTION)
                     .dataType(ShippingInstructionStatus.class)
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("vgmStatus", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS)
                     .dataType(VerifiedGrossMassStatus.class)
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("carrier", RunnerEntityMapping.builder()

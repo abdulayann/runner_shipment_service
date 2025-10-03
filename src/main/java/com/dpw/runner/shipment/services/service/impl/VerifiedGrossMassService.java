@@ -131,7 +131,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
     @Override
     public VerifiedGrossMassResponse create(VerifiedGrossMassRequest request) {
-        verifiedGrossMassValidationUtil.validateServiceType(request);
         Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
         updateReadOnlyDataToEntity(request, entity, verifiedGrossMass);
@@ -246,7 +245,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         if (!Objects.equals(verifiedGrossMassEntity.getEntityId(), request.getEntityId())) {
             throw new ValidationException("Entity Id mismatch with existing entity id");
         }
-        verifiedGrossMassValidationUtil.validateServiceType(request);
         Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         //update header information from existing entity
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);

@@ -594,7 +594,6 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             assertNotNull(result);
-            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
             verify(verifiedGrossMassValidationUtil).validateRequest(EntityType.CARRIER_BOOKING, 1L);
             verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
             assertEquals(VerifiedGrossMassStatus.Draft, testEntity.getStatus());
@@ -623,7 +622,6 @@ class VerifiedGrossMassServiceTest {
             VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
 
             assertNotNull(result);
-            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
             verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
         }
     }
