@@ -198,10 +198,10 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> searchDocumentTypes(CommonRequestModel request) {
+    public ResponseEntity<IRunnerResponse> searchDocumentTypes(CommonRequestModel commonRequestModel) {
         try {
             log.info("{} | Processing document search request", LoggerHelper.getRequestIdFromMDC());
-            var response = restClient.searchDocuments(request.getDependentData());
+            var response = restClient.searchDocuments(commonRequestModel.getDependentData());
 
             log.info("{} | Document search completed successfully", LoggerHelper.getRequestIdFromMDC());
 
