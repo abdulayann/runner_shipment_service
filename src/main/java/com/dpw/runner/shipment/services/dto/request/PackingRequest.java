@@ -99,4 +99,5 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private BigDecimal subLineNo;
     private String productCode;
     private Long shipmentOrderId;
+    private String orderLineGuid;
 }
