@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,7 +49,6 @@ public class ShippingInstructionsConstants {
                     .tableName(SI_TABLE)
                     .dataType(ShippingInstructionStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("carrierBookingNo", RunnerEntityMapping.builder()
@@ -64,7 +64,11 @@ public class ShippingInstructionsConstants {
                     .fieldName("carrierBlNo")
                     .isContainsText(true)
                     .build()),
-
+            Map.entry("shippingInstructionType", RunnerEntityMapping.builder()
+                    .tableName(SI_TABLE)
+                    .dataType(ShippingInstructionType.class)
+                    .fieldName("shippingInstructionType")
+                    .build()),
             Map.entry("entityType", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
                     .dataType(String.class)
