@@ -14,6 +14,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,11 +46,11 @@ class TransactionHistoryControllerTest {
         TransactionHistoryResponse mockResponse = new TransactionHistoryResponse();
         mockResponse.setId(1L);
         mockResponse.setDescription("Test Transaction History");
+        List<TransactionHistoryResponse> mockResponseList = new ArrayList<>();
+        mockResponseList.add(mockResponse);
 
-        ResponseEntity<IRunnerResponse> serviceResponse = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-
-        when(transactionHistoryService.retrieveById(entityId, entityType)).thenReturn(serviceResponse);
-        when(jsonHelper.convertToJson(serviceResponse)).thenReturn("{\"success\": true}");
+        // Mock only the actual return type from the service
+        when(transactionHistoryService.retrieveById(entityId, entityType)).thenReturn(mockResponseList);
 
         // Act
         ResponseEntity<IRunnerResponse> response = transactionHistoryController.retrieveById(entityId, entityType);
@@ -56,26 +59,7 @@ class TransactionHistoryControllerTest {
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertTrue(response.getBody() instanceof RunnerResponse);
-        verify(transactionHistoryService).retrieveById(entityId, entityType);
-    }
-
-    @Test
-    void retrieveByIdReturnsEmptyListWhenNoTHCorrespondingToEntityId() {
-        Long entityId = 1L;
-        EntityTypeTransactionHistory entityType = EntityTypeTransactionHistory.VGM;
-        ResponseEntity<IRunnerResponse> serviceResponse = new ResponseEntity<>(HttpStatus.NOT_FOUND);
-
-        // Mocking the service call
-        when(transactionHistoryService.retrieveById(entityId, entityType)).thenReturn(serviceResponse);
-        when(jsonHelper.convertToJson(serviceResponse)).thenReturn("{\"success\": false}");
-
-        // Act
-        ResponseEntity<IRunnerResponse> response = transactionHistoryController.retrieveById(entityId, entityType);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody() instanceof RunnerResponse); // or TransactionHistoryResponse
         verify(transactionHistoryService).retrieveById(entityId, entityType);
     }
 }

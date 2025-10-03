@@ -43,6 +43,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -240,4 +242,19 @@ public class CarrierBookingInttraUtil {
             );
         }
     }
+
+    public List<String> parseEmailStringToList(String emails) {
+        return Optional.ofNullable(emails)
+                .map(s -> Arrays.stream(s.split(","))
+                        .map(String::trim)
+                        .filter(e -> !e.isEmpty())
+                        .toList())
+                .orElse(List.of());
+    }
+
+    public String parseEmailListToString(List<String> emails) {
+        String ans = Objects.isNull(emails) ? "" : String.join(",", emails);
+        return ans;
+    }
+
 }

@@ -79,6 +79,71 @@ class CarrierBookingInttraUtilTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    // === parseEmailStringToList Tests ===
+
+    @Test
+    void parseEmailStringToList_whenNull_shouldReturnEmptyList() {
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(null);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void parseEmailStringToList_whenEmptyString_shouldReturnEmptyList() {
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList("");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void parseEmailStringToList_whenOnlySpaces_shouldReturnEmptyList() {
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList("   ");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void parseEmailStringToList_whenOnlyCommasAndSpaces_shouldReturnEmptyList() {
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(" , , , ");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void parseEmailStringToList_whenValidEmails_shouldReturnTrimmedList() {
+        String input = "  one@example.com , two@example.com,three@example.com ";
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(input);
+        assertEquals(List.of("one@example.com","two@example.com","three@example.com"), result);
+    }
+
+    @Test
+    void parseEmailStringToList_whenSomeEmailsAreBlank_shouldFilterThemOut() {
+        String input = "one@example.com, , ,two@example.com,,";
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(input);
+        assertEquals(List.of("one@example.com","two@example.com"), result);
+    }
+
+    // === parseEmailListToString Tests ===
+
+    @Test
+    void parseEmailListToString_whenNull_shouldReturnEmptyString() {
+        String result = carrierBookingInttraUtil.parseEmailListToString(null);
+        assertEquals("", result);
+    }
+
+    @Test
+    void parseEmailListToString_whenEmptyList_shouldReturnEmptyString() {
+        String result = carrierBookingInttraUtil.parseEmailListToString(List.of());
+        assertEquals("", result);
+    }
+
+    @Test
+    void parseEmailListToString_whenValidList_shouldReturnCommaSeparatedString() {
+        List<String> input = List.of("one@example.com", "two@example.com");
+        String result = carrierBookingInttraUtil.parseEmailListToString(input);
+        assertEquals("one@example.com,two@example.com", result);
+    }
+
     // ============ createTransactionHistory ============
 
     @Test
