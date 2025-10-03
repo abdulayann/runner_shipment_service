@@ -454,29 +454,31 @@ public class DocumentManagerRestClient {
         log.error(LOG_ERROR, LoggerHelper.getRequestIdFromMDC(), method, ex.getMessage(), jsonHelper.convertToJson(object));
     }
 
-    public DocumentManagerResponse<T> searchDocuments(Object object) {
+    public DocumentManagerResponse<T> searchDocuments(Object requestBody) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
-            log.info("{} | Calling document search - URL: {} | Request: {}",
-                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(object));
+            log.info("{} | Calling Document Manager API: {} | Request: {}",
+                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(requestBody));
 
             var response = restTemplate.exchange(
-                    this.docTypeList,  // Same endpoint, but SEPARATE METHOD
+                    this.docTypeList,
                     HttpMethod.POST,
                     httpEntity,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<DocumentManagerResponse<Object>>() {}
             );
-
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
-            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
-        } catch (Exception var7) {
-            throw new DocumentClientException(var7.getMessage());
+            }
+            throw new DocumentClientException(
+                    jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage()
+            );
+        } catch (Exception ex) {
+            throw new DocumentClientException("Document search failed: " + ex.getMessage());
         }
     }
 }

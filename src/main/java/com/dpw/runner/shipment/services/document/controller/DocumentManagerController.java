@@ -179,18 +179,16 @@ public class DocumentManagerController {
     })
     @PostMapping(DocumentConstants.DOCUMENT_SEARCH)
     public ResponseEntity<IRunnerResponse> searchDocumentsTypes(@RequestBody @Valid Object request) {
-
-        String responseMsg;
         try {
             log.info("Processing document search request via proxy API");
             return documentManagerService.searchDocumentTypes(
                     CommonRequestModel.buildDependentDataRequest(request)
             );
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
+            String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error("Error in document search: {}", responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

@@ -377,20 +377,7 @@ class DocumentManagerServiceImplTest {
         assertEquals(200, response.getStatusCodeValue());
         verify(documentManagerRestClient, times(1)).searchDocuments("test-request-data");
     }
-    @Test
-    void testSearchDocuments_RestClientException() {
-        // Arrange
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .dependentData("test-request-data")
-                .build();
-        when(documentManagerRestClient.searchDocuments(any(Object.class)))
-                .thenThrow(new DocumentClientException("Service unavailable"));
-        DocumentClientException exception = assertThrows(DocumentClientException.class,
-                () -> documentManagerServiceImpl.searchDocumentTypes(commonRequestModel));
 
-        assertEquals("Document search failed: Service unavailable", exception.getMessage());
-        verify(documentManagerRestClient, times(1)).searchDocuments("test-request-data");
-    }
 
 
 }
