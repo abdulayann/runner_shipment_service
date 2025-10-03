@@ -88,6 +88,26 @@ class TransportInstructionReportHelperTest extends CommonMocks {
     }
 
     @Test
+    void testAddTransportInstructionLegsDataIntoDictionary2() {
+        TiLegs legs = new TiLegs();
+        legs.setLegType(TILegType.EMPTY);
+        Parties origin = new Parties();
+        origin.setOrgData(Map.of("full_name", "Origin Name"));
+        Parties destination = new Parties();
+        destination.setOrgData(Map.of("full_name", "Destination Name"));
+
+        TILegsModel legsModel = new TILegsModel();
+        when(modelMapper.map(any(TiLegs.class), eq(TILegsModel.class))).thenReturn(legsModel);
+
+        Map<String, Object> legsDictionary = new HashMap<>();
+
+        transportInstructionReportHelper.addTransportInstructionLegsDataIntoDictionary(legs, legsDictionary, null);
+
+        assertEquals(true, legsDictionary.get(ReportConstants.HAS_LEGS));
+        assertSame(legsModel, legsDictionary.get(ReportConstants.TI_LEGS));
+    }
+
+    @Test
     void testAddTransportInstructionLegsTruckDriverDataIntoDictionary_WhenListNotEmpty() {
         TiLegs legs = new TiLegs();
         TiTruckDriverDetails details = new TiTruckDriverDetails();

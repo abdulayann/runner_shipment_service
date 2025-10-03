@@ -2246,6 +2246,86 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs2()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1L));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123L);
+        tiLegs.setOrigin(Parties.builder().build());
+        tiLegs.setDestination(Parties.builder().build());
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs3()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1L));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123L);
+        tiLegs.setOrigin(Parties.builder().orgId("1").build());
+        tiLegs.setDestination(Parties.builder().orgId("1").build());
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
     void getShipPicupOrderAirDocumentData()
             throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();

@@ -304,6 +304,36 @@ class TransportOrderReportTest extends CommonMocks {
     }
 
     @Test
+    void populateDictionary2() {
+        TransportOrderModel transportOrderModel = new TransportOrderModel();
+        populateModel(transportOrderModel);
+        mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        shipmentModel.setPickupDetails(null);
+        shipmentModel.setDeliveryDetails(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
+    }
+
+    @Test
+    void populateDictionary3() {
+        TransportOrderModel transportOrderModel = new TransportOrderModel();
+        populateModel(transportOrderModel);
+        mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        shipmentModel.getPickupDetails().setSourceDetail(null);
+        shipmentModel.getDeliveryDetails().setDestinationDetail(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
+    }
+
+    @Test
     void populateDictionaryWithTransportTypeOther() {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         populateModel(transportOrderModel);
