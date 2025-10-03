@@ -1,0 +1,100 @@
+-- Shipment ID : (107912)
+-- Update Parties
+update
+    parties
+    set
+        org_code = 'FRC00033707',
+        address_code = 'FRO00035062',
+        org_id = '150503',
+        address_id = '247845',
+        updated_at = NOW(),
+        org_data = '{
+                "Id": 150503,
+                "City": "Meggen",
+                "Guid": "65d95ee7-d1e7-4572-b89a-12c19fadb4a1",
+                "Email": "fmurati@rapibag.com",
+                "IsGSA": false,
+                "Phone": "765202800",
+                "State": "Lucerne",
+                "label": "RapiBag AG",
+                "value": "FRC00033707",
+                "Broker": false,
+                "Source": "CRP",
+                "Carrier": false,
+                "Country": "CHE",
+                "Address1": "Gotthardstrasse 53",
+                "FullName": "RapiBag AG",
+                "IsActive": 1,
+                "Payables": false,
+                "Services": false,
+                "TenantId": 442,
+                "CompanyId": 372,
+                "Consignee": true,
+                "Consigner": true,
+                "IsParnter": false,
+                "PANNumber": "CHE406231959",
+                "TaxVendor": false,
+                "WareHouse": false,
+                "AirCarrier": false,
+                "ExtraParam": "",
+                "InsertDate": "2025-05-05T20:12:47.000",
+                "SeaCarrier": false,
+                "UpdateDate": "2025-05-07T02:01:02.000",
+                "IsSuspended": false,
+                "RailCarrier": false,
+                "Receivables": true,
+                "RoadCarrier": false,
+                "ZipPostCode": "6045",
+                "ActiveClient": true,
+                "CurrencyCode": "CHF",
+                "EmailInvoice": false,
+                "InsertUserId": 1712,
+                "UpdateUserId": 1712,
+                "VatRegNumber": "CHE406231959",
+                "ForworderAgent": false,
+                "IsCreditEnabled": false,
+                "IsV2PaymentTerm": false,
+                "TransportClient": false,
+                "IsWalkInCustomer": false,
+                "OrganizationCode": "FRC00033707",
+                "EnableBulkInvoice": false,
+                "CustomerIdentifier": "1867523_001",
+                "ReceivableTermsDate": 2,
+                "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                "IsClientEInvoiceEnabled": false,
+                "ImportExportClearanceLock": false,
+                "FusionCreditlimitOverrideApproved": false
+                    }',
+    address_data = '{
+                "Id": 247845,
+                "City": "Meggen",
+                "Email": "fmurati@rapibag.com",
+                "State": "Lucerne",
+                "label": "FRO00035062",
+                "value": "FRO00035062",
+                "Country": "CHE",
+                "OrgGuid": "65d95ee7-d1e7-4572-b89a-12c19fadb4a1",
+                "Address1": "Gotthardstrasse 53",
+                "OrgSource": "CRP",
+                "AddressType": 2,
+                "CompanyName": "RapiBag AG",
+                "OrgFullName": "RapiBag AG",
+                "OrgPayables": false,
+                "ZipPostCode": "6045",
+                "TaxRegNumber": "CHE406231959",
+                "OrgReceivables": true,
+                "OrgActiveClient": true,
+                "AddressShortCode": "FRO00035062",
+                "OrgOrganizationCode": "FRC00033707"
+                    }'
+    where
+        id = 785584 and tenant_id = 685;
+-- Update Shipments
+UPDATE shipment_details
+    SET
+        client_dps_address_id = 247845,
+        updated_at = NOW()
+    WHERE
+        id = 107912
+        AND tenant_id = 685;
