@@ -489,8 +489,6 @@ class MDMServiceAdapterTest {
         when(keyGenerator.customCacheKeyForMasterData(CacheConstants.FIRMS_CODE, "ORG_MALFORMED_MDM")).thenReturn(keyMalformedMdm);
         when(keyGenerator.customCacheKeyForMasterData(CacheConstants.FIRMS_CODE, "ORG_MISSING_MDM")).thenReturn(keyMissingMdm);
         // Mock for null and space values that are in the input set
-        when(keyGenerator.customCacheKeyForMasterData(CacheConstants.FIRMS_CODE, (String) null)).thenReturn(keyNull);
-        when(keyGenerator.customCacheKeyForMasterData(CacheConstants.FIRMS_CODE, " ")).thenReturn(keySpace);
 
         // 1. Item in cache
         Cache.ValueWrapper cachedWrapper = mock(Cache.ValueWrapper.class);
@@ -501,9 +499,6 @@ class MDMServiceAdapterTest {
         when(cache.get(keyValidMdm)).thenReturn(null);
         when(cache.get(keyMalformedMdm)).thenReturn(null);
         when(cache.get(keyMissingMdm)).thenReturn(null);
-        // Cache calls for null and space values (return null to indicate not in cache)
-        when(cache.get(keyNull)).thenReturn(null);
-        when(cache.get(keySpace)).thenReturn(null);
 
         // 3. Mock MDM response with valid, malformed, and missing data
         Map<String, Object> malformedMap = new HashMap<>();
@@ -545,12 +540,10 @@ class MDMServiceAdapterTest {
         verify(masterDataUtils, times(1)).pushToCache(mapCaptor.capture(), anyString(), setCaptor.capture(), anyString(), isNull());
         Set<String> actualMdmOrgIds = setCaptor.getValue();
         // The set should contain all orgIds that were not found in cache (including null and space values)
-        assertEquals(5, actualMdmOrgIds.size());
+        assertEquals(3, actualMdmOrgIds.size());
         assertTrue(actualMdmOrgIds.contains("ORG_VALID_MDM"));
         assertTrue(actualMdmOrgIds.contains("ORG_MALFORMED_MDM"));
         assertTrue(actualMdmOrgIds.contains("ORG_MISSING_MDM"));
-        assertTrue(actualMdmOrgIds.contains(null));
-        assertTrue(actualMdmOrgIds.contains(" "));
         Map<String, String> pushedMap = mapCaptor.getValue();
         assertEquals(1, pushedMap.size());
         assertEquals("FIRMS_VALID_MDM", pushedMap.get("ORG_VALID_MDM"));

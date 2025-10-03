@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -243,6 +244,9 @@ class ReportServiceTest extends CommonMocks {
     private ITransportInstructionLegsService transportInstructionLegsService;
     @Mock
     private TransportInstructionReportHelper transportInstructionReport;
+
+    @Mock
+    private MDMServiceAdapter mdmServiceAdapter;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 

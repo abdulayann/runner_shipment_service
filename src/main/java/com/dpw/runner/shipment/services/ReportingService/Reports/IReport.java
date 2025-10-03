@@ -5677,7 +5677,7 @@ public abstract class IReport {
             return;
         }
 
-        List <PickupDeliveryDetails> shipmentTransportInstruction = shipmentDetails.getPickupDeliveryDetailsInstructions();
+        List <PickupDeliveryDetails> shipmentTransportInstruction = shipmentDetails==null? new ArrayList<>(): shipmentDetails.getPickupDeliveryDetailsInstructions();
         if (shipmentTransportInstruction == null) {
             shipmentTransportInstruction = new ArrayList<>();
         }
