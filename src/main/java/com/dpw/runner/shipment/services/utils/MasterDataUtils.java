@@ -2409,19 +2409,19 @@ public class MasterDataUtils{
                 String orgCode = entry.getKey().split("#")[0];
                 Map<String, Object> orgDetails = organizationMap.get(orgCode);
                 if (orgDetails != null && !orgDetails.isEmpty()) {
-                    if (entry.getValue() == null) {
-                        log.error("Address with Code: {} has been deactivated, please check with support team", orgCode);
-                        throw new IllegalArgumentException("Address with Code: " + orgCode + " has been deactivated, please check with support team");
-                    }
                     organizationAddressMap.computeIfAbsent(orgCode, k -> orgDetails)
-                            .compute(Constants.ORG_ADDRESS, (k, v) -> mergeAddresses(v, entry.getValue()));
+                            .compute(Constants.ORG_ADDRESS, (k, v) -> mergeAddresses(v, entry.getValue(), orgCode));
                 }
             }
         }
         pushToCache(organizationAddressMap, customCacheKey, partiesOrgIdsToFetch, new HashMap<>(), null);
     }
 
-    private Object mergeAddresses(Object existingAddresses, Map<String, Object> newAddress) {
+    private Object mergeAddresses(Object existingAddresses, Map<String, Object> newAddress, String orgCode) {
+        if (newAddress == null) {
+            log.error("Address with Code: {} has been deactivated, please check with support team", orgCode);
+            throw new IllegalArgumentException("Address with Code: " + orgCode + " has been deactivated, please check with support team");
+        }
         List<Map<String, Object>> addressList = existingAddresses instanceof List<?>
                 ? new ArrayList<>((List<Map<String, Object>>) existingAddresses)
                 : new ArrayList<>();
