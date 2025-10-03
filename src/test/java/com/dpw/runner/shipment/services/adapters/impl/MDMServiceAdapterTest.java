@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -627,5 +628,59 @@ class MDMServiceAdapterTest {
 
         // Verify that pushToCache was never called since cache is unavailable
         verify(masterDataUtils, never()).pushToCache(any(), any(), any(), any(), any());
+    }
+    @Test
+    void testGetContainerTypes_Success() throws RunnerException {
+        // Arrange
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(List.of(Map.of("code", "20GP", "description", "20ft General Purpose")));
+        ResponseEntity<DependentServiceResponse> responseEntity = ResponseEntity.ok(mockResponse);
+
+        when(jsonHelper.convertToJson(any(MdmListCriteriaRequest.class))).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), eq(DependentServiceResponse.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        DependentServiceResponse result = mdmServiceAdapter.getContainerTypes();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+        verify(restTemplate, times(1)).postForEntity(anyString(), any(), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void testGetContainerTypes_Success_WhenBodyIsNull() throws RunnerException {
+        // Arrange
+        ResponseEntity<DependentServiceResponse> responseEntity = ResponseEntity.ok(null);
+
+        when(jsonHelper.convertToJson(any(MdmListCriteriaRequest.class))).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), eq(DependentServiceResponse.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        DependentServiceResponse result = mdmServiceAdapter.getContainerTypes();
+
+        // Assert
+        assertNotNull(result);
+        assertNull(result.getData()); // A new empty response should be returned
+        verify(restTemplate, times(1)).postForEntity(anyString(), any(), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void testGetContainerTypes_Failure_ThrowsRunnerException() {
+        // Arrange
+        String errorMessage = "MDM service is down";
+        when(jsonHelper.convertToJson(any(MdmListCriteriaRequest.class))).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), eq(DependentServiceResponse.class)))
+                .thenThrow(new RuntimeException(errorMessage));
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            mdmServiceAdapter.getContainerTypes();
+        });
+
+        assertTrue(exception.getMessage().contains("Error while fetching container type list"));
+        assertTrue(exception.getMessage().contains(errorMessage));
     }
 }
