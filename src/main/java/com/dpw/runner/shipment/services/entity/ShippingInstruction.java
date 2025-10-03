@@ -95,6 +95,17 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "non_nego_un_freight_copies")
     private Integer nonNegoUnFreightCopies;
+    @Column(name = "internal_emails", columnDefinition = "TEXT")
+    private String internalEmails;
+
+    @Column(name = "external_emails", columnDefinition = "TEXT")
+    private String externalEmails;
+
+    @Column(name = "created_by_user_email")
+    private String createByUserEmail;
+
+    @Column(name = "submit_by_user_email")
+    private String submitByUserEmail;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contract_id", referencedColumnName = "id")
