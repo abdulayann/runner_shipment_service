@@ -370,7 +370,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private String getVgmStatus(ShippingInstruction instruction) {
-        VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getId());
+        VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getEntityId());
         return vgmEntity.getStatus().name();
     }
 
