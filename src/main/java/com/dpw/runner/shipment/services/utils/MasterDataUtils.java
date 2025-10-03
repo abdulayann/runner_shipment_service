@@ -87,16 +87,7 @@ import org.springframework.stereotype.Component;
 import javax.persistence.CollectionTable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -2410,19 +2401,24 @@ public class MasterDataUtils{
                 Map<String, Object> orgDetails = organizationMap.get(orgCode);
                 if (orgDetails != null && !orgDetails.isEmpty()) {
                     organizationAddressMap.computeIfAbsent(orgCode, k -> orgDetails)
-                            .compute(Constants.ORG_ADDRESS, (k, v) -> mergeAddresses(v, entry.getValue()));
+                            .compute(Constants.ORG_ADDRESS, (k, v) -> mergeAddresses(v, entry.getValue(), orgCode));
                 }
             }
         }
         pushToCache(organizationAddressMap, customCacheKey, partiesOrgIdsToFetch, new HashMap<>(), null);
     }
 
-    private Object mergeAddresses(Object existingAddresses, Map<String, Object> newAddress) {
+    private Object mergeAddresses(Object existingAddresses, Map<String, Object> newAddress, String orgCode) {
         List<Map<String, Object>> addressList = existingAddresses instanceof List<?>
                 ? new ArrayList<>((List<Map<String, Object>>) existingAddresses)
                 : new ArrayList<>();
-        if (addressList.stream().filter(Objects::nonNull).noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
-            addressList.add(newAddress);
+        if (newAddress != null) {
+            if (addressList.stream().filter(Objects::nonNull).noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
+                addressList.add(newAddress);
+            }
+        }
+        else{
+            log.error("Address with Code: {} has been deactivated, please check with support team", orgCode);
         }
         return addressList;
     }
