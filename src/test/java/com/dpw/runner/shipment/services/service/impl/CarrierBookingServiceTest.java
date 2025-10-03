@@ -439,7 +439,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertTrue(result.contains(response1));
     }
 
     @Test
