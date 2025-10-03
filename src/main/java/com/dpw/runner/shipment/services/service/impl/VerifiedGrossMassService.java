@@ -48,7 +48,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.VerifiedGrossMassMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Error;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.ICommonContainersRepository;
@@ -139,8 +138,13 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         verifiedGrossMass.setCreateByUserEmail(UserContext.getUser().getEmail());
         verifiedGrossMass.setSubmitByUserEmail(UserContext.getUser().getEmail());
+        verifiedGrossMass.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getInternalEmailsList()));
+        verifiedGrossMass.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getExternalEmailsList()));
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
-        return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+        VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+        verifiedGrossMassResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getInternalEmails()));
+        verifiedGrossMassResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getExternalEmails()));
+        return verifiedGrossMassResponse;
     }
 
     @Override
@@ -151,6 +155,10 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
         VerifiedGrossMass verifiedGrossMassEntity = verifiedGrossMass.get();
         VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(verifiedGrossMassEntity, VerifiedGrossMassResponse.class);
+        verifiedGrossMassResponse.setInternalEmailsList(
+                carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMassEntity.getInternalEmails()));
+        verifiedGrossMassResponse.setExternalEmailsList(
+                carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMassEntity.getExternalEmails()));
         if (EntityType.CARRIER_BOOKING.equals(verifiedGrossMassEntity.getEntityType())) {
             CarrierBookingInfoProjection carrierBookingInfo = carrierBookingDao.findCarrierBookingInfoById(verifiedGrossMassEntity.getEntityId());
             if (Objects.nonNull(carrierBookingInfo)) {
@@ -213,6 +221,10 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
         for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
             VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
+            verifiedGrossMassListResponse.setInternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getInternalEmails()));
+            verifiedGrossMassListResponse.setExternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getExternalEmails()));
             verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
         }
         List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
@@ -264,8 +276,14 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
         verifiedGrossMass.setStatus(verifiedGrossMassEntity.getStatus());
         verifiedGrossMass.getSailingInformation().setCarrier(verifiedGrossMassEntity.getSailingInformation().getCarrier());
+        //Set Internal And External Emails
+        verifiedGrossMass.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getInternalEmailsList()));
+        verifiedGrossMass.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getExternalEmailsList()));
         VerifiedGrossMass savedEntity = verifiedGrossMassDao.save(verifiedGrossMass);
-        return jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+        VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(savedEntity, VerifiedGrossMassResponse.class);
+        verifiedGrossMassResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getInternalEmails()));
+        verifiedGrossMassResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getExternalEmails()));
+        return verifiedGrossMassResponse;
     }
 
     private static void updateReadOnlyDataToEntity(VerifiedGrossMassRequest request, Object entity, VerifiedGrossMass verifiedGrossMass) {
@@ -316,6 +334,9 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(VerifiedGrossMass.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
             includeColumns.addAll(VerifiedGrossMassConstants.LIST_INCLUDE_COLUMNS);
             VerifiedGrossMassResponse verifiedGrossMassResponse = (VerifiedGrossMassResponse) commonUtils.setIncludedFieldsToResponse(verifiedGrossMass, new HashSet<>(includeColumns), new VerifiedGrossMassResponse());
+
+            verifiedGrossMassResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getInternalEmails()));
+            verifiedGrossMassResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(verifiedGrossMass.getExternalEmails()));
             log.info("Total time taken in setting verified gross mass details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(verifiedGrossMassResponse);
             return ResponseHelper.buildSuccessResponse(response);
@@ -475,9 +496,11 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         }
         // Pre-populate Internal and External emails from Carrier Booking if VGM is not standalone
         // Internal Emails
-        verifiedGrossMassResponse.setInternalEmails(carrierBooking.getInternalEmails());
+        verifiedGrossMassResponse.setInternalEmailsList(
+                carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
         // External Emails
-        verifiedGrossMassResponse.setExternalEmails(carrierBooking.getExternalEmails());
+        verifiedGrossMassResponse.setExternalEmailsList(
+                carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
     }
 
     private static CommonContainerResponse getCommonContainerResponse(Containers containers) {
@@ -654,6 +677,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                         FlowType.Outbound, generateErrorMessage(errors), SourceSystem.INTTRA,
                         verifiedGrossMass.getId(), EntityTypeTransactionHistory.VGM);
                 commonContainersRepository.save(container);
+                sendNotification(verifiedGrossMass);
                 break;
             }
         }

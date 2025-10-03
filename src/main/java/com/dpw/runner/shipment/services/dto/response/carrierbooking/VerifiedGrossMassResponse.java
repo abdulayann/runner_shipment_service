@@ -31,8 +31,8 @@ public class VerifiedGrossMassResponse implements IRunnerResponse {
     private String entityNumber;
     private String carrierBookingNo;
     private String carrierBlNo;
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
     private PartiesResponse requestor;
     private PartiesResponse authorised;
     private PartiesResponse responsible;

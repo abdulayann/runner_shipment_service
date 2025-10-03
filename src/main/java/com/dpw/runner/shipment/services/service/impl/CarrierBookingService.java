@@ -175,6 +175,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
+
+        // Set Internal and External Emails
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
+
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -208,6 +212,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, true), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
+        setInternalExternalEmails(carrierBookingResponse, carrierBookingEntity);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
     }
@@ -222,6 +227,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
         // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
+        setInternalExternalEmails(carrierBookingResponse, carrierBooking);
         mismatchDetection(carrierBooking, carrierBookingResponse);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
@@ -258,6 +264,11 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
             CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
+            carrierBookingListResponse.setInternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+            carrierBookingListResponse.setExternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+
             if (carrierBooking.getShippingInstruction() != null) {
                 carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
             }
@@ -287,6 +298,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
+
+        //Set Internal And External Emails
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
+
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -321,8 +336,20 @@ public class CarrierBookingService implements ICarrierBookingService {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, false), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
+
+        setInternalExternalEmails(carrierBookingResponse, savedEntity);
         log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
+    }
+
+    private void setInternalExternalEmails(CarrierBookingResponse carrierBookingResponse, CarrierBooking carrierBooking) {
+        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+    }
+
+    private void setInternalExternalEmailsInDB(CarrierBooking carrierBookingEntity, CarrierBookingRequest carrierBookingRequest) {
+        carrierBookingEntity.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getInternalEmailsList()));
+        carrierBookingEntity.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getExternalEmailsList()));
     }
 
     @Override
@@ -517,6 +544,8 @@ public class CarrierBookingService implements ICarrierBookingService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(CarrierBooking.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
             includeColumns.addAll(CarrierBookingConstants.LIST_INCLUDE_COLUMNS);
             CarrierBookingResponse carrierBookingResponse = (CarrierBookingResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new CarrierBookingResponse());
+
+            setInternalExternalEmails(carrierBookingResponse, carrierBooking);
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(carrierBookingResponse);
             return ResponseHelper.buildSuccessResponse(response);
@@ -672,6 +701,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
         CarrierBookingCloneResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class);
         carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
+        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
         return carrierBookingResponse;
     }
 

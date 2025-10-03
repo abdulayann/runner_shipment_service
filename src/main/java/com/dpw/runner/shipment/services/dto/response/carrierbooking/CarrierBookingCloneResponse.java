@@ -23,8 +23,8 @@ public class CarrierBookingCloneResponse implements IRunnerResponse {
     private String serviceType;
     private String bookingOffice;
     private String bookingComment;
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
     private String createByUserEmail;
     private String submitByUserEmail;
     private PartiesResponse requester;

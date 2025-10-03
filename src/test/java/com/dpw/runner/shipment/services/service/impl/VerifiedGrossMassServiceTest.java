@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGross
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -705,9 +706,14 @@ class VerifiedGrossMassServiceTest {
         commonRequestModel.setData(listRequest);
 
         Page<VerifiedGrossMass> page = new PageImpl<>(Arrays.asList(testEntity));
+        VerifiedGrossMassResponse response = new VerifiedGrossMassResponse();
+        response.setInternalEmailsList(new ArrayList<>());
+        response.setExternalEmailsList(new ArrayList<>());
 
         when(verifiedGrossMassDao.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(page);
+        when(jsonHelper.convertValue(any(VerifiedGrossMass.class), eq(VerifiedGrossMassListResponse.class)))
+                .thenReturn(new VerifiedGrossMassListResponse());
 
         // Act
         ResponseEntity<IRunnerResponse> result = verifiedGrossMassService.list(commonRequestModel, false);

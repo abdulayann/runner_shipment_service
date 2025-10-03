@@ -47,8 +47,8 @@ public class CarrierBookingRequest implements Serializable {
     private String bookingComment;
     @Size(max = 10000, message = "Carrier Comment cannot exceed 10,000 characters")
     private String carrierComment;
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
     @NotNull(message = "Requester can not be null")
     private PartiesRequest requester;
     @NotNull(message = "Shipper can not be null")
