@@ -177,8 +177,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
 
         // Set Internal and External Emails
-        carrierBookingEntity.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getInternalEmailsList()));
-        carrierBookingEntity.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getExternalEmailsList()));
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
 
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
@@ -213,8 +212,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, true), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
-        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBookingEntity.getInternalEmails()));
-        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBookingEntity.getExternalEmails()));
+        setInternalExternalEmails(carrierBookingResponse, carrierBookingEntity);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
     }
@@ -229,10 +227,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
         // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
-        carrierBookingResponse.setInternalEmailsList(
-                carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
-        carrierBookingResponse.setExternalEmailsList(
-                carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+        setInternalExternalEmails(carrierBookingResponse, carrierBooking);
         mismatchDetection(carrierBooking, carrierBookingResponse);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
@@ -305,8 +300,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
 
         //Set Internal And External Emails
-        carrierBookingEntity.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getInternalEmailsList()));
-        carrierBookingEntity.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getExternalEmailsList()));
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
 
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
@@ -343,10 +337,19 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
 
-        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(savedEntity.getInternalEmails()));
-        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(savedEntity.getExternalEmails()));
+        setInternalExternalEmails(carrierBookingResponse, savedEntity);
         log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
+    }
+
+    private void setInternalExternalEmails(CarrierBookingResponse carrierBookingResponse, CarrierBooking carrierBooking) {
+        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+    }
+
+    private void setInternalExternalEmailsInDB(CarrierBooking carrierBookingEntity, CarrierBookingRequest carrierBookingRequest) {
+        carrierBookingEntity.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getInternalEmailsList()));
+        carrierBookingEntity.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getExternalEmailsList()));
     }
 
     @Override
@@ -542,8 +545,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             includeColumns.addAll(CarrierBookingConstants.LIST_INCLUDE_COLUMNS);
             CarrierBookingResponse carrierBookingResponse = (CarrierBookingResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new CarrierBookingResponse());
 
-            carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
-            carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+            setInternalExternalEmails(carrierBookingResponse, carrierBooking);
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(carrierBookingResponse);
             return ResponseHelper.buildSuccessResponse(response);

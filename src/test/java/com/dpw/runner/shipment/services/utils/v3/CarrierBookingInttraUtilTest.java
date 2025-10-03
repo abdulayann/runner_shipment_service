@@ -31,6 +31,9 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 
 import java.util.ArrayList;
@@ -81,32 +84,13 @@ class CarrierBookingInttraUtilTest {
 
     // === parseEmailStringToList Tests ===
 
-    @Test
-    void parseEmailStringToList_whenNull_shouldReturnEmptyList() {
-        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(null);
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   ", " , , , "})
+    void parseEmailStringToList_shouldReturnEmptyListForInvalidInputs(String input) {
+        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(input);
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void parseEmailStringToList_whenEmptyString_shouldReturnEmptyList() {
-        List<String> result = carrierBookingInttraUtil.parseEmailStringToList("");
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void parseEmailStringToList_whenOnlySpaces_shouldReturnEmptyList() {
-        List<String> result = carrierBookingInttraUtil.parseEmailStringToList("   ");
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void parseEmailStringToList_whenOnlyCommasAndSpaces_shouldReturnEmptyList() {
-        List<String> result = carrierBookingInttraUtil.parseEmailStringToList(" , , , ");
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertTrue(result.isEmpty(), "Expected empty list for input: \"" + input + "\"");
     }
 
     @Test

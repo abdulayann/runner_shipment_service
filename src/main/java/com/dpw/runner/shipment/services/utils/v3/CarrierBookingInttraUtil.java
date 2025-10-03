@@ -253,8 +253,7 @@ public class CarrierBookingInttraUtil {
     }
 
     public String parseEmailListToString(List<String> emails) {
-        String ans = Objects.isNull(emails) ? "" : String.join(",", emails);
-        return ans;
+        return Objects.isNull(emails) ? "" : String.join(",", emails);
     }
 
 }
