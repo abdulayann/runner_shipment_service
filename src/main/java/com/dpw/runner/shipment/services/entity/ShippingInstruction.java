@@ -95,6 +95,7 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "non_nego_un_freight_copies")
     private Integer nonNegoUnFreightCopies;
+
     @Column(name = "internal_emails", columnDefinition = "TEXT")
     private String internalEmails;
 

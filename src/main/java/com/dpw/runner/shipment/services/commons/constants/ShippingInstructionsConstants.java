@@ -44,6 +44,7 @@ public class ShippingInstructionsConstants {
     public static final String REJECTED = "Rejected";
     public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
     public static final String PROCESSED = "Processed";
+    public static final String SHIPPING_INSTRUCTION_EMAIL_TEMPLATE = "SHIPPING_INSTRUCTION";
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
