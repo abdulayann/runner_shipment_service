@@ -2397,6 +2397,324 @@ public class EntityTransferService implements IEntityTransferService {
         return Collections.emptyList();
     }
 
+
+    /**
+     * A private record to hold all the data fetched for AR validation,
+     * avoiding the need to pass multiple maps and lists as parameters.
+     */
+    private record ArValidationDataContext(
+            List<ShipmentDetails> initialShipments,
+            Map<UUID, ConsolidationDetails> historicalConsolidations,
+            Map<UUID, ShipmentDetails> originShipments,
+            Map<UUID, ConsolidationDetails> originConsolidations,
+            Map<UUID, List<ShipmentDetails>> destinationShipmentsBySourceGuid,
+            Map<String, UnlocationsResponse> locations
+    ) {}
+
+    @Override
+    public ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException {
+        PostArValidationRequest request = (PostArValidationRequest) commonRequestModel.getData();
+        if (CollectionUtils.isEmpty(request.getShipmentGuids())) {
+            log.error("Guids are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("GUID can't be null. Please provide any one !");
+        }
+
+        // 1. Fetch all necessary data in one go
+        ArValidationDataContext context = fetchAllDataForArValidation(request);
+
+        // 2. Process each initial shipment to build its response
+        List<IRunnerResponse> responseList = context.initialShipments().stream()
+                .map(shipment -> buildSingleArValidationResponse(shipment, context))
+                .collect(Collectors.toList());
+
+        return ResponseHelper.buildListSuccessResponse(responseList);
+    }
+
+    /**
+     * Orchestrates all data fetching required for the AR validation process.
+     *
+     * @param request The original request containing GUIDs and a timestamp.
+     * @return An ArValidationDataContext object populated with all necessary entities.
+     */
+    private ArValidationDataContext fetchAllDataForArValidation(PostArValidationRequest request) throws RunnerException {
+        Set<UUID> requestGuids = new HashSet<>(request.getShipmentGuids());
+        LocalDateTime timestamp = request.getTimestamp();
+
+        // Fetch initial entities from historical logs
+        List<ShipmentDetails> initialShipments = findShipmentsFromLogsHistory(requestGuids.stream().toList(), timestamp);
+        Set<UUID> consoleGuids = getConsoleGuids(initialShipments);
+        Map<UUID, ConsolidationDetails> historicalConsolidations = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), timestamp)
+                .stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+
+        // Discover all related GUIDs needed for a complete picture
+        Set<UUID> parentShipmentGuids = new HashSet<>();
+        Set<UUID> allShipmentGuidsForDestLookup = new HashSet<>();
+        Set<String> locationRefGuids = new HashSet<>();
+        discoverRelatedGuids(initialShipments, historicalConsolidations, parentShipmentGuids, allShipmentGuidsForDestLookup, locationRefGuids);
+
+        // Fetch origin (source) entities
+        List<ShipmentDetails> originShipmentList = findShipmentsFromLogsHistory(parentShipmentGuids.stream().toList(), timestamp);
+        Map<UUID, ShipmentDetails> originShipments = originShipmentList.stream()
+                .collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
+
+        Set<UUID> originConsoleGuids = getConsoleGuids(originShipmentList);
+        Map<UUID, ConsolidationDetails> originConsolidations = findConsolidationFromLogsHistory(originConsoleGuids.stream().toList(), timestamp)
+                .stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+
+        // Fetch destination (transferred) entities
+        List<ShipmentDetails> destinationShipmentList = shipmentDao.findShipmentsByParentGuids(allShipmentGuidsForDestLookup);
+        List<ShipmentDetails> historicalDestinationShipments = findShipmentsFromLogsHistory(
+                destinationShipmentList.stream().map(ShipmentDetails::getGuid).toList(), timestamp);
+
+        for (ShipmentDetails historicalShipment : historicalDestinationShipments) {
+            if (historicalShipment.getParentGuid() == null) {
+                // Find matching shipment in destinationShipmentList
+                for (ShipmentDetails destShipment : destinationShipmentList) {
+                    if (destShipment.getGuid().equals(historicalShipment.getGuid())) {
+                        historicalShipment.setParentGuid(destShipment.getParentGuid());
+                        break;
+                    }
+                }
+            }
+        }
+
+        Map<UUID, List<ShipmentDetails>> destinationShipmentsBySourceGuid = historicalDestinationShipments.stream()
+                .collect(Collectors.groupingBy(ShipmentDetails::getParentGuid));
+
+        // Fetch master data
+        Map<String, UnlocationsResponse> locations = masterDataUtils.getLocationData(locationRefGuids);
+
+        return new ArValidationDataContext(initialShipments, historicalConsolidations, originShipments, originConsolidations, destinationShipmentsBySourceGuid, locations);
+    }
+
+    /**
+     * Analyzes initial shipments to find all related entity GUIDs that need to be fetched.
+     */
+    private void discoverRelatedGuids(List<ShipmentDetails> shipments, Map<UUID, ConsolidationDetails> consolidationsMap, Set<UUID> parentShipmentGuids, Set<UUID> allShipmentGuidsForDestLookup, Set<String> locationRefGuids) {
+        for (ShipmentDetails shipment : shipments) {
+            UUID parentGuid = shipment.getParentGuid()!=null? shipment.getParentGuid(): shipment.getSourceGuid();
+            parentShipmentGuids.add(parentGuid);
+            allShipmentGuidsForDestLookup.add(parentGuid); // Always look up destinations for the source
+
+            boolean isOrigin = shipment.getParentGuid()==null && Objects.equals(shipment.getSourceGuid(), shipment.getGuid());
+            if (isOrigin && !CollectionUtils.isEmpty(shipment.getConsolidationList())) {
+                UUID consoleGuid = shipment.getConsolidationList().iterator().next().getGuid();
+                ConsolidationDetails console = consolidationsMap.get(consoleGuid);
+                if (console != null) {
+                    if (console.getReceivingBranch() == null && Constants.DIRECTION_EXP.equals(shipment.getDirection())) {
+                        Optional.ofNullable(shipment.getCarrierDetails().getDestination()).ifPresent(locationRefGuids::add);
+                    }
+                    if (console.getReceivingBranch() != null && !shipment.getTenantId().equals(console.getReceivingBranch().intValue())) {
+                        allShipmentGuidsForDestLookup.add(shipment.getGuid());
+                    }
+                    if (shouldAddShipmentToGuidList(console.getTriangulationPartnerList(), console.getTriangulationPartner(), console.getReceivingBranch(), shipment)) {
+                        allShipmentGuidsForDestLookup.add(shipment.getGuid());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Builds a complete ArValidationResponse for a single shipment using the pre-fetched data context.
+     *
+     * @param shipment The shipment to process.
+     * @param context  The context containing all related data.
+     * @return A populated ArValidationResponse.
+     */
+    private ArValidationResponse buildSingleArValidationResponse(ShipmentDetails shipment, ArValidationDataContext context) {
+        ArValidationResponse response = new ArValidationResponse();
+        response.setShipmentGuid(shipment.getGuid());
+        response.setConsolidationType(shipment.getJobType());
+        response.setSourceBranch(shipment.getTenantId());
+
+        ShipmentDetails originShipment = context.originShipments().get(shipment.getSourceGuid());
+        if (originShipment == null) {
+            return response; // Cannot proceed without the origin shipment
+        }
+
+        ConsolidationDetails originConsole = null;
+        if (!CollectionUtils.isEmpty(originShipment.getConsolidationList())) {
+            UUID originConsoleGuid = originShipment.getConsolidationList().iterator().next().getGuid();
+            originConsole = context.originConsolidations().get(originConsoleGuid);
+        }
+
+        // Determine the definitive partners from the origin entities
+        Long receivingAgent = (originConsole != null) ? originConsole.getReceivingBranch() : originShipment.getReceivingBranch();
+        Long triangulationPartner = (originConsole != null) ? originConsole.getTriangulationPartner() : originShipment.getTriangulationPartner();
+        List<TriangulationPartner> triangulationPartnerList;
+        if(originConsole != null){
+            triangulationPartnerList = originConsole.getTriangulationPartnerList();
+            List<ConsolidationDetails> destConsolidationList = consolidationDetailsDao.findByParentGuid(originConsole.getGuid());
+            if(destConsolidationList!=null && !destConsolidationList.isEmpty()){
+                for(ConsolidationDetails destConsole : destConsolidationList){
+                    if(destConsole.getTriangulationPartnerList()!=null && !destConsole.getTriangulationPartnerList().isEmpty()){
+                        triangulationPartnerList.addAll(destConsole.getTriangulationPartnerList());
+                    }
+                }
+            }
+        }else{
+            triangulationPartnerList = originShipment.getTriangulationPartnerList();
+        }
+
+        // Populate response with data from the definitive source entities
+        populateResponseFromOrigin(response, originShipment, receivingAgent, triangulationPartner, context.locations());
+
+        // Find which partners have already accepted the transfer
+        List<ShipmentDetails> destinationShipments = context.destinationShipmentsBySourceGuid().getOrDefault(originShipment.getGuid(), Collections.emptyList());
+        populateAcceptedPartners(response, destinationShipments, shipment, receivingAgent, triangulationPartner, triangulationPartnerList);
+
+        // For partners who haven't accepted, check if the transfer is pending
+        populateNonAcceptedShipmentStatus(response, originShipment, originConsole, receivingAgent, triangulationPartner, triangulationPartnerList);
+
+        return response;
+    }
+
+    /**
+     * Populates the response with basic information from the origin shipment and its partners.
+     */
+    private void populateResponseFromOrigin(ArValidationResponse response, ShipmentDetails originShipment, Long receivingAgent, Long triangulationPartner, Map<String, UnlocationsResponse> locations) {
+        response.setOrigin(originShipment.getTenantId());
+        response.setSalesBranch(originShipment.getSalesBranch());
+        response.setOriginShipment(mapShipmentDataToProfitShare(originShipment));
+        response.setReceivingAgent(receivingAgent);
+        response.setTriangulationPartner(triangulationPartner);
+
+        if (receivingAgent == null && Constants.DIRECTION_EXP.equals(originShipment.getDirection())) {
+            String destination = originShipment.getCarrierDetails().getDestination();
+            if (destination != null && locations.containsKey(destination)) {
+                response.setDestinationCountry(locations.get(destination).getCountry());
+            }
+        }
+    }
+
+    /**
+     * Identifies and populates the response with data from partners who have already accepted the transfer.
+     */
+    private void populateAcceptedPartners(ArValidationResponse response, List<ShipmentDetails> destinationShipments, ShipmentDetails currentShipment, Long receivingAgent, Long triangulationPartner, List<TriangulationPartner> triangulationPartnerList) {
+        Map<Integer, ShipmentDetails> destinationShipmentsByTenant = destinationShipments.stream()
+                .collect(Collectors.toMap(ShipmentDetails::getTenantId, Function.identity(), (a, b) -> a));
+
+        // Ensure the current shipment is included if it's a destination copy
+        if (!Objects.equals(currentShipment.getGuid(), currentShipment.getSourceGuid())) {
+            destinationShipmentsByTenant.putIfAbsent(currentShipment.getTenantId(), currentShipment);
+        }
+
+        if (receivingAgent != null && destinationShipmentsByTenant.containsKey(receivingAgent.intValue())) {
+            response.setTransferToReceivingAgent(true);
+            response.setReceivingShipment(mapShipmentDataToProfitShare(destinationShipmentsByTenant.get(receivingAgent.intValue())));
+        }
+
+        List<Long> allTriangulationPartners = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(triangulationPartnerList)) {
+            allTriangulationPartners.addAll(triangulationPartnerList.stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList());
+        } else if (triangulationPartner != null) {
+            allTriangulationPartners.add(triangulationPartner);
+        }
+
+        List<ArValidationResponse.ProfitShareShipmentData> acceptedTriangulationShipments = new ArrayList<>();
+        for (Long partnerId : allTriangulationPartners) {
+            if (destinationShipmentsByTenant.containsKey(partnerId.intValue())) {
+                acceptedTriangulationShipments.add(mapShipmentDataToProfitShare(destinationShipmentsByTenant.get(partnerId.intValue())));
+            }
+        }
+
+        if (!acceptedTriangulationShipments.isEmpty()) {
+            response.setTransferToTriangulationPartner(true);
+            response.setTriangulationShipmentList(acceptedTriangulationShipments);
+            response.setTriangulationShipment(acceptedTriangulationShipments.get(0));
+        }
+    }
+
+    /**
+     * Checks the transfer status for partners who have not yet accepted the shipment/consolidation
+     * and updates the response accordingly.
+     */
+    private void populateNonAcceptedShipmentStatus(ArValidationResponse response, ShipmentDetails originShipment, ConsolidationDetails originConsole, Long receivingAgent, Long triangulationPartner, List<TriangulationPartner> triangulationPartnerList) {
+        Long entityId;
+        String entityType;
+
+        if (originConsole != null && !Constants.SHIPMENT_TYPE_DRT.equals(originShipment.getJobType())) {
+            entityId = originConsole.getId();
+            entityType = getEntityType(CONSOLIDATION_IMPORT, CONSOLIDATION);
+        } else {
+            entityId = originShipment.getId();
+            entityType = getEntityType(SHIPMENT_IMPORT, SHIPMENT);
+        }
+
+        List<Long> partnersToCheck = new ArrayList<>();
+        if (receivingAgent != null && !Boolean.TRUE.equals(response.getTransferToReceivingAgent())) {
+            partnersToCheck.add(receivingAgent);
+        }
+
+        Set<Integer> acceptedTriangulationTenants = Optional.ofNullable(response.getTriangulationShipmentList()).orElse(Collections.emptyList())
+                .stream().map(ArValidationResponse.ProfitShareShipmentData::getBranchId).collect(Collectors.toSet());
+
+        List<Long> allTriangulationPartners = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(triangulationPartnerList)) {
+            allTriangulationPartners.addAll(triangulationPartnerList.stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList());
+        } else if (triangulationPartner != null) {
+            allTriangulationPartners.add(triangulationPartner);
+        }
+
+        allTriangulationPartners.stream()
+                .filter(partnerId -> !acceptedTriangulationTenants.contains(partnerId.intValue()))
+                .forEach(partnersToCheck::add);
+
+        if (partnersToCheck.isEmpty()) {
+            return;
+        }
+
+        try {
+            Set<Integer> transferredTenantIds = getTransferredTenantIds(entityId, entityType, partnersToCheck);
+
+            if (receivingAgent != null && !Boolean.TRUE.equals(response.getTransferToReceivingAgent())) {
+                TransferStatus status = transferredTenantIds.contains(receivingAgent.intValue()) ? TransferStatus.TRANSFERRED : TransferStatus.NOT_TRANSFERRED;
+                response.setReceivingShipment(mapShipmentDataToProfitShare(status, receivingAgent.intValue()));
+            }
+
+            for (Long partnerId : allTriangulationPartners) {
+                if (!acceptedTriangulationTenants.contains(partnerId.intValue())) {
+                    TransferStatus status = transferredTenantIds.contains(partnerId.intValue()) ? TransferStatus.TRANSFERRED : TransferStatus.NOT_TRANSFERRED;
+                    response.addTriangulationShipmentList(mapShipmentDataToProfitShare(status, partnerId.intValue()));
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to check non-accepted shipment status: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Retrieves the set of tenant IDs to which an entity transfer is pending.
+     */
+    private Set<Integer> getTransferredTenantIds(Long entityId, String entityType, List<Long> partnerList) throws RunnerException {
+        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
+            List<Integer> partnerListInt = partnerList.stream().map(Long::intValue).toList();
+            return retrieveTransferredTenantsFromNte(entityId, entityType, partnerListInt);
+        } else {
+            List<TaskCreateRequest> tasks = retireveTaskFromV1(String.valueOf(entityId), entityType, partnerList);
+            return tasks.stream().map(task -> Integer.parseInt(task.getTenantId())).collect(Collectors.toSet());
+        }
+    }
+
+    /**
+     * Fetches pending transfers from the NetworkTransfer table.
+     */
+    private Set<Integer> retrieveTransferredTenantsFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
+        List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
+        return networkTransfers.stream()
+                .filter(nt -> nt.getStatus() == NetworkTransferStatus.TRANSFERRED)
+                .map(NetworkTransfer::getTenantId)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Determines the correct entity type string based on whether the Network Transfer feature is enabled.
+     */
+    private String getEntityType(String importEntityType, String newEntityType) {
+        return Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) ? newEntityType : importEntityType;
+    }
+
     private boolean shouldAddShipmentToGuidList(List<TriangulationPartner> triangulationPartnerList,
                                                 Long triangulationPartner,
                                                 Long receivingAgent,
@@ -2412,538 +2730,66 @@ public class EntityTransferService implements IEntityTransferService {
                 && !shipmentDetails.getTenantId().equals(triangulationPartner.intValue()));
     }
 
-
-    @Override
-    public ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException {
-        PostArValidationRequest request =  (PostArValidationRequest)commonRequestModel.getData();
-        if(request.getShipmentGuids() == null || request.getShipmentGuids().isEmpty()) {
-            log.error("Guids are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new RunnerException("GUID can't be null. Please provide any one !");
-        }
-        Set<UUID> requestGuids = new HashSet<>(request.getShipmentGuids());
-        List<IRunnerResponse> responseList = new ArrayList<>();
-
-        List<ShipmentDetails> shipmentDetailsList = findShipmentsFromLogsHistory(requestGuids.stream().toList(), request.getTimestamp());
-
-        Map<UUID, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
-        if (!shipmentDetailsList.isEmpty()){
-            Set<UUID> consoleGuids = getConsoleGuids(shipmentDetailsList);
-            if (!CollectionUtils.isEmpty(consoleGuids)) {
-                List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
-                consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
-            }
-
-            Set<UUID> sourceGuids = new HashSet<>();
-            Set<UUID> shipmentGuids = new HashSet<>();
-            Set<String> locationRefGuids = new HashSet<>();
-            for (var shipmentDetails: shipmentDetailsList) {
-                setGuidsWithShipmentDetails(shipmentDetails, sourceGuids, consolidationDetailsMap, locationRefGuids, shipmentGuids);
-            }
-
-            Map<UUID, ShipmentDetails> originShipmentsMap = new HashMap<>();
-            List<ShipmentDetails> originShipments = getOriginShipments(sourceGuids, request);
-
-            Map<UUID, ConsolidationDetails> originConsoleMap = getOriginConsoleMap(originShipments, shipmentGuids, request);
-
-
-            Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = getDestinationShipmentsMap(shipmentGuids, request);
-            if(originShipments != null && !originShipments.isEmpty()){
-                originShipmentsMap = originShipments.stream().collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
-            }
-            Map<String, UnlocationsResponse> unlocationsResponseMap = !locationRefGuids.isEmpty() ? masterDataUtils.getLocationData(locationRefGuids) : new HashMap<>();
-
-            processShipmentDetailsList(shipmentDetailsList, originShipmentsMap, originConsoleMap, destinationShipmentsMap, consolidationDetailsMap, unlocationsResponseMap, responseList);
-
-        }
-        return ResponseHelper.buildListSuccessResponse(responseList);
-    }
-
-    private void processShipmentDetailsList(List<ShipmentDetails> shipmentDetailsList, Map<UUID, ShipmentDetails> originShipmentsMap, Map<UUID, ConsolidationDetails> originConsoleMap, Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, Map<UUID, ConsolidationDetails> consolidationDetailsMap, Map<String, UnlocationsResponse> unlocationsResponseMap, List<IRunnerResponse> responseList) {
-        for (var shipmentDetails: shipmentDetailsList) {
-            ArValidationResponse arValidationResponse = new ArValidationResponse();
-            arValidationResponse.setShipmentGuid(shipmentDetails.getGuid());
-            arValidationResponse.setConsolidationType(shipmentDetails.getJobType());
-            arValidationResponse.setSourceBranch(shipmentDetails.getTenantId());
-            Long receivingBranch = null;
-            List<Long> triangulationList = new ArrayList<>();
-            if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())) {
-                if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
-                    ShipmentDetails originShipment = originShipmentsMap.get(shipmentDetails.getSourceGuid());
-                    processOriginShipmentConsolidationsList(originConsoleMap, destinationShipmentsMap, shipmentDetails, originShipment, arValidationResponse, receivingBranch, triangulationList);
-                }
-            }
-            else if (shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
-                processShipmentConsolidation(destinationShipmentsMap, consolidationDetailsMap, unlocationsResponseMap, shipmentDetails, arValidationResponse, receivingBranch, triangulationList);
-            } else if(Objects.equals(shipmentDetails.getTransportMode(), TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)) {
-                processAirDrtShipment(destinationShipmentsMap, unlocationsResponseMap, shipmentDetails, arValidationResponse, receivingBranch, triangulationList);
-
-            }
-            responseList.add(arValidationResponse);
-        }
-    }
-
-    private void processOriginShipmentConsolidationsList(Map<UUID, ConsolidationDetails> originConsoleMap, Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, Long receivingBranch, List<Long> triangulationList) {
-        Long entityId;
-        String entityType;
-        ConsolidationDetails consolidationDetails = null;
-        if(canProcessConsolidationList(originConsoleMap, originShipment)){
-            if (!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-                consolidationDetails = originConsoleMap.get(originShipment.getConsolidationList().iterator().next().getGuid());
-                entityId = consolidationDetails.getId();
-                entityType = getEntityType(CONSOLIDATION_IMPORT, CONSOLIDATION);
-            } else {
-                entityId = originShipment.getId();
-                entityType = getEntityType(SHIPMENT_IMPORT, SHIPMENT);
-            }
-            var receivingAgent = consolidationDetails != null ? consolidationDetails.getReceivingBranch() : null;
-            processDrtShipmentTypeForEmptyAgent(destinationShipmentsMap, shipmentDetails, originShipment, arValidationResponse, receivingAgent);
-            List<TriangulationPartner> triangulationPartnerList = consolidationDetails != null ? consolidationDetails.getTriangulationPartnerList() : originShipment.getTriangulationPartnerList();
-            var triangulationPartner = consolidationDetails != null ? consolidationDetails.getTriangulationPartner() : shipmentDetails.getTriangulationPartner();
-            ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(originShipment);
-            arValidationResponse.setOrigin(originShipment.getTenantId());
-            arValidationResponse.setSalesBranch(originShipment.getSalesBranch());
-            arValidationResponse.setReceivingAgent(receivingAgent);
-            arValidationResponse.setTriangulationPartner(triangulationPartner);
-            arValidationResponse.setOriginShipment(originShipmentData);
-            if (receivingAgent != null) {
-                receivingBranch = getReceivingBranchFromAgent(destinationShipmentsMap, shipmentDetails, originShipment, arValidationResponse, receivingBranch, receivingAgent);
-            }
-            if (ObjectUtils.isNotEmpty(triangulationPartnerList)) {
-                processTriangulationPartnerList(destinationShipmentsMap, shipmentDetails, originShipment, arValidationResponse, triangulationList, triangulationPartnerList);
-            } else if (isTriangulationPartnerPresent(triangulationPartnerList, triangulationPartner)) {
-                updateTriangulationListWithPartner(destinationShipmentsMap, shipmentDetails, originShipment, arValidationResponse, triangulationList, triangulationPartner);
-            }
-            populateNonAcceptedShipment(receivingBranch, triangulationList, entityId, entityType, arValidationResponse);
-        }
-    }
-
-    private boolean isTriangulationPartnerPresent(List<TriangulationPartner> triangulationPartnerList, Long triangulationPartner) {
-        return triangulationPartnerList == null && triangulationPartner != null;
-    }
-
-    private boolean canProcessConsolidationList(Map<UUID, ConsolidationDetails> originConsoleMap, ShipmentDetails originShipment) {
-        return (originShipment.getConsolidationList() != null && !originShipment.getConsolidationList().isEmpty() &&
-                originConsoleMap.containsKey(originShipment.getConsolidationList().iterator().next().getGuid())) || Objects.equals(originShipment.getJobType(), SHIPMENT_TYPE_DRT);
-    }
-
-    private String getEntityType(String importEntityType, String newEntityType) {
-        String entityType = importEntityType;
-        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
-            entityType = newEntityType;
-        }
-        return entityType;
-    }
-
-    private void processDrtShipmentTypeForEmptyAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, Long receivingAgent) {
-        if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-            Long receivingBranch = shipmentDetails.getReceivingBranch();
-            if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
-                var ships = destinationShipmentsMap.get(originShipment.getGuid());
-                var isShips = ships.stream()
-                        .filter(x -> !x.getTenantId().equals(receivingBranch != null ? receivingBranch.intValue() : 0))
-                        .toList();
-
-                if (!isShips.isEmpty()) {
-                    List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
-                    for(var ship: isShips) {
-                        ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
-                        triangulationShipmentDataList.add(triangulationShipment);
-                    }
-                    arValidationResponse.setTransferToTriangulationPartner(true);
-                    arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
-                    arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
-                }
-            }
-        }
-    }
-
-    private Long getReceivingBranchFromAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, Long receivingBranch, Long receivingAgent) {
-        if (shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
-            ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
-            arValidationResponse.setTransferToReceivingAgent(true);
-            arValidationResponse.setReceivingShipment(receivingShipmentData);
-        } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
-            var ships = destinationShipmentsMap.get(originShipment.getGuid());
-            var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
-            if (isShip.isPresent()) {
-                ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(isShip.get());
-                arValidationResponse.setTransferToReceivingAgent(true);
-                arValidationResponse.setReceivingShipment(receivingShipmentData);
-            } else {
-                receivingBranch = receivingAgent;
-            }
-        } else {
-            receivingBranch = receivingAgent;
-        }
-        return receivingBranch;
-    }
-
-    private void processTriangulationPartnerList(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, List<Long> triangulationList, List<TriangulationPartner> triangulationPartnerList) {
-        if (destinationShipmentsMap.containsKey(originShipment.getGuid()) || triangulationPartnerList.stream()
-                .filter(Objects::nonNull)
-                .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))) {
-            setTriangulationDataInResponse(destinationShipmentsMap, originShipment, triangulationPartnerList, arValidationResponse);
-        }
-        Set<Integer> branchIds = new HashSet<>();
-        if(arValidationResponse.getTriangulationShipmentList() != null) {
-            branchIds = arValidationResponse.getTriangulationShipmentList().stream()
-                    .filter(Objects::nonNull)
-                    .map(ArValidationResponse.ProfitShareShipmentData::getBranchId)
-                    .collect(Collectors.toSet());
-        }
-
-        for(TriangulationPartner triangulation : triangulationPartnerList) {
-            if(!branchIds.contains(triangulation.getTriangulationPartner().intValue())) {
-                triangulationList.add(triangulation.getTriangulationPartner());
-            }
-        }
-    }
-
-    private void updateTriangulationListWithPartner(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, List<Long> triangulationList, Long triangulationPartner) {
-        if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
-            ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
-            arValidationResponse.setTransferToTriangulationPartner(true);
-            arValidationResponse.setTriangulationShipment(triangulationShipmentData);
-            List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
-            triangulationShipmentDataList.add(triangulationShipmentData);
-            arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
-        } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
-            var ships = destinationShipmentsMap.get(originShipment.getGuid());
-            var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
-            if (isShip.isPresent()) {
-                ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(isShip.get());
-                arValidationResponse.setTransferToTriangulationPartner(true);
-                arValidationResponse.setTriangulationShipment(triangulationShipmentData);
-                List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
-                triangulationShipmentDataList.add(triangulationShipmentData);
-                arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
-            } else {
-                triangulationList.add(triangulationPartner);
-            }
-        } else {
-            triangulationList.add(triangulationPartner);
-        }
-    }
-
-    private void setTriangulationDataInResponse(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails originShipment, List<TriangulationPartner> triangulationPartnerList, ArValidationResponse arValidationResponse) {
-        var ships = destinationShipmentsMap.get(originShipment.getGuid());
-        var isShips = ships.stream()
-                .filter(shp -> triangulationPartnerList.stream()
-                        .filter(Objects::nonNull)
-                        .anyMatch(partner -> Objects.equals(partner.getTriangulationPartner(), shp.getTenantId().longValue())))
-                .toList();
-        if (!isShips.isEmpty()) {
-            List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
-            for(var ship: isShips) {
-                ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
-                triangulationShipmentDataList.add(triangulationShipment);
-            }
-            arValidationResponse.setTransferToTriangulationPartner(true);
-            arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
-            arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
-        }
-    }
-
-    private void processShipmentConsolidation(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, Map<UUID, ConsolidationDetails> consolidationDetailsMap, Map<String, UnlocationsResponse> unlocationsResponseMap, ShipmentDetails shipmentDetails, ArValidationResponse arValidationResponse, Long receivingBranch, List<Long> triangulationList) {
-        String entityType;
-        ConsolidationDetails consolidationDetails;
-        Long entityId;
-        if (consolidationDetailsMap.containsKey(shipmentDetails.getConsolidationList().iterator().next().getGuid())) {
-            consolidationDetails = consolidationDetailsMap.get(shipmentDetails.getConsolidationList().iterator().next().getGuid());
-            entityId = consolidationDetails.getId();
-            entityType = getEntityType(CONSOLIDATION_IMPORT, CONSOLIDATION);
-            var receivingAgent = consolidationDetails.getReceivingBranch();
-            var triangulationPartnerList = consolidationDetails.getTriangulationPartnerList();
-            var triangulationPartner = consolidationDetails.getTriangulationPartner();
-            if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
-                var destination = shipmentDetails.getCarrierDetails().getDestination();
-                if (destination != null && unlocationsResponseMap.containsKey(destination)) {
-                    arValidationResponse.setDestinationCountry(unlocationsResponseMap.get(destination).getCountry());
-                }
-            }
-            arValidationResponse.setReceivingAgent(receivingAgent);
-            arValidationResponse.setTriangulationPartner(triangulationPartner);
-            arValidationResponse.setOrigin(shipmentDetails.getTenantId());
-            arValidationResponse.setSalesBranch(shipmentDetails.getSalesBranch());
-            ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
-            arValidationResponse.setOriginShipment(originShipmentData);
-            receivingBranch = getReceivingBranchFromAgent(destinationShipmentsMap, shipmentDetails, receivingAgent, arValidationResponse, receivingBranch);
-            processTriangulationPartnerList(destinationShipmentsMap, shipmentDetails, triangulationPartnerList, receivingAgent, arValidationResponse, triangulationList, triangulationPartner);
-
-            populateNonAcceptedShipment(receivingBranch, triangulationList, entityId, entityType, arValidationResponse);
-        }
-    }
-
-    private void processAirDrtShipment(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, Map<String, UnlocationsResponse> unlocationsResponseMap, ShipmentDetails shipmentDetails, ArValidationResponse arValidationResponse, Long receivingBranch, List<Long> triangulationList) {
-        String entityType;
-        Long entityId;
-        entityId = shipmentDetails.getId();
-        entityType = getEntityType(SHIPMENT_IMPORT, SHIPMENT);
-        var receivingAgent = shipmentDetails.getReceivingBranch();
-        var triangulationPartnerList = shipmentDetails.getTriangulationPartnerList();
-        var triangulationPartner = shipmentDetails.getTriangulationPartner();
-        if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
-            var destination = shipmentDetails.getCarrierDetails().getDestination();
-            if (destination != null && unlocationsResponseMap.containsKey(destination)) {
-                arValidationResponse.setDestinationCountry(unlocationsResponseMap.get(destination).getCountry());
-            }
-        }
-        arValidationResponse.setReceivingAgent(receivingAgent);
-        arValidationResponse.setTriangulationPartner(triangulationPartner);
-        arValidationResponse.setOrigin(shipmentDetails.getTenantId());
-        arValidationResponse.setSalesBranch(shipmentDetails.getSalesBranch());
-        ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
-        arValidationResponse.setOriginShipment(originShipmentData);
-        receivingBranch = getReceivingBranchFromAgent(destinationShipmentsMap, shipmentDetails, receivingAgent, arValidationResponse, receivingBranch);
-        processTriangulationPartnerList(destinationShipmentsMap, shipmentDetails, triangulationPartnerList, receivingAgent, arValidationResponse, triangulationList, triangulationPartner);
-
-        populateNonAcceptedShipment(receivingBranch, triangulationList, entityId, entityType, arValidationResponse);
-    }
-
-    private Long getReceivingBranchFromAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, Long receivingAgent, ArValidationResponse arValidationResponse, Long receivingBranch) {
-        if (receivingAgent != null &&
-                !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
-            var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
-            var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
-            if (isShip.isPresent()) {
-                arValidationResponse.setTransferToReceivingAgent(true);
-                ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(isShip.get());
-                arValidationResponse.setReceivingShipment(receivingShipmentData);
-            } else {
-                receivingBranch = receivingAgent;
-            }
-        } else {
-            receivingBranch = receivingAgent;
-        }
-        return receivingBranch;
-    }
-
-    private void processTriangulationPartnerList(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, List<TriangulationPartner> triangulationPartnerList, Long receivingAgent, ArValidationResponse arValidationResponse, List<Long> triangulationList, Long triangulationPartner) {
-        if (ObjectUtils.isNotEmpty(triangulationPartnerList)) {
-            if (triangulationPartnerList.stream().filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), receivingAgent))) {
-                arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
-                arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
-                arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
-            } else if (triangulationPartnerList.stream()
-                    .filter(Objects::nonNull)
-                    .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))
-                    && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())
-            ) {
-                setTriangulationDataInResponse(destinationShipmentsMap, shipmentDetails, triangulationPartnerList, arValidationResponse);
-            }
-            Set<Integer> branchIds = new HashSet<>();
-            if(arValidationResponse.getTriangulationShipmentList() != null) {
-                branchIds = arValidationResponse.getTriangulationShipmentList().stream()
-                        .filter(Objects::nonNull)
-                        .map(ArValidationResponse.ProfitShareShipmentData::getBranchId)
-                        .collect(Collectors.toSet());
-            }
-
-            for(TriangulationPartner triangulation : triangulationPartnerList) {
-                if(!branchIds.contains(triangulation.getTriangulationPartner().intValue())) {
-                    triangulationList.add(triangulation.getTriangulationPartner());
-                }
-            }
-        } else if (isTriangulationPartnerPresent(triangulationPartnerList, triangulationPartner)) {
-            updateListFromPartner(destinationShipmentsMap, shipmentDetails, receivingAgent, arValidationResponse, triangulationList, triangulationPartner);
-        }
-    }
-
-    private void updateListFromPartner(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, Long receivingAgent, ArValidationResponse arValidationResponse, List<Long> triangulationList, Long triangulationPartner) {
-        if (Objects.equals(triangulationPartner, receivingAgent)) {
-            arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
-            arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
-            arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
-        } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
-            var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
-            var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
-            if (isShip.isPresent()) {
-                arValidationResponse.setTransferToTriangulationPartner(true);
-                ArValidationResponse.ProfitShareShipmentData triangulationData = mapShipmentDataToProfitShare(isShip.get());
-                arValidationResponse.setTriangulationShipment(triangulationData);
-                arValidationResponse.setTriangulationShipmentList(List.of(triangulationData));
-            } else {
-                triangulationList.add(triangulationPartner);
-            }
-        } else {
-            triangulationList.add(triangulationPartner);
-        }
-    }
-
-    private Map<UUID, List<ShipmentDetails>> getDestinationShipmentsMap(Set<UUID> shipmentGuids, PostArValidationRequest request) throws RunnerException {
-        Map<UUID, List<ShipmentDetails>> destinationShipmentsMap = new HashMap<>();
-        List<ShipmentDetails> destinationShip = !shipmentGuids.isEmpty() ? shipmentDao.findShipmentsBySourceGuids(shipmentGuids) : null;
-        Set<UUID> destinationShipmentsGuids = destinationShip != null ? destinationShip.stream().map(ShipmentDetails::getGuid).collect(Collectors.toSet()) : null;
-        List<ShipmentDetails> destinationShipments = destinationShipmentsGuids != null ? findShipmentsFromLogsHistory(destinationShipmentsGuids.stream().toList(), request.getTimestamp()) : null;
-        if(destinationShipments != null && !destinationShipments.isEmpty()){
-            destinationShipmentsMap = destinationShipments.stream().collect(Collectors.groupingBy(ShipmentDetails::getSourceGuid));
-        }
-        return destinationShipmentsMap;
-    }
-
     private LinkedHashSet<UUID> getConsoleGuids(List<ShipmentDetails> shipmentDetailsList) {
-        return shipmentDetailsList.stream().filter(x -> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty())).map(x -> x.getConsolidationList().iterator().next().getGuid()).collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-
-    private Map<UUID, ConsolidationDetails> getOriginConsoleMap(List<ShipmentDetails> originShipments, Set<UUID> shipmentGuids, PostArValidationRequest request) throws RunnerException {
-        Map<UUID, ConsolidationDetails> originConsoleMap = new HashMap<>();
-        if(originShipments != null && !originShipments.isEmpty()) {
-            shipmentGuids.addAll(originShipments.stream().map(ShipmentDetails::getGuid).collect(Collectors.toSet()));
-            Set<UUID> originConsoleGuids = originShipments.stream().filter(x-> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty())).map(x->x.getConsolidationList().iterator().next().getGuid()).collect(Collectors.toSet());
-            List<ConsolidationDetails> originConsolidationDetails = findConsolidationFromLogsHistory(originConsoleGuids.stream().toList(), request.getTimestamp());
-            originConsoleMap = originConsolidationDetails.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
-        }
-        return originConsoleMap;
-    }
-
-    private List<ShipmentDetails> getOriginShipments(Set<UUID> sourceGuids, PostArValidationRequest request) throws RunnerException {
-        return !sourceGuids.isEmpty() ? findShipmentsFromLogsHistory(sourceGuids.stream().toList(), request.getTimestamp()) : null;
-    }
-
-    private void setGuidsWithShipmentDetails(ShipmentDetails shipmentDetails, Set<UUID> sourceGuids, Map<UUID, ConsolidationDetails> consolidationDetailsMap, Set<String> locationRefGuids, Set<UUID> shipmentGuids) {
-        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) || Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)){
-            sourceGuids.add(shipmentDetails.getSourceGuid());
-        }
-        else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
-            ConsolidationDetails consolidationDetails;
-            if(consolidationDetailsMap.containsKey(shipmentDetails.getConsolidationList().iterator().next().getGuid())) {
-                consolidationDetails = consolidationDetailsMap.get(shipmentDetails.getConsolidationList().iterator().next().getGuid());
-
-                var receivingAgent = consolidationDetails.getReceivingBranch();
-                List<TriangulationPartner> triangulationPartnerList = consolidationDetails.getTriangulationPartnerList();
-                var triangulationPartner = consolidationDetails.getTriangulationPartner();
-                if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
-                    var destination = shipmentDetails.getCarrierDetails().getDestination();
-                    if (destination != null)
-                        locationRefGuids.add(destination);
-                }
-                setShipmentGuids(shipmentDetails, shipmentGuids, receivingAgent, triangulationPartnerList, triangulationPartner);
-            }
-        }
-    }
-
-    private void setShipmentGuids(ShipmentDetails shipmentDetails, Set<UUID> shipmentGuids, Long receivingAgent, List<TriangulationPartner> triangulationPartnerList, Long triangulationPartner) {
-        if (receivingAgent != null &&
-                !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
-            shipmentGuids.add(shipmentDetails.getGuid());
-        }
-        if (shouldAddShipmentToGuidList(triangulationPartnerList, triangulationPartner, receivingAgent, shipmentDetails)) {
-            shipmentGuids.add(shipmentDetails.getGuid());
-        }
-    }
-
-
-    private void populateNonAcceptedShipment(Long receivingAgent, List<Long> triangulationPartnerList, Long entityId, String entityType, ArValidationResponse response) {
-        List<Long> partnerList = new ArrayList<>();
-        if(receivingAgent != null) {
-            partnerList.add(receivingAgent);
-        }
-        partnerList.addAll(triangulationPartnerList);
-        if(!CollectionUtils.isEmpty(partnerList)) {
-            try {
-                Set<Integer> tenantIds = getTenantIds(entityId, entityType, partnerList);
-                if(CollectionUtils.isEmpty(tenantIds)) {
-                    if(receivingAgent != null) {
-                        response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
-                    }
-                    for(Long triangulationId : triangulationPartnerList) {
-                        response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, triangulationId.intValue()));
-                    }
-                } else {
-                    processTaskCreateRequestsList(receivingAgent, triangulationPartnerList, response, tenantIds);
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-        }
-    }
-
-    private Set<Integer> getTenantIds(Long entityId, String entityType, List<Long> partnerList) throws RunnerException {
-        Set<Integer> tenantIds = new HashSet<>();
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
-            List<Integer> partnerListInt = partnerList.stream().map(Long::intValue).toList();
-            tenantIds = this.retrieveTaskFromNte(entityId, entityType, partnerListInt);
-        } else {
-            List<TaskCreateRequest> taskCreateRequests = retireveTaskFromV1(String.valueOf(entityId), entityType, partnerList);
-            if(!CollectionUtils.isEmpty(taskCreateRequests))
-                tenantIds = taskCreateRequests.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet());
-        }
-        return tenantIds;
-    }
-
-    @SuppressWarnings("java:S2259")
-    private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
-        List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
-        networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
-                networkTransfers.stream().filter(networkTransfer -> NetworkTransferStatus.TRANSFERRED == networkTransfer.getStatus()).toList() : null;
-
-        if (ObjectUtils.isNotEmpty(networkTransfers)) {
-            return networkTransfers.stream().map(NetworkTransfer::getTenantId).collect(Collectors.toSet());
-        }
-        return new HashSet<>();
-    }
-
-    private void processTaskCreateRequestsList(Long receivingAgent, List<Long> triangulationPartnerList, ArValidationResponse response, Set<Integer> tenantIds) {
-        if (receivingAgent != null) {
-            if (tenantIds.contains(receivingAgent.intValue())) {
-                response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, receivingAgent.intValue()));
-            } else {
-                response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
-            }
-        }
-        for (Long triangulationId : triangulationPartnerList) {
-            if (tenantIds.contains(triangulationId.intValue())) {
-                response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, triangulationId.intValue()));
-            } else {
-                response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, triangulationId.intValue()));
-            }
-        }
+        return shipmentDetailsList.stream()
+                .filter(x -> !CollectionUtils.isEmpty(x.getConsolidationList()))
+                .map(x -> x.getConsolidationList().iterator().next().getGuid())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private List<ShipmentDetails> findShipmentsFromLogsHistory(List<UUID> guids, LocalDateTime timeStamp) throws RunnerException {
-        guids = Optional.ofNullable(guids).orElse(Collections.emptyList());
-        guids = guids.stream().filter(Objects::nonNull).toList();
-        if(CollectionUtils.isEmpty(guids) || timeStamp == null) {
+        guids = Optional.ofNullable(guids).orElse(Collections.emptyList()).stream().filter(Objects::nonNull).toList();
+        if (CollectionUtils.isEmpty(guids) || timeStamp == null) {
             return Collections.emptyList();
         }
         List<LogHistoryResponse> logHistoryResponses = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-        Set<UUID> remainingGuids = new HashSet<>(guids);
-        if(!logHistoryResponses.isEmpty())
-            logHistoryResponses.forEach(
-                    log -> {
-                        UUID guid = log.getEntityGuid();
-                        ShipmentDetails entityPayload = jsonHelper.readFromJson(log.getEntityPayload(), ShipmentDetails.class);
-                        if(Objects.isNull(entityPayload.getSourceGuid()))
-                            entityPayload.setSourceGuid(guid);
-                        shipmentDetailsList.add(entityPayload);
-                        remainingGuids.remove(log.getEntityGuid());
-                    });
-
-        if(!Objects.equals(shipmentDetailsList.size(), guids.size())){
-            List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByGuids(remainingGuids);
-            shipmentDetailsList.addAll(shipmentDetails);
+        Map<UUID, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        if (!logHistoryResponses.isEmpty()) {
+            for (LogHistoryResponse log : logHistoryResponses) {
+                ShipmentDetails entityPayload = jsonHelper.readFromJson(log.getEntityPayload(), ShipmentDetails.class);
+                if (Objects.isNull(entityPayload.getSourceGuid())) {
+                    entityPayload.setSourceGuid(log.getEntityGuid());
+                }
+                shipmentDetailsMap.put(log.getEntityGuid(), entityPayload);
+            }
         }
 
-        return shipmentDetailsList;
+        Set<UUID> remainingGuids = new HashSet<>(guids);
+        remainingGuids.removeAll(shipmentDetailsMap.keySet());
+
+        if (!remainingGuids.isEmpty()) {
+            List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByGuids(remainingGuids);
+            for (ShipmentDetails shipment : shipmentDetails) {
+                shipmentDetailsMap.put(shipment.getGuid(), shipment);
+            }
+        }
+
+        return new ArrayList<>(shipmentDetailsMap.values());
     }
 
     private List<ConsolidationDetails> findConsolidationFromLogsHistory(List<UUID> guids, LocalDateTime timeStamp) throws RunnerException {
-        List<LogHistoryResponse> logHistoryResponsesForConsole = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        Set<UUID> remainingGuids = new HashSet<>(guids);
-        if(!logHistoryResponsesForConsole.isEmpty())
-            logHistoryResponsesForConsole.forEach(log -> {
-                consolidationDetailsList.add(jsonHelper.readFromJson(log.getEntityPayload(), ConsolidationDetails.class));
-                remainingGuids.remove(log.getEntityGuid());
-            });
-
-        if(!Objects.equals(consolidationDetailsList.size(), guids.size())){
-            List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByGuids(remainingGuids);
-            consolidationDetailsList.addAll(consolidationDetails);
+        guids = Optional.ofNullable(guids).orElse(Collections.emptyList()).stream().filter(Objects::nonNull).toList();
+        if (CollectionUtils.isEmpty(guids) || timeStamp == null) {
+            return Collections.emptyList();
         }
-        return consolidationDetailsList;
+        List<LogHistoryResponse> logHistoryResponsesForConsole = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
+        Map<UUID, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
+        if (!logHistoryResponsesForConsole.isEmpty()) {
+            for (LogHistoryResponse log : logHistoryResponsesForConsole) {
+                consolidationDetailsMap.put(log.getEntityGuid(), jsonHelper.readFromJson(log.getEntityPayload(), ConsolidationDetails.class));
+            }
+        }
+
+        Set<UUID> remainingGuids = new HashSet<>(guids);
+        remainingGuids.removeAll(consolidationDetailsMap.keySet());
+
+        if (!remainingGuids.isEmpty()) {
+            List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByGuids(remainingGuids);
+            for (ConsolidationDetails console : consolidationDetails) {
+                consolidationDetailsMap.put(console.getGuid(), console);
+            }
+        }
+        return new ArrayList<>(consolidationDetailsMap.values());
     }
 
     private ArValidationResponse.ProfitShareShipmentData mapShipmentDataToProfitShare(ShipmentDetails shipmentDetails) {

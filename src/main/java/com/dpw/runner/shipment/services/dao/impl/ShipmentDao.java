@@ -880,6 +880,12 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByParentGuids(Set<UUID> sourceGuid) {
+        return shipmentRepository.findShipmentsByParentGuids(sourceGuid);
+    }
+
+    @Override
     public List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId) {
         return shipmentRepository.findShipmentBySourceGuidAndTenantId(sourceGuid, tenantId);
     }
