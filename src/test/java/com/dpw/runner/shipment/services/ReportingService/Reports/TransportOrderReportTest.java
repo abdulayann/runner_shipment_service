@@ -135,6 +135,7 @@ class TransportOrderReportTest extends CommonMocks {
         partiesModel.setOrgCode("Test");
         partiesModel.setAddressCode("Test");
         partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        partiesModel.setOrgId("1");
         Map<String, Object> orgData = new HashMap<>();
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");

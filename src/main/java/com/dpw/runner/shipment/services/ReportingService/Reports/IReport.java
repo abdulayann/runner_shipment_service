@@ -5687,6 +5687,8 @@ public abstract class IReport {
             shipmentTransportInstruction = pickupDeliveryDetailsDao.findByShipmentId(shipmentId);
             if (byId.isPresent()) {
                 shipmentDetails = byId.get();
+            }else{
+                return;
             }
         }
 

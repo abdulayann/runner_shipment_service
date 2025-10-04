@@ -198,6 +198,57 @@ void testPopulateConsolidationReportData_withFirmsCode() {
         assertFalse(dict.containsKey("TI_Delivery_Leg_1_Destination.FIRMSCode")); // Destination was null
     }
 
+
+    @Test
+    void testPopulateShipmentReportData_withTransportInstructionFirmsCode2() {
+        // Arrange
+        Map<String, Object> dict = new HashMap<>();
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setAdditionalDetails(new AdditionalDetails());
+
+        // Transport Instruction Parties
+        Parties pickupTransporter = createMockParty("PICK_TRANS_ORG", "ADDR_PT", "TransporterDetail", "Pickup Transport");
+        pickupTransporter.setOrgId("PICK_TRANS_ORG");
+        Parties pickupLeg1Origin = createMockParty("PICK_L1O_ORG", "ADDR_PL1O", "Origin", "Pickup Origin 1");
+        pickupLeg1Origin.setOrgId("PICK_L1O_ORG");
+        Parties pickupLeg1Dest = createMockParty("PICK_L1D_ORG", "ADDR_PL1D", "Destination", "Pickup Dest 1");
+        pickupLeg1Dest.setOrgId("PICK_L1D_ORG");
+        Parties pickupExportAgent = createMockParty("PICK_EXA_ORG", "ADDR_PEXA", "ExportAgent", "Pickup Export Agent");
+        pickupExportAgent.setOrgId("PICK_EXA_ORG");
+
+        Parties deliveryTransporter = createMockParty("DLV_TRANS_ORG", "ADDR_DT", "TransporterDetail", "Delivery Transport");
+        deliveryTransporter.setOrgId("DLV_TRANS_ORG");
+        Parties deliveryLeg1Origin = createMockParty("DLV_L1O_ORG", "ADDR_DL1O", "Origin", "Delivery Origin 1");
+        deliveryLeg1Origin.setOrgId("DLV_L1O_ORG");
+
+        // Create Transport Instructions
+        TiLegs pickupLeg = createMockLeg(1L, pickupLeg1Origin, pickupLeg1Dest);
+        PickupDeliveryDetails pickupInstruction = createMockTransportInstruction(InstructionType.Pickup, pickupTransporter, List.of(pickupLeg), List.of(pickupExportAgent));
+
+        TiLegs deliveryLeg = createMockLeg(1L, deliveryLeg1Origin, null); // Destination can be null
+        PickupDeliveryDetails deliveryInstruction = createMockTransportInstruction(InstructionType.Delivery, deliveryTransporter, List.of(deliveryLeg), Collections.emptyList());
+
+        List<PickupDeliveryDetails> transportInstructions = List.of(pickupInstruction, deliveryInstruction);
+
+        Map<String, String> firmsCodeMap = Map.of(
+                "PICK_TRANS_ORG", "FIRMS_PICK_TRANS",
+                "PICK_L1O_ORG", "FIRMS_PICK_L1O",
+                "PICK_L1D_ORG", "FIRMS_PICK_L1D",
+                "PICK_EXA_ORG", "FIRMS_PICK_EXA",
+                "DLV_TRANS_ORG", "FIRMS_DLV_TRANS",
+                "DLV_L1O_ORG", "FIRMS_DLV_L1O"
+        );
+
+        when(mdmServiceAdapter.getFirmsCodeListFromCache(any(Set.class))).thenReturn(firmsCodeMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), any())).thenReturn(new HashMap<>());
+
+        // Act
+        iReport.populateShipmentReportData(null, shipment, null);
+
+        // Assert
+        assertFalse(dict.containsKey("TI_Delivery_Leg_1_Destination.FIRMSCode")); // Destination was null
+    }
+
     @Test
     void testPopulateShipmentReportData_withMissingFirmsCode() {
         // Arrange

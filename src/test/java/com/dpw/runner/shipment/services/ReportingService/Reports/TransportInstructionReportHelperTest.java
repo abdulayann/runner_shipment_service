@@ -108,6 +108,34 @@ class TransportInstructionReportHelperTest extends CommonMocks {
     }
 
     @Test
+    void testAddTransportInstructionLegsDataIntoDictionary3() {
+        TiLegs legs = new TiLegs();
+        legs.setLegType(TILegType.EMPTY);
+        Parties origin = new Parties();
+        origin.setOrgData(Map.of("full_name", "Origin Name"));
+        origin.setAddressData(Map.of("full_name", "Origin Name"));
+        legs.setOrigin(origin);
+        Parties destination = new Parties();
+        destination.setOrgData(Map.of("full_name", "Destination Name"));
+        destination.setAddressData(Map.of("full_name", "Origin Name"));
+        legs.setDestination(destination);
+
+        TILegsModel legsModel = new TILegsModel();
+        when(modelMapper.map(any(TiLegs.class), eq(TILegsModel.class))).thenReturn(legsModel);
+        when(modelMapper.map(any(Parties.class), eq(PartiesModel.class))).thenReturn(
+                PartiesModel.builder().orgId("1").orgData(Map.of("full_name", "Origin Name")).addressData(Map.of("full_name", "Origin Name")).build());
+
+        Map<String, Object> legsDictionary = new HashMap<>();
+        Map<String, String> orgIdToFirmsCodeMap = new HashMap<>();
+        orgIdToFirmsCodeMap.put("1", "FIRMS123");
+
+        transportInstructionReportHelper.addTransportInstructionLegsDataIntoDictionary(legs, legsDictionary, orgIdToFirmsCodeMap);
+
+        assertEquals(true, legsDictionary.get(ReportConstants.HAS_LEGS));
+        assertSame(legsModel, legsDictionary.get(ReportConstants.TI_LEGS));
+    }
+
+    @Test
     void testAddTransportInstructionLegsTruckDriverDataIntoDictionary_WhenListNotEmpty() {
         TiLegs legs = new TiLegs();
         TiTruckDriverDetails details = new TiTruckDriverDetails();
