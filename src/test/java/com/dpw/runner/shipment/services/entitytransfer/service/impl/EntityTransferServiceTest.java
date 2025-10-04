@@ -4397,7 +4397,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(sourceGuid)), any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
 
-        when(shipmentDao.findShipmentsByGuids(eq(Set.of(requestedGuid)))).thenReturn(Collections.emptyList());
+        when(shipmentDao.findShipmentsByGuids(Set.of(requestedGuid))).thenReturn(Collections.emptyList());
 
 
         // Act
@@ -4494,14 +4494,14 @@ class EntityTransferServiceTest extends CommonMocks {
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(false).build()); // Task path
 
         // Mock historical data fetching
-        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp)))
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(shipmentGuid), eq(timestamp)))
                 .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originShipmentJson).build()));
-        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(consoleGuid)), eq(timestamp)))
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(consoleGuid), eq(timestamp)))
                 .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originConsoleJson).build()));
 
         // Mock destination data fetching
-        when(shipmentDao.findShipmentsByParentGuids(eq(Set.of(shipmentGuid)))).thenReturn(List.of(destShipment));
-        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(destShipment.getGuid())), eq(timestamp)))
+        when(shipmentDao.findShipmentsByParentGuids(Set.of(shipmentGuid))).thenReturn(List.of(destShipment));
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(destShipment.getGuid()), eq(timestamp)))
                 .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(destShipmentJson).build()));
 
         // Mock task service for pending triangulation transfer
@@ -4562,7 +4562,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(true).build());
 
         // Mock logs history to return the historical version
-        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp)))
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(shipmentGuid), eq(timestamp)))
                 .thenReturn(List.of(LogHistoryResponse.builder().entityGuid(shipmentGuid).entityPayload(historicalShipmentJson).build()));
 
         // Mock other dependencies to return empty to simplify the test
