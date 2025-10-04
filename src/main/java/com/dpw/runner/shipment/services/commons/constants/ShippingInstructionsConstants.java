@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
 
@@ -72,11 +73,9 @@ public class ShippingInstructionsConstants {
                     .build()),
             Map.entry("entityType", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
-                    .dataType(String.class)
+                    .dataType(EntityType.class)
                     .fieldName("entityType")
-                    .isContainsText(true)
                     .build()),
-
             Map.entry("entityId", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
                     .dataType(Long.class)
