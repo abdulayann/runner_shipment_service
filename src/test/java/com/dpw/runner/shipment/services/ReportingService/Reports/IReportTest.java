@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -345,4 +346,111 @@ void testPopulateConsolidationReportData_withFirmsCode() {
         assertFalse(dict.containsKey("TI_Delivery_Leg_1_Destination.FIRMSCode"));
     }
 
+    // Helper method to invoke the private method under test using reflection
+    private void invokeAddPartiesToFetchFirmsCode(List<Parties> parties, List<PickupDeliveryDetails> instructions, boolean tagsEnabled) {
+        try {
+            Method method = IReport.class.getDeclaredMethod("addPartiesToFetchFirmsCode", List.class, List.class, boolean.class);
+            method.setAccessible(true);
+            method.invoke(iReport, parties, instructions, tagsEnabled);
+        } catch (Exception e) {
+            fail("Failed to invoke private method 'addPartiesToFetchFirmsCode' for testing", e);
+        }
+    }
+
+    @Test
+    void addPartiesToFetchFirmsCode_whenTagsDisabled_shouldOnlyAddPartiesFromPartiesList() {
+        // Arrange
+        List<Parties> partiesToFetch = new ArrayList<>();
+        Parties transporter = createMockParty("T1", "A1", "Transporter", "T1");
+        Parties legOrigin = createMockParty("L1O", "A2", "Origin", "L1O");
+        Parties legDest = createMockParty("L1D", "A3", "Destination", "L1D");
+        Parties additionalParty = createMockParty("AP1", "A4", "ExportAgent", "AP1");
+
+        TiLegs leg = createMockLeg(1L, legOrigin, legDest);
+        PickupDeliveryDetails ti = createMockTransportInstruction(InstructionType.Pickup, transporter, List.of(leg), List.of(additionalParty));
+        List<PickupDeliveryDetails> instructions = List.of(ti);
+
+        // Act
+        invokeAddPartiesToFetchFirmsCode(partiesToFetch, instructions, false);
+
+        // Assert
+        assertEquals(1, partiesToFetch.size(), "Only the party from partiesList should be added when tags are disabled");
+        assertTrue(partiesToFetch.contains(additionalParty), "The additional party should be in the list");
+        assertTrue(partiesToFetch.contains(transporter), "Transporter should not be added");
+        assertTrue(partiesToFetch.contains(legOrigin), "Leg origin should not be added");
+        assertTrue(partiesToFetch.contains(legDest), "Leg destination should not be added");
+    }
+
+    @Test
+    void addPartiesToFetchFirmsCode_whenTagsEnabled_shouldAddAllParties() {
+        // Arrange
+        List<Parties> partiesToFetch = new ArrayList<>();
+        Parties transporter = createMockParty("T1", "A1", "Transporter", "T1");
+        Parties legOrigin = createMockParty("L1O", "A2", "Origin", "L1O");
+        Parties legDest = createMockParty("L1D", "A3", "Destination", "L1D");
+        Parties additionalParty = createMockParty("AP1", "A4", "ExportAgent", "AP1");
+
+        TiLegs leg = createMockLeg(1L, legOrigin, legDest);
+        PickupDeliveryDetails ti = createMockTransportInstruction(InstructionType.Pickup, transporter, List.of(leg), List.of(additionalParty));
+        List<PickupDeliveryDetails> instructions = List.of(ti);
+
+        // Act
+        invokeAddPartiesToFetchFirmsCode(partiesToFetch, instructions, true);
+
+        // Assert
+        assertEquals(4, partiesToFetch.size(), "All parties should be added when tags are enabled");
+        assertTrue(partiesToFetch.contains(transporter));
+        assertTrue(partiesToFetch.contains(legOrigin));
+        assertTrue(partiesToFetch.contains(legDest));
+        assertTrue(partiesToFetch.contains(additionalParty));
+    }
+
+    @Test
+    void addPartiesToFetchFirmsCode_shouldAppendToExistingList() {
+        // Arrange
+        Parties initialParty = createMockParty("INIT", "A0", "Client", "Initial");
+        List<Parties> partiesToFetch = new ArrayList<>(List.of(initialParty));
+
+        Parties transporter = createMockParty("T1", "A1", "Transporter", "T1");
+        Parties additionalParty = createMockParty("AP1", "A4", "ExportAgent", "AP1");
+        PickupDeliveryDetails ti = createMockTransportInstruction(InstructionType.Pickup, transporter, Collections.emptyList(), List.of(additionalParty));
+        List<PickupDeliveryDetails> instructions = List.of(ti);
+
+        // Act
+        invokeAddPartiesToFetchFirmsCode(partiesToFetch, instructions, true);
+
+        // Assert
+        assertEquals(3, partiesToFetch.size(), "Should append new parties to the existing list");
+        assertTrue(partiesToFetch.contains(initialParty), "Initial party should be retained");
+        assertTrue(partiesToFetch.contains(transporter), "New transporter party should be added");
+        assertTrue(partiesToFetch.contains(additionalParty), "New additional party should be added");
+    }
+
+    @Test
+    void addPartiesToFetchFirmsCode_shouldHandleNullsAndEmptyListsGracefully() {
+        // Arrange
+        List<Parties> partiesToFetch = new ArrayList<>();
+        Parties legOrigin = createMockParty("L1O", "A2", "Origin", "L1O");
+        Parties additionalParty = createMockParty("AP1", "A4", "ExportAgent", "AP1");
+
+        // Instruction 1: Null transporter, null legs, empty parties list
+        PickupDeliveryDetails ti1 = createMockTransportInstruction(InstructionType.Pickup, null, null, Collections.emptyList());
+
+        // Instruction 2: Null leg destination
+        TiLegs legWithNullDest = createMockLeg(1L, legOrigin, null);
+        PickupDeliveryDetails ti2 = createMockTransportInstruction(InstructionType.Delivery, null, List.of(legWithNullDest), List.of(additionalParty));
+
+        // Instruction 3: Null instruction in the list
+        List<PickupDeliveryDetails> instructions = new ArrayList<>();
+        instructions.add(ti1);
+        instructions.add(ti2);
+        instructions.add(null);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> invokeAddPartiesToFetchFirmsCode(partiesToFetch, instructions, true));
+
+        assertEquals(2, partiesToFetch.size(), "Should only add non-null parties");
+        assertTrue(partiesToFetch.contains(legOrigin));
+        assertTrue(partiesToFetch.contains(additionalParty));
+    }
 }
