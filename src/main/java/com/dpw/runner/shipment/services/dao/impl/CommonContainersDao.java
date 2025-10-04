@@ -16,13 +16,18 @@ public class CommonContainersDao implements ICommonContainersDao {
     ICommonContainerRepository repository;
 
     @Override
-    public CommonContainers getByGuid(String guid) {
+    public CommonContainers getByGuid(UUID guid) {
         return repository.getByGuid(guid);
     }
 
     @Override
     public void saveAll(List<CommonContainers> commonContainersList) {
         repository.saveAll(commonContainersList);
+    }
+
+    @Override
+    public void save(CommonContainers commonContainer) {
+        repository.save(commonContainer);
     }
 
     @Override
