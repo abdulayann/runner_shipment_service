@@ -377,8 +377,9 @@ void testPopulateConsolidationReportData_withFirmsCode() {
         assertEquals(1, partiesToFetch.size(), "Only the party from partiesList should be added when tags are disabled");
         assertTrue(partiesToFetch.contains(additionalParty), "The additional party should be in the list");
         assertTrue(partiesToFetch.contains(transporter), "Transporter should not be added");
-        assertTrue(partiesToFetch.contains(legOrigin), "Leg origin should not be added");
-        assertTrue(partiesToFetch.contains(legDest), "Leg destination should not be added");
+        assertFalse(partiesToFetch.stream().anyMatch(p -> transporter.getOrgCode().equals(p.getOrgCode())), "Transporter should not be added");
+        assertFalse(partiesToFetch.stream().anyMatch(p -> legOrigin.getOrgCode().equals(p.getOrgCode())), "Leg origin should not be added");
+        assertFalse(partiesToFetch.stream().anyMatch(p -> legDest.getOrgCode().equals(p.getOrgCode())), "Leg destination should not be added");
     }
 
     @Test
