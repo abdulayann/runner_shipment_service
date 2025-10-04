@@ -2499,18 +2499,22 @@ public class EntityTransferService implements IEntityTransferService {
             boolean isOrigin = shipment.getParentGuid()==null && Objects.equals(shipment.getSourceGuid(), shipment.getGuid());
             if (isOrigin && !CollectionUtils.isEmpty(shipment.getConsolidationList())) {
                 UUID consoleGuid = shipment.getConsolidationList().iterator().next().getGuid();
-                ConsolidationDetails console = consolidationsMap.get(consoleGuid);
-                if (console != null) {
-                    if (console.getReceivingBranch() == null && Constants.DIRECTION_EXP.equals(shipment.getDirection())) {
-                        Optional.ofNullable(shipment.getCarrierDetails().getDestination()).ifPresent(locationRefGuids::add);
-                    }
-                    if (console.getReceivingBranch() != null && !shipment.getTenantId().equals(console.getReceivingBranch().intValue())) {
-                        allShipmentGuidsForDestLookup.add(shipment.getGuid());
-                    }
-                    if (shouldAddShipmentToGuidList(console.getTriangulationPartnerList(), console.getTriangulationPartner(), console.getReceivingBranch(), shipment)) {
-                        allShipmentGuidsForDestLookup.add(shipment.getGuid());
-                    }
-                }
+                allShipmentGuidsForDestLookupForConsole(consolidationsMap, allShipmentGuidsForDestLookup, locationRefGuids, shipment, consoleGuid);
+            }
+        }
+    }
+
+    private void allShipmentGuidsForDestLookupForConsole(Map<UUID, ConsolidationDetails> consolidationsMap, Set<UUID> allShipmentGuidsForDestLookup, Set<String> locationRefGuids, ShipmentDetails shipment, UUID consoleGuid) {
+        ConsolidationDetails console = consolidationsMap.get(consoleGuid);
+        if (console != null) {
+            if (console.getReceivingBranch() == null && Constants.DIRECTION_EXP.equals(shipment.getDirection())) {
+                Optional.ofNullable(shipment.getCarrierDetails().getDestination()).ifPresent(locationRefGuids::add);
+            }
+            if (console.getReceivingBranch() != null && !shipment.getTenantId().equals(console.getReceivingBranch().intValue())) {
+                allShipmentGuidsForDestLookup.add(shipment.getGuid());
+            }
+            if (shouldAddShipmentToGuidList(console.getTriangulationPartnerList(), console.getTriangulationPartner(), console.getReceivingBranch(), shipment)) {
+                allShipmentGuidsForDestLookup.add(shipment.getGuid());
             }
         }
     }
@@ -2542,6 +2546,22 @@ public class EntityTransferService implements IEntityTransferService {
         // Determine the definitive partners from the origin entities
         Long receivingAgent = (originConsole != null) ? originConsole.getReceivingBranch() : originShipment.getReceivingBranch();
         Long triangulationPartner = (originConsole != null) ? originConsole.getTriangulationPartner() : originShipment.getTriangulationPartner();
+        List<TriangulationPartner> triangulationPartnerList = getTriangulationPartnerList(originConsole, originShipment);
+
+        // Populate response with data from the definitive source entities
+        populateResponseFromOrigin(response, originShipment, receivingAgent, triangulationPartner, context.locations());
+
+        // Find which partners have already accepted the transfer
+        List<ShipmentDetails> destinationShipments = context.destinationShipmentsBySourceGuid().getOrDefault(originShipment.getGuid(), Collections.emptyList());
+        populateAcceptedPartners(response, destinationShipments, shipment, receivingAgent, triangulationPartner, triangulationPartnerList);
+
+        // For partners who haven't accepted, check if the transfer is pending
+        populateNonAcceptedShipmentStatus(response, originShipment, originConsole, receivingAgent, triangulationPartner, triangulationPartnerList);
+
+        return response;
+    }
+
+    private List<TriangulationPartner> getTriangulationPartnerList(ConsolidationDetails originConsole, ShipmentDetails originShipment) {
         List<TriangulationPartner> triangulationPartnerList;
         if(originConsole != null){
             triangulationPartnerList = originConsole.getTriangulationPartnerList();
@@ -2556,18 +2576,7 @@ public class EntityTransferService implements IEntityTransferService {
         }else{
             triangulationPartnerList = originShipment.getTriangulationPartnerList();
         }
-
-        // Populate response with data from the definitive source entities
-        populateResponseFromOrigin(response, originShipment, receivingAgent, triangulationPartner, context.locations());
-
-        // Find which partners have already accepted the transfer
-        List<ShipmentDetails> destinationShipments = context.destinationShipmentsBySourceGuid().getOrDefault(originShipment.getGuid(), Collections.emptyList());
-        populateAcceptedPartners(response, destinationShipments, shipment, receivingAgent, triangulationPartner, triangulationPartnerList);
-
-        // For partners who haven't accepted, check if the transfer is pending
-        populateNonAcceptedShipmentStatus(response, originShipment, originConsole, receivingAgent, triangulationPartner, triangulationPartnerList);
-
-        return response;
+        return triangulationPartnerList;
     }
 
     /**
@@ -2665,6 +2674,10 @@ public class EntityTransferService implements IEntityTransferService {
             return;
         }
 
+        addTriangulationAndReceivingShipmentInResponse(response, receivingAgent, entityId, entityType, partnersToCheck, allTriangulationPartners, acceptedTriangulationTenants);
+    }
+
+    private void addTriangulationAndReceivingShipmentInResponse(ArValidationResponse response, Long receivingAgent, Long entityId, String entityType, List<Long> partnersToCheck, List<Long> allTriangulationPartners, Set<Integer> acceptedTriangulationTenants) {
         try {
             Set<Integer> transferredTenantIds = getTransferredTenantIds(entityId, entityType, partnersToCheck);
 
@@ -2749,6 +2762,9 @@ public class EntityTransferService implements IEntityTransferService {
                 ShipmentDetails entityPayload = jsonHelper.readFromJson(log.getEntityPayload(), ShipmentDetails.class);
                 if (Objects.isNull(entityPayload.getSourceGuid())) {
                     entityPayload.setSourceGuid(log.getEntityGuid());
+                }
+                if (Objects.isNull(entityPayload.getParentGuid())) {
+                    entityPayload.setParentGuid(log.getEntityGuid());
                 }
                 shipmentDetailsMap.put(log.getEntityGuid(), entityPayload);
             }

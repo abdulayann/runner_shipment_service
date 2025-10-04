@@ -9,11 +9,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -47,7 +46,6 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMi
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -55,7 +53,6 @@ import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +63,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -83,13 +79,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_IMPORT_EMAIL_TYPE;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
-import static com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferService.SHIPMENT_IMPORT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -4348,5 +4340,247 @@ class EntityTransferServiceTest extends CommonMocks {
         assertEquals(expectedCombinedMessage, exceptionWithConsoleError.getMessage());
     }
 
+    // In EntityTransferServiceTest.java, replace the previous postArValidation tests with these:
+
+    @Test
+    void postArValidation_whenGuidsAreEmpty_shouldThrowRunnerException() {
+        PostArValidationRequest request = new PostArValidationRequest(Collections.emptyList(), LocalDateTime.now());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        RunnerException exception = assertThrows(RunnerException.class, () -> entityTransferService.postArValidation(commonRequestModel));
+        assertEquals("GUID can't be null. Please provide any one !", exception.getMessage());
+    }
+
+    @Test
+    void postArValidation_whenInitialShipmentNotFound_shouldReturnEmptyResponseList() throws RunnerException {
+        // Arrange
+        UUID requestedGuid = UUID.randomUUID();
+        PostArValidationRequest request = new PostArValidationRequest(List.of(requestedGuid), LocalDateTime.now());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(anyList(), any(LocalDateTime.class))).thenReturn(Collections.emptyList());
+        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(Collections.emptyList());
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        List<ArValidationResponse> responseList = (List<ArValidationResponse>) ((RunnerListResponse) responseEntity.getBody()).getData();
+        assertTrue(responseList.isEmpty(), "Response list should be empty when no initial shipments are found.");
+    }
+
+    @Test
+    void postArValidation_whenOriginShipmentNotFound_shouldReturnMinimalResponse() throws RunnerException {
+        // Arrange
+        UUID requestedGuid = UUID.randomUUID();
+        UUID sourceGuid = UUID.randomUUID(); // A different source GUID that won't be found
+        PostArValidationRequest request = new PostArValidationRequest(List.of(requestedGuid), LocalDateTime.now());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        // This is the initial shipment found from logs
+        ShipmentDetails initialShipment = new ShipmentDetails();
+        initialShipment.setGuid(requestedGuid);
+        initialShipment.setSourceGuid(sourceGuid);
+        initialShipment.setJobType("STD");
+        initialShipment.setTenantId(10);
+        initialShipment.setConsolidationList(Collections.emptySet());
+
+        String initialShipmentJson = jsonTestUtility.convertToJson(initialShipment);
+        when(jsonHelper.readFromJson(initialShipmentJson, ShipmentDetails.class)).thenReturn(initialShipment);
+
+        // Mock finding the initial shipment
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(requestedGuid)), any(LocalDateTime.class)))
+                .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(initialShipmentJson).build()));
+
+        // Mock finding NO origin shipment (the one with sourceGuid)
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(sourceGuid)), any(LocalDateTime.class)))
+                .thenReturn(Collections.emptyList());
+
+        when(shipmentDao.findShipmentsByGuids(eq(Set.of(requestedGuid)))).thenReturn(Collections.emptyList());
+
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        List<ArValidationResponse> responseList = (List<ArValidationResponse>) ((RunnerListResponse) responseEntity.getBody()).getData();
+        assertEquals(1, responseList.size());
+        ArValidationResponse arResponse = responseList.get(0);
+
+        assertEquals(requestedGuid, arResponse.getShipmentGuid());
+        assertEquals("STD", arResponse.getConsolidationType());
+        assertEquals(10, arResponse.getSourceBranch());
+        assertNull(arResponse.getOriginShipment(), "Origin shipment should be null as it was not found");
+        assertNull(arResponse.getReceivingAgent(), "Receiving agent should be null");
+    }
+
+    @Test
+    void postArValidation_simpleShipment_notTransferred_ntePath() throws RunnerException {
+        // Arrange
+        UUID shipmentGuid = UUID.randomUUID();
+        LocalDateTime timestamp = LocalDateTime.now();
+        PostArValidationRequest request = new PostArValidationRequest(List.of(shipmentGuid), timestamp);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ShipmentDetails originShipment = new ShipmentDetails();
+        originShipment.setGuid(shipmentGuid);
+        originShipment.setId(0L);
+        originShipment.setSourceGuid(shipmentGuid); // It's an origin shipment
+        originShipment.setTenantId(10);
+        originShipment.setReceivingBranch(20L);
+        originShipment.setConsolidationList(Collections.emptySet());
+
+        String originShipmentJson = jsonTestUtility.convertToJson(originShipment);
+        when(jsonHelper.readFromJson(originShipmentJson, ShipmentDetails.class)).thenReturn(originShipment);
+
+        mockShipmentSettings();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(true).build());
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp))).thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originShipmentJson).build()));
+        when(shipmentDao.findShipmentsByParentGuids(eq(Set.of(shipmentGuid)))).thenReturn(Collections.emptyList());
+        when(networkTransferDao.findByEntityAndTenantList(anyLong(), eq(SHIPMENT), anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+
+        // Assert
+        List<ArValidationResponse> responseList = (List<ArValidationResponse>) ((RunnerListResponse) responseEntity.getBody()).getData();
+        ArValidationResponse arResponse = responseList.get(0);
+
+        assertNull(arResponse.getTransferToReceivingAgent());
+        assertNotNull(arResponse.getReceivingShipment());
+        assertEquals(TransferStatus.NOT_TRANSFERRED, arResponse.getReceivingShipment().getTransferStatus());
+        assertEquals(20, arResponse.getReceivingShipment().getBranchId());
+    }
+
+    @Test
+    void postArValidation_consoleShipment_transferredToReceivingAndTriangulation_taskPath() throws RunnerException {
+        // Arrange
+        UUID shipmentGuid = UUID.randomUUID();
+        UUID consoleGuid = UUID.randomUUID();
+        LocalDateTime timestamp = LocalDateTime.now();
+        PostArValidationRequest request = new PostArValidationRequest(List.of(shipmentGuid), timestamp);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        // --- Origin Entities ---
+        ConsolidationDetails originConsole = new ConsolidationDetails();
+        originConsole.setGuid(consoleGuid);
+        originConsole.setReceivingBranch(20L);
+        originConsole.setTriangulationPartner(30L);
+
+        ShipmentDetails originShipment = new ShipmentDetails();
+        originShipment.setGuid(shipmentGuid);
+        originShipment.setSourceGuid(shipmentGuid);
+        originShipment.setTenantId(10);
+        originShipment.setConsolidationList(Set.of(originConsole));
+
+        // --- Destination Entity ---
+        ShipmentDetails destShipment = new ShipmentDetails();
+        destShipment.setGuid(UUID.randomUUID());
+        destShipment.setParentGuid(shipmentGuid);
+        destShipment.setTenantId(20); // Belongs to receiving agent
+
+        // --- JSON and Mocking ---
+        String originShipmentJson = jsonTestUtility.convertToJson(originShipment);
+        String originConsoleJson = jsonTestUtility.convertToJson(originConsole);
+        String destShipmentJson = jsonTestUtility.convertToJson(destShipment);
+
+        when(jsonHelper.readFromJson(originShipmentJson, ShipmentDetails.class)).thenReturn(originShipment);
+        when(jsonHelper.readFromJson(originConsoleJson, ConsolidationDetails.class)).thenReturn(originConsole);
+        when(jsonHelper.readFromJson(destShipmentJson, ShipmentDetails.class)).thenReturn(destShipment);
+
+        mockShipmentSettings();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(false).build()); // Task path
+
+        // Mock historical data fetching
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp)))
+                .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originShipmentJson).build()));
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(consoleGuid)), eq(timestamp)))
+                .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originConsoleJson).build()));
+
+        // Mock destination data fetching
+        when(shipmentDao.findShipmentsByParentGuids(eq(Set.of(shipmentGuid)))).thenReturn(List.of(destShipment));
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(destShipment.getGuid())), eq(timestamp)))
+                .thenReturn(List.of(LogHistoryResponse.builder().entityPayload(destShipmentJson).build()));
+
+        // Mock task service for pending triangulation transfer
+        TaskCreateRequest pendingTask = new TaskCreateRequest();
+        pendingTask.setTenantId("30");
+        when(v1Service.listTask(any())).thenReturn(V1DataResponse.builder().entities(List.of(pendingTask)).build());
+        when(jsonHelper.convertValueToList(any(), eq(TaskCreateRequest.class))).thenReturn(List.of(pendingTask));
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+
+        // Assert
+        List<ArValidationResponse> responseList = (List<ArValidationResponse>) ((RunnerListResponse) responseEntity.getBody()).getData();
+        ArValidationResponse arResponse = responseList.get(0);
+
+        // Assert Receiving Agent
+        assertTrue(arResponse.getTransferToReceivingAgent());
+        assertNotNull(arResponse.getReceivingShipment());
+        assertEquals(TransferStatus.ACCEPTED, arResponse.getReceivingShipment().getTransferStatus());
+        assertEquals(20, arResponse.getReceivingShipment().getBranchId());
+
+        // Assert Triangulation Partner
+        assertEquals(1, arResponse.getTriangulationShipmentList().size());
+        ArValidationResponse.ProfitShareShipmentData triangulationShipment = arResponse.getTriangulationShipmentList().get(0);
+        assertEquals(TransferStatus.TRANSFERRED, triangulationShipment.getTransferStatus());
+        assertEquals(30, triangulationShipment.getBranchId());
+    }
+
+    @Test
+    void postArValidation_historicalDataIsUsed() throws RunnerException {
+        // Arrange
+        UUID shipmentGuid = UUID.randomUUID();
+        LocalDateTime timestamp = LocalDateTime.now().minusDays(1); // A time in the past
+        PostArValidationRequest request = new PostArValidationRequest(List.of(shipmentGuid), timestamp);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        // Historical version of the shipment
+        ShipmentDetails historicalShipment = new ShipmentDetails();
+        historicalShipment.setGuid(shipmentGuid);
+        historicalShipment.setSourceGuid(shipmentGuid);
+        historicalShipment.setTenantId(10);
+        historicalShipment.setId(0L);
+        historicalShipment.setReceivingBranch(20L); // Historical receiving branch
+        historicalShipment.setConsolidationList(Collections.emptySet());
+
+        // Current version of the shipment (different receiving branch)
+        ShipmentDetails currentShipment = new ShipmentDetails();
+        currentShipment.setGuid(shipmentGuid);
+        currentShipment.setSourceGuid(shipmentGuid);
+        currentShipment.setTenantId(10);
+        currentShipment.setReceivingBranch(99L); // Current receiving branch
+        currentShipment.setConsolidationList(Collections.emptySet());
+
+        String historicalShipmentJson = jsonTestUtility.convertToJson(historicalShipment);
+        when(jsonHelper.readFromJson(historicalShipmentJson, ShipmentDetails.class)).thenReturn(historicalShipment);
+
+        mockShipmentSettings();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(true).build());
+
+        // Mock logs history to return the historical version
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp)))
+                .thenReturn(List.of(LogHistoryResponse.builder().entityGuid(shipmentGuid).entityPayload(historicalShipmentJson).build()));
+
+        // Mock other dependencies to return empty to simplify the test
+        when(shipmentDao.findShipmentsByParentGuids(anySet())).thenReturn(Collections.emptyList());
+        when(networkTransferDao.findByEntityAndTenantList(anyLong(), anyString(), anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+
+        // Assert
+        List<ArValidationResponse> responseList = (List<ArValidationResponse>) ((RunnerListResponse) responseEntity.getBody()).getData();
+        ArValidationResponse arResponse = responseList.get(0);
+
+        // Assert that the historical receiving agent (20L) was used, not the current one (99L)
+        assertEquals(20L, arResponse.getReceivingAgent());
+        assertNotNull(arResponse.getReceivingShipment());
+        assertEquals(TransferStatus.NOT_TRANSFERRED, arResponse.getReceivingShipment().getTransferStatus());
+        assertEquals(20, arResponse.getReceivingShipment().getBranchId());
+    }
 
 }
