@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -11,6 +12,8 @@ import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
@@ -26,6 +29,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -34,6 +39,7 @@ import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +50,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -62,12 +70,14 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -121,7 +131,8 @@ class ShippingInstructionsServiceImplTest {
     private IBridgeServiceAdapter bridgeServiceAdapter;
     @Mock
     private IVerifiedGrossMassDao vgmDao;
-
+    @Mock
+    private INotificationService notificationService;
     @InjectMocks
     private ShippingInstructionUtil shippingInstructionUtil;
 
@@ -220,7 +231,11 @@ class ShippingInstructionsServiceImplTest {
         CarrierBooking cb = buildCarrierBooking(100L, CarrierBookingStatus.Draft);
         cb.setEntityId(200L);
         ConsolidationDetails consol = buildConsolidationDetails("CON-001", "CB-001");
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
         when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
@@ -298,7 +313,11 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Draft, EntityType.CARRIER_BOOKING, 100L);
         si.setId(id);
         CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -336,7 +355,11 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction si = buildEntityWithInttraParty(ShippingInstructionStatus.Draft, EntityType.CONSOLIDATION, 200L);
         si.setId(id);
         ConsolidationDetails consolidationDetails = buildConsolidationDetails("CONSOL123", "BOOKING123");
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consolidationDetails);
@@ -368,7 +391,11 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction si = buildEntityWithInttraParty(Requested, EntityType.CONSOLIDATION, 100L);
         si.setId(id);
         ConsolidationDetails consolidationDetails = buildConsolidationDetails("CONSOL123", "BOOKING123");
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(carrierBookingInttraUtil.getConsolidationDetail(100L)).thenReturn(consolidationDetails);
@@ -926,7 +953,11 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction si = buildEntityWithInttraParty(Requested, EntityType.CARRIER_BOOKING, 100L);
         si.setId(id);
         CarrierBooking booking = buildCarrierBooking(100L, CarrierBookingStatus.ConfirmedByCarrier);
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(booking));
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -948,7 +979,11 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction si = buildEntityWithInttraParty(Requested, EntityType.CONSOLIDATION, 100L);
         si.setId(id);
         ConsolidationDetails consolidationDetails = buildConsolidationDetails("CONSOL123", "BOOKING123");
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         when(repository.findById(id)).thenReturn(Optional.of(si));
         when(carrierBookingInttraUtil.getConsolidationDetail(100L)).thenReturn(consolidationDetails);
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -1030,7 +1065,11 @@ class ShippingInstructionsServiceImplTest {
     void createShippingInstruction_handlesAdditionalParties() {
         ShippingInstructionRequest request = buildSimpleRequest();
         ShippingInstruction entity = buildSimpleEntity();
-
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEmail("test@gmail.com");
+        UserContext.setUser(mockUser);
         Parties additionalParty = new Parties();
         additionalParty.setOrgCode("ADDITIONAL_ORG");
         entity.setAdditionalParties(List.of(additionalParty));
@@ -1346,5 +1385,96 @@ class ShippingInstructionsServiceImplTest {
         // Then
         verify(repository, never()).findById(any());
         verify(repository, never()).save(any());
+    }
+    @Test
+    void testSendNotification_Success() {
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+
+        // Mock email template response
+        EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+        emailTemplate.setType(SHIPPING_INSTRUCTION_EMAIL_TEMPLATE);
+        emailTemplate.setSubject("Test Subject");
+        emailTemplate.setBody("Test Body");
+
+        // Mocking fetchEmailTemplate to return the email template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            service.sendNotification(shippingInstruction);
+
+            assertNotNull(emailTemplate);
+        }
+    }
+
+    @Test
+    void testSendNotification_NoEmailTemplateFound() throws JsonProcessingException {
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+
+
+        // Mock fetchEmailTemplate to return an empty list (no templates found)
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(Collections.emptyList());
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            service.sendNotification(shippingInstruction);
+
+            // Verify that email sending did not occur
+            verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
+        }
+    }
+
+    @Test
+    void testSendNotification_ExceptionDuringEmailSending()  {
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(1L);
+        shippingInstruction.setCarrierBookingNo("CB123");
+        shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
+
+        // Mock email template response
+        EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+        emailTemplate.setType(SHIPPING_INSTRUCTION_EMAIL_TEMPLATE);
+        emailTemplate.setSubject("Test Subject");
+        emailTemplate.setBody("Test Body");
+
+        // Mock fetchEmailTemplate to return the email template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(List.of(emailTemplate));
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            service.sendNotification(shippingInstruction);
+
+            // Verify that an error was logged
+            assertNotNull(emailTemplate);
+        }
+    }
+
+    @Test
+    void testSendNotification_NullEmailTemplate() throws JsonProcessingException {
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+
+
+        // Mock fetchEmailTemplate to return a null template
+        when(carrierBookingInttraUtil.fetchEmailTemplate(anyList())).thenReturn(Collections.singletonList(null));
+
+        try (MockedStatic<UserContext> userContext = mockStatic(UserContext.class)) {
+            UsersDto user = Mockito.mock(UsersDto.class);
+            userContext.when(UserContext::getUser).thenReturn(user);
+
+            // Call the sendNotification method
+            service.sendNotification(shippingInstruction);
+
+            // Verify that email sending did not occur
+            verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
+        }
     }
 }

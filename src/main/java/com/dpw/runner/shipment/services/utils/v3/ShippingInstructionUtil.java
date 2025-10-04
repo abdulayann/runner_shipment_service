@@ -490,4 +490,38 @@ public class ShippingInstructionUtil {
         }
     }
 
+    public List<String> getSendEmailBaseRequest(ShippingInstruction shippingInstruction) {
+        StringBuilder toEmails = new StringBuilder();
+
+        // Add internal emails if present
+        if (Objects.nonNull(shippingInstruction.getInternalEmails()) && !shippingInstruction.getInternalEmails().trim().isEmpty()) {
+            toEmails.append(shippingInstruction.getInternalEmails());
+        }
+
+        // Add the 'createByUserEmail' only if it's not blank
+        String createByUserEmail = shippingInstruction.getCreateByUserEmail();
+        if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(createByUserEmail);
+        }
+
+        // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
+        String submitByUserEmail = shippingInstruction.getSubmitByUserEmail();
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty()
+                && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(submitByUserEmail);
+        }
+
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(toEmails.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // remove duplicates if any
+                .toList();
+    }
 }

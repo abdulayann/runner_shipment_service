@@ -42,7 +42,8 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private Integer nonNegoUnFreightCopies;
     private ShippingInstructionType shippingInstructionType;
     private String serviceType;
-
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
     private List<FreightDetailResponse> freightDetailList;
     private List<CommonPackageResponse> commonPackagesList;
     private List<CommonContainerResponse> commonContainersList;
