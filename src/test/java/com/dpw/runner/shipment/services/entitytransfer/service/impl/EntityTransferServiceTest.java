@@ -4437,8 +4437,8 @@ class EntityTransferServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(true).build());
-        when(logsHistoryService.findByEntityGuidsAndTimeStamp(eq(List.of(shipmentGuid)), eq(timestamp))).thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originShipmentJson).build()));
-        when(shipmentDao.findShipmentsByParentGuids(eq(Set.of(shipmentGuid)))).thenReturn(Collections.emptyList());
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(List.of(shipmentGuid), timestamp)).thenReturn(List.of(LogHistoryResponse.builder().entityPayload(originShipmentJson).build()));
+        when(shipmentDao.findShipmentsByParentGuids(Set.of(shipmentGuid))).thenReturn(Collections.emptyList());
         when(networkTransferDao.findByEntityAndTenantList(anyLong(), eq(SHIPMENT), anyList())).thenReturn(Collections.emptyList());
 
         // Act
