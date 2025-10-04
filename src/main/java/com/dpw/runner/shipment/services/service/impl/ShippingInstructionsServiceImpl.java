@@ -383,6 +383,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
         response.setVgmStatus(getVgmStatus(instruction));
+        response.setCrBookingId(instruction.getCarrierBookingNo());
         if (Objects.nonNull(instruction.getPayloadJson())) {
             ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
@@ -573,6 +574,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
             shippingInstructionResponse.setVgmStatus(getVgmStatus(shippingInstruction));
+            shippingInstructionResponse.setCrBookingId(shippingInstruction.getCarrierBookingNo());
             shippingInstructionResponses.add(shippingInstructionResponse);
         }
 
@@ -663,8 +665,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("SI does not belong to INTTRA");
         }
 
+        CarrierBooking booking;
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
-            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
+             booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             validateSubmissionCriteria(booking, si);
@@ -685,6 +688,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(si));
+        instructionInttraRequest.setCrBookingId(si.getCarrierBookingNo());
         try {
             shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         } catch (Exception e) {
@@ -781,6 +785,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction saved = repository.save(shippingInstruction);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(shippingInstruction));
+        instructionInttraRequest.setCrBookingId(shippingInstruction.getCarrierBookingNo());
         try {
             shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         } catch (Exception e) {

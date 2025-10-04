@@ -20,6 +20,7 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String status;
     private String bookingStatus;
     private String bookingNo;
+    private String crBookingId;
     private PartiesResponse contract;
     private PartiesResponse shipper;
     private PartiesResponse consignee;
