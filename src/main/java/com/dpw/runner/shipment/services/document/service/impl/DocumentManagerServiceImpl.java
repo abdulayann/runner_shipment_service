@@ -61,7 +61,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
                     .encodedfile(encodedFile)
                     .build();
 
-            log.info("temporary upload file: {}", originalFileName);
+            log.info("temporary upload file: {}", LoggerHelper.sanitizeForLogs(originalFileName));
 
             return restClient.temporaryFileUpload(request);
 
