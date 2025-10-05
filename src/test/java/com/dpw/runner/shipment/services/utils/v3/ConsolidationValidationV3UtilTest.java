@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -461,10 +462,17 @@ class ConsolidationValidationV3UtilTest {
     shipmentSettingsDetails.setAirDGFlag(false);
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
-    assertThrows(DpsException.class, () ->
-        validationUtil.validationsBeforeAttachShipments(consolidationDetails, new ArrayList<>(),
-            List.of(1L), 1L, List.of(shipment), true)
-    );
+      // Refactor to comply with Sonar: only one invocation inside lambda
+      Executable executable = () -> validationUtil.validationsBeforeAttachShipments(
+              consolidationDetails,
+              new ArrayList<>(),
+              List.of(1L),
+              1L,
+              List.of(shipment),
+              true
+      );
+
+      assertThrows(DpsException.class, executable);
   }
 }
 
