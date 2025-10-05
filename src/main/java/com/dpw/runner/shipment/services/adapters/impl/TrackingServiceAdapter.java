@@ -753,7 +753,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return EventConstants.FCGI;
         }
 
-        if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeDescription)
+        if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeEventCode)
                 && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
             log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
