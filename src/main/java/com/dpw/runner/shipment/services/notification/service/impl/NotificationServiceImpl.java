@@ -76,7 +76,7 @@ public class NotificationServiceImpl implements INotificationService {
         }
 
         try {
-            log.info("Notification Service Response: {}", jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response)));
+            log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
         } catch (JsonParseException e) {
             throw new NotificationException(e);
         }

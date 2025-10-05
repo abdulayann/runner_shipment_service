@@ -135,7 +135,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createShipmentTaskFromBookingUrl;
         CreateShipmentTaskFromBookingTaskRequest request = (CreateShipmentTaskFromBookingTaskRequest) commonRequestModel.getData();
         try {
-            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
+            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
             var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
                 ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                         RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
