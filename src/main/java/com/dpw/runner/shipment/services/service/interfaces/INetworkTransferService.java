@@ -26,4 +26,6 @@ public interface INetworkTransferService{
     void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetails);
     ResponseEntity<IRunnerResponse> fetchEntityStatus(CommonGetRequest commonGetRequest);
     ResponseEntity<IRunnerResponse> createExternal(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> getAllMasterDataForNT(Map<String, Object> requestPayload);
+
 }

@@ -7,6 +7,7 @@ public class NetworkTransferConstants {
     public static final String REQUEST_FOR_TRANSFER_SUCCESSFUL = "Request for transfer successful";
     public static final String REQUEST_FOR_REASSIGNED_SUCCESSFUL = "Request for assigned successful";
     public static final String NETWORK_TRANSFER_API_HANDLE = "/api/v2/network-transfer";
+    public static final String NETWORK_TRANSFER_MASTER_DATA = "/get/master-data";
     public static final String LIST_SUCCESSFUL = "Successful List";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Network Transfer Data Retrieval By Id";
     public static final String NETWORK_TRANSFER_ID = "Network Transfer Id";
@@ -19,4 +20,5 @@ public class NetworkTransferConstants {
     public static final String SHIPMENT_ENTITY_STATUS = "/shipment-entity-status";
     public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL = "/create/external";
+    public static final String NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE = "/create/external/bridge";
 }
