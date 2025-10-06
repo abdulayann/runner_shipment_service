@@ -807,8 +807,8 @@ class NetworkTransferServiceTest extends CommonMocks{
         List<String> expectedEmails = List.of("test1@dpworld.com", "test2@dpworld.com");
 
         when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
-                eq(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY)),
-                eq(destinationBranch)
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
         )).thenReturn(expectedEmails);
 
         // Act
@@ -827,8 +827,8 @@ class NetworkTransferServiceTest extends CommonMocks{
         // Arrange
         Integer destinationBranch = 20;
         when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
-                eq(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY)),
-                eq(destinationBranch)
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
         )).thenReturn(Collections.emptyList());
 
         // Act
