@@ -1619,4 +1619,103 @@ class ShippingInstructionsServiceImplTest {
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getShippingInstructionId()).isEqualTo(siId);
     }
+
+    @Test
+    void syncCommonContainersByConsolId_whenNoSaveNeeded_shouldNotCallSave() {
+        // Arrange
+        Long consolId = 100L;
+        Long siId = 200L;
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(projection));
+
+        // All containers have null GUIDs
+        Containers container = new Containers();
+        container.setGuid(null);
+        container.setContainerNumber("CONT001");
+
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(List.of(container));
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        verify(commonContainersDao, never()).saveAll(any());
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenSIProjectionHasNullId_shouldFilterItOut() {
+        // Arrange
+        Long consolId = 100L;
+        Long validSiId = 200L;
+        UUID containerGuid = UUID.randomUUID();
+
+        ShippingConsoleIdProjection validProjection = mock(ShippingConsoleIdProjection.class);
+        when(validProjection.getId()).thenReturn(validSiId);
+
+        ShippingConsoleIdProjection nullProjection = mock(ShippingConsoleIdProjection.class);
+        when(nullProjection.getId()).thenReturn(null);
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(validProjection, nullProjection));
+
+        Containers container = new Containers();
+        container.setGuid(containerGuid);
+        container.setContainerNumber("CONT001");
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(List.of(container));
+
+        when(commonContainersDao.getAll(List.of(containerGuid)))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonContainersDao).saveAll(captor.capture());
+
+        List<CommonContainers> saved = captor.getValue();
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).getShippingInstructionId()).isEqualTo(validSiId);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenCommonContainerHasNullGuid_shouldSkipItAndCreateNew() {
+        // Arrange
+        Long consolId = 100L;
+        Long siId = 200L;
+        UUID containerGuid = UUID.randomUUID();
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(projection));
+
+        Containers container = new Containers();
+        container.setGuid(containerGuid);
+        container.setContainerNumber("CONT001");
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(List.of(container));
+
+        CommonContainers commonWithNullGuid = new CommonContainers();
+        commonWithNullGuid.setContainerRefGuid(null);
+
+        when(commonContainersDao.getAll(List.of(containerGuid)))
+                .thenReturn(List.of(commonWithNullGuid));
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonContainersDao).saveAll(captor.capture());
+
+        List<CommonContainers> saved = captor.getValue();
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).getContainerRefGuid()).isEqualTo(containerGuid);
+    }
 }
