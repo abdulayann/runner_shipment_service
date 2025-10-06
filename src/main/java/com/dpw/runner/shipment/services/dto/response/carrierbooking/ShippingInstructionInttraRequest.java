@@ -38,6 +38,7 @@ public class ShippingInstructionInttraRequest implements IRunnerResponse {
     private PartiesResponse consignee;
     private PartiesResponse requestor;
     private PartiesResponse forwardingAgent;
+    private PartiesResponse notifyParty;
     List<CommonContainerResponse> commonContainersList;
     List<CommonPackageResponse> commonPackagesList;
     private String carrierScacCode;
