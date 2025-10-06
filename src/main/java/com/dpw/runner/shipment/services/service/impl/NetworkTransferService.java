@@ -369,7 +369,9 @@ public class NetworkTransferService implements INetworkTransferService {
                     });
         } catch (Exception e) {
             log.error("Error while deleting the Network Transfer Delete Request: {} for entityId: {} entityType: {}",
-                    e.getMessage(), entityId, entityType);
+                    e.getMessage(),
+                    LoggerHelper.sanitizeForLogs(entityId),
+                    LoggerHelper.sanitizeForLogs(entityType));
         }
     }
 
@@ -383,7 +385,9 @@ public class NetworkTransferService implements INetworkTransferService {
             }
         } catch (Exception e) {
             log.error("Error while deleting the NTE Delete Request: {} for entityId: {} entityType: {}",
-                    e.getMessage(), networkTransfer.getEntityId(), networkTransfer.getEntityType());
+                    e.getMessage(),
+                    LoggerHelper.sanitizeForLogs(networkTransfer.getEntityId()),
+                    LoggerHelper.sanitizeForLogs(networkTransfer.getEntityType()));
         }
     }
 
