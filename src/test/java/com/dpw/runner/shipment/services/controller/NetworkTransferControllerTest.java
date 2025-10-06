@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -187,5 +188,48 @@ class NetworkTransferControllerTest {
         var responseEntity = networkTransferController.getAllMasterDataForNT(Map.of("abc", "def"));
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_Success() {
+        // Arrange
+        Integer destinationBranch = 10;
+        List<String> expectedEmails = List.of("a@dpworld.com", "b@dpworld.com");
+        when(networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch))
+                .thenReturn(expectedEmails);
+
+        // Act
+        List<String> actualEmails = networkTransferController.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(expectedEmails, actualEmails);
+    }
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_WhenExceptionThrown_ShouldReturnEmptyStringList() {
+        // Arrange
+        Integer destinationBranch = 20;
+        when(networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch))
+                .thenThrow(new RuntimeException("Service failed"));
+
+        // Act
+        List<String> result = networkTransferController.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(List.of(""), result);
+    }
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_WhenExceptionWithoutMessage_ShouldReturnEmptyStringList() {
+        // Arrange
+        Integer destinationBranch = 30;
+        when(networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch))
+                .thenThrow(new RuntimeException());
+
+        // Act
+        List<String> result = networkTransferController.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(List.of(""), result);
     }
 }
