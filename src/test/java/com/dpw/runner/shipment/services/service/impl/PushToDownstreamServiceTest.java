@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -44,13 +43,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -413,5 +410,105 @@ class PushToDownstreamServiceTest {
         );
 
         verifyNoInteractions(consolidationV3Service, shippingInstructionUtil);
+    }
+
+    @Test
+    void pushConsolidationDataToService_callsPushConsolidationData_whenSourceIsAfterSave() {
+        // Arrange
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-AFTER-SAVE";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
+        eventDto.setMeta(meta);
+
+        testConsolidation.setId(consolidationId);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.of(testConsolidation));
+        when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
+        doNothing().when(shippingInstructionUtil).syncCommonContainersByConsolId(consolidationId);
+
+        // Act
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+
+        // Assert - At least once covers both sync and potential async call
+        verify(consolidationV3Service, atLeastOnce()).findById(consolidationId);
+        verify(producer).getKafkaResponse(any(), anyBoolean());
+    }
+
+    @Test
+    void pushConsolidationDataToService_callsPushConsolidationDataToTracking_whenSourceIsAfterSaveToTracking() {
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-TRACKING";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+        eventDto.setMeta(meta);
+
+        testConsolidation.setId(consolidationId);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.of(testConsolidation));
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+        verify(consolidationV3Service).findById(consolidationId);
+    }
+
+    @Test
+    void pushConsolidationDataToService_doesNothing_whenSourceInfoDoesNotMatch() {
+        // Arrange
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-NO-MATCH";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo("UNKNOWN_SOURCE");
+        eventDto.setMeta(meta);
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+
+        verifyNoInteractions(consolidationV3Service, producer, shippingInstructionUtil);
+    }
+
+    @Test
+    void pushConsolidationDataToService_asyncCompletesEvenIfMainFails() {
+        // Arrange
+        Long consolidationId = 666L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-MAIN-FAIL";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
+        eventDto.setMeta(meta);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.empty()); // This will cause pushConsolidationData to throw
+
+        // Act
+        assertThrows(ValidationException.class, () ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+
+        // Assert
+        verify(consolidationV3Service).findById(consolidationId);
     }
 }

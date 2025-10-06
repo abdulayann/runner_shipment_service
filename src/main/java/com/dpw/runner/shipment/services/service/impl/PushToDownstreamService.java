@@ -214,7 +214,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         }
     }
 
-    private void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId) {
+    public void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId) {
         if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
             this.pushConsolidationData(message, transactionId);
             CompletableFuture.runAsync(() -> {

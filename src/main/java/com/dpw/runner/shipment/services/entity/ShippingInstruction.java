@@ -134,7 +134,7 @@ public class ShippingInstruction extends MultiTenancy {
     private Parties requestor;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "requestor_id", referencedColumnName = "id")
+    @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
     @OrganizationData
     private Parties notifyParty;
 
