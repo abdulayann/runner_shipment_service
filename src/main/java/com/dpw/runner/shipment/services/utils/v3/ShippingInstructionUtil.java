@@ -206,9 +206,20 @@ public class ShippingInstructionUtil {
                 .filter(Objects::nonNull)
                 .toList();
 
-        Map<UUID, CommonContainers> commonMap = commonContainersDao.getAll(guids)
-                .stream()
-                .collect(Collectors.toMap(CommonContainers::getContainerRefGuid, c -> c));
+        Map<UUID, CommonContainers> commonMap = new HashMap<>();
+        Set<UUID> conflictedGuids = new HashSet<>();
+
+        for (CommonContainers cc : commonContainersDao.getAll(guids)) {
+            UUID guid = cc.getContainerRefGuid();
+            if (guid == null) continue;
+
+            if (commonMap.containsKey(guid)) {
+                conflictedGuids.add(guid);
+                log.warn("Duplicate containerRefGuid found: {}. Skipping both entries.", guid);
+            } else if (!conflictedGuids.contains(guid)) {
+                commonMap.put(guid, cc);
+            }
+        }
 
         List<CommonContainers> toSave = new ArrayList<>();
 
@@ -284,9 +295,17 @@ public class ShippingInstructionUtil {
             return;
         }
 
+        List<Long> siIds = new ArrayList<>();
         // --- Step 2a: Direct lookup (entityType = CONSOLIDATION) ---
         List<ShippingConsoleNoProjection> direct = shippingInstructionDao
                 .findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, allConsolNumbers);
+
+        if (!direct.isEmpty()) {
+            siIds.addAll(direct.stream()
+                    .map(ShippingConsoleNoProjection::getId)
+                    .filter(Objects::nonNull)
+                    .toList());
+        }
 
         Map<String, List<Long>> consolToInstructionMap = direct.stream()
                 .filter(p -> p.getEntityId() != null)
@@ -309,6 +328,10 @@ public class ShippingInstructionUtil {
                     .forEach(p -> consolToInstructionMap
                             .computeIfAbsent(p.getEntityId(), k -> new ArrayList<>())
                             .add(p.getId()));
+            siIds.addAll(viaCarrier.stream()
+                    .map(ShippingConsoleNoProjection::getId)
+                    .filter(Objects::nonNull)
+                    .toList());
         }
 
         // --- Step 3: Fetch existing commons ---
@@ -330,16 +353,15 @@ public class ShippingInstructionUtil {
         for (Packing packing : packings) {
             CommonPackages common = commonMap.get(packing.getGuid());
             if (common != null) {
-                updateCommonPackingFromPacking(common, packing);
+                updateCommonPackingFromPacking(common, packing, siIds.get(0));
                 toSave.add(common);
             } else {
                 CommonPackages newCommon = new CommonPackages();
                 newCommon.setPackingRefGuid(packing.getGuid()); // ref guid
-                updateCommonPackingFromPacking(newCommon, packing);
+                updateCommonPackingFromPacking(newCommon, packing, siIds.get(0));
                 toSave.add(newCommon);
             }
         }
-
         commonPackagesDao.saveAll(toSave);
     }
 
@@ -368,7 +390,7 @@ public class ShippingInstructionUtil {
         common.setCustomsSealNumber(container.getCustomsSealNumber());
     }
 
-    public void updateCommonPackingFromPacking(CommonPackages common, Packing packing) {
+    public void updateCommonPackingFromPacking(CommonPackages common, Packing packing, Long siId) {
         common.setContainerNo(packing.getContainerId() != null ? String.valueOf(packing.getContainerId()) : null);
         common.setPacks(tryParseInt(packing.getPacks(), null));
         common.setPacksUnit(packing.getPacksType());
@@ -381,6 +403,7 @@ public class ShippingInstructionUtil {
         common.setGrossWeightUnit(packing.getWeightUnit());
         common.setVolume(packing.getVolume());
         common.setVolumeUnit(packing.getVolumeUnit());
+        common.setShippingInstructionId(siId);
     }
 
 

@@ -59,5 +59,6 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String createByUserEmail;
     private String submitByUserEmail;
     private String comments;
+    private String contractNo;
     private String vgmStatus;
 }

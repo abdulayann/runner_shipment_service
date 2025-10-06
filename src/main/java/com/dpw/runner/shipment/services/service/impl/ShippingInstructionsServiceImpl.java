@@ -10,7 +10,10 @@ import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsCo
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -19,7 +22,19 @@ import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.CommonPackages;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.FreightDetail;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
+import com.dpw.runner.shipment.services.entity.ShippingInstructionResponseMapper;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
@@ -79,8 +94,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.INVALID_ENTITY_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.tableNames;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -573,6 +595,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+            if (!CollectionUtils.isEmpty(shippingInstruction.getReferenceNumbers())) {
+                Optional<ReferenceNumbers> contractReferenceNumber = shippingInstruction.getReferenceNumbers()
+                        .stream()
+                        .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
+                        .findFirst();
+                contractReferenceNumber.ifPresent(referenceNumbers -> shippingInstructionResponse.setContractNo(referenceNumbers.getReferenceNumber()));
+            }
             shippingInstructionResponse.setVgmStatus(getVgmStatus(shippingInstruction));
             shippingInstructionResponse.setCrBookingId(shippingInstruction.getCarrierBookingNo());
             shippingInstructionResponses.add(shippingInstructionResponse);
@@ -665,9 +694,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("SI does not belong to INTTRA");
         }
 
-        CarrierBooking booking;
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
-             booking = carrierBookingDao.findById(si.getEntityId())
+            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             validateSubmissionCriteria(booking, si);
