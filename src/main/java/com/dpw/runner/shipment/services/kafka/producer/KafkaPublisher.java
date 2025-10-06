@@ -7,15 +7,11 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaPayload;
 import com.dpw.runner.shipment.services.repository.interfaces.InternalEventRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDateTime;
 
 @Log4j2
 public abstract class KafkaPublisher<T extends KafkaPayload> implements IKafkaPublisher<T> {
-
-    @Autowired
-    protected KafkaTemplate<String, Object> kafkaTemplate;
 
     @Autowired
     protected PostCommitActionExecutor postCommitExecutor;
@@ -47,7 +43,7 @@ public abstract class KafkaPublisher<T extends KafkaPayload> implements IKafkaPu
 
         Long eventId = event.getId();
         log.debug("Event persisted in DB with EventId={}, TransactionId={}", eventId, transactionId);
-        postCommitExecutor.executeAfterCommit(getTopic(), payload, transactionId, eventId, kafkaTemplate);
+        postCommitExecutor.executeAfterCommit(getTopic(), payload, transactionId, eventId);
         log.info("Post-commit execution scheduled successfully. EventId={}, Topic={}", eventId, getTopic());
     }
 }

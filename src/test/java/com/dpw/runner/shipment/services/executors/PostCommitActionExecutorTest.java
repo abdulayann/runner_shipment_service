@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.executors;
 
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.InternalEventRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IKafkaEventPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,9 +14,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import static org.mockito.ArgumentMatchers.*;
+import java.util.List;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,13 +22,7 @@ import static org.mockito.Mockito.*;
 class PostCommitActionExecutorTest {
 
     @Mock
-    private JsonHelper jsonHelper;
-
-    @Mock
-    private InternalEventRepository internalEventRepository;
-
-    @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private IKafkaEventPublisherService kafkaEventPublisherService;
 
     @InjectMocks
     private PostCommitActionExecutor executor;
@@ -37,61 +30,71 @@ class PostCommitActionExecutorTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        // Ensure synchronization is active
+        // Ensure transaction synchronization is active for testing
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.initSynchronization();
         }
     }
 
     @Test
-    void testExecuteAfterCommit_successfulPublish() {
-        // Arrange
+    void testExecuteAfterCommit_successfulPublish() throws Exception {
         String topic = "test-topic";
         String payload = "test-payload";
         String transactionId = "tx123";
         Long eventId = 123L;
-        String payloadJson = "{\"data\":\"test\"}";
-        String wrapperJson = "{\"eventId\":123,\"payload\":\"" + payloadJson + "\"}";
-
-        when(jsonHelper.convertToJson(any(Map.class))).thenReturn(wrapperJson);
 
         // Act
-        executor.executeAfterCommit(topic, payload, transactionId, eventId, kafkaTemplate);
+        executor.executeAfterCommit(topic, payload, transactionId, eventId);
 
         // Trigger afterCommit manually
-        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+        List<TransactionSynchronization> syncs = TransactionSynchronizationManager.getSynchronizations();
+        for (TransactionSynchronization sync : syncs) {
             sync.afterCommit();
         }
 
-        // Assert
-        verify(kafkaTemplate).send(topic, transactionId, wrapperJson);
-        verify(internalEventRepository).updatePublishedStatus(eq(eventId), eq("Published"), any(LocalDateTime.class));
+        // Verify async publish is called
+        verify(kafkaEventPublisherService).publishToKafka(topic, payload, transactionId, eventId);
     }
 
     @Test
-    void testExecuteAfterCommit_publishFails() {
-        // Arrange
+    void testExecuteAfterCommit_publishFails() throws Exception {
         String topic = "test-topic";
         String payload = "test-payload";
         String transactionId = "tx123";
         Long eventId = 123L;
 
-        // Simulate serialization failure
-        when(jsonHelper.convertToJson(any(Map.class))).thenThrow(new RuntimeException("Serialization error"));
+        // Simulate an exception thrown during publish
+        doThrow(new RuntimeException("Kafka publish failed"))
+                .when(kafkaEventPublisherService)
+                .publishToKafka(topic, payload, transactionId, eventId);
 
         // Act
-        executor.executeAfterCommit(topic, payload, transactionId, eventId, kafkaTemplate);
+        executor.executeAfterCommit(topic, payload, transactionId, eventId);
 
         // Trigger afterCommit manually
-        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+        List<TransactionSynchronization> syncs = TransactionSynchronizationManager.getSynchronizations();
+        for (TransactionSynchronization sync : syncs) {
             sync.afterCommit();
         }
 
-        // Assert
-        verify(kafkaTemplate, never()).send(anyString(), anyString(), any());
+        // Verify publish was attempted despite exception
+        verify(kafkaEventPublisherService, timeout(3000)).publishToKafka(topic, payload, transactionId, eventId);
+    }
 
-        // Assert: Internal event repository updated to "Publish_Failed"
-        verify(internalEventRepository, timeout(3000)).updatePublishedStatus(eq(eventId), eq("Publish_Failed"), any(LocalDateTime.class));
+    @Test
+    void testExecuteAfterCommit_noActiveTransaction_executesImmediately() {
+        // Clear transaction synchronizations to simulate no active transaction
+        TransactionSynchronizationManager.clearSynchronization();
+
+        String topic = "test-topic";
+        String payload = "payload";
+        String transactionId = "tx123";
+        Long eventId = 456L;
+
+        executor.executeAfterCommit(topic, payload, transactionId, eventId);
+
+        // Verify publish called immediately
+        verify(kafkaEventPublisherService).publishToKafka(topic, payload, transactionId, eventId);
     }
 }
 

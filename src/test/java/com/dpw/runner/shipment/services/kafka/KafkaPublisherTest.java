@@ -83,8 +83,7 @@ class KafkaPublisherTest {
                 "test-topic",
                 payload,
                 transactionId,
-                999L,
-                kafkaTemplate
+                999L
         );
 
         verify(jsonHelper).convertToJson(payload);
@@ -116,8 +115,7 @@ class KafkaPublisherTest {
                 "test-topic",
                 payload,
                 "txn456",
-                500L,
-                kafkaTemplate
+                500L
         );
     }
 }
