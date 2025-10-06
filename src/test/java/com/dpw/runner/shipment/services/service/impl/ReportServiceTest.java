@@ -4155,6 +4155,7 @@ class ReportServiceTest extends CommonMocks {
                                 .destination("USLAX")
                                 .originPort("INSA")
                                 .destinationPort("UAE")
+                                .vessel("2werssd")
                                 .build())
                         .additionalDetails(new AdditionalDetails()
                                 .setExportBroker(exportBroker)
@@ -4336,6 +4337,7 @@ class ReportServiceTest extends CommonMocks {
                                 .destination("USLAX")
                                 .originPort("INSA")
                                 .destinationPort("UAE")
+                                .vessel("3ersdfd")
                                 .build())
                         .achievedQuantities(AchievedQuantities.builder().containerCount(1).build())
                         .receivingAgent(importBroker)
@@ -4509,6 +4511,7 @@ class ReportServiceTest extends CommonMocks {
                                 .destination("USLAX")
                                 .originPort("INSA")
                                 .destinationPort("UAE")
+                                .shippingLine("3dfsre")
                                 .build())
                         .containersList(List.of(container))
                         .build()));

@@ -34,7 +34,9 @@ import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -2633,17 +2635,15 @@ public class ReportService implements IReportService {
         map.put(SERVICE_TYPE, shipmentDetails.getServiceType());
         map.put(PAYMENT_TERMS, shipmentDetails.getPaymentTerms());
         map.put(INCOTERM, shipmentDetails.getIncoterms());
-        map.put(VESSEL, shipmentDetails.getIncoterms());
         map.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
         map.put(FLIGHT_NUMBER, shipmentDetails.getCarrierDetails().getVoyageOrFlightNumber());
-        map.put(AIRLINE, "");
-        map.put(CARRIER_REF, "");
-        map.put(HAWB_NO, "");
-        map.put(MAWB_NO, "");
+        map.put(AIRLINE, shipmentDetails.getCarrierDetails().getShippingLine());
+        map.put(CARRIER_REF, shipmentDetails.getCarrierDetails().getShippingLine());
+        map.put(HAWB_NO, shipmentDetails.getHouseBill());
+        map.put(MAWB_NO, shipmentDetails.getMasterBill());
         map.put(PACKAGE_COUNT, shipmentDetails.getNoOfPacks());
         map.put(WEIGHT, shipmentDetails.getWeight());
         map.put(VOLUME, shipmentDetails.getVolume());
-        map.put(CUSTOMER_REF, "");
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
         String notifyPartyName = Optional.of(shipmentDetails).map(ShipmentDetails::getAdditionalDetails)
@@ -2675,16 +2675,21 @@ public class ReportService implements IReportService {
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
                 shipmentDetails.getCarrierDetails().getDestinationPort(),
                 shipmentDetails.getCarrierDetails().getOrigin(),
                 shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var tenantsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getTenantDataFromCache(Set.of(UserContext.getUser().getTenantId().toString()),tenantModelMap )), executorService);
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getVesselDataFromCache(Set.of(shipmentDetails.getCarrierDetails().getVessel()),vesselMap )), executorService);
 
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture).join();
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture).join();
         if (tenantModelMap.get(UserContext.getUser().getTenantId().toString()) != null) {
             map.put(SALES_BRANCH, tenantModelMap.get(UserContext.getUser().getTenantId().toString()).tenantName);
+        }
+        if (vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()) != null) {
+            map.put(VESSEL, vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()).Name);
         }
 
         if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
@@ -2711,15 +2716,13 @@ public class ReportService implements IReportService {
         map.put(SERVICE_TYPE, consolidationDetails.getDeliveryMode());
         map.put(PAYMENT_TERMS, consolidationDetails.getPayment());
         map.put(INCOTERM, consolidationDetails.getIncoterms());
-        map.put(VESSEL, "");
         map.put(VOYAGE, consolidationDetails.getCarrierDetails().getVoyage());
         map.put(FLIGHT_NUMBER, consolidationDetails.getCarrierDetails().getVoyageOrFlightNumber());
-        map.put(AIRLINE, "");
-        map.put(CARRIER_REF, "");
+        map.put(AIRLINE, consolidationDetails.getCarrierDetails().getShippingLine());
+        map.put(CARRIER_REF, consolidationDetails.getBookingNumber());
         map.put(PACKAGE_COUNT, consolidationDetails.getAchievedQuantities().getPacks());
         map.put(WEIGHT, consolidationDetails.getAchievedQuantities().getConsolidatedWeight());
         map.put(VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume());
-        map.put(CUSTOMER_REF, "");// here we have list of reference need to check if we needto show them comma separated
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
         try {
@@ -2741,12 +2744,18 @@ public class ReportService implements IReportService {
             log.error(DSTN_ERROR);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
+        Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
                 consolidationDetails.getCarrierDetails().getDestinationPort(),
                 consolidationDetails.getCarrierDetails().getOrigin(),
                 consolidationDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture).join();
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getVesselDataFromCache(Set.of(consolidationDetails.getCarrierDetails().getVessel()),vesselMap )), executorService);
+
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture).join();
+        if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
+            map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
+        }
 
         if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOrigin()))
             map.put(ORIGIN, unLocMap.get(consolidationDetails.getCarrierDetails().getOrigin()).getName());
@@ -2779,12 +2788,11 @@ public class ReportService implements IReportService {
         map.put(VOYAGE, booking.getCarrierDetails().getVoyage());
         map.put(FLIGHT_NUMBER, booking.getCarrierDetails().getVoyageOrFlightNumber());
         map.put(COMMODITY, "");
-        map.put(AIRLINE, "");
-        map.put(CARRIER_REF, "");
-        map.put(PACKAGE_COUNT, "");
-        map.put(WEIGHT, "");
-        map.put(VOLUME, "");
-        map.put(CUSTOMER_REF, "");
+//        map.put(AIRLINE, ""); // shippingline from carrier master data
+        map.put(CARRIER_REF, booking.getCarrierBookingNumber());
+        map.put(WEIGHT, booking.getGrossWeight());
+        map.put(VOLUME, booking.getVolume());
+        map.put(PACKAGE_COUNT, booking.getPackages());
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
         String notifyPartyName = Optional.of(booking).map(CustomerBooking::getNotifyParty).map(Parties::getOrgData).map(orgData -> (String) orgData.get(FULL_NAME))
@@ -2794,14 +2802,18 @@ public class ReportService implements IReportService {
             map.put(NOTIFY_PARTY, notifyPartyName);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
+        Map<String, EntityTransferCarrier> carrierMap = new HashMap<>();
 
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
                 booking.getCarrierDetails().getDestinationPort(),
                 booking.getCarrierDetails().getOrigin(),
                 booking.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
-
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture).join();
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture).join();
+        if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
+            map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
+        }
 
         if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOrigin()) && unLocMap.containsKey(booking.getCarrierDetails().getOrigin()))
             map.put(ORIGIN, unLocMap.get(booking.getCarrierDetails().getOrigin()).getName());
