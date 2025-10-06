@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IValidationsDao;
 import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.constants.ValidatorConstants;
@@ -50,7 +51,7 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet<>();
         Map<String, Object> jsonMap = new HashMap<>();
         long start = System.currentTimeMillis();
-        log.info("Initiating Validation Layer with for entity: {} raw data: {}", entity, json);
+        log.info("Initiating Validation Layer with for entity: {} raw data: {}", LoggerHelper.sanitizeForLogs(entity), LoggerHelper.sanitizeForLogs(json));
         try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             JsonObject jsonObject = jsonReader.readObject();
             generateMap(jsonObject, Constants.EMPTY_STRING, jsonMap);
@@ -68,7 +69,7 @@ public class ValidatorUtility {
                     throw new GenericException(e);
                 }
             }
-            log.info("Ending Validation Layer with for entity: {} with time taken: {} ms", entity, System.currentTimeMillis() - start);
+            log.info("Ending Validation Layer with for entity: {} with time taken: {} ms", LoggerHelper.sanitizeForLogs(entity), System.currentTimeMillis() - start);
         }
 
         return errors;

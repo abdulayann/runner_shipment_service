@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -86,7 +87,7 @@ public class ContainersSync implements IContainersSync {
 
         List<Containers> containers = getContainersFromIds(containerIds);
         if(containers == null || containers.isEmpty()) {
-            log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
+            log.error("Error in syncing containers: Not able to get containers for ids: " + LoggerHelper.sanitizeForLogs(containerIds.toString()));
         }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());

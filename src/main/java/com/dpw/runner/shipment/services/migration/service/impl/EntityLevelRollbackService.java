@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 
 
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,12 +57,26 @@ public class EntityLevelRollbackService {
             String sql = reader.lines().collect(Collectors.joining("\n"));
             for (String statement : sql.split(";")) {
                 if (!statement.trim().isEmpty()) {
+                    if (tenantId != null && schema != null) {
 
-                    String parsed = statement.replace("__TENANT_ID__", tenantId).replace("__SCHEMA__", schema);
+                        // Validate schema and tenantId before using
+                        if (!schema.matches("[A-Za-z0-9_]{1,64}")) {
+                            throw new IllegalArgumentException("Invalid schema name");
+                        }
+                        if (!tenantId.matches("[A-Za-z0-9_\\-]{1,128}")) {
+                            throw new IllegalArgumentException("Invalid tenant ID");
+                        }
 
-                    log.info("Executing: {}", parsed);
-                    jdbcTemplate.execute(parsed);
+                        String parsed = statement
+                                .replace("__TENANT_ID__",tenantId )
+                                .replace("__SCHEMA__", schema);
 
+                        log.info("Executing: {}", LoggerHelper.sanitizeForLogs(parsed));
+                        jdbcTemplate.execute(parsed);
+
+                    } else {
+                        log.error("❌ tenantId and schema cannot be null");
+                    }
                 }
             }
             log.info("✅ SQL script executed successfully.");

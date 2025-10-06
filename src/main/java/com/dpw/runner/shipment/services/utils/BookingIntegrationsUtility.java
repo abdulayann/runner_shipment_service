@@ -207,7 +207,7 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.updateAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+                log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
@@ -221,7 +221,7 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
@@ -255,8 +255,8 @@ public class BookingIntegrationsUtility {
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);
                 customerBookingDao.updateBillStatus(customerBooking.getId(), true);
             } catch (Exception e) {
-                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION,
-                        shipmentResponse.getBookingReference(), e.getMessage());
+                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", LoggerHelper.sanitizeForLogs(IntegrationType.V1_SHIPMENT_CREATION),
+                        LoggerHelper.sanitizeForLogs(shipmentResponse.getBookingReference()), e.getMessage());
                 throw e;
             }
             return ResponseHelper.buildSuccessResponse();
@@ -287,7 +287,7 @@ public class BookingIntegrationsUtility {
         try {
             return shipmentService.createShipmentInV2(customerBookingRequest);
         } catch (Exception ex) {
-            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
+            log.error("Shipment Creation failed for booking number {} with error message: {}", LoggerHelper.sanitizeForLogs(customerBookingRequest.getBookingNumber()), ex.getMessage());
             throw ex;
         }
     }
@@ -296,7 +296,7 @@ public class BookingIntegrationsUtility {
         try {
             return shipmentServiceV3.createShipmentInV3(customerBookingRequest);
         } catch (Exception ex) {
-            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
+            log.error("Shipment Creation failed for booking number {} with error message: {}", LoggerHelper.sanitizeForLogs(customerBookingRequest.getBookingNumber()), ex.getMessage());
             throw ex;
         }
     }
@@ -707,7 +707,7 @@ public class BookingIntegrationsUtility {
         try {
             return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
         } catch (Exception e) {
-            log.error("Exception while retrieving orders for shipmentId {}: {}", shipmentId, e.getMessage(), e);
+            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), e.getMessage(), e);
             return null;
         }
     }
@@ -871,7 +871,7 @@ public class BookingIntegrationsUtility {
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
+                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,LoggerHelper.sanitizeForLogs(orgCode));
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1OrgResponse.getData()).get(0)));
@@ -885,7 +885,7 @@ public class BookingIntegrationsUtility {
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
             if (v1OrgResponse.getData() == null || ((List<?>)v1AddressResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
+                log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(orgCode) , LoggerHelper.sanitizeForLogs(addressCode));
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map<String, Object> addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1AddressResponse.getData()).get(0)));
@@ -1001,14 +1001,14 @@ public class BookingIntegrationsUtility {
      *                      including attributes such as the entity type, event code, and ID.
      */
     private void handleEventCreation(String payloadAction, Document payloadData) {
-        log.info("Starting event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+        log.info("Starting event handling process for action: {} and entity ID: {}", LoggerHelper.sanitizeForLogs(payloadAction), LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
         try {
             // Check if the action and entity type match the criteria for event handling
             if ((Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) || Constants.KAFKA_EVENT_UPDATE.equalsIgnoreCase(payloadAction))
                     && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)) {
 
-                log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", payloadData.getEntityId());
+                log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
                 validateEntityId(payloadData);
 
@@ -1026,7 +1026,7 @@ public class BookingIntegrationsUtility {
                 updatedExistingEvent = getAndUpdateExistingEvent(payloadData, eventListFromDb, shipmentDetails, updatedExistingEvent);
                 if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())
                     || (EventConstants.BOCO.equals(payloadData.getEventCode()) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)))) {
-                    log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
+                    log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
                     if (shipmentDetails.getId() == null) {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
@@ -1044,7 +1044,7 @@ public class BookingIntegrationsUtility {
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
-                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), shipmentDetails.getId());
                     eventService.saveEvent(eventsRequest);
                     log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
@@ -1052,7 +1052,7 @@ public class BookingIntegrationsUtility {
         } catch (Exception ex) {
             log.error("Unexpected error in handleEventCreation: {}", ex.getMessage(), ex);
         } finally {
-            log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+            log.info("Completed event handling process for action: {} and entity ID: {}", LoggerHelper.sanitizeForLogs(payloadAction), LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
             TenantContext.removeTenant();
             UserContext.removeUser();
             RequestAuthContext.removeToken();
@@ -1067,13 +1067,13 @@ public class BookingIntegrationsUtility {
 
     private boolean getAndUpdateExistingEvent(Document payloadData, List<Events> eventListFromDb, ShipmentDetails shipmentDetails, boolean updatedExistingEvent) {
         if (ObjectUtils.isNotEmpty(eventListFromDb)) {
-            log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
+            log.debug("Existing events found for shipment with entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
             for (Events event : eventListFromDb) {
                 if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
                         Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
 
-                    log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
+                    log.info("Updating event: {} with new actual time and entity type.", LoggerHelper.sanitizeForLogs(event.getEventCode()));
                     event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     event.setEntityType(Constants.SHIPMENT);
                     event.setUserName(payloadData.getUserDisplayName());
@@ -1087,7 +1087,7 @@ public class BookingIntegrationsUtility {
                     eventDao.updateEventDetails(event);
                     eventDao.save(event);
                     updatedExistingEvent = true;
-                    log.info("Event updated successfully for event code: {}", event.getEventCode());
+                    log.info("Event updated successfully for event code: {}", LoggerHelper.sanitizeForLogs(event.getEventCode()));
                 }
             }
         }
@@ -1099,7 +1099,7 @@ public class BookingIntegrationsUtility {
         try {
             platformServiceAdapter.updateAtPlatform(request);
         } catch (Exception ex) {
-            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), ex.getMessage());
+            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), ex.getMessage());
             sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
         }
     }

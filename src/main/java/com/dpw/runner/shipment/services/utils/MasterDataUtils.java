@@ -931,7 +931,7 @@ public class MasterDataUtils{
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
 
         if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
-            log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
 
             List<MasterListRequest> masterListRequests = requests.getMasterListRequests();
             int batchSize = take;
@@ -1117,7 +1117,7 @@ public class MasterDataUtils{
             return keyMasterDataMap;
         }
 
-        log.info("Request: {} || UnLocationsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+        log.info("Request: {} || UnLocationsList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
 
         int batchSize = take;
         int totalBatches = (int) Math.ceil((double) requests.size() / batchSize); // Calculate total number of batches
@@ -1265,7 +1265,7 @@ public class MasterDataUtils{
     public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(Set<String> requests) {
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         if(!requests.isEmpty()) {
-            log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
             String operator = Operators.IN.getValue();
@@ -1448,7 +1448,7 @@ public class MasterDataUtils{
         if (requests != null) {
             requests = requests.stream().filter(req -> req != null && !req.trim().isEmpty()).collect(Collectors.toSet());
             if(!requests.isEmpty()) {
-                log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+                log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
                 CommonV1ListRequest request = new CommonV1ListRequest();
                 List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
                 String operator = Operators.IN.getValue();
@@ -1495,7 +1495,7 @@ public class MasterDataUtils{
     public Map<String, EntityTransferCarrier> fetchInBulkCarriers(Set<String> requests) {
         Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
         if(!requests.isEmpty()) {
-            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
             String operator = Operators.IN.getValue();
@@ -1514,7 +1514,7 @@ public class MasterDataUtils{
     public Map<String, EntityTransferCarrier> fetchInBulkCarriersBySCACCode(List<String> requests) {
         Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
         if(!requests.isEmpty()) {
-            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.IDENTIFIER1));
             String operator = Operators.IN.getValue();
@@ -1884,7 +1884,7 @@ public class MasterDataUtils{
         Map<String, TenantModel> keyMasterDataMap = new HashMap<>();
         requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toSet());
         if(!requests.isEmpty()) {
-            log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requests)));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.TENANT_ID));
             String operator = Operators.IN.getValue();
