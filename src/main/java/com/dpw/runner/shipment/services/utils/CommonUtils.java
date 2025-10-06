@@ -1715,11 +1715,14 @@ public class CommonUtils {
     @SuppressWarnings("java:S5857")
     public String replaceDefaultTagsFromData(Map<String, Object> map, String val) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
-                if((entry.getKey().equalsIgnoreCase(SUMMARY_DOCUMENTS) && entry.getValue().toString().isEmpty()) || (entry.getKey().equalsIgnoreCase(LIST_ALL_DOCUMENTS) && entry.getValue().toString().isEmpty())){
-                    continue;
+            if (Objects.nonNull(entry.getValue()) && Objects.nonNull(entry.getKey())) {
+                boolean isEmptyDocument = (entry.getKey().equalsIgnoreCase(SUMMARY_DOCUMENTS) && entry.getValue().toString().isEmpty())
+                        || (entry.getKey().equalsIgnoreCase(LIST_ALL_DOCUMENTS) && entry.getValue().toString().isEmpty());
+
+                if (!isEmptyDocument) {
+                    val = val.replace("{" + entry.getKey() + "}", entry.getKey() + ":" + entry.getValue().toString());
                 }
-                val = val.replace("{" + entry.getKey() + "}", entry.getKey()+ ":" +entry.getValue().toString());
+            }
         }
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
