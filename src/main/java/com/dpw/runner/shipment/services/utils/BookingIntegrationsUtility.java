@@ -1003,7 +1003,7 @@ public class BookingIntegrationsUtility {
      *                      including attributes such as the entity type, event code, and ID.
      */
     private void handleEventCreation(String payloadAction, Document payloadData) {
-        log.info("Starting event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+        log.info("Starting event handling process for action: {} and entity ID: {}", LoggerHelper.sanitizeForLogs(payloadAction), LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
         try {
             // Check if the action and entity type match the criteria for event handling
@@ -1069,13 +1069,13 @@ public class BookingIntegrationsUtility {
 
     private boolean getAndUpdateExistingEvent(Document payloadData, List<Events> eventListFromDb, ShipmentDetails shipmentDetails, boolean updatedExistingEvent) {
         if (ObjectUtils.isNotEmpty(eventListFromDb)) {
-            log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
+            log.debug("Existing events found for shipment with entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
             for (Events event : eventListFromDb) {
                 if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
                         Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
 
-                    log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
+                    log.info("Updating event: {} with new actual time and entity type.", LoggerHelper.sanitizeForLogs(event.getEventCode()));
                     event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     event.setEntityType(Constants.SHIPMENT);
                     event.setUserName(payloadData.getUserDisplayName());
@@ -1089,7 +1089,7 @@ public class BookingIntegrationsUtility {
                     eventDao.updateEventDetails(event);
                     eventDao.save(event);
                     updatedExistingEvent = true;
-                    log.info("Event updated successfully for event code: {}", event.getEventCode());
+                    log.info("Event updated successfully for event code: {}", LoggerHelper.sanitizeForLogs(event.getEventCode()));
                 }
             }
         }

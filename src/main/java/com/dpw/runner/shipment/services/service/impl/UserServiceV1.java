@@ -29,7 +29,9 @@ public class UserServiceV1 implements IUserService {
 
     @Override
     public UsersDto getUserByToken(String token) {
-        log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}", LoggerHelper.getRequestIdFromMDC(), url, token);
+        log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}",
+                LoggerHelper.getRequestIdFromMDC(), url,
+                LoggerHelper.sanitizeForLogs(token));
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
@@ -38,7 +40,9 @@ public class UserServiceV1 implements IUserService {
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<UsersDto> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class);
-        log.info("Request: {} || User retrieved from V1: {}", LoggerHelper.getRequestIdFromMDC(), responseEntity.getBody());
+        log.info("Request: {} || User retrieved from V1: {}",
+                LoggerHelper.getRequestIdFromMDC(),
+                LoggerHelper.sanitizeForLogs(responseEntity.getBody()));
         return responseEntity.getBody();
     }
 

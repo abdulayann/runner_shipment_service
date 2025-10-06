@@ -268,7 +268,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDelete, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDelete, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentDelete,
                     HttpMethod.PUT,
@@ -291,7 +291,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentHistory + "/" + object, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentHistory + "/" + LoggerHelper.sanitizeForLogs(object), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentHistory + "/" + object,
                     HttpMethod.GET,
@@ -315,7 +315,7 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
 
-            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDownload + "?id=" + object, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDownload + "?id=" + LoggerHelper.sanitizeForLogs(object), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentDownload + "?id=" + object,
                     HttpMethod.GET,
