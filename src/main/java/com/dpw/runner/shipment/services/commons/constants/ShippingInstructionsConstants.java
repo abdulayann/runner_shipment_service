@@ -4,11 +4,13 @@ import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.utils.Generated;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Generated
 public class ShippingInstructionsConstants {
 
     private ShippingInstructionsConstants() {
