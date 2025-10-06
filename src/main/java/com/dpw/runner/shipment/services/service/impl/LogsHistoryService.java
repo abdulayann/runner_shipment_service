@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.entity.LogsHistory;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.utils.JsonCompression;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class LogsHistoryService implements ILogsHistoryService {
                     .entityPayload(Base64.getEncoder().encodeToString(entityPayload))
                     .build();
             logsHistory.setTenantId(request.getTenantId());
-            log.info("LogHistory Request: " + jsonHelper.convertToJson(logsHistory));
+            log.info("LogHistory Request: " + LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(logsHistory)));
             logsHistoryDao.save(logsHistory);
             log.info("LogHistory created successfully.");
         } catch (Exception ex){
