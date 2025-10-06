@@ -1718,10 +1718,8 @@ public class CommonUtils {
             if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
                 if((entry.getKey().equalsIgnoreCase(SUMMARY_DOCUMENTS) && entry.getValue().toString().isEmpty()) || (entry.getKey().equalsIgnoreCase(LIST_ALL_DOCUMENTS) && entry.getValue().toString().isEmpty())){
                     continue;
-                }else{
-                    val = val.replace("{" + entry.getKey() + "}", entry.getKey()+ ":" +entry.getValue().toString());
-
                 }
+                val = val.replace("{" + entry.getKey() + "}", entry.getKey()+ ":" +entry.getValue().toString());
         }
         val = val.replaceAll("\\{.*?\\}", "");
         return val;

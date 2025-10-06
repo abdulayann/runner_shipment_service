@@ -2223,8 +2223,8 @@ public class MasterDataUtils{
         return responseMap;
     }
 
-    public void getVesselDataFromCache(Set<String> vesselGuids, Map<String, EntityTransferVessels> VesselMap) {
-        VesselMap.putAll(getVesselDataFromCache(vesselGuids));
+    public void getVesselDataFromCache(Set<String> vesselGuids, Map<String, EntityTransferVessels> vesselMap) {
+        vesselMap.putAll(getVesselDataFromCache(vesselGuids));
     }
 
     public Map<String, EntityTransferVessels> getVesselDataFromCache(Set<String> vesselGuids) {
@@ -2250,8 +2250,8 @@ public class MasterDataUtils{
         return responseMap;
     }
 
-    public void getCarrierDataFromCache(Set<String> vesselGuids, Map<String, EntityTransferCarrier> VesselMap) {
-        VesselMap.putAll(getCarrierDataFromCache(vesselGuids));
+    public void getCarrierDataFromCache(Set<String> carrierGuids, Map<String, EntityTransferCarrier> carrierMap) {
+        carrierMap.putAll(getCarrierDataFromCache(carrierGuids));
     }
 
     public Map<String, EntityTransferCarrier> getCarrierDataFromCache(Set<String> carrierSet) {
