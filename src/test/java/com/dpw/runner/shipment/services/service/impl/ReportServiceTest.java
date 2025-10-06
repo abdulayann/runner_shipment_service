@@ -4117,7 +4117,8 @@ class ReportServiceTest extends CommonMocks {
                 any(ShipmentDetails.class),
                 anyMap(),
                 any(DefaultEmailTemplateRequest.class),
-                anyList()
+                anyList(),
+                anySet()
         );
         EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
         assertNotNull(response);

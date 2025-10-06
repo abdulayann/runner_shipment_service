@@ -2577,43 +2577,47 @@ public class ReportService implements IReportService {
         EmailBodyResponse response = new EmailBodyResponse();
         Map<String, Object> map = new HashMap<>();
         List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
+        Set<String> ccEmailIds = new HashSet<>();
         if(defaultEmailTemplateRequest.getModule().equalsIgnoreCase("Shipment")){
 
             ShipmentDetails shipmentDetails = shipmentDao.findById(defaultEmailTemplateRequest.getId())
                     .orElseThrow(() -> new DataRetrievalFailureException(NO_SHIPMENT_FOUND + defaultEmailTemplateRequest.getId()));
 
-            populateShipmentsTagsAndEmailTemplate(shipmentDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests);
+            populateShipmentsTagsAndEmailTemplate(shipmentDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
                 throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
         } else if (defaultEmailTemplateRequest.getModule().equalsIgnoreCase("Consolidations")) {
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(defaultEmailTemplateRequest.getId()).orElseThrow(
                     () -> new DataRetrievalFailureException("No Consolidation found with Id: "+ defaultEmailTemplateRequest.getId())
             );
 
-            populateConsolTagsAndEmailTemplate(consolidationDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests);
+            populateConsolTagsAndEmailTemplate(consolidationDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
                 throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
         }
         else{
             CustomerBooking booking = customerBookingDao.findById(defaultEmailTemplateRequest.getId()).orElseThrow(
                     () -> new DataRetrievalFailureException("No Booking found with Id: "+ defaultEmailTemplateRequest.getId()));
-            populateBookingTagsAndEmailTemplate(booking, map, defaultEmailTemplateRequest, emailTemplatesRequests);
+            populateBookingTagsAndEmailTemplate(booking, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
             if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
                 throw new RunnerException(NO_TEMPLATE_FOUND);
 
             response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
             response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
         }
         return response;
     }
 
-    public void populateShipmentsTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
+    public void populateShipmentsTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
         map.put(CBN_NUMBER, shipmentDetails.getBookingReference());
         map.put(MODE, shipmentDetails.getTransportMode());
         map.put(LOAD, shipmentDetails.getShipmentType());
@@ -2676,15 +2680,28 @@ public class ReportService implements IReportService {
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
+        Set<String> usernamesList = getUsernamesList(shipmentDetails);
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
                 shipmentDetails.getCarrierDetails().getDestinationPort(),
                 shipmentDetails.getCarrierDetails().getOrigin(),
                 shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var tenantsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getTenantDataFromCache(Set.of(UserContext.getUser().getTenantId().toString()),tenantModelMap )), executorService);
-        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getVesselDataFromCache(Set.of(shipmentDetails.getCarrierDetails().getVessel()),vesselMap )), executorService);
+        var vesselsFuture = Optional.ofNullable(shipmentDetails.getCarrierDetails())
+                .map(CarrierDetails::getVessel)
+                .filter(Objects::nonNull)
+                .map(vessel -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() ->
+                                masterDataUtils.getVesselDataFromCache(Set.of(vessel), vesselMap)
+                        ),
+                        executorService
+                ))
+                .orElse(CompletableFuture.completedFuture(null));
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture).join();
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture, userEmailsFuture).join();
         if (tenantModelMap.get(UserContext.getUser().getTenantId().toString()) != null) {
             map.put(SALES_BRANCH, tenantModelMap.get(UserContext.getUser().getTenantId().toString()).tenantName);
         }
@@ -2692,6 +2709,15 @@ public class ReportService implements IReportService {
             map.put(VESSEL, vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()).Name);
         }
 
+        processUnlocationData(shipmentDetails, map, unLocMap);
+
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()) && usernameEmailsMap.containsKey(shipmentDetails.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(shipmentDetails.getCreatedBy()));
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()) && usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
+            cc.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+    }
+
+    private static void processUnlocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, Map<String, EntityTransferUnLocations> unLocMap) {
         if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
             map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
         if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
@@ -2702,7 +2728,7 @@ public class ReportService implements IReportService {
             map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
     }
 
-    public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
+    public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
         map.put(MODE, consolidationDetails.getTransportMode());
         map.put(LOAD, consolidationDetails.getConsolidationType());
         map.put(ETD_CAPS, consolidationDetails.getCarrierDetails().getEtd());
@@ -2745,14 +2771,27 @@ public class ReportService implements IReportService {
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
+        Set<String> usernamesList = getConsolUsernamesList(consolidationDetails);
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
                 consolidationDetails.getCarrierDetails().getDestinationPort(),
                 consolidationDetails.getCarrierDetails().getOrigin(),
                 consolidationDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
-        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getVesselDataFromCache(Set.of(consolidationDetails.getCarrierDetails().getVessel()),vesselMap )), executorService);
+        var vesselsFuture = Optional.ofNullable(consolidationDetails.getCarrierDetails())
+                .map(CarrierDetails::getVessel)
+                .filter(Objects::nonNull)
+                .map(vessel -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() ->
+                                masterDataUtils.getVesselDataFromCache(Set.of(vessel), vesselMap)
+                        ),
+                        executorService
+                ))
+                .orElse(CompletableFuture.completedFuture(null));
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture).join();
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture, userEmailsFuture).join();
         if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
             map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
         }
@@ -2765,10 +2804,14 @@ public class ReportService implements IReportService {
             map.put(POL, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getName());
         if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort()))
             map.put(POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()) && usernameEmailsMap.containsKey(consolidationDetails.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(consolidationDetails.getCreatedBy()));
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()) && usernameEmailsMap.containsKey(consolidationDetails.getAssignedTo()))
+            cc.add(usernameEmailsMap.get(consolidationDetails.getAssignedTo()));
 
     }
 
-    public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests) {
+    public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
         map.put(CBN_NUMBER, booking.getBookingNumber());
         map.put(MODE, booking.getTransportType());
         map.put(LOAD, booking.getCargoType());
@@ -2803,14 +2846,17 @@ public class ReportService implements IReportService {
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Map<String, EntityTransferCarrier> carrierMap = new HashMap<>();
+        Set<String> usernamesList = getBookingUsernamesList(booking);
 
+        Map<String, String> usernameEmailsMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
                 booking.getCarrierDetails().getDestinationPort(),
                 booking.getCarrierDetails().getOrigin(),
                 booking.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
-        CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture).join();
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture, userEmailsFuture).join();
         if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
             map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
         }
@@ -2823,6 +2869,8 @@ public class ReportService implements IReportService {
             map.put(POL, unLocMap.get(booking.getCarrierDetails().getOriginPort()).getName());
         if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(booking.getCarrierDetails().getDestinationPort()))
             map.put(POD, unLocMap.get(booking.getCarrierDetails().getDestinationPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()) && usernameEmailsMap.containsKey(booking.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(booking.getCreatedBy()));
 
     }
 
@@ -2943,6 +2991,21 @@ public class ReportService implements IReportService {
             usernamesList.add(shipmentDetails.getCreatedBy());
         if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()))
             usernamesList.add(shipmentDetails.getAssignedTo());
+        return usernamesList;
+    }
+    private Set<String> getConsolUsernamesList(ConsolidationDetails consolidationDetails) {
+        Set<String> usernamesList = new HashSet<>();
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()))
+            usernamesList.add(consolidationDetails.getCreatedBy());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()))
+            usernamesList.add(consolidationDetails.getAssignedTo());
+        return usernamesList;
+    }
+
+    private Set<String> getBookingUsernamesList(CustomerBooking booking) {
+        Set<String> usernamesList = new HashSet<>();
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()))
+            usernamesList.add(booking.getCreatedBy());
         return usernamesList;
     }
 
