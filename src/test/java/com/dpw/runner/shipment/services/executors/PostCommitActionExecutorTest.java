@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.executors;
 
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.InternalEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaEventPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +8,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -94,7 +91,7 @@ class PostCommitActionExecutorTest {
         executor.executeAfterCommit(topic, payload, transactionId, eventId);
 
         // Verify publish called immediately
-        verify(kafkaEventPublisherService).publishToKafka(topic, payload, transactionId, eventId);
+        verify(kafkaEventPublisherService, timeout(3000)).publishToKafka(topic, payload, transactionId, eventId);
     }
 }
 
