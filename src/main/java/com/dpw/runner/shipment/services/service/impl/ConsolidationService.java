@@ -1663,7 +1663,9 @@ public class ConsolidationService implements IConsolidationService {
                     bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipmentDetail);
             }
         } catch (Exception e) {
-            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}", shipmentIds.toString(), e.getMessage());
+            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}",
+                    LoggerHelper.sanitizeForLogs(shipmentIds),
+                    e.getMessage());
         }
     }
 

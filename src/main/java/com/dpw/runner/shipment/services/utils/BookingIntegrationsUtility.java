@@ -221,7 +221,9 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}",
+                        LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()),
+                        e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
