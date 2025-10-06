@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -55,7 +56,7 @@ public class ConsolidationValidationV3Util {
     public void validateConsolidationIdAndShipmentIds(Long consolidationId, List<Long> shipmentIds) {
         // Check for null consolidation ID or empty shipment ID list
         if (consolidationId == null || ObjectUtils.isEmpty(shipmentIds)) {
-            log.error("Validation failed: Consolidation ID or Shipment IDs are invalid. ID: {}, Shipments: {}", consolidationId, shipmentIds);
+            log.error("Validation failed: Consolidation ID or Shipment IDs are invalid. ID: {}, Shipments: {}", LoggerHelper.sanitizeForLogs(consolidationId), LoggerHelper.sanitizeForLogs(shipmentIds));
             throw new IllegalArgumentException("Consolidation ID and Shipment IDs must not be null or empty");
         }
     }

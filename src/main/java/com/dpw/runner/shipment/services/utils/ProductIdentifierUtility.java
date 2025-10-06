@@ -82,7 +82,7 @@ public class ProductIdentifierUtility {
     var productSequence = getCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       var regexPrefix = productSequence.getPrefix();
-      log.info("CR-ID {} || prefix for common sequence {}", LoggerHelper.getRequestIdFromMDC(), regexPrefix);
+      log.info("CR-ID {} || prefix for common sequence {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(regexPrefix));
       sequenceNumber = regexToSequenceNumber(productSequence, transportMode);
     }
     return sequenceNumber;
