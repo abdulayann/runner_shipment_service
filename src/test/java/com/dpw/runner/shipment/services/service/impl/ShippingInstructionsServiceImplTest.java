@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEven
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -48,10 +49,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -135,6 +133,8 @@ class ShippingInstructionsServiceImplTest {
     private INotificationService notificationService;
     @InjectMocks
     private ShippingInstructionUtil shippingInstructionUtil;
+    @Mock
+    private IContainerDao containerDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShippingInstruction testSI;
@@ -1476,5 +1476,147 @@ class ShippingInstructionsServiceImplTest {
             // Verify that email sending did not occur
             verify(notificationService, times(0)).sendEmail(any(SendEmailBaseRequest.class));
         }
+    }
+
+    // ========== SYNC COMMON CONTAINERS TESTS ==========
+
+    @Test
+    void syncCommonContainersByConsolId_whenConsolIdIsNull_shouldReturnEarly() {
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(null);
+
+        // Assert
+        verifyNoInteractions(shippingInstructionDao, containerDao, commonContainersDao);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenNoShippingInstructionsFound_shouldReturnEarly() {
+        // Arrange
+        Long consolId = 100L;
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(Collections.emptyList());
+        when(shippingInstructionDao.findByCarrierBookingConsolId(List.of(consolId)))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        verify(shippingInstructionDao).findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId));
+        verify(shippingInstructionDao).findByCarrierBookingConsolId(List.of(consolId));
+        verifyNoInteractions(containerDao, commonContainersDao);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenNoContainersFound_shouldReturnEarly() {
+        // Arrange
+        Long consolId = 200L;
+        Long siId = 300L;
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(projection));
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        verify(containerDao).findByConsolidationId(consolId);
+        verifyNoInteractions(commonContainersDao);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenContainersFoundNull_shouldReturnEarly() {
+        // Arrange
+        Long consolId = 200L;
+        Long siId = 300L;
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(projection));
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(null);
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        verify(containerDao).findByConsolidationId(consolId);
+        verifyNoInteractions(commonContainersDao);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenDirectSIFound_shouldCreateNewCommonContainers() {
+        // Arrange
+        Long consolId = 100L;
+        Long siId = 200L;
+        UUID containerGuid = UUID.randomUUID();
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(List.of(projection));
+
+        Containers container = new Containers();
+        container.setGuid(containerGuid);
+        container.setContainerNumber("CONT001");
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(List.of(container));
+
+        when(commonContainersDao.getAll(List.of(containerGuid)))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonContainersDao).saveAll(captor.capture());
+
+        List<CommonContainers> saved = captor.getValue();
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).getContainerRefGuid()).isEqualTo(containerGuid);
+        assertThat(saved.get(0).getShippingInstructionId()).isEqualTo(siId);
+    }
+
+    @Test
+    void syncCommonContainersByConsolId_whenSIFoundViaCarrier_shouldUseCarrierRoute() {
+        // Arrange
+        Long consolId = 100L;
+        Long siId = 200L;
+        UUID containerGuid = UUID.randomUUID();
+
+        when(shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId)))
+                .thenReturn(Collections.emptyList());
+
+        ShippingConsoleIdProjection projection = mock(ShippingConsoleIdProjection.class);
+        when(projection.getId()).thenReturn(siId);
+        when(shippingInstructionDao.findByCarrierBookingConsolId(List.of(consolId)))
+                .thenReturn(List.of(projection));
+
+        Containers container = new Containers();
+        container.setGuid(containerGuid);
+        container.setContainerNumber("CONT001");
+        when(containerDao.findByConsolidationId(consolId))
+                .thenReturn(List.of(container));
+
+        when(commonContainersDao.getAll(List.of(containerGuid)))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        shippingInstructionUtil.syncCommonContainersByConsolId(consolId);
+
+        // Assert
+        verify(shippingInstructionDao).findByCarrierBookingConsolId(List.of(consolId));
+        ArgumentCaptor<List<CommonContainers>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonContainersDao).saveAll(captor.capture());
+
+        List<CommonContainers> saved = captor.getValue();
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).getShippingInstructionId()).isEqualTo(siId);
     }
 }
