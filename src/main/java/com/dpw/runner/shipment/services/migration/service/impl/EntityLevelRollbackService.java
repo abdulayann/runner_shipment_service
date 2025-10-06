@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 
 
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,12 +67,11 @@ public class EntityLevelRollbackService {
                             throw new IllegalArgumentException("Invalid tenant ID");
                         }
 
-                        // Escape tenantId safely as SQL literal
                         String parsed = statement
                                 .replace("__TENANT_ID__",tenantId )
                                 .replace("__SCHEMA__", schema);
 
-                        log.info("Executing: {}", parsed);
+                        log.info("Executing: {}", LoggerHelper.sanitizeForLogs(parsed));
                         jdbcTemplate.execute(parsed);
 
                     } else {
