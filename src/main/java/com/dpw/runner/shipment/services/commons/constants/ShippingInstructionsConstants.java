@@ -114,12 +114,6 @@ public class ShippingInstructionsConstants {
                     .fieldName("createdBy")
                     .isContainsText(false)
                     .build()),
-            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder()
-                    .tableName(SAILING_INFORMATION)
-                    .dataType(String.class)
-                    .fieldName("verifiedGrossMassCutoff")
-                    .isContainsText(true)
-                    .build()),
             Map.entry("carrier", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
                     .dataType(String.class)
