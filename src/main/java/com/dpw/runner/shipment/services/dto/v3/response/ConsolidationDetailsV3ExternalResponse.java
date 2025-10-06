@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Map;
 import java.time.LocalDateTime;
@@ -17,72 +18,26 @@ import java.util.UUID;
 import java.util.List;
 
 
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
 @Data
-public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
-    private Long id;
-    private UUID guid;
-    private String consolidationType;
-    private String consolidationNumber;
-    private Integer tenantId;
-    private String transportMode;
-    private String assignedTo;
-    private String mawb;
-    private String payment;
-    private String containerCategory;
+public class ConsolidationDetailsV3ExternalResponse extends ConsolidationDetailsBaseResponse implements IRunnerResponse {
     private String deliveryMode;
-    private String referenceNumber;
-    private String coLoadMBL;
-    private LocalDateTime terminalCutoff;
-    private String dgClass;
-    private String coLoadBookingReference;
-    private LocalDateTime reeferCutoff;
-    private String dgSubstance;
-    private LocalDateTime verifiedGrossMassCutoff;
-    private LocalDateTime hazardousBookingCutoff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;
     private LocalDateTime earliestDropOffFullEquToCarrier;
-    private LocalDateTime shipInstructionCutoff;
-    private Boolean isLocked;
-    private String shipmentType;
-    private String lockedBy;
-    private String bol;
-    private LocalDateTime igmInwardDate;
-    private String description;
-    private String additionalTerms;
-    private LocalDateTime igmFileDate;
-    private LocalDateTime inwardDateAndTime;
-    private String marksnNums;
-    private String igmFileNo;
-    private LocalDateTime smtpigmDate;
-    private String smtpigmNumber;
-    private Boolean isInland;
-    private Long receivingBranch;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
-    private AchievedQuantitiesResponse achievedQuantities;
-    private Long sourceTenantId;
-    private CarrierDetailResponse carrierDetails;
     private ShipmentWtVolResponse shipmentWtVolResponse;
-    private AllocationsResponse allocations;
     private String sendingAgentCountry;
     private String receivingAgentCountry;
     private PartiesExternalResponse sendingAgent;
     private PartiesExternalResponse borrowedFrom;
-    private String createdBy;
-    private String bookingNumber;
     private PartiesExternalResponse receivingAgent;
     private List<String> shipmentIds;
     private List<ReferenceNumbersResponse> referenceNumbersList;
-    private String bookingId;
     private List<PartiesExternalResponse> consolidationAddresses;
     private List<String> houseBills;
-    private String bookingStatus;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime createdAt;
     private Map<String, String> masterData;
     private Map<String, String> currenciesMasterData;
     private String carrierBookingRef;
@@ -97,7 +52,6 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private AwbStatus awbStatus;
     private String emergencyContactNumberCode;
     private Boolean creatingFromDgShipment;
-    private Boolean hazardous;
     private String emergencyContactNumber;
     private List<String> screeningStatus;
     private String aomFreeText;
@@ -109,16 +63,8 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private PartiesExternalResponse client;
     private String sci;
     private Boolean openForAttachment;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
-    private LocalDateTime latDate;
     private Boolean interBranchConsole;
-    private String department;
-    private Integer pendingActionCount;
     private String transferStatus;
-    private Boolean isNetworkFlag;
-    private Boolean isTransferredToReceivingBranch;
-    private Boolean isReceivingBranchManually;
     private String coLoadCarrierName;
     private String partner;
     private Long shipmentsCount;
@@ -137,6 +83,4 @@ public class ConsolidationDetailsV3ExternalResponse implements IRunnerResponse {
     private List<EventsResponse> eventsList;
     private List<ContainerResponse> containersList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
-    private Boolean controlled;
-    private String controlledReferenceNumber;
 }

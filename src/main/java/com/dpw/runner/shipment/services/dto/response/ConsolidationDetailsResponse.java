@@ -8,92 +8,56 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ConsolidationDetailsResponse implements IRunnerResponse {
-    private Long id;
-    private UUID guid;
-    private Integer tenantId;
-    private String consolidationNumber;
-    private String consolidationType;
-    private String transportMode;
-    private String containerCategory;
+public class ConsolidationDetailsResponse extends ConsolidationDetailsBaseResponse implements IRunnerResponse {
     private Boolean isDomestic;
-    private String assignedTo;
-    private String mawb;
     private String serviceLevel;
-    private String payment;
     private String declarationType;
     private String deliveryMode;
     private Boolean isLinked;
     private Boolean isCharter;
-    private String referenceNumber;
     private String packageType;
     private String agentReference;
-    private String coLoadMBL;
-    private String coLoadBookingReference;
     private String manifestPrint;
     private String printOtherDocs;
     private String awbDims;
     private String releaseType;
     private LocalDateTime masterBillIssueDate;
-    private String dgClass;
-    private String dgSubstance;
     private Boolean override;
     private LocalDateTime estimatedTerminalCutoff;
-    private LocalDateTime terminalCutoff;
-    private LocalDateTime verifiedGrossMassCutoff;
-    private LocalDateTime reeferCutoff;
     private LocalDateTime bookingCutoff;
-    private LocalDateTime shipInstructionCutoff;
-    private LocalDateTime hazardousBookingCutoff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
-    private String shipmentType;
-    private String bol;
     private Boolean isCargoOnly;
-    private Boolean isLocked;
-    private String lockedBy;
     private String specialInstructions;
-    private String description;
-    private String marksnNums;
-    private String additionalTerms;
     private LocalDateTime docsClosingTime;
     private LocalDateTime cargoClosingTime;
     private String mrnNumber;
     private String msnNumber;
-    private LocalDateTime igmFileDate;
-    private LocalDateTime igmInwardDate;
-    private LocalDateTime inwardDateAndTime;
-    private String igmFileNo;
-    private String smtpigmNumber;
-    private LocalDateTime smtpigmDate;
-    private Boolean isInland;
     private Integer original;
     private Integer copy;
     private String doPlaceOfIssue;
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
-    private Long sourceTenantId;
     private String ediTransactionId;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
-    private Long receivingBranch;
     private boolean intraBranch;
     private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
@@ -101,9 +65,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean isSendingAgentFreeTextAddress;
     private String sendingAgentFreeTextAddress;
     private String placeOfIssue;
-    private CarrierDetailResponse carrierDetails;
-    private AchievedQuantitiesResponse achievedQuantities;
-    private AllocationsResponse allocations;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
     private String sendingAgentCountry;
@@ -121,15 +82,9 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<JobResponse> jobsList;
     private List<EventsResponse> eventsList;
     private List<FileRepoResponse> fileRepoList;
-    private String createdBy;
     private List<String> houseBills;
     private List<String> shipmentIds;
-    private String bookingId;
     private List<PartiesResponse> consolidationAddresses;
-    private String bookingStatus;
-    private String bookingNumber;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime createdAt;
     private String carrierBookingRef;
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
@@ -145,7 +100,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
-    private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
     private Boolean creatingFromDgShipment;
@@ -162,15 +116,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @ExcludeTimeZone
-    private LocalDateTime latDate;
-    private Integer pendingActionCount;
-    private String department;
-    private Boolean isNetworkFlag;
     private String transferStatus;
-    private Boolean isReceivingBranchManually;
-    private Boolean isTransferredToReceivingBranch;
     private Long originBranch;
     private String incoterms;
     private String incotermsLocation;
@@ -178,6 +124,4 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String partner;
     private Boolean reefer;
     private MigrationStatus migrationStatus;
-    private Boolean controlled;
-    private String controlledReferenceNumber;
 }
