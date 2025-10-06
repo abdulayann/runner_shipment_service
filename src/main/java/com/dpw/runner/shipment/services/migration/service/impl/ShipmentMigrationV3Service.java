@@ -101,6 +101,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private MasterDataUtils masterDataUtils;
     @Autowired
     private ContractIdMapUtil contractIdMapUtil;
+    @Autowired
+    private IRoutingsRepository routingsRepository;
     @Value("${spring.profiles.active}")
     private String currentEnvironment;
 
@@ -151,6 +153,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             referenceNumbersRepository.saveAll(shipment.getReferenceNumbersList());
             log.info("Saved updated references list for Shipment [id={}]", shipment.getId());
         }
+
+        //Save Routing details
+        if (!CommonUtils.listIsNullOrEmpty(shipment.getRoutingsList())) {
+            routingsRepository.saveAll(shipment.getRoutingsList());
+            log.info("Saved updated routing list for Shipment [id={}]", shipment.getId());
+        }
+
         if(shipment.getShipmentAddresses()!=null && !shipment.getShipmentAddresses().isEmpty()) {
             partiesRepository.saveAll(shipment.getShipmentAddresses());
             log.info("Updating shipment Addresses for Shipment [id={}]", shipment.getId());
@@ -348,7 +357,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         packing.setPacksType(PackingConstants.PKG);
         packing.setVolume(BigDecimal.ZERO);
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        packing.setCommodity("MISC");
+        packing.setCommodity("--");
     }
 
     private void createPacksForUnassignedContainers(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {

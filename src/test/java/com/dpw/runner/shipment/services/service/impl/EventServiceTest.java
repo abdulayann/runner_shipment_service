@@ -1,5 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -14,15 +33,30 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.EventsDump;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -40,6 +74,17 @@ import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,19 +107,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -558,6 +590,7 @@ class EventServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
@@ -980,6 +1013,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
 
         var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
