@@ -164,43 +164,53 @@ public class ShippingInstructionUtil {
             return;
         }
 
-        // --- Step 1: Resolve SI id(s) for this consolidation ---
-        List<Long> siIds = new ArrayList<>();
-
-        // 1a: Direct lookup (entityType = CONSOLIDATION)
-        List<ShippingConsoleIdProjection> direct =
-                shippingInstructionDao.findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId));
-
-        if (!direct.isEmpty()) {
-            siIds.addAll(direct.stream()
-                    .map(ShippingConsoleIdProjection::getId)
-                    .filter(Objects::nonNull)
-                    .toList());
-        }
-
-        // 1b: If nothing found, try via CarrierBooking
+        List<Long> siIds = resolveShippingInstructionIds(consolId);
         if (siIds.isEmpty()) {
-            List<ShippingConsoleIdProjection> viaCarrier =
-                    shippingInstructionDao.findByCarrierBookingConsolId(List.of(consolId));
-
-            siIds.addAll(viaCarrier.stream()
-                    .map(ShippingConsoleIdProjection::getId)
-                    .filter(Objects::nonNull)
-                    .toList());
-        }
-
-        if (siIds.isEmpty()) {
-            // no SI mapped, nothing to sync
             return;
         }
 
-        // --- Step 2: Fetch all containers for this consolidation ---
         List<Containers> containers = containerDao.findByConsolidationId(consolId);
         if (containers == null || containers.isEmpty()) {
             return;
         }
 
-        // --- Step 3: Fetch existing common_containers for all these guids ---
+        Map<UUID, CommonContainers> commonMap = buildCommonContainersMap(containers);
+        List<CommonContainers> toSave = updateContainers(containers, commonMap, siIds);
+
+        if (!toSave.isEmpty()) {
+            commonContainersDao.saveAll(toSave);
+        }
+    }
+
+    private List<Long> resolveShippingInstructionIds(Long consolId) {
+        List<Long> siIds = findDirectShippingInstructions(consolId);
+
+        if (siIds.isEmpty()) {
+            siIds = findShippingInstructionsViaCarrier(consolId);
+        }
+
+        return siIds;
+    }
+
+    private List<Long> findDirectShippingInstructions(Long consolId) {
+        return shippingInstructionDao
+                .findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId))
+                .stream()
+                .map(ShippingConsoleIdProjection::getId)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private List<Long> findShippingInstructionsViaCarrier(Long consolId) {
+        return shippingInstructionDao
+                .findByCarrierBookingConsolId(List.of(consolId))
+                .stream()
+                .map(ShippingConsoleIdProjection::getId)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private Map<UUID, CommonContainers> buildCommonContainersMap(List<Containers> containers) {
         List<UUID> guids = containers.stream()
                 .map(Containers::getGuid)
                 .filter(Objects::nonNull)
@@ -211,48 +221,59 @@ public class ShippingInstructionUtil {
 
         for (CommonContainers cc : commonContainersDao.getAll(guids)) {
             UUID guid = cc.getContainerRefGuid();
-            if (guid == null) continue;
+            if (guid == null) {
+                continue;
+            }
 
             if (commonMap.containsKey(guid)) {
                 conflictedGuids.add(guid);
+                commonMap.remove(guid);
                 log.warn("Duplicate containerRefGuid found: {}. Skipping both entries.", guid);
             } else if (!conflictedGuids.contains(guid)) {
                 commonMap.put(guid, cc);
             }
         }
 
-        List<CommonContainers> toSave = new ArrayList<>();
+        return commonMap;
+    }
 
-        // --- Step 4: Update each container’s common record ---
+    private List<CommonContainers> updateContainers(
+            List<Containers> containers,
+            Map<UUID, CommonContainers> commonMap,
+            List<Long> siIds) {
+
+        List<CommonContainers> toSave = new ArrayList<>();
+        Long firstSiId = siIds.isEmpty() ? null : siIds.get(0);
+
         for (Containers container : containers) {
             if (container.getGuid() == null) {
-                continue; // skip invalid container
+                continue;
             }
 
-            CommonContainers common = commonMap.get(container.getGuid());
-            if (common == null) {
-                common = new CommonContainers();
-                common.setContainerRefGuid(container.getGuid());
-            }
-
-            // copy details from container -> common
+            CommonContainers common = getOrCreateCommonContainer(container, commonMap);
             updateCommonContainerFromContainer(common, container);
 
-            // attach first SI id (if multiple exist)
-            if (!siIds.isEmpty()) {
-                common.setShippingInstructionId(siIds.get(0));
+            if (firstSiId != null) {
+                common.setShippingInstructionId(firstSiId);
             }
 
             toSave.add(common);
         }
 
-        // --- Step 5: Save all updated commons ---
-        if (!toSave.isEmpty()) {
-            commonContainersDao.saveAll(toSave);
-        }
+        return toSave;
     }
 
+    private CommonContainers getOrCreateCommonContainer(
+            Containers container,
+            Map<UUID, CommonContainers> commonMap) {
 
+        CommonContainers common = commonMap.get(container.getGuid());
+        if (common == null) {
+            common = new CommonContainers();
+            common.setContainerRefGuid(container.getGuid());
+        }
+        return common;
+    }
 
 
     public void syncCommonPackings(List<Packing> packings) {
