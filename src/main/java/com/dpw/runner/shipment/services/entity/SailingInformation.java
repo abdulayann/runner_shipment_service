@@ -45,6 +45,18 @@ public class SailingInformation extends MultiTenancy {
     @UnlocationData
     private String carrierDeliveryPlace;
 
+    @Column(name = "carrier_receipt_loc_code")
+    private String carrierReceiptLocCode;
+
+    @Column(name = "carrier_delivery_loc_code")
+    private String carrierDeliveryLocCode;
+
+    @Column(name = "origin_port_loc_code")
+    private String originPortLocCode;
+
+    @Column(name = "destination_port_loc_code")
+    private String destinationPortLocCode;
+
     @Column(name = "carrier")
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String carrier;

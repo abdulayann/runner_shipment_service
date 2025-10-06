@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -29,11 +30,17 @@ public class VerifiedGrossMassListResponse implements IRunnerResponse {
     private PartiesResponse responsible;
     private List<PartiesResponse> additionalParties;
 
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
 
     private SailingInformationResponse sailingInformation;
 
     private List<CommonContainerResponse> containersList;
     private List<ReferenceNumberResponse> referenceNumbersList;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
+    private String createByUserEmail;
+    private String submitByUserEmail;
 }

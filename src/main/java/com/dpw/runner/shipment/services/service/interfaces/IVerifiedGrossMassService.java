@@ -64,5 +64,13 @@ public interface IVerifiedGrossMassService {
     void submitOrAmendVerifiedGrossMass(SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException;
 
     void updateVgmStatus(VgmEventDto vgm);
+
+    /**
+     * Sync Verified Gross mass Containers from Console.
+     *
+     * @param commonContainerIds list of container ids
+     * @return list of CommonContainerResponse
+     */
+    List<CommonContainerResponse> syncContainersByIds(List<Long> commonContainerIds);
 }
 

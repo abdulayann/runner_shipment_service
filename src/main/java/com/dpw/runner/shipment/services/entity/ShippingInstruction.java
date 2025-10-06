@@ -96,6 +96,18 @@ public class ShippingInstruction extends MultiTenancy {
     @Column(name = "non_nego_un_freight_copies")
     private Integer nonNegoUnFreightCopies;
 
+    @Column(name = "internal_emails", columnDefinition = "TEXT")
+    private String internalEmails;
+
+    @Column(name = "external_emails", columnDefinition = "TEXT")
+    private String externalEmails;
+
+    @Column(name = "created_by_user_email")
+    private String createByUserEmail;
+
+    @Column(name = "submit_by_user_email")
+    private String submitByUserEmail;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contract_id", referencedColumnName = "id")
     @OrganizationData
@@ -115,6 +127,11 @@ public class ShippingInstruction extends MultiTenancy {
     @JoinColumn(name = "forwarding_agent_id", referencedColumnName = "id")
     @OrganizationData
     private Parties forwardingAgent;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "requestor_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties requestor;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES'")
@@ -144,4 +161,7 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "si_payload")
     private String payloadJson;
+
+    @Column(name = "si_comments")
+    private String comments;
 }

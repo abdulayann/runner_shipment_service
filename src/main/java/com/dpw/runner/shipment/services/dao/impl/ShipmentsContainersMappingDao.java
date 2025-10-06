@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -110,7 +111,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             }
         }
         try {
-            log.info("Call sync containers from assignContainers with ids: " + containerIds);
+            log.info("Call sync containers from assignContainers with ids: " + LoggerHelper.sanitizeForLogs(containerIds));
             containersSync.sync(containerIds, findAllByContainerIds(containerIds), transactionId);
         }
         catch (Exception e) {

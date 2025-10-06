@@ -93,12 +93,12 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException {
         String url = baseUrl + creditConfigUrl;
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
-        log.info("Request id {} MDM Request {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        log.info("Request id {} MDM Request {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).headers(headers).body(jsonHelper.convertToJson(request)), Object.class);
-            log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
+            log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response)));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){
             log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(ex.getMessage()));
@@ -123,7 +123,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseBody));
                 return finalStatus;
             }catch (Exception ex){
-                log.error("Error getting the approval status for the parties : {}", commonRequestModel.getData());
+                log.error("Error getting the approval status for the parties : {}", LoggerHelper.sanitizeForLogs(commonRequestModel.getData()));
                 log.error("ERROR : {}", ex.getMessage());
             }
         }

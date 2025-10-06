@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IReportService;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.reportService.MailAuditLogRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
@@ -58,7 +59,7 @@ public class ReportServiceAdapter implements IReportService {
             uri = new URI(uri.toString() + "?" + getQueryString(parameters));
         }
 
-        log.info("Calling Report Service uri {} : with request: {}", uri.toString(), body.toString());
+        log.info("Calling Report Service uri {} : with request: {}", LoggerHelper.sanitizeForLogs(uri.toString()), LoggerHelper.sanitizeForLogs(body.toString()));
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.post(uri).body(body), Object.class);

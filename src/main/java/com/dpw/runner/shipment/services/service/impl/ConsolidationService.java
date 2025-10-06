@@ -6644,10 +6644,10 @@ public class ConsolidationService implements IConsolidationService {
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(UUID.fromString(request.getGuid()));
             if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().id(consolidationDetails.get().getId()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -6671,10 +6671,10 @@ public class ConsolidationService implements IConsolidationService {
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().guid(consolidationDetails.get().getGuid()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -6700,10 +6700,10 @@ public class ConsolidationService implements IConsolidationService {
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY,  LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             Map<Long, Boolean> containerIdDgAllowedMap = getContainerIdDgAllowedMap(consolidationDetails.get());
             return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {

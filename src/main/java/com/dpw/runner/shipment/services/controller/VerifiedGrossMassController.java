@@ -159,4 +159,16 @@ public class VerifiedGrossMassController {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_SYNC_CONTAINERS_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> syncContainersByIds(@RequestBody List<Long> commonContainerIds) {
+        log.info("Received Verified Gross Mass SYNC CONTAINERS request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(commonContainerIds));
+        List<CommonContainerResponse> response = verifiedGrossMassService.syncContainersByIds(commonContainerIds);
+        log.info("Verified Gross Mass SYNC CONTAINERS successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
+        return ResponseHelper.buildSuccessResponse(response);
+    }
 }
