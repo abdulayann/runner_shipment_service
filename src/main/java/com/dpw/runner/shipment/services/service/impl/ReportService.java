@@ -2615,7 +2615,9 @@ public class ReportService implements IReportService {
                 }
             }
         } catch (Exception e) {
-            log.error("Error while triggering automatic transfer for report {}, errorMsg: {}", reportRequest.getReportInfo(), e.getMessage());
+            log.error("Error while triggering automatic transfer for report {}, errorMsg: {}",
+                    LoggerHelper.sanitizeForLogs(reportRequest.getReportInfo()),
+                    e.getMessage());
         }
     }
 
