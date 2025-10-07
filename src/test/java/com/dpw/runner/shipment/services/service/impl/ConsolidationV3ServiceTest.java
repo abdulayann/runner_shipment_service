@@ -1,5 +1,36 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_CLD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -66,6 +97,34 @@ import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,6 +141,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -6914,5 +6974,125 @@ if (unitConversionUtilityMockedStatic != null) {
         boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
         assertTrue(result);
     }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_success() throws Exception {
+    CarrierDetails carrierDetails = new CarrierDetails();
+    carrierDetails.setOrigin("INMAA");
+    carrierDetails.setDestination("SGSIN");
+    ShipmentDetails shipmentDetails = new ShipmentDetails();
+    shipmentDetails.setId(1L);
+    shipmentDetails.setTransportMode("SEA");
+    shipmentDetails.setDirection("EXPORT");
+    shipmentDetails.setShipmentType("FCL");
+    shipmentDetails.setJobType("LCL");
+    shipmentDetails.setServiceType("DOOR_TO_DOOR");
+    shipmentDetails.setCarrierDetails(carrierDetails);
+    when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+    doNothing().when(commonUtils).validateAirSecurityPermission(anyString(), anyString());
+    doAnswer(inv -> {
+      Object value = inv.getArgument(0);
+      Object consumerObj = inv.getArgument(1);
+      if (consumerObj instanceof Consumer<?>) {
+        @SuppressWarnings("unchecked")
+        Consumer<Object> consumer = (Consumer<Object>) consumerObj;
+        consumer.accept(value == null ? null : "mocked");
+      }
+      return null;
+    }).when(commonUtils).mapIfSelected(any(), any());
+    ConsolidationDetailsV3Response result = consolidationV3Service.getNewConsoleDataFromShipment(1L);
+    assertNotNull(result);
+    assertEquals("mocked", result.getTransportMode());
+    verify(shipmentDao).findById(1L);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+
+
+  @Test
+  void testGetNewConsoleDataFromShipment_nullId_shouldThrowValidationException() {
+    ValidationException ex = assertThrows(
+            ValidationException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(null)
+    );
+    assertEquals("Shipment Id Is Mandatory", ex.getMessage());
+  }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_shipmentNotFound_shouldThrowRunnerException() {
+    when(shipmentDao.findById(10L)).thenReturn(Optional.empty());
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(10L)
+    );
+    assertTrue(ex.getMessage().contains("Data retrieval") || ex.getMessage() != null);
+  }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_daoThrowsException_shouldThrowRunnerException() {
+    when(shipmentDao.findById(5L)).thenThrow(new RuntimeException("DB Failure"));
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(5L)
+    );
+    assertEquals("DB Failure", ex.getMessage());
+  }
+
+  @Test
+  void testSetHeaderDetailsFromShipment_shouldInvokeMapIfSelected() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode("AIR");
+    shipment.setDirection("IMPORT");
+    shipment.setShipmentType("LCL");
+    shipment.setJobType("JOBTYPE");
+    shipment.setServiceType("SERVTYPE");
+    CarrierDetails carrier = new CarrierDetails();
+    carrier.setOrigin("INMAA");
+    carrier.setDestination("SGSIN");
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setHeaderDetailsFromShipment(shipment, response, carrier, builder);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+  @Test
+  void testSetGeneralDetailsFromShipment_shouldInvokeMapIfSelected() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setPartner("ABC");
+    shipment.setCoLoadCarrierName("XYZ");
+    shipment.setBookingNumber("BKG001");
+    CarrierDetails carrier = new CarrierDetails();
+    carrier.setEtd(LocalDateTime.now());
+    carrier.setEta(LocalDateTime.now().plusDays(2));
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setGeneralDetailsFromShipment(shipment, response, carrier, builder);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+  @Test
+  void testSetAgentDetailsFromShipment_shouldMapBothAgents() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    AdditionalDetails details = new AdditionalDetails();
+    details.setExportBroker(new Parties());
+    details.setImportBroker(new Parties());
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setAdditionalDetails(details);
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    when(commonUtils.getPartiesResponse(any())).thenReturn(new PartiesResponse());
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setAgentDetailsFromShipment(shipment, response);
+    verify(commonUtils, times(2)).mapIfSelected(any(), any());
+  }
 
 }

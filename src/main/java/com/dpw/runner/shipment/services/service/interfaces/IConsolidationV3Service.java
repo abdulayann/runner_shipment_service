@@ -92,4 +92,5 @@ public interface IConsolidationV3Service {
     ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException;
     void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
                                                 ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment);
+    ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id) throws RunnerException, AuthenticationException;
 }
