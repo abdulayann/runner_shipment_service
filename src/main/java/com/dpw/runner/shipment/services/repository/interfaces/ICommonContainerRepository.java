@@ -9,7 +9,7 @@ import java.util.UUID;
 public interface ICommonContainerRepository extends MultiTenancyRepository<CommonContainers> {
     @Query(value = "select * " +
             "from common_containers where container_ref_guid = ?1 and is_deleted is false;", nativeQuery = true)
-    public CommonContainers getByGuid(String guid);
+    public CommonContainers getByGuid(UUID guid);
 
     @Query(value = "select * from common_containers where container_ref_guid in (?1);", nativeQuery = true)
     public List<CommonContainers> findAllByGuid(List<UUID> guids);
