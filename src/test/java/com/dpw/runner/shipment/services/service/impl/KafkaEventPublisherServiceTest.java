@@ -56,7 +56,7 @@ class KafkaEventPublisherServiceTest {
         kafkaService.publishToKafka(topic, payload, transactionId, eventId);
 
         // Verify Kafka send called
-        verify(kafkaTemplate).send("test-topic", "txn123", eq(jsonPayload));
+        verify(kafkaTemplate).send("test-topic", "txn123", jsonPayload);
 
         // Verify DB updated to "Published"
         verify(internalEventRepository).updatePublishedStatus(eq(eventId), eq("Published"), any(LocalDateTime.class));
