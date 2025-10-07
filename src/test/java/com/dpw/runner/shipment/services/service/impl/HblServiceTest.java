@@ -1642,40 +1642,6 @@ class HblServiceTest extends CommonMocks {
         assertEquals("IN", method.invoke(hblService, "IND"));
     }
 
-//
-//    @Test
-//    void testConstructAddress_WithCompleteData() throws Exception {
-//        Map<String, Object> addressData = new HashMap<>();
-//        addressData.put(PartiesConstants.COMPANY_NAME, "Test Company");
-//        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
-//        addressData.put(PartiesConstants.CITY, "New York");
-//        addressData.put(PartiesConstants.COUNTRY, "USA");
-//        addressData.put(PartiesConstants.STATE, "NY");
-//        addressData.put(PartiesConstants.ZIP_POST_CODE, "10001");
-//        addressData.put(PartiesConstants.CONTACT_PHONE, "123-456-7890");
-//
-//        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
-//        method.setAccessible(true);
-//        String result = (String) method.invoke(hblService, addressData);
-//        assertTrue(result.contains("Test Company"));
-//        assertTrue(result.contains("123 Main St"));
-//        assertTrue(result.contains("New York"));
-//        assertTrue(result.contains("USA"));
-//    }
-//
-//    @Test
-//    void testConstructAddress_WithPartialData() throws Exception {
-//        Map<String, Object> addressData = new HashMap<>();
-//        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
-//        addressData.put(PartiesConstants.CITY, "New York");
-//        Method method = HblService.class.getDeclaredMethod("constructAddress", Map.class);
-//        method.setAccessible(true);
-//        String result = (String) method.invoke(hblService, addressData);
-//        assertTrue(result.contains("123 Main St"));
-//        assertTrue(result.contains("New York"));
-//    }
-
-
     @Test
     void testExtractAddressComponents_WithCompleteData() throws Exception {
         Map<String, Object> addressData = new HashMap<>();
@@ -1899,32 +1865,32 @@ class HblServiceTest extends CommonMocks {
         assertEquals("LINE1", dto.getConsigneeAddressLine1());
         assertEquals("MUMBAI", dto.getConsigneeCity());
     }
-//    @Test
-//    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
-//        // Given
-//        Hbl hbl = new Hbl();
-//        hbl.setHblNotifyParty(new ArrayList<>());
-//        Parties party = new Parties();
-//        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
-//        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
-//        HblLockSettings hblLock = new HblLockSettings();
-//
-//        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
-//        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
-//        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
-//        // When
-//        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
-//        method.setAccessible(true);
-//        method.invoke(hblService, party, hbl, hblLock);
-//
-//        assertNotNull(hbl.getHblNotifyParty());
-//        assertFalse(hbl.getHblNotifyParty().isEmpty());
-//        assertEquals(1, hbl.getHblNotifyParty().size());
-//        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
-//        assertEquals("Test Party", hblParty.getName());
-//        assertEquals("123 Main St", hblParty.getAddress());
-//        assertTrue(hblParty.getIsShipmentCreated());
-//    }
+    @Test
+    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
+        // Given
+        Hbl hbl = new Hbl();
+        hbl.setHblNotifyParty(new ArrayList<>());
+        Parties party = new Parties();
+        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
+        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
+        HblLockSettings hblLock = new HblLockSettings();
+
+        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        // When
+        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
+        method.setAccessible(true);
+        method.invoke(hblService, party, hbl, hblLock);
+
+        assertNotNull(hbl.getHblNotifyParty());
+        assertFalse(hbl.getHblNotifyParty().isEmpty());
+        assertEquals(1, hbl.getHblNotifyParty().size());
+        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
+        assertEquals("Test Party", hblParty.getName());
+        assertEquals("123 MAIN ST", hblParty.getAddress());
+        assertTrue(hblParty.getIsShipmentCreated());
+    }
     @Test
     void testMapShipmentPartiesToHBL_v3Enabled() throws Exception {
         // Given
@@ -2281,7 +2247,7 @@ class HblServiceTest extends CommonMocks {
         assertEquals(1, hbl.getHblNotifyParty().size());
         HblPartyDto resultParty = hbl.getHblNotifyParty().get(0);
         assertTrue(resultParty.getIsShipmentCreated());
-        assertEquals("Test Party", resultParty.getName());
+        assertEquals("TEST PARTY", resultParty.getName());
         assertEquals("test@example.com", resultParty.getEmail());
         assertNotNull(resultParty.getAddress1());
         assertNotNull(resultParty.getAddress2());

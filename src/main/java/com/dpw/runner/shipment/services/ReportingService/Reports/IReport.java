@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Containe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
@@ -1798,14 +1799,11 @@ public abstract class IReport {
         }
     }
 
-    public void populateFreightsAndCharges(Map<String, Object> dictionary, Hbl hbl) {
+    public void populateFreightsAndCharges(Map<String, Object> dictionary, Hbl hbl, ShipmentModel shipment) {
 
-        if (Objects.nonNull(hbl) && Objects.nonNull(hbl.getShipmentId())) {
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
-
-            if (!shipmentDetails.isPresent() || Objects.isNull(shipmentDetails.get().getAdditionalDetails()))
-                return;
-            if (Boolean.TRUE.equals(shipmentDetails.get().getAdditionalDetails().getIsRatedBL())) {
+        if (Objects.nonNull(hbl)) {
+            if (Objects.nonNull(shipment) && Objects.nonNull(shipment.getAdditionalDetails())
+                && Boolean.TRUE.equals(shipment.getAdditionalDetails().getIsRatedBL())) {
                 List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
 
                 // Validate First Row of freight and charges is mandate if Rated BL is true

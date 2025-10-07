@@ -914,12 +914,12 @@ public class HblService implements IHblService {
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
                 Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
-                hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
-                hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
-                hblParty.setCity(toUpperCase(addressComponents.get(PartiesConstants.CITY)));
-                hblParty.setState(toUpperCase(addressComponents.get(PartiesConstants.STATE)));
+                hblParty.setAddress1(StringUtility.toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
+                hblParty.setAddress2(StringUtility.toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
+                hblParty.setCity(StringUtility.toUpperCase(addressComponents.get(PartiesConstants.CITY)));
+                hblParty.setState(StringUtility.toUpperCase(addressComponents.get(PartiesConstants.STATE)));
                 hblParty.setZipCode(addressComponents.get(PartiesConstants.ZIP_POST_CODE));
-                hblParty.setCountry(convertCountryCodeTo2Letters(toUpperCase(addressComponents.get(PartiesConstants.COUNTRY))));
+                hblParty.setCountry(convertCountryCodeTo2Letters(addressComponents.get(PartiesConstants.COUNTRY)).toUpperCase());
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
                 hblParties.add(hblParty);
             } else {
@@ -1279,7 +1279,7 @@ public class HblService implements IHblService {
         if (party != null && createNotifyParty) {
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
                 hblParty.setIsShipmentCreated(true);
-                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
                 Map<String, String> addressComponents = extractAddressComponents(party.getAddressData());
                 hblParty.setAddress1(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS1)));
                 hblParty.setAddress2(toUpperCase(addressComponents.get(PartiesConstants.ADDRESS2)));
