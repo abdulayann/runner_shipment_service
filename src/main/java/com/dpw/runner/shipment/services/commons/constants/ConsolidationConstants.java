@@ -31,6 +31,7 @@ public class ConsolidationConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Consolidation Data Retrieval By Id";
 
     public static final String CONSOLIDATION_ID = "Consolidation Id";
+    public static final String SHIPMENT_ID = "Shipment Id";
     public static final String CONSOLIDATION_GUID = "Consolidation Guid";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
@@ -71,4 +72,5 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_RETRIEVE_NULL_REQUEST =  "Request Id is null for Consolidation retrieve with Request Id {}";
     public static final String CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String AIR_DRT_CONSOLIDATION_CREATION_ERROR = "Cannot create consolidation with transportMode as AIR and consolidationType as DRT";
+    public static final String CONSOLE_DETAILS_FETCHED_SUCCESSFULLY = "Consolidation details fetched successfully";
 }
