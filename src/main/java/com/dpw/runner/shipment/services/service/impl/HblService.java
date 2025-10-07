@@ -511,6 +511,7 @@ public class HblService implements IHblService {
                 .hblData(hblData).hblCargo(request.getCargoes())
                 .hblContainer(request.getContainers())
                 .hblNotifyParty(request.getNotifyParties())
+                .hblFreightsAndCharges(request.getFreightsAndCharges())
                 .build();
     }
 
@@ -519,6 +520,7 @@ public class HblService implements IHblService {
         response.setCargoes(hbl.getHblCargo());
         response.setContainers(hbl.getHblContainer());
         response.setNotifyParties(hbl.getHblNotifyParty());
+        response.setFreightsAndCharges(hbl.getHblFreightsAndCharges());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
         return response;

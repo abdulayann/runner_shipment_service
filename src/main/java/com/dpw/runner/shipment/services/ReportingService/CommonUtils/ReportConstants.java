@@ -578,6 +578,8 @@ public class ReportConstants {
     public static final String CHARGES_IN_CAPS = "chargesInCaps";
     public static final String COPY_CHARGES = "copyCharges";
     public static final String BILL_REMARK = "BillRemark";
+    public static final String VALUE = "Value";
+    public static final String CHARGE_TYPE = "ChargeType";
 
     public static final String CARGO_TOTAL_INFORMATION = "BillRemark";
     public static final String PP_REVENUE_TOTAL = "PrepaidRevenueTotal";
@@ -639,6 +641,9 @@ public class ReportConstants {
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
     public static final String BL_REMARKS = "BLRemarks";
+    public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
+    public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
+    public static final String BL_CHARGES = "BLCharges";
 
     //HAWB
     public static final String AGENT = "Agent";

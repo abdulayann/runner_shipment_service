@@ -57,6 +57,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -1794,6 +1795,64 @@ public abstract class IReport {
                 }
                 dict.put(CHARGEABLE_WT, chargeableWt);
             }
+        }
+    }
+
+    public void populateFreightsAndCharges(Map<String, Object> dictionary, Hbl hbl) {
+
+        if (Objects.nonNull(hbl) && Objects.nonNull(hbl.getShipmentId())) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
+
+            if (!shipmentDetails.isPresent() || Objects.isNull(shipmentDetails.get().getAdditionalDetails()))
+                return;
+            if (Boolean.TRUE.equals(shipmentDetails.get().getAdditionalDetails().getIsRatedBL())) {
+                List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
+
+                // Validate First Row of freight and charges is mandate if Rated BL is true
+                populateFreightsAndChargesValidation(hblFreightsAndCharges);
+            } else {
+                dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
+            }
+
+            // Process Freight and Charges and add List into Dictionary
+            List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
+            if (Objects.nonNull(hblFreightsAndCharges) && !hblFreightsAndCharges.isEmpty()) {
+                processFreightsAndCharges(hblFreightsAndCharges, dictionary);
+            }
+        }
+    }
+
+    private void processFreightsAndCharges(List<HblFreightsAndCharges> hblFreightsAndCharges,
+                                           Map<String, Object> dictionary) {
+        List<Map<String, Object>> freightChargesList = new ArrayList<>();
+
+        for (HblFreightsAndCharges freightAndCharges : hblFreightsAndCharges) {
+            Map<String, Object> currFreightAndCharges = new HashMap<>();
+            currFreightAndCharges.put(CHARGES, freightAndCharges.getCharges());
+            currFreightAndCharges.put(VALUE, freightAndCharges.getValue());
+            currFreightAndCharges.put(CURRENCY, freightAndCharges.getCurrency());
+            currFreightAndCharges.put(CHARGE_TYPE, freightAndCharges.getChargeType());
+
+            freightChargesList.add(currFreightAndCharges);
+        }
+
+        dictionary.put(BL_CHARGES, freightChargesList);
+    }
+
+
+    private void populateFreightsAndChargesValidation(List<HblFreightsAndCharges> hblFreightsAndCharges) {
+        if (Objects.isNull(hblFreightsAndCharges) || hblFreightsAndCharges.isEmpty()) {
+            throw new ValidationException("At least one Freight & Charges row is mandatory when Rated BL is true.");
+        }
+
+        HblFreightsAndCharges firstFreightAndCharges = hblFreightsAndCharges.get(0);
+
+        if (Objects.isNull(firstFreightAndCharges.getCharges()) ||
+                Objects.isNull(firstFreightAndCharges.getValue()) ||
+                Objects.isNull(firstFreightAndCharges.getCurrency()) ||
+                Objects.isNull(firstFreightAndCharges.getChargeType())) {
+
+            throw new ValidationException("The first Freight & Charges row must have Charges, Value, Currency, and Type filled.");
         }
     }
 
