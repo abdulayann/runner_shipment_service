@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
@@ -254,7 +255,7 @@ public class EventV3Service implements IEventsV3Service {
                     Optional.ofNullable(eventCodeMap.get(getEventCode.apply(event)))
                             .ifPresentOrElse(
                                     masterList -> setDescription.accept(event, masterList.getItemDescription()),
-                                    () -> log.warn("No mapping found for event code: {}", getEventCode.apply(event))
+                                    () -> log.warn("No mapping found for event code: {}", LoggerHelper.sanitizeForLogs(getEventCode.apply(event)))
                             )
             );
         } catch (Exception e) {

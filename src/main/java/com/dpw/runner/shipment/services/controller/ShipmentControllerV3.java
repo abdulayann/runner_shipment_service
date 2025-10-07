@@ -228,7 +228,7 @@ public class ShipmentControllerV3 {
     public ResponseEntity<IRunnerResponse> aibPushRequest(@RequestParam() Long shipId,
                                                           @RequestParam() Long consoleId,
                                                           @RequestParam(required = false) String rejectRemarks) {
-        log.info("{} | Request received for :/aib/push on shipments with ShipmentId: {} | ConsoleId: {} | Remarks: {}", LoggerHelper.getRequestIdFromMDC(), shipId, consoleId, rejectRemarks);
+        log.info("{} | Request received for :/aib/push on shipments with ShipmentId: {} | ConsoleId: {} | Remarks: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipId), LoggerHelper.sanitizeForLogs(consoleId), LoggerHelper.sanitizeForLogs(rejectRemarks));
         try {
             return shipmentService.aibPushRequest(shipId, consoleId, rejectRemarks);
         } catch (Exception ex) {
@@ -306,7 +306,7 @@ public class ShipmentControllerV3 {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = IRunnerResponse.class)})
     @GetMapping(ApiConstants.API_CLONE_CONFIG)
     public ResponseEntity<IRunnerResponse> getCloneConfig(@RequestParam() String type) {
-        log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), type);
+        log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(type));
         try {
             return ResponseHelper.buildSuccessResponse(shipmentService.getCloneConfig(type));
         } catch (Exception ex) {
@@ -325,7 +325,7 @@ public class ShipmentControllerV3 {
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request) throws RunnerException{
         ShipmentPatchV3Request patchRequest = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
-        log.info("Received Shipment patch request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        log.info("Received Shipment patch request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         return ResponseHelper.buildSuccessResponse(shipmentService.partialUpdate(CommonRequestModel.buildRequest(patchRequest)));
     }
 }

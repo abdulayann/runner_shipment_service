@@ -1663,7 +1663,9 @@ public class ConsolidationService implements IConsolidationService {
                     bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipmentDetail);
             }
         } catch (Exception e) {
-            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}", shipmentIds.toString(), e.getMessage());
+            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}",
+                    LoggerHelper.sanitizeForLogs(shipmentIds),
+                    e.getMessage());
         }
     }
 
@@ -4669,7 +4671,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Page<ConsolidationLiteResponse> fetchConsolidationPageForExport(ListCommonRequest request) {
-        log.info("Entering fetchConsolidationPageForExport with request: {}", request);
+        log.info("Entering fetchConsolidationPageForExport with request: {}", LoggerHelper.sanitizeForLogs(request));
 
         Pair<Specification<ConsolidationDetails>, Pageable> tuple =
                 fetchData(request, ConsolidationDetails.class, tableNames);
@@ -4695,7 +4697,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void emailConsolidationListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
-        log.info("Starting email of Consolidation list Excel. Request model: {}", listCommonRequest);
+        log.info("Starting email of Consolidation list Excel. Request model: {}", LoggerHelper.sanitizeForLogs(listCommonRequest));
 
         Page<ConsolidationLiteResponse> consolidationDetailsPage = fetchConsolidationPageForExport(listCommonRequest);
         log.info("Fetched {} Consolidations(s) for Excel email.", consolidationDetailsPage.getTotalElements());
@@ -5286,7 +5288,7 @@ public class ConsolidationService implements IConsolidationService {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
                     consolidationDetails, jobType, null, isInterBranchConsole);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
         }
 
     }
@@ -5311,7 +5313,7 @@ public class ConsolidationService implements IConsolidationService {
                 processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
         }
 
     }
@@ -6896,7 +6898,7 @@ public class ConsolidationService implements IConsolidationService {
             UUID guid = UUID.fromString(request.getGuid());
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(guid);
             if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(LoggerHelper.sanitizeForLogs(CONSOLIDATION_DETAILS_NULL), LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             MeasurementBasisResponse response = null;

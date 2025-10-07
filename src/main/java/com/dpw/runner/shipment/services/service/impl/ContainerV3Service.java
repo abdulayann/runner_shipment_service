@@ -211,7 +211,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Transactional(rollbackFor = Exception.class)
     public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
-        log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
+        log.info("Starting container creation | Request ID: {} | Request Body: {}", LoggerHelper.sanitizeForLogs(requestId), LoggerHelper.sanitizeForLogs(containerRequest));
 
         // Validate request parameters
         validateContainerRequest(containerRequest);
@@ -2569,9 +2569,9 @@ public class ContainerV3Service implements IContainerV3Service {
             for (ShipmentDetails shipment : shipments) {
                 String bookingRef = shipment.getBookingReference();
                 if (StringUtility.isNotEmpty(bookingRef)) {
-                    log.info("Platform Booking reference obtained: {}", bookingRef);
+                    log.info("Platform Booking reference obtained: {}", LoggerHelper.sanitizeForLogs(bookingRef));
                     log.info("Preparing platform payload for container ID: {} with container number: {}",
-                            container.getId(), container.getContainerNumber());
+                            LoggerHelper.sanitizeForLogs(container.getId()), LoggerHelper.sanitizeForLogs(container.getContainerNumber()));
 
                     ContainerPayloadDetails detail = prepareQueuePayload(container, bookingRef);
                     payloadDetails.add(detail);

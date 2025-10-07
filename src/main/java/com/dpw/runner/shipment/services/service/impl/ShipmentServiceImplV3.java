@@ -644,7 +644,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         double current = System.currentTimeMillis();
-        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(id), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(current - start));
+        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(id), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         AtomicInteger pendingCount = new AtomicInteger(0);
         ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
         Long shipmentId = shipmentDetailsEntity.getId();

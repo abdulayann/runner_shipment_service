@@ -221,7 +221,9 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), e.getMessage());
+                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}",
+                        LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()),
+                        e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
@@ -707,7 +709,7 @@ public class BookingIntegrationsUtility {
         try {
             return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
         } catch (Exception e) {
-            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), e.getMessage(), e);
+            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), LoggerHelper.sanitizeForLogs(e.getMessage()), e);
             return null;
         }
     }
@@ -871,7 +873,7 @@ public class BookingIntegrationsUtility {
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,LoggerHelper.sanitizeForLogs(orgCode));
+                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()) ,LoggerHelper.sanitizeForLogs(orgCode));
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1OrgResponse.getData()).get(0)));
@@ -1044,7 +1046,7 @@ public class BookingIntegrationsUtility {
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
-                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), shipmentDetails.getId());
+                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), LoggerHelper.sanitizeForLogs(shipmentDetails.getId()));
                     eventService.saveEvent(eventsRequest);
                     log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }

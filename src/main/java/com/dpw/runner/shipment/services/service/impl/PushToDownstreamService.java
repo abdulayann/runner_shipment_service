@@ -125,7 +125,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
                     if (Objects.equals(triggerEntity, Constants.SHIPMENT)) {
                         log.info("[InternalKafkaPush] Triggering shipment push | shipmentId={} | source=Container | transactionId={}",
-                                triggerEntityId, transactionId);
+                                LoggerHelper.sanitizeForLogs(triggerEntityId), LoggerHelper.sanitizeForLogs(transactionId));
                         this.pushShipmentData(triggerEntityId, false, false);
                     }
                     sendBookingUpdateToPlatform(message, transactionId, triggerEntity, triggerEntityId);
@@ -222,26 +222,26 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Boolean isCreate = eventDto.getMeta().getIsCreate();
         Integer tenantId = eventDto.getMeta().getTenantId();
         log.info("[InternalKafkaConsume] Pushing container data | transactionId={} | parentEntityId={} | isCreate={}",
-                transactionId, parentEntityId, isCreate);
+                LoggerHelper.sanitizeForLogs(transactionId), LoggerHelper.sanitizeForLogs(parentEntityId), LoggerHelper.sanitizeForLogs(isCreate));
 
         // Fetch container data
         TenantContext.setCurrentTenant(tenantId);
         List<Containers> containersList = containerV3Service.findByIdIn(List.of(parentEntityId));
         if (containersList.isEmpty()) {
             String errMsg = "[InternalKafkaConsume] No containers found for parentEntityId={} | transactionId={}";
-            log.warn(errMsg, parentEntityId, transactionId);
+            log.warn(LoggerHelper.sanitizeForLogs(errMsg), LoggerHelper.sanitizeForLogs(parentEntityId), LoggerHelper.sanitizeForLogs(transactionId));
             throw new ValidationException(errMsg);
         }
 
         Containers container = containersList.get(0);
         log.info("[InternalKafkaConsume] Container details: {} | transactionId={}",
-                container, transactionId);
+                container, LoggerHelper.sanitizeForLogs(transactionId));
 
         // Prepare Kafka message
         KafkaResponse kafkaResponse = producer.getKafkaResponse(container, isCreate);
         String message = jsonHelper.convertToJson(kafkaResponse);
         log.info("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
-                message, transactionId);
+                LoggerHelper.sanitizeForLogs(message), LoggerHelper.sanitizeForLogs(transactionId));
 
         if(container.getConsolidationId() != null) {
             List<Containers> containersList1 = containerDao.findByConsolidationId(container.getConsolidationId());
@@ -251,7 +251,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         // Send message to Kafka
         producer.produceToKafka(message, containerKafkaQueue, transactionId);
         log.info("[InternalKafkaConsume] Kafka message sent to queue='{}' | transactionId={}",
-                containerKafkaQueue, transactionId);
+                LoggerHelper.sanitizeForLogs(containerKafkaQueue), LoggerHelper.sanitizeForLogs(transactionId));
         TenantContext.removeTenant();
     }
 

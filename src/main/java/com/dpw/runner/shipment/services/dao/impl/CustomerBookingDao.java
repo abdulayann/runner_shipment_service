@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
@@ -92,7 +93,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 cache.evictIfPresent(idKey);
                 cache.evictIfPresent(guidKey);
 
-                log.info("Evicted stale CustomerBooking cache entries after save. [ID Key: {}, GUID Key: {}]", idKey, guidKey);
+                log.info("Evicted stale CustomerBooking cache entries after save. [ID Key: {}, GUID Key: {}]", LoggerHelper.sanitizeForLogs(idKey), LoggerHelper.sanitizeForLogs(guidKey));
             } else {
                 log.info("CustomerBooking cache eviction skipped. Cache is null or identifiers (ID/GUID) are missing.");
             }

@@ -1343,7 +1343,7 @@ public class PackingV3Service implements IPackingV3Service {
                 int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
                 totalInnerPacks += innerPacks;
             } catch (NumberFormatException e) {
-                log.error("Error in getTotalInnerPacks to convert {} to integer for pack:{}", packing.getInnerPackageNumber(), packing.getId());
+                log.error("Error in getTotalInnerPacks to convert {} to integer for pack:{}", LoggerHelper.sanitizeForLogs(packing.getInnerPackageNumber()), LoggerHelper.sanitizeForLogs(packing.getId()));
             }
         }
         return totalInnerPacks;

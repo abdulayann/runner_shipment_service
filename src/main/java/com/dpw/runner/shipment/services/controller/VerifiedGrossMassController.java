@@ -166,7 +166,7 @@ public class VerifiedGrossMassController {
     })
     @PostMapping(ApiConstants.SYNC_CONTAINERS)
     public ResponseEntity<IRunnerResponse> syncContainersByIds(@RequestBody List<Long> commonContainerIds) {
-        log.info("Received Verified Gross Mass SYNC CONTAINERS request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(commonContainerIds));
+        log.info("Received Verified Gross Mass SYNC CONTAINERS request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(commonContainerIds)));
         List<CommonContainerResponse> response = verifiedGrossMassService.syncContainersByIds(commonContainerIds);
         log.info("Verified Gross Mass SYNC CONTAINERS successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
         return ResponseHelper.buildSuccessResponse(response);
