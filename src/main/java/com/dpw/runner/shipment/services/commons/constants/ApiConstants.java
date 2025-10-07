@@ -55,6 +55,7 @@ public class ApiConstants {
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
     public static final String EXPORT_LIST = "/export-list";
+    public static final String EXPORT_LIST_2 = "/export-list2";
 
     // Shipment endpoints
     public static final String SHIPMENT_API_CREATE = "shipment/create";
