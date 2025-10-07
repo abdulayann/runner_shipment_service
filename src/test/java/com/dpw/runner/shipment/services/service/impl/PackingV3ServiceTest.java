@@ -193,13 +193,14 @@ class PackingV3ServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
         volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
         testShipment.setDirection("EXP");
+        testShipment.setId(1L);
+        testShipment.setTransportMode(TRANSPORT_MODE_SEA);
 
         when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
-        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        when(packingValidationV3Util.validateModule(any(), any())).thenReturn(testShipment);
         when(packingDao.save(packing)).thenReturn(packing);
         when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
-        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
