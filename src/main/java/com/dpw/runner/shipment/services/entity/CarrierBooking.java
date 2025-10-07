@@ -84,6 +84,12 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "external_emails", columnDefinition = "TEXT")
     private String externalEmails;
 
+    @Column(name = "other_internal_emails", columnDefinition = "TEXT")
+    private String otherInternalEmails;
+
+    @Column(name = "other_external_emails", columnDefinition = "TEXT")
+    private String otherExternalEmails;
+
     @Column(name = "pickup_from_req_empty_positioning_date")
     private LocalDateTime pickupFromReqEmptyPositioningDate;
 
