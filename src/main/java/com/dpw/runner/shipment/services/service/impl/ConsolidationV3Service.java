@@ -942,9 +942,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             automaticTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
         }
         CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
-                .thenRunAsync(masterDataUtils.withMdc(() -> {
-                    networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity(CONSOLIDATION, null, consolidationDetails);
-                }), executorService);
+                .thenRunAsync(
+                        masterDataUtils.withMdc(() -> networkTransferV3Util
+                                .syncNetworkTransferShipmentMappingsForEntity(CONSOLIDATION, null, consolidationDetails)),
+                        executorService
+                );
     }
 
     private void syncShipmentDataInPlatform(ConsolidationDetails consolidationDetails) {

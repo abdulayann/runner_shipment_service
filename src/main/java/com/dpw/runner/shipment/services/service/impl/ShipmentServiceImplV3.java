@@ -1937,9 +1937,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             automaticTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
         }
         CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
-                .thenRunAsync(masterDataUtils.withMdc(() -> {
-                            networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity(SHIPMENT, shipmentDetails, null);
-                        }), executorService);
+                .thenRunAsync(
+                        masterDataUtils.withMdc(() -> networkTransferV3Util
+                                .syncNetworkTransferShipmentMappingsForEntity(SHIPMENT, shipmentDetails, null)),
+                        executorService
+                );
     }
 
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

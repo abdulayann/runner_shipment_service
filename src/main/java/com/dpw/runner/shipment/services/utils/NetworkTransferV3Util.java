@@ -166,15 +166,10 @@ public class NetworkTransferV3Util {
         for(NetworkTransfer networkTransfer : networkTransferList) {
             NetworkTransferStatus status = networkTransfer.getStatus();
 
-            boolean shouldUpdateMappings = false;
-            // Determine if mappings should be updated based on status
-            if (List.of(NetworkTransferStatus.SCHEDULED, NetworkTransferStatus.REQUESTED_TO_TRANSFER, NetworkTransferStatus.REASSIGNED).contains(status)) {
-                shouldUpdateMappings = true;
-            } else if (NetworkTransferStatus.ACCEPTED.equals(status) && !Objects.equals(networkTransfer.getSourceBranchId(), TenantContext.getCurrentTenant())) {
-                shouldUpdateMappings = true;
-            }
+            boolean shouldUpdateNetworkShipmentMappings = List.of(NetworkTransferStatus.SCHEDULED, NetworkTransferStatus.REQUESTED_TO_TRANSFER, NetworkTransferStatus.REASSIGNED).contains(status) || ((NetworkTransferStatus.ACCEPTED.equals(status)
+                    && !Objects.equals(networkTransfer.getSourceBranchId(), TenantContext.getCurrentTenant())));
 
-            if (shouldUpdateMappings) {
+            if (shouldUpdateNetworkShipmentMappings) {
                 updateNetworkShipmentMappings(networkTransfer, entityType, entityNumber, shipmentNumbersList);
             }
         }
