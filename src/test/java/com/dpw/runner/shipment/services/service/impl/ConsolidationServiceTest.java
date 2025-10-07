@@ -4319,7 +4319,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setEventsList(null);
         consolidationService.generateEvents(consolidationDetails1);
-        verify(eventDao, times(1)).save(any());
+        verify(consolidationCommonUtils, times(1)).createEvent(any(), any());
     }
 
     @Test

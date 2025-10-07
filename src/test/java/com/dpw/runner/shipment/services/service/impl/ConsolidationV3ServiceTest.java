@@ -6001,7 +6001,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails consolidationDetails1 = testConsol;
     consolidationDetails1.setEventsList(null);
     consolidationV3Service.generateV3Events(consolidationDetails1);
-    verify(eventDao, times(1)).save(any());
+    verify(consolidationCommonUtils, times(1)).createEvent(any(), any());
   }
 
   @Test
