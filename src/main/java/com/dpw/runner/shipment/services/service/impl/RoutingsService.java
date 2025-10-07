@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
@@ -114,7 +115,7 @@ public class RoutingsService implements IRoutingsService {
 
         // Process each container's events
         for (Container tsContainer : trackingServiceApiResponse.getContainers()) {
-            log.debug("Processing events for container ID: {}", tsContainer.getContainerNumber());
+            log.debug("Processing events for container ID: {}", LoggerHelper.sanitizeForLogs(tsContainer.getContainerNumber()));
             processContainerEvents(tsContainer, polToRoutingMap, podToRoutingMap);
         }
 
@@ -219,7 +220,7 @@ public class RoutingsService implements IRoutingsService {
                     }).add(routing);
                     log.debug("Added routing to location key '{}': {}", locationKey, routing);
                 } else {
-                    log.warn("Missing location key for routing with Pol: {} and Pod: {}", pol, pod);
+                    log.warn("Missing location key for routing with Pol: {} and Pod: {}", LoggerHelper.sanitizeForLogs(pol), LoggerHelper.sanitizeForLogs(pod));
                 }
             }
 
@@ -234,8 +235,7 @@ public class RoutingsService implements IRoutingsService {
         UnlocationsResponse polResponse = (pol != null) ? locationData.get(pol) : null;
         UnlocationsResponse podResponse = (pod != null) ? locationData.get(pod) : null;
 
-        log.debug("Pol response for '{}': {}", pol, polResponse);
-        log.debug("Pod response for '{}': {}", pod, podResponse);
+        log.debug("Pol response for '{}': {}", LoggerHelper.sanitizeForLogs(pol), LoggerHelper.sanitizeForLogs(polResponse));
 
         // Determine location codes based on availability of airports or sea ports
         String locationCode = isPol ? getLocationCode(polResponse) : getLocationCode(podResponse);
@@ -412,10 +412,10 @@ public class RoutingsService implements IRoutingsService {
 
             if (isPol) {
                 routing.setEtd(projectedDate);
-                log.debug("Updated ETD for routing {}: {}", routing.getId(), projectedDate);
+                log.debug("Updated ETD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), projectedDate);
             } else {
                 routing.setEta(projectedDate);
-                log.debug("Updated ETA for routing {}: {}", routing.getId(), projectedDate);
+                log.debug("Updated ETA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), projectedDate);
             }
         }
     }
@@ -433,10 +433,10 @@ public class RoutingsService implements IRoutingsService {
 
             if (isPol) {
                 routing.setAtd(actualDate);
-                log.debug("Updated ATD for routing {}: {}", routing.getId(), actualDate);
+                log.debug("Updated ATD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), actualDate);
             } else {
                 routing.setAta(actualDate);
-                log.debug("Updated ATA for routing {}: {}", routing.getId(), actualDate);
+                log.debug("Updated ATA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), actualDate);
             }
         }
     }

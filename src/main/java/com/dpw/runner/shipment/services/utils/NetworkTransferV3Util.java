@@ -67,7 +67,7 @@ public class NetworkTransferV3Util {
                 processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), ex.getMessage());
         }
 
     }

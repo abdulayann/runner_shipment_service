@@ -30,7 +30,7 @@ public class UserServiceV1 implements IUserService {
     @Override
     public UsersDto getUserByToken(String token) {
         log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}",
-                LoggerHelper.getRequestIdFromMDC(), url,
+                LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(url),
                 LoggerHelper.sanitizeForLogs(token));
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
