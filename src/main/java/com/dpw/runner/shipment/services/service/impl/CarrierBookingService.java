@@ -229,10 +229,27 @@ public class CarrierBookingService implements ICarrierBookingService {
         // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
         setInternalExternalEmails(carrierBookingResponse, carrierBooking);
+        setVgmAndSiId(carrierBooking, carrierBookingResponse);
         mismatchDetection(carrierBooking, carrierBookingResponse);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
+    }
+
+    /**
+     * Populates the carrier booking response with IDs of Vgm and Si entities.
+     * @param carrierBooking Entity carrier booking data
+     * @param carrierBookingResponse updated response
+     */
+    private void setVgmAndSiId(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
+
+        Optional.ofNullable(carrierBooking.getVerifiedGrossMass())
+                .map(VerifiedGrossMass::getId)
+                .ifPresent(carrierBookingResponse::setVgmId);
+
+        Optional.ofNullable(carrierBooking.getShippingInstruction())
+                .map(ShippingInstruction::getId)
+                .ifPresent(carrierBookingResponse::setSiId);
     }
 
     @Override
