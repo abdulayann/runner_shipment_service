@@ -67,7 +67,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_AllFieldsPresent() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails(" test1@example.com ; test2@example.com ");
+        vgm.setExternalEmails(" test1@example.com , test2@example.com ");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -139,7 +139,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_ExternalEmailsHasEmptyItems() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails("test1@example.com;; ; test2@example.com;");
+        vgm.setExternalEmails("test1@example.com,, , test2@example.com,");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -151,7 +151,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_withExternalAndInternalEmails() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails("test1@example.com; test2@example.com;");
+        vgm.setExternalEmails("test1@example.com, test2@example.com,");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -286,7 +286,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(null, response, "");
+        util.populateCarrierDetails(null, response, "", "");
 
         // Step 2: Assertions
         verify(response, never()).setCarrierScacCode(any());
@@ -300,7 +300,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(carrierDatav1Map, response, "abc@ext.com");
+        util.populateCarrierDetails(carrierDatav1Map, response, "abc@ext.com", "abc@ext.com");
 
         // Step 2: Assertions
         // No setter methods should be called as the map is empty
@@ -322,7 +322,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(carrierDatav1Map, response, " ");
+        util.populateCarrierDetails(carrierDatav1Map, response, " ", " ");
 
         // Step 2: Assertions
         verify(response).setCarrierScacCode("CARRIER_SCAC");
@@ -354,7 +354,7 @@ class VerifiedGrossMassUtilTest {
 
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
-        util.populateCarrierDetails(carrierDatav1Map, response, " ");
+        util.populateCarrierDetails(carrierDatav1Map, response, " ", " ");
         verify(response).setCarrierScacCode("CARRIER_SCAC2");
         verify(response).setCarrierDescription("Carrier 2 Description");
     }
