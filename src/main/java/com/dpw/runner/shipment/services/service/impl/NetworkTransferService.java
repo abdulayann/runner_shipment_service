@@ -114,8 +114,8 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("sourceBranchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("sourceBranchId").build()),
             Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build()),
-            Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build())
-
+            Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build()),
+            Map.entry("shipmentNumber", RunnerEntityMapping.builder().tableName(NETWORK_SHIPMENTS_MAPPINGS).dataType(LocalDateTime.class).fieldName("shipmentNumber").build())
     );
 
 

@@ -121,6 +121,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     private IConsolidationMigrationV3Service consolidationMigrationV3Service;
     private IShipmentMigrationV3Service shipmentMigrationV3Service;
     private IShipmentSettingsDao shipmentSettingsDao;
+    private INetworkShipmentsMappingDao networkShipmentsMappingDao;
 
 
     @Autowired
@@ -131,7 +132,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                                    INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao,
                                    INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventsV3Service eventService,
                                    INotificationDao notificationDao, PackingV3Service packingV3Service, ContainerV3Service containerV3Service,
-                IConsolidationMigrationV3Service consolidationMigrationV3Service, IShipmentMigrationV3Service shipmentMigrationV3Service) {
+                IConsolidationMigrationV3Service consolidationMigrationV3Service, IShipmentMigrationV3Service shipmentMigrationV3Service, INetworkShipmentsMappingDao networkShipmentsMappingDao) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -158,6 +159,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         this.containerV3Service = containerV3Service;
         this.consolidationMigrationV3Service = consolidationMigrationV3Service;
         this.shipmentMigrationV3Service = shipmentMigrationV3Service;
+        this.networkShipmentsMappingDao = networkShipmentsMappingDao;
     }
 
     @Transactional
@@ -273,6 +275,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 SHIPMENT, shipment,
                 null, taskPayload.getDirection(), entityPayload, false);
         }
+        updateNetworkTransferShipmentMapping(tenant, shipment.getId(), shipment.getShipmentId(), SHIPMENT, List.of(shipment.getShipmentId()));
         List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
         notificationDao.deleteAll(notificationList);
     }
@@ -561,9 +564,33 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
                     null, consol, consolidationPayload.getShipmentType(), entityPayload, isInterBranchConsole);
         }
+        List<ShipmentDetails> shipmentDetailsList = consol.getShipmentsList().stream().toList();
+        List<String> shipmentNumbersList = shipmentDetailsList.stream().map(ShipmentDetails::getShipmentId).toList();
+        updateNetworkTransferShipmentMapping(tenant, consol.getId(), consol.getConsolidationNumber(), CONSOLIDATION, shipmentNumbersList);
 
         List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
         notificationDao.deleteAll(notificationList);
+    }
+
+    private void updateNetworkTransferShipmentMapping(Integer tenant, Long entityId, String entityNumber, String entityType, List<String> shipmentNumbersList) {
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(tenant), entityId, entityType);
+        if (optionalNetworkTransfer.isPresent()) {
+            NetworkTransfer networkTransfer = optionalNetworkTransfer.get();
+
+            // Delete all existing mappings for this network transfer
+            networkShipmentsMappingDao.deleteByNetworkTransfer(networkTransfer);
+
+            // Create new network shipment mappings
+            for (String shipmentNumber : shipmentNumbersList) {
+                NetworkShipmentsMapping networkShipmentMapping = new NetworkShipmentsMapping();
+                networkShipmentMapping.setNetworkTransfer(networkTransfer);
+                networkShipmentMapping.setEntityType(entityType);
+                networkShipmentMapping.setEntityNumber(entityNumber);
+                networkShipmentMapping.setShipmentNumber(shipmentNumber);
+                networkShipmentsMappingDao.save(networkShipmentMapping);
+            }
+        }
     }
 
     private void sendOverarchingShipmentToNetworkTransfer(Integer tenant, EntityTransferV3ShipmentDetails entityTransferShipment, ShipmentDetails shipment) {
