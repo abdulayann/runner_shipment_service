@@ -71,6 +71,7 @@ class ProductIdentifierUtilityTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setCode("code");
+        mockUser.setTimeZoneId("IST");
         UserContext.setUser(mockUser);
     }
 
@@ -99,7 +100,7 @@ class ProductIdentifierUtilityTest {
             "branchCode;1",
             "branchCode;L12345"
     })
-    void getCommonSequenceNumberParameterizedTest(String prefix) {
+    void getCommonSequenceNumberParameterizedTest(String prefix) throws RunnerException {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
@@ -724,7 +725,7 @@ class ProductIdentifierUtilityTest {
     }
 
     @Test
-    void getCommonSequenceNumberRegexSeqSerialCounterNullTest() {
+    void getCommonSequenceNumberRegexSeqSerialCounterNullTest() throws RunnerException {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
