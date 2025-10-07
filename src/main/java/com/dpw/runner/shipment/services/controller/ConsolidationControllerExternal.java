@@ -53,7 +53,7 @@ public class ConsolidationControllerExternal {
                                                                 @RequestHeader(value = SOURCE_SERVICE_TYPE) String xSource
     ) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
-        log.info("Received Consolidation External retrieve request with Source: {} RequestId: {} and payload: {}", xSource, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        log.info("Received Consolidation External retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(xSource), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternal(request));
     }
 
@@ -62,7 +62,7 @@ public class ConsolidationControllerExternal {
     @PostMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT_PARTIAL)
     public ResponseEntity<IRunnerResponse> retrieveByIdExternalPartial(@RequestBody @Valid CommonGetRequest request, @RequestHeader(value = SOURCE_SERVICE_TYPE) String source
     ) throws RunnerException, AuthenticationException {
-        log.info("Received Consolidation External Partial retrieve request with Source: {} RequestId: {} and payload: {}", source, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        log.info("Received Consolidation External Partial retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(source), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternalPartial(request));
     }
 

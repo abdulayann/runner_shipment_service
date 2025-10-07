@@ -126,7 +126,7 @@ public class AuthFilter extends OncePerRequestFilter {
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
-        log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), servletRequest.getRequestURI(), user.getUsername(), user.getTenantId());
+            log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(servletRequest.getRequestURI()), LoggerHelper.sanitizeForLogs(user.getUsername()), LoggerHelper.sanitizeForLogs(user.getTenantId()));
         VersionContext.setVersionFromPath(req.getServletPath());
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());

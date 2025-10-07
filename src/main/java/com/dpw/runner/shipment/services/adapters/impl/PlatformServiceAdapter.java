@@ -55,10 +55,10 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<IRunnerResponse> updateAtPlatform(CommonRequestModel requestModel) throws RunnerException {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
-        log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));
-        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJson(request));
+        log.info("Endpoint:PLATFORM_UPDATE_SHIPMENT----- RequestPayload: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         ResponseEntity<String> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), String.class);
-        log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- ResponsePayload: {}", responseEntity.getBody());
+        log.info("Endpoint:PLATFORM_UPDATE_SHIPMENT----- ResponsePayload: {}", LoggerHelper.sanitizeForLogs(responseEntity.getBody()));
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 }

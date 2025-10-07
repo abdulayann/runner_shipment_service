@@ -161,7 +161,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
             log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(uploadRequest));
             var uploadResponse = this.temporaryFileUpload(file, filename);
             if (Boolean.FALSE.equals(uploadResponse.getSuccess())) {
-                log.error("{} | {} Processing temporaryFileUpload Failed for Doc Response: {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(uploadResponse));
+                log.error("{} | {} Processing temporaryFileUpload Failed for Doc Response: {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(uploadResponse)));
                 throw new IOException(FILE_UPLOAD_TO_TEMP_FAILED);
             }
 
