@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -79,8 +76,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -573,6 +572,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+            if (!CollectionUtils.isEmpty(shippingInstruction.getReferenceNumbers())) {
+                Optional<ReferenceNumbers> contractReferenceNumber = shippingInstruction.getReferenceNumbers()
+                        .stream()
+                        .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
+                        .findFirst();
+                contractReferenceNumber.ifPresent(referenceNumbers -> shippingInstructionResponse.setContractNo(referenceNumbers.getReferenceNumber()));
+            }
             shippingInstructionResponse.setVgmStatus(getVgmStatus(shippingInstruction));
             shippingInstructionResponse.setCrBookingId(shippingInstruction.getCarrierBookingNo());
             shippingInstructionResponses.add(shippingInstructionResponse);
@@ -665,9 +671,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("SI does not belong to INTTRA");
         }
 
-        CarrierBooking booking;
         if (si.getEntityType() == EntityType.CARRIER_BOOKING) {
-             booking = carrierBookingDao.findById(si.getEntityId())
+            CarrierBooking booking = carrierBookingDao.findById(si.getEntityId())
                     .orElseThrow(() -> new ValidationException("Carrier Booking not found"));
 
             validateSubmissionCriteria(booking, si);

@@ -1315,9 +1315,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void updatePackingAndContainerFromContract(ListContractResponse.ContractResponse contractResponse, ShipmentDetails shipmentDetails, Boolean isDestinationQuote) throws RunnerException {
-        if (Boolean.TRUE.equals(isDestinationQuote)) {
-            validateDestinationQuoteIntegrity(contractResponse, shipmentDetails);
-        }
         List<ListContractResponse.ContractUsage> contractUsages = Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of());
         String transportMode = shipmentDetails.getTransportMode();
         String shipmentType = shipmentDetails.getShipmentType();

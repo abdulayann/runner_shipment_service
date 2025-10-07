@@ -13,4 +13,5 @@ public interface IPushToDownstreamService {
     void pushConsolidationData(PushToDownstreamEventDto message, String transactionId);
 
     void pushConsolidationDataToTracking(PushToDownstreamEventDto eventDto, String transactionId);
+    void syncContainerWithCommonContainer(PushToDownstreamEventDto eventDto, String transactionId);
 }
