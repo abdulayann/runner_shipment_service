@@ -187,7 +187,7 @@ public class RoutingsService implements IRoutingsService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-            log.debug("Collected unique reference GUIDs from Pol and Pod: {}", referenceGuids);
+            log.debug("Collected unique reference GUIDs from Pol and Pod: {}", LoggerHelper.sanitizeForLogs(referenceGuids));
 
             // Fetch location data for the collected Pol and Pod
             Map<String, UnlocationsResponse> locationData = masterDataUtils.getLocationData(
@@ -412,10 +412,10 @@ public class RoutingsService implements IRoutingsService {
 
             if (isPol) {
                 routing.setEtd(projectedDate);
-                log.debug("Updated ETD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), projectedDate);
+                log.debug("Updated ETD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), LoggerHelper.sanitizeForLogs(projectedDate));
             } else {
                 routing.setEta(projectedDate);
-                log.debug("Updated ETA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), projectedDate);
+                log.debug("Updated ETA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), LoggerHelper.sanitizeForLogs(projectedDate));
             }
         }
     }
@@ -433,10 +433,10 @@ public class RoutingsService implements IRoutingsService {
 
             if (isPol) {
                 routing.setAtd(actualDate);
-                log.debug("Updated ATD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), actualDate);
+                log.debug("Updated ATD for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), LoggerHelper.sanitizeForLogs(actualDate));
             } else {
                 routing.setAta(actualDate);
-                log.debug("Updated ATA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), actualDate);
+                log.debug("Updated ATA for routing {}: {}", LoggerHelper.sanitizeForLogs(routing.getId()), LoggerHelper.sanitizeForLogs(actualDate));
             }
         }
     }

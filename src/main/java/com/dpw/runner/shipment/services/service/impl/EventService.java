@@ -915,13 +915,13 @@ public class EventService implements IEventService {
         try {
             updateCarrierDetails(shipment, shipmentAta, shipmentAtd);
         } catch (Exception e) {
-            log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), e.getMessage(), LoggerHelper.sanitizeForLogs(messageId));
+            log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()), LoggerHelper.sanitizeForLogs(messageId));
         }
         // Try to update actual event times
         try {
             updateActual(shipment, container);
         } catch (Exception e) {
-            log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), e.getMessage(), LoggerHelper.sanitizeForLogs(messageId));
+            log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()), LoggerHelper.sanitizeForLogs(messageId));
         }
     }
 

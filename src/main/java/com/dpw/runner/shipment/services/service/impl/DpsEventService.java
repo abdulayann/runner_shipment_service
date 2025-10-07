@@ -120,7 +120,7 @@ public class DpsEventService implements IDpsEventService {
             DpsWorkflowState newState = dpsEvent.getState();
 
             log.info("Saving DPS event for shipment GUID: {}, state: {}",
-                    dpsEvent.getEntityId(), newState);
+                    LoggerHelper.sanitizeForLogs(dpsEvent.getEntityId()), LoggerHelper.sanitizeForLogs(newState));
 
             // Update the non movement state if permanent blocked state
             if (DpsWorkflowState.PER_BLOCKED.equals(newState)) {
@@ -256,7 +256,7 @@ public class DpsEventService implements IDpsEventService {
 
             auditLogService.addAuditLog(auditLogMetaData);
 
-            log.info("Audit log created successfully for shipment GUID: {}", dpsEvent.getEntityId());
+            log.info("Audit log created successfully for shipment GUID: {}", LoggerHelper.sanitizeForLogs(dpsEvent.getEntityId()));
         } catch (Exception e) {
             throw new DpsException("DPS EVENT LOG ERROR -- " + e.getMessage(), e);
         }
@@ -296,7 +296,7 @@ public class DpsEventService implements IDpsEventService {
         List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
+            log.warn("No DPS Event found with provided entity id {}", LoggerHelper.sanitizeForLogs(shipmentGuid));
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()

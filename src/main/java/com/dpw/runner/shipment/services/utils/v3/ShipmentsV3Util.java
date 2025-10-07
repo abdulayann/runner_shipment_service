@@ -181,7 +181,7 @@ public class ShipmentsV3Util {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
-                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipmentId), LoggerHelper.sanitizeForLogs(counter++));
+                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(shipmentId), LoggerHelper.sanitizeForLogs(counter++));
                 if(shipmentSettingsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsOptional.get().getCustomisedSequence())) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);

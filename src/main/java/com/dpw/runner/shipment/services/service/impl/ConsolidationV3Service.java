@@ -4091,7 +4091,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipmentDetail);
             }
         } catch (Exception e) {
-            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}", shipmentIds.toString(), e.getMessage());
+            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}", LoggerHelper.sanitizeForLogs(shipmentIds.toString()), LoggerHelper.sanitizeForLogs(e.getMessage()));
         }
     }
 
@@ -5075,10 +5075,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(UUID.fromString(request.getGuid()));
             if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().id(consolidationDetails.get().getId()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -5544,7 +5544,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .setFirstResult((pageNo - 1) * pageSize)
                 .setMaxResults(pageSize)
                 .getResultList();
-        log.info("Time taken in executing query: {} ms, filterCriteria: {}", (System.currentTimeMillis() - start), listCommonRequest.getFilterCriteria().toString());
+        log.info("Time taken in executing query: {} ms, filterCriteria: {}", LoggerHelper.sanitizeForLogs(System.currentTimeMillis() - start), LoggerHelper.sanitizeForLogs(listCommonRequest.getFilterCriteria().toString()));
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
@@ -5599,7 +5599,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         TypedQuery<Object[]> query = entityManager.createQuery(cq);
         long start = System.currentTimeMillis();
         List<Object[]> results = query.getResultList();
-        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", (System.currentTimeMillis() - start), commonGetRequest.getId(), commonGetRequest.getGuid());
+        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", LoggerHelper.sanitizeForLogs(System.currentTimeMillis() - start), LoggerHelper.sanitizeForLogs(commonGetRequest.getId()), LoggerHelper.sanitizeForLogs(commonGetRequest.getGuid()));
         // Convert result list to List<Map<String, Object>>
         List<Map<String, Object>> finalResult = new ArrayList<>();
         for (Object[] row : results) {

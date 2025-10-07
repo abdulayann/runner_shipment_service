@@ -257,7 +257,7 @@ public class BookingIntegrationsUtility {
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);
                 customerBookingDao.updateBillStatus(customerBooking.getId(), true);
             } catch (Exception e) {
-                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION,
+                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", LoggerHelper.sanitizeForLogs(IntegrationType.V1_SHIPMENT_CREATION),
                         LoggerHelper.sanitizeForLogs(shipmentResponse.getBookingReference()), e.getMessage());
                 throw e;
             }
