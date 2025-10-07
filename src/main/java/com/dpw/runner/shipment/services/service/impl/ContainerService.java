@@ -1815,9 +1815,8 @@ public class ContainerService implements IContainerService {
                 for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
                     String platformBookingRef = shipmentDetail.getBookingReference();
                     if (StringUtility.isNotEmpty(platformBookingRef)) {
-                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
-                        log.info("Preparing platform payload for container ID: {} with container number: {}",
-                                containers.getId(), containers.getContainerNumber());
+                        log.info("Platform Booking reference obtained: {}", LoggerHelper.sanitizeForLogs(platformBookingRef));
+                        log.info("Preparing platform payload for container ID: {} with container number: {}", LoggerHelper.sanitizeForLogs(containers.getId()), LoggerHelper.sanitizeForLogs(containers.getContainerNumber()));
                         payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
                     }
                 }
@@ -1833,9 +1832,8 @@ public class ContainerService implements IContainerService {
                 if(!StringUtility.isEmpty(containers.getContainerNumber())) {
                     String platformBookingRef = shipmentDetails.getBookingReference();
                     if (StringUtility.isNotEmpty(platformBookingRef)) {
-                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
-                        log.info("Preparing platform payload for container ID: {} with container number: {}",
-                                containers.getId(), containers.getContainerNumber());
+                        log.info("Platform Booking reference obtained: {}", LoggerHelper.sanitizeForLogs(platformBookingRef));
+                        log.info("Preparing platform payload for container ID: {} with container number: {}", LoggerHelper.sanitizeForLogs(containers.getId()), LoggerHelper.sanitizeForLogs(containers.getContainerNumber()));
                         payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
                     }
                 }

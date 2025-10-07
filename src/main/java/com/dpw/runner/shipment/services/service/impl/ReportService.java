@@ -1629,12 +1629,12 @@ public class ReportService implements IReportService {
             if (Objects.isNull(templateId)) return null;
             DocumentRequest documentRequest = new DocumentRequest();
             documentRequest.setData(json);
-            log.info("RequestId: {} | Event: {} | Template: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(documentRequest));
+            log.info("RequestId: {} | Event: {} | Template: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(documentRequest)));
             var response = documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId);
-            log.info("RequestId: {} | Event: {} | Template: {} | Response: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(response));
+            log.info("RequestId: {} | Event: {} | Template: {} | Response: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(response)));
             return response.getBody();
         } catch (Exception e) {
-            log.error("RequestId: {} | Event: {} Error | Template: {} | Error: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, e.getMessage());
+            log.error("RequestId: {} | Event: {} Error | Template: {} | Error: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(e.getMessage()));
             log.error(e.getMessage());
             return null;
         }

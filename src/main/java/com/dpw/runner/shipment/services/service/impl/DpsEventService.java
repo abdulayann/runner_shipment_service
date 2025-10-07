@@ -311,7 +311,7 @@ public class DpsEventService implements IDpsEventService {
         }
         List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionStateIn(getMatchingRulesRequest.getShipmentGuid(), getMatchingRulesRequest.getDpsExecutionStatusList());
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid());
+            log.warn("No DPS Event found with provided entity id {}", LoggerHelper.sanitizeForLogs(getMatchingRulesRequest.getShipmentGuid()));
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()

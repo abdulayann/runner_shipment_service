@@ -709,7 +709,7 @@ public class BookingIntegrationsUtility {
         try {
             return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
         } catch (Exception e) {
-            log.error("Exception while retrieving orders for shipmentId {}: {}", shipmentId, e.getMessage(), e);
+            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), LoggerHelper.sanitizeForLogs(e.getMessage()), e);
             return null;
         }
     }
@@ -1028,7 +1028,7 @@ public class BookingIntegrationsUtility {
                 updatedExistingEvent = getAndUpdateExistingEvent(payloadData, eventListFromDb, shipmentDetails, updatedExistingEvent);
                 if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())
                     || (EventConstants.BOCO.equals(payloadData.getEventCode()) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)))) {
-                    log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
+                    log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
 
                     if (shipmentDetails.getId() == null) {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
@@ -1046,7 +1046,7 @@ public class BookingIntegrationsUtility {
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
-                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), LoggerHelper.sanitizeForLogs(shipmentDetails.getId()));
                     eventService.saveEvent(eventsRequest);
                     log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
@@ -1054,7 +1054,7 @@ public class BookingIntegrationsUtility {
         } catch (Exception ex) {
             log.error("Unexpected error in handleEventCreation: {}", ex.getMessage(), ex);
         } finally {
-            log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+            log.info("Completed event handling process for action: {} and entity ID: {}", LoggerHelper.sanitizeForLogs(payloadAction), LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
             TenantContext.removeTenant();
             UserContext.removeUser();
             RequestAuthContext.removeToken();

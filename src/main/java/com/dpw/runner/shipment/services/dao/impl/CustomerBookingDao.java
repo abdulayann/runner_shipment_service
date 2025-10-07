@@ -92,7 +92,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 cache.evictIfPresent(idKey);
                 cache.evictIfPresent(guidKey);
 
-                log.info("Evicted stale CustomerBooking cache entries after save. [ID Key: {}, GUID Key: {}]", idKey, guidKey);
+                log.info("Evicted stale CustomerBooking cache entries after save. [ID Key: {}, GUID Key: {}]", LoggerHelper.sanitizeForLogs(idKey), LoggerHelper.sanitizeForLogs(guidKey));
             } else {
                 log.info("CustomerBooking cache eviction skipped. Cache is null or identifiers (ID/GUID) are missing.");
             }
