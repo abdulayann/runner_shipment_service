@@ -67,7 +67,7 @@ public class ReportServiceAdapter implements IReportService {
             log.error("Report Service call failed : with exception : " + ex.getMessage());
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
-        log.info("Retrieve CRP: with response: {}", responseEntity);
+        log.info("Retrieve CRP: with response: {}", LoggerHelper.sanitizeForLogs(responseEntity));
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 }

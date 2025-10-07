@@ -205,7 +205,7 @@ public class DocumentManagerRestClient {
     public CompletableFuture<ResponseEntity<Object>> copyDocuments(CommonRequestModel commonRequestModel, String authToken) {
         try {
             var request = (CopyDocumentsRequest) commonRequestModel.getData();
-            log.info("Copy Document Request {}", jsonHelper.convertToJson(request));
+            log.info("Copy Document Request {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
 
             HttpHeaders headers = getHttpHeaders(authToken);
             HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
@@ -338,7 +338,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentBulkSave, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentBulkSave, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentBulkSave,
                     HttpMethod.POST,
@@ -361,7 +361,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeadersForBooking(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(obj, headers);
-            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, jsonHelper.convertToJson(obj));
+            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(obj)));
             var response  = restTemplate.exchange(
                     this.documentStore,
                     HttpMethod.POST,
@@ -460,7 +460,7 @@ public class DocumentManagerRestClient {
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
             log.info("{} | Calling Document Manager API: {} | Request: {}",
-                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(requestBody));
+                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
 
             var response = restTemplate.exchange(
                     this.docTypeList,
