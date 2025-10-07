@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -79,6 +80,9 @@ public class NetworkTransferService implements INetworkTransferService {
     private final INotificationDao notificationDao;
 
     private final V1ServiceUtil v1ServiceUtil;
+
+    @Autowired @Lazy
+    private EntityTransferV3Service entityTransferV3Service;
 
     @Autowired @Lazy
     private ConsolidationV3Service consolidationV3Service;
@@ -830,6 +834,12 @@ public class NetworkTransferService implements INetworkTransferService {
         log.info("Total time taken in setting NT master data details response {}", (System.currentTimeMillis() - start));
 
         return ResponseHelper.buildSuccessResponse(masterDataMap);
+    }
+
+    public List<String> getAllDestinationBranchEmailsForNT(Integer destinationBranch) {
+        List<String> emailList;
+        emailList = entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranch);
+        return emailList;
     }
 
     private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {

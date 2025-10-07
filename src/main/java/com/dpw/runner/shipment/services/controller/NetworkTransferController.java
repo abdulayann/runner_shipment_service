@@ -4,9 +4,9 @@ import com.dpw.runner.shipment.services.annotations.RequireApiKey;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -28,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -161,6 +163,21 @@ public class NetworkTransferController {
         }
 
         return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NetworkTransferController.MyResponseClass.class, message = NetworkTransferConstants.FETCH_EMAILS_STATUS_SUCCESSFUL)})
+    @GetMapping(NetworkTransferConstants.NETWORK_TRANSFER_DESTINATION_BRANCH_EMAILS)
+    public List<String> getAllDestinationBranchEmailsForNT(@RequestParam Integer destinationBranch) {
+        String responseMessage;
+        try {
+            return networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return List.of("");
     }
 
 }

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferV3Service;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -89,6 +91,8 @@ class NetworkTransferServiceTest extends CommonMocks{
     private ConsolidationV3Service consolidationV3Service;
     @Mock
     private ShipmentServiceImplV3 shipmentServiceImplV3;
+    @Mock
+    private EntityTransferV3Service entityTransferV3Service;
 
 
 
@@ -795,5 +799,47 @@ class NetworkTransferServiceTest extends CommonMocks{
         verify(shipmentServiceImplV3, never()).fetchAllMasterDataByKey(any(), any());
     }
 
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_ShouldReturnEmailList() {
+        // Arrange
+        Integer destinationBranch = 10;
+        List<String> expectedEmails = List.of("test1@dpworld.com", "test2@dpworld.com");
+
+        when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        )).thenReturn(expectedEmails);
+
+        // Act
+        List<String> actualEmails = networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(expectedEmails, actualEmails);
+        verify(entityTransferV3Service).getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        );
+    }
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_WhenEmptyListReturned_ShouldReturnEmptyList() {
+        // Arrange
+        Integer destinationBranch = 20;
+        when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        )).thenReturn(Collections.emptyList());
+
+        // Act
+        List<String> result = networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(Collections.emptyList(), result);
+        verify(entityTransferV3Service).getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        );
+    }
 
 }
