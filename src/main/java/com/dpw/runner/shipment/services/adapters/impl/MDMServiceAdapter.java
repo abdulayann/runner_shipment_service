@@ -101,7 +101,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response)));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){
-            log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(ex.getMessage()));
+            log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(ex.getMessage())));
             throw new RunnerException("Error from MDM while fetching credit limit: " + ex.getMessage());
         }
     }
@@ -264,7 +264,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
                 DependentServiceResponse.class
             );
-            log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
             log.error("MDM approveOrReject Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(errorMessage)));
