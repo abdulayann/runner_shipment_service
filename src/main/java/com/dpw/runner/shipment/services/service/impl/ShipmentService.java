@@ -5794,8 +5794,8 @@ public class ShipmentService implements IShipmentService {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
-                        log.error("Execption during common sequence {}", ignored.getMessage());
-                        log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
+                        log.error("Execption during common sequence {}", LoggerHelper.sanitizeForLogs(ignored.getMessage()));
+                        log.error("Execption occurred for common sequence {}", LoggerHelper.sanitizeForLogs(ignored.getStackTrace()));
                         shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                     }
                 }
