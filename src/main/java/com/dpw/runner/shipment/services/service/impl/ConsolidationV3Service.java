@@ -483,6 +483,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return this.completeUpdateConsolidation(consolidationDetailsRequest, false);
     }
 
+    @Override
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+    }
+
     private ConsolidationDetailsV3Response completeUpdateConsolidation(ConsolidationDetailsV3Request consolidationDetailsRequest, boolean isFromET) throws RunnerException {
         Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(consolidationDetailsRequest);
         if (!oldEntity.isPresent()) {
@@ -709,7 +714,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) throws RunnerException {
-        generateConsolidationNumber(consolidationDetails);
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
         consolidationDetails = consolidationDetailsDao.saveV3(consolidationDetails, allowDGValueChange);
 
         // audit logs
@@ -729,48 +734,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException(e.getMessage());
         }
 
-    }
-
-    @Override
-    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
-        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
-
-        if (consolidationDetails.getConsolidationNumber() == null) {
-            if (Boolean.TRUE.equals(customisedSequence)) {
-                String consoleNumber = consolidationCommonUtils.getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
-                if (consoleNumber != null && !consoleNumber.isEmpty())
-                    consolidationDetails.setConsolidationNumber(consoleNumber);
-                setConsolidationNumber(consolidationDetails);
-                setReferenceNumber(consolidationDetails);
-            } else {
-                consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-                setReferenceNumber(consolidationDetails);
-            }
-        }
-
-        setBolConsolidation(consolidationDetails);
-    }
-
-    private void setConsolidationNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
-            consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-    }
-
-    private void setReferenceNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
-            consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
-    }
-
-    private void setBolConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException {
-        if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-            String bol = consolidationCommonUtils.getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
-            if (StringUtility.isEmpty(bol)) {
-                bol = consolidationCommonUtils.generateCustomBolNumber();
-            }
-            if (StringUtility.isNotEmpty(bol)) {
-                consolidationDetails.setBol(bol);
-            }
-        }
     }
 
     private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsV3Request consolidationDetailsRequest, Boolean isCreate,

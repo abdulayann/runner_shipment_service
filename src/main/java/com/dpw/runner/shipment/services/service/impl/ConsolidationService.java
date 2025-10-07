@@ -678,7 +678,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
-        generateConsolidationNumber(consolidationDetails);
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, creatingFromDgShipment);
 
         // audit logs
@@ -698,57 +698,6 @@ public class ConsolidationService implements IConsolidationService {
             throw new RunnerException(e.getMessage());
         }
 
-    }
-
-    /**
-     * Method that generates consol and bol number
-     * @param consolidationDetails
-     */
-    @Override
-    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
-        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
-
-        if(consolidationDetails.getConsolidationNumber() == null) {
-            if(Boolean.TRUE.equals(customisedSequence)) {
-                String consoleNumber = consolidationCommonUtils.getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
-                if(consoleNumber != null && !consoleNumber.isEmpty())
-                    consolidationDetails.setConsolidationNumber(consoleNumber);
-                setConsolidationNumber(consolidationDetails);
-                setReferenceNumber(consolidationDetails);
-            }
-            else {
-                consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-                setReferenceNumber(consolidationDetails);
-            }
-        }
-
-        setBolConsolidation(consolidationDetails);
-    }
-
-    private void setConsolidationNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
-            consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-    }
-
-    private void setReferenceNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
-            consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
-    }
-
-    private void setBolConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException {
-        if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-            String bol = consolidationCommonUtils.getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
-            if (StringUtility.isEmpty(bol)) {
-                bol = consolidationCommonUtils.generateCustomBolNumber();
-            }
-            if (StringUtility.isNotEmpty(bol)) {
-                consolidationDetails.setBol(bol);
-            }
-        }
-    }
-
-    private String getConsolidationSerialNumber() {
-        return v1Service.getMaxConsolidationId();
     }
 
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
@@ -5703,6 +5652,11 @@ public class ConsolidationService implements IConsolidationService {
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());
         }
+    }
+
+    @Override
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
     }
 
     @Override

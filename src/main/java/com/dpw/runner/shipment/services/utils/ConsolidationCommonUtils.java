@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -15,12 +16,16 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.entity.enums.GenerationType.Random;
 
 @Component
 @Slf4j
 public class ConsolidationCommonUtils {
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -112,6 +117,52 @@ public class ConsolidationCommonUtils {
         // Persist the event
         eventDao.save(events);
         return events;
+    }
+
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
+        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
+
+        if(consolidationDetails.getConsolidationNumber() == null) {
+            if(Boolean.TRUE.equals(customisedSequence)) {
+                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
+                if(consoleNumber != null && !consoleNumber.isEmpty())
+                    consolidationDetails.setConsolidationNumber(consoleNumber);
+                setConsolidationNumber(consolidationDetails);
+                setReferenceNumber(consolidationDetails);
+            }
+            else {
+                consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
+                setReferenceNumber(consolidationDetails);
+            }
+        }
+
+        setBolConsolidation(consolidationDetails);
+    }
+
+    private void setConsolidationNumber(ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
+            consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
+    }
+
+    private String getConsolidationSerialNumber() {
+        return v1Service.getMaxConsolidationId();
+    }
+
+    private void setReferenceNumber(ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
+            consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
+    }
+
+    private void setBolConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException {
+        if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
+            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
+            if (StringUtility.isEmpty(bol)) {
+                bol = generateCustomBolNumber();
+            }
+            if (StringUtility.isNotEmpty(bol)) {
+                consolidationDetails.setBol(bol);
+            }
+        }
     }
 
 }

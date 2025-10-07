@@ -4,13 +4,18 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,12 +24,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +45,26 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
     @Mock
     private IV1Service v1Service;
 
+    @Mock
+    private ProductIdentifierUtility productEngine;
+
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private GetNextNumberHelper getNextNumberHelper;
+
     private static ShipmentSettingsDetails shipmentSettingsDetails;
+    private static ConsolidationDetails testConsol;
+    private static JsonTestUtility jsonTestUtility;
+    private static ObjectMapper objectMapperTest;
+    private static ConsolidationDetailsResponse testConsolResponse;
+
+    @BeforeAll
+    static void init() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
+        objectMapperTest = JsonTestUtility.getMapper();
+    }
 
     @BeforeEach
     void setUp() {
@@ -48,6 +75,9 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").enableRouteMaster(true).build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
         shipmentSettingsDetails = new ShipmentSettingsDetails();
+        testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+        testConsol.setAssignedTo("AssignedToUser");
+        testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
     }
 
     @Test
@@ -156,6 +186,97 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
 
         String res = consolidationCommonUtils.generateCustomBolNumber();
         assertEquals("CONS2313", res);
+    }
+
+    @Test
+    void testGenerateConsolidationNumberWithConsolidationLiteTrue() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(true);
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        mockShipmentSettings();
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertNull(consolidationDetails.getBol());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
+        when(productEngine.getCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("CONS007262");
+        when(productEngine.identifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("BOL23131");
+        mockShipmentSettings();
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS007262", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS007262", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL23131", consolidationDetails.getBol());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success1() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
+        when(productEngine.getCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("");
+        when(productEngine.identifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        when(consolidationCommonUtils.generateCustomBolNumber()).thenReturn("BOL2121");
+        mockShipmentSettings();
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL2121", consolidationDetails.getBol());
+    }
+
+    @Test
+    void testGenerateConsolidationNumber_Success2() throws RunnerException {
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setConsolidationNumber(null);
+        consolidationDetails.setReferenceNumber(null);
+        consolidationDetails.setBol(null);
+        TenantProducts tenantProducts = new TenantProducts();
+        tenantProducts.setId(1L);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setConsolidationLite(false);
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
+        when(productEngine.identifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
+        when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
+        when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
+        when(v1Service.getMaxConsolidationId()).thenReturn("123311");
+        when(consolidationCommonUtils.generateCustomBolNumber()).thenReturn("BOL2121");
+        mockShipmentSettings();
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
+        assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
+        assertEquals("BOL2121", consolidationDetails.getBol());
     }
 
 }
