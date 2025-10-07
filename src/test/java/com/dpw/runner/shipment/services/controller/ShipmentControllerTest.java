@@ -9,13 +9,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -1686,5 +1680,75 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.oceanDGApprovalResponse(request);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void exportShipmentList2Test() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        boolean isExecuted = true;
+        // Mock
+        lenient().doNothing().when(shipmentService).exportExcel(any(), any(), any());
+        // Test
+        shipmentController.exportShipmentList2(new MockHttpServletResponse(), new AttachListShipmentRequest());
+        // Assert
+        assertTrue(isExecuted);
+    }
+
+    @Test
+    void exportShipmentList2Test2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        boolean isExecuted = true;
+        // Mock
+        lenient().doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any(), any());
+        // Test
+        shipmentController.exportShipmentList2(new MockHttpServletResponse(), new AttachListShipmentRequest());
+        // Assert
+        assertTrue(isExecuted);
+    }
+
+    @Test
+    void exportShipmentList2_Success_EmailSent_ReturnsAccepted() throws IOException, ExecutionException, InterruptedException, IllegalAccessException {
+        ListCommonRequest  validRequest = new ListCommonRequest();
+        validRequest.setPageNo(1);
+        validRequest.setPageSize(10);
+
+        // Setup common request model
+        CommonRequestModel commonRequestModel =  CommonRequestModel.builder().pageNo(1).count(10).build();
+
+        // Mock MDC for requestId
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class)) {
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+        }
+        // Given
+        try (MockedStatic<LoggerHelper> loggerHelperMock = mockStatic(LoggerHelper.class);
+             MockedStatic<CommonRequestModel> commonRequestModelMock = mockStatic(CommonRequestModel.class)) {
+
+            loggerHelperMock.when(LoggerHelper::getRequestIdFromMDC).thenReturn("test-request-id");
+            commonRequestModelMock.when(() -> CommonRequestModel.buildRequest(validRequest))
+                    .thenReturn(commonRequestModel);
+
+            doAnswer(invocation -> {
+                ExportExcelResponse exportResponse = invocation.getArgument(2);
+                exportResponse.setEmailSent(true);
+                return null;
+            }).when(shipmentService).exportExcel2(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+
+            // When
+            ResponseEntity<?> result = shipmentController.exportShipmentList2(response, validRequest);
+
+            // Then
+            assertThat(result.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+            verify(shipmentService).exportExcel2(eq(response), eq(commonRequestModel), any(ExportExcelResponse.class));
+        }
+    }
+
+
+    @Test
+    void exportShipmentList2Test3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        boolean isExecuted = true;
+        // Mock
+        lenient().doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel2(any(), any(), any());
+        // Test
+        shipmentController.exportShipmentList2(new MockHttpServletResponse(), new AttachListShipmentRequest());
+        // Assert
+        assertTrue(isExecuted);
     }
 }
