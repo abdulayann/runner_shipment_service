@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -52,16 +53,16 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
 
     public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
-        log.info("List CRP: with request: {}", request.toString());
+        log.info("List CRP: with request: {}", LoggerHelper.sanitizeForLogs(request.toString()));
         String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? Constants.EMPTY_STRING : request.getSearchString().replace(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : Constants.EMPTY_STRING);
-        log.info("List CRP: To Url: {}", url);
+        log.info("List CRP: To Url: {}", LoggerHelper.sanitizeForLogs(url));
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
         } catch (HttpClientErrorException ex) {
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
-        log.info("List CRP: with response: {}", responseEntity);
+        log.info("List CRP: with response: {}", LoggerHelper.sanitizeForLogs(responseEntity));
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 }

@@ -278,9 +278,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<R> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
             R response = responseEntity.getBody();
-            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
-            log.info("Received response with status: {}", responseEntity.getStatusCode());
-            log.info("Response body: {}", response);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(url), System.currentTimeMillis() - start);
+            log.info("Received response with status: {}", LoggerHelper.sanitizeForLogs(responseEntity.getStatusCode()));
+            log.info("Response body: {}", LoggerHelper.sanitizeForLogs(response));
 
             if (Objects.nonNull(response) && response instanceof BillingBaseResponse billingBaseResponse) {
                 if (ObjectUtils.isNotEmpty(billingBaseResponse.getErrors())) {
