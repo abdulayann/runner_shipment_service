@@ -325,6 +325,5 @@ class ConsolidationV3ControllerTest {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     verify(consolidationV3Service).getNewConsoleDataFromShipment(eq(shipmentId), Mockito.any());
   }
-
 }
 
