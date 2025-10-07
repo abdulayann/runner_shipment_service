@@ -90,7 +90,7 @@ class GetNextNumberHelperTest {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
         sequenceSettings.setGenerationType(GenerationType.Regex);
-        String regexPattern = "{branch}{cc}{Month;1}{seq;4}";
+        String regexPattern = "{branch}{cc}{Month;1}{seq;4}{dd}";
         int tenantId = 1;
         boolean updateCounter = true;
         UsersDto user = UserContext.getUser();

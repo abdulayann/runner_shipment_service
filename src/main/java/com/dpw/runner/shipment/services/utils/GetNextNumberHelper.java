@@ -84,8 +84,7 @@ public class GetNextNumberHelper {
 
             String resetFreq = determineResetFrequency(segments);
 
-            while (matches.find()) {
-                String word = matches.group(1);
+            for (var word : segments) {
                 List<String> wordSplit = List.of(word.split(";"));
                 if (valueOf.get(wordSplit.get(0).toLowerCase()) == null) {
                     throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
