@@ -1923,7 +1923,7 @@ class HblServiceTest extends CommonMocks {
         assertEquals(1, result.size());
         HblPartyDto hblParty = result.get(0);
         assertTrue(hblParty.getIsShipmentCreated());
-        assertEquals("Test Party", hblParty.getName());
+        assertEquals("TEST PARTY", hblParty.getName());
         assertEquals("123 MAIN ST", hblParty.getAddress1());
         assertEquals("APT 4B", hblParty.getAddress2());
         assertEquals("ANYTOWN", hblParty.getCity());
