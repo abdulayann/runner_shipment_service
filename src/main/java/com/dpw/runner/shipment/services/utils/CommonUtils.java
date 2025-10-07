@@ -4517,6 +4517,12 @@ public class CommonUtils {
         }
     }
 
+    public <T> void mapIfSelected(T value, Consumer<T> setter) {
+        if (value != null) {
+            setter.accept(value);
+        }
+    }
+
     public PartiesResponse getPartiesResponse(Parties partyData) {
         PartiesResponse partiesResponse = new PartiesResponse();
         if (null != partyData){

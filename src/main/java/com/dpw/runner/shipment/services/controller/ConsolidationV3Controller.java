@@ -228,4 +228,11 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(defaultConsolidation);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.CONSOLE_DETAILS_FETCHED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_CONSOLE_FROM_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> getNewConsoleDataFromShipmentId(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException, AuthenticationException {
+        log.info("Received getNewConsoleDataFromShipmentId: {}" , id);
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getNewConsoleDataFromShipment(id));
+    }
+
 }

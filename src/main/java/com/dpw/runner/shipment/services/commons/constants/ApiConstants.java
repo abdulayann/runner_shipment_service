@@ -232,4 +232,6 @@ public class ApiConstants {
     public static final String API_SUBMIT = "/submit/{id}";
     public static final String API_AMEND = "/amend/{id}";
 
+    public static final String API_CONSOLE_FROM_SHIPMENT = "console-from-shipment";
+
 }

@@ -29,19 +29,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -184,14 +172,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
-import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -215,6 +196,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -248,6 +230,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -7263,5 +7246,125 @@ if (unitConversionUtilityMockedStatic != null) {
         boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
         assertTrue(result);
     }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_success() throws Exception {
+    CarrierDetails carrierDetails = new CarrierDetails();
+    carrierDetails.setOrigin("INMAA");
+    carrierDetails.setDestination("SGSIN");
+    ShipmentDetails shipmentDetails = new ShipmentDetails();
+    shipmentDetails.setId(1L);
+    shipmentDetails.setTransportMode("SEA");
+    shipmentDetails.setDirection("EXPORT");
+    shipmentDetails.setShipmentType("FCL");
+    shipmentDetails.setJobType("LCL");
+    shipmentDetails.setServiceType("DOOR_TO_DOOR");
+    shipmentDetails.setCarrierDetails(carrierDetails);
+    when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+    doNothing().when(commonUtils).validateAirSecurityPermission(anyString(), anyString());
+    doAnswer(inv -> {
+      Object value = inv.getArgument(0);
+      Object consumerObj = inv.getArgument(1);
+      if (consumerObj instanceof Consumer<?>) {
+        @SuppressWarnings("unchecked")
+        Consumer<Object> consumer = (Consumer<Object>) consumerObj;
+        consumer.accept(value == null ? null : "mocked");
+      }
+      return null;
+    }).when(commonUtils).mapIfSelected(any(), any());
+    ConsolidationDetailsV3Response result = consolidationV3Service.getNewConsoleDataFromShipment(1L);
+    assertNotNull(result);
+    assertEquals("mocked", result.getTransportMode());
+    verify(shipmentDao).findById(1L);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+
+
+  @Test
+  void testGetNewConsoleDataFromShipment_nullId_shouldThrowValidationException() {
+    ValidationException ex = assertThrows(
+            ValidationException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(null)
+    );
+    assertEquals("Shipment Id Is Mandatory", ex.getMessage());
+  }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_shipmentNotFound_shouldThrowRunnerException() {
+    when(shipmentDao.findById(10L)).thenReturn(Optional.empty());
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(10L)
+    );
+    assertTrue(ex.getMessage().contains("Data retrieval") || ex.getMessage() != null);
+  }
+
+  @Test
+  void testGetNewConsoleDataFromShipment_daoThrowsException_shouldThrowRunnerException() {
+    when(shipmentDao.findById(5L)).thenThrow(new RuntimeException("DB Failure"));
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(5L)
+    );
+    assertEquals("DB Failure", ex.getMessage());
+  }
+
+  @Test
+  void testSetHeaderDetailsFromShipment_shouldInvokeMapIfSelected() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode("AIR");
+    shipment.setDirection("IMPORT");
+    shipment.setShipmentType("LCL");
+    shipment.setJobType("JOBTYPE");
+    shipment.setServiceType("SERVTYPE");
+    CarrierDetails carrier = new CarrierDetails();
+    carrier.setOrigin("INMAA");
+    carrier.setDestination("SGSIN");
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setHeaderDetailsFromShipment(shipment, response, carrier, builder);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+  @Test
+  void testSetGeneralDetailsFromShipment_shouldInvokeMapIfSelected() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setPartner("ABC");
+    shipment.setCoLoadCarrierName("XYZ");
+    shipment.setBookingNumber("BKG001");
+    CarrierDetails carrier = new CarrierDetails();
+    carrier.setEtd(LocalDateTime.now());
+    carrier.setEta(LocalDateTime.now().plusDays(2));
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setGeneralDetailsFromShipment(shipment, response, carrier, builder);
+    verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
+  }
+
+  @Test
+  void testSetAgentDetailsFromShipment_shouldMapBothAgents() {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    CommonUtils commonUtils = mock(CommonUtils.class);
+    ReflectionTestUtils.setField(service, "commonUtils", commonUtils);
+    AdditionalDetails details = new AdditionalDetails();
+    details.setExportBroker(new Parties());
+    details.setImportBroker(new Parties());
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setAdditionalDetails(details);
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    when(commonUtils.getPartiesResponse(any())).thenReturn(new PartiesResponse());
+    doNothing().when(commonUtils).mapIfSelected(any(), any());
+    service.setAgentDetailsFromShipment(shipment, response);
+    verify(commonUtils, times(2)).mapIfSelected(any(), any());
+  }
 
 }

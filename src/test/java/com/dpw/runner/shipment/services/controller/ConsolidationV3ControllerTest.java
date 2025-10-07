@@ -38,6 +38,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -311,6 +312,15 @@ class ConsolidationV3ControllerTest {
       assertNotNull(response);
       assertEquals(HttpStatus.OK, response.getStatusCode());
       verify(consolidationV3Service).getDefaultConsolidation();
+  }
+
+  @Test void testGetNewConsoleDataFromShipmentId_shouldReturnSuccessResponse() throws AuthenticationException, RunnerException {
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    when(consolidationV3Service.getNewConsoleDataFromShipment(Mockito.anyLong())).thenReturn(mockResponse);
+    ResponseEntity<IRunnerResponse> response = controller.getNewConsoleDataFromShipmentId(Mockito.anyLong());
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).getNewConsoleDataFromShipment(Mockito.anyLong());
   }
 
 }

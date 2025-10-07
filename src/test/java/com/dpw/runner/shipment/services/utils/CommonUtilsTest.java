@@ -129,6 +129,7 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -7256,5 +7257,26 @@ class CommonUtilsTest {
         long expectedSeconds = Long.MAX_VALUE % 60;
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
+    }
+
+    @Test
+    void testMapIfSelected_whenValueNotNull_shouldInvokeSetter() {
+        AtomicReference<String> result = new AtomicReference<>();
+        commonUtils.mapIfSelected("test", result::set);
+        assertEquals("test", result.get());
+    }
+
+    @Test
+    void testMapIfSelected_whenValueIsNull_shouldNotInvokeSetter() {
+        AtomicReference<String> result = new AtomicReference<>("unchanged");
+        commonUtils.mapIfSelected(null, result::set);
+        assertEquals("unchanged", result.get());
+    }
+
+    @Test
+    void testMapIfSelected_withDifferentType_shouldWorkForGenerics() {
+        AtomicReference<Integer> result = new AtomicReference<>();
+        commonUtils.mapIfSelected(42, result::set);
+        assertEquals(42, result.get());
     }
 }
