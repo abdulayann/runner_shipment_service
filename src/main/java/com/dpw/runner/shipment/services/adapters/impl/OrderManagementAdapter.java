@@ -111,14 +111,14 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             try {
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, v2AuthHelper.getOrderManagementServiceSourceHeader());
 
-            log.info("Request to Order Service: {}", url);
+            log.info("Request to Order Service: {}", LoggerHelper.sanitizeForLogs(url));
             var response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, OrderListResponse.class);
-            log.info("Response from Order Service: {}", response.getBody());
+            log.info("Response from Order Service: {}", LoggerHelper.sanitizeForLogs(response.getBody()));
 
             List<OrderManagementDTO> orders = Objects.requireNonNull(response.getBody()).getData();
             return getPurchaseOrderDataFromOrders(orders);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error(LoggerHelper.sanitizeForLogs(e.getMessage()));
             throw new RunnerException(e.getMessage());
         }
     }

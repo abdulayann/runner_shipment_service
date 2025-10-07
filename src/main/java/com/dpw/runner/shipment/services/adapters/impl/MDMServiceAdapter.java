@@ -156,7 +156,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createNonBillableCustomer;
         CompanyDetailsRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), CompanyDetailsRequest.class);
         try {
-            log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}",
+                    LoggerHelper.getRequestIdFromMDC(),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
             ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                     RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)),

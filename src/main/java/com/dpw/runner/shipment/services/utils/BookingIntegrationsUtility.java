@@ -207,7 +207,7 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.updateAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), e.getMessage());
+                log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
@@ -221,7 +221,9 @@ public class BookingIntegrationsUtility {
                     platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
-                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), e.getMessage());
+                log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}",
+                        LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()),
+                        e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
         }
@@ -255,8 +257,8 @@ public class BookingIntegrationsUtility {
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);
                 customerBookingDao.updateBillStatus(customerBooking.getId(), true);
             } catch (Exception e) {
-                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", LoggerHelper.sanitizeForLogs(IntegrationType.V1_SHIPMENT_CREATION),
-                        LoggerHelper.sanitizeForLogs(shipmentResponse.getBookingReference()), e.getMessage());
+                log.error("Event: {} Bill creation  for shipment with booking reference {} failed due to following error: {}", IntegrationType.V1_SHIPMENT_CREATION,
+                        shipmentResponse.getBookingReference(), e.getMessage());
                 throw e;
             }
             return ResponseHelper.buildSuccessResponse();
@@ -287,7 +289,7 @@ public class BookingIntegrationsUtility {
         try {
             return shipmentService.createShipmentInV2(customerBookingRequest);
         } catch (Exception ex) {
-            log.error("Shipment Creation failed for booking number {} with error message: {}", LoggerHelper.sanitizeForLogs(customerBookingRequest.getBookingNumber()), ex.getMessage());
+            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;
         }
     }
@@ -296,7 +298,7 @@ public class BookingIntegrationsUtility {
         try {
             return shipmentServiceV3.createShipmentInV3(customerBookingRequest);
         } catch (Exception ex) {
-            log.error("Shipment Creation failed for booking number {} with error message: {}", LoggerHelper.sanitizeForLogs(customerBookingRequest.getBookingNumber()), ex.getMessage());
+            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;
         }
     }
@@ -707,7 +709,7 @@ public class BookingIntegrationsUtility {
         try {
             return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
         } catch (Exception e) {
-            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), e.getMessage(), e);
+            log.error("Exception while retrieving orders for shipmentId {}: {}", LoggerHelper.sanitizeForLogs(shipmentId), LoggerHelper.sanitizeForLogs(e.getMessage()), e);
             return null;
         }
     }
@@ -871,7 +873,7 @@ public class BookingIntegrationsUtility {
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,LoggerHelper.sanitizeForLogs(orgCode));
+                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1OrgResponse.getData()).get(0)));
@@ -885,7 +887,7 @@ public class BookingIntegrationsUtility {
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
             if (v1OrgResponse.getData() == null || ((List<?>)v1AddressResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(orgCode) , LoggerHelper.sanitizeForLogs(addressCode));
+                log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map<String, Object> addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1AddressResponse.getData()).get(0)));
@@ -1008,7 +1010,7 @@ public class BookingIntegrationsUtility {
             if ((Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) || Constants.KAFKA_EVENT_UPDATE.equalsIgnoreCase(payloadAction))
                     && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)) {
 
-                log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEntityId()));
+                log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", payloadData.getEntityId());
 
                 validateEntityId(payloadData);
 
@@ -1044,7 +1046,7 @@ public class BookingIntegrationsUtility {
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
-                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), shipmentDetails.getId());
+                    log.info("Generating event with code: {} for shipment entity ID: {}", LoggerHelper.sanitizeForLogs(payloadData.getEventCode()), LoggerHelper.sanitizeForLogs(shipmentDetails.getId()));
                     eventService.saveEvent(eventsRequest);
                     log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
@@ -1099,7 +1101,7 @@ public class BookingIntegrationsUtility {
         try {
             platformServiceAdapter.updateAtPlatform(request);
         } catch (Exception ex) {
-            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getBookingReference()), ex.getMessage());
+            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), ex.getMessage());
             sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
         }
     }
