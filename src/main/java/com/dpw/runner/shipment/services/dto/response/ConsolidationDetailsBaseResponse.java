@@ -68,7 +68,7 @@ public class ConsolidationDetailsBaseResponse implements IRunnerResponse {
     private String bookingStatus;
     private String bookingNumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime createdAt; //- custom serializer not added in List Response
+    private LocalDateTime createdAt;
     private Boolean hazardous;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone

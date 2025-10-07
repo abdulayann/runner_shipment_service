@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.entity.enums.GenerationType.Random;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Component
 @Slf4j
@@ -47,7 +48,7 @@ public class ConsolidationCommonUtils {
         String res = null;
         ShipmentSettingsDetails tenantSetting = commonUtils.getShipmentSettingFromContext();
 
-        if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite() && tenantSetting.getBolNumberGeneration() == null) {
+        if(Boolean.TRUE.equals(tenantSetting.getConsolidationLite()) && tenantSetting.getBolNumberGeneration() == null) {
             return  res;
         }
 
@@ -140,7 +141,7 @@ public class ConsolidationCommonUtils {
     }
 
     private void setConsolidationNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
+        if (isStringNullOrEmpty(consolidationDetails.getConsolidationNumber()))
             consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
     }
 
@@ -149,7 +150,7 @@ public class ConsolidationCommonUtils {
     }
 
     private void setReferenceNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
+        if (isStringNullOrEmpty(consolidationDetails.getReferenceNumber()))
             consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
     }
 

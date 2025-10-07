@@ -97,6 +97,18 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
     }
 
     @Test
+    void testGenerateCustomBolNumber_Success_Random1() {
+        shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setBolNumberPrefix("CONS");
+        shipmentSettingsDetails.setBolNumberGeneration(GenerationType.Random);
+        shipmentSettingsDetails.setConsolidationLite(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        mockShipmentSettings();
+        String res = consolidationCommonUtils.generateCustomBolNumber();
+        assertEquals(14, res.length());
+    }
+
+    @Test
     void shouldSetReceivingBranchToNullWhenZero() {
         ConsolidationDetails details = new ConsolidationDetails();
         details.setReceivingBranch(0L);
