@@ -3136,10 +3136,13 @@ public class ReportService implements IReportService {
     }
 
     private void saveDocDetailsWithFileIdAndShipmentBLCheck(Long reportId, String fileId, String reportInfo) {
-        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", reportId, fileId, reportInfo, LoggerHelper.getRequestIdFromMDC());
+        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", LoggerHelper.sanitizeForLogs(reportId),
+                LoggerHelper.sanitizeForLogs(fileId), LoggerHelper.sanitizeForLogs(reportInfo),
+                LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         Optional<ShipmentDetails> shipmentDetailsOpt = shipmentDao.findById(reportId);
         if (shipmentDetailsOpt.isEmpty()) {
-            log.info("Shipment details not found for reportId: {} with request ID {}", reportId, LoggerHelper.getRequestIdFromMDC());
+            log.info("Shipment details not found for reportId: {} with request ID {}", LoggerHelper.sanitizeForLogs(reportId),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             return;
         }
         ShipmentDetails shipmentDetails = shipmentDetailsOpt.get();
@@ -3149,7 +3152,8 @@ public class ReportService implements IReportService {
         DocDetails docDetail = docDetailsDao.findByFileId(fileId);
 
         if (docDetail != null) {
-            log.info("Doc detail for fileId: {} exists in DB with request ID {}", fileId, LoggerHelper.getRequestIdFromMDC());
+            log.info("Doc detail for fileId: {} exists in DB with request ID {}", LoggerHelper.sanitizeForLogs(fileId),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             docDetail.setType(docDetailsType);
         } else {
             docDetail = DocDetails.builder()
@@ -3158,7 +3162,8 @@ public class ReportService implements IReportService {
                     .fileId(fileId)
                     .build();
         }
-        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", fileId, docDetailsType, LoggerHelper.getRequestIdFromMDC());
+        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", LoggerHelper.sanitizeForLogs(fileId),
+                LoggerHelper.sanitizeForLogs(docDetailsType), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         docDetailsDao.save(docDetail);
     }
 
@@ -3212,7 +3217,7 @@ public class ReportService implements IReportService {
                     customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
-                log.info("Custom file name generated: {}", LoggerHelper.sanitizeForLogs(customFileName));
+                log.info("Custom file name generated: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.sanitizeForLogs(customFileName)));
             }
         } catch (Exception e) {
             log.error("Error generating custom document filename: {}",LoggerHelper.sanitizeForLogs( e.getMessage()), e);

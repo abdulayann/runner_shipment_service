@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,6 +47,8 @@ public class EntityLevelRollbackService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    private static final Pattern SCHEMA = Pattern.compile("^[A-Za-z0-9_]{1,64}$");
+    private static final Pattern TENANT = Pattern.compile("^[A-Za-z0-9_\\-]{1,128}$");
 
     @Transactional(rollbackFor = Exception.class)
     @Async
@@ -59,13 +62,8 @@ public class EntityLevelRollbackService {
                 if (!statement.trim().isEmpty()) {
                     if (tenantId != null && schema != null) {
 
-                        // Validate schema and tenantId before using
-                        if (!schema.matches("[A-Za-z0-9_]{1,64}")) {
-                            throw new IllegalArgumentException("Invalid schema name");
-                        }
-                        if (!tenantId.matches("[A-Za-z0-9_\\-]{1,128}")) {
-                            throw new IllegalArgumentException("Invalid tenant ID");
-                        }
+                        requireValid(schema, SCHEMA, "schema");
+                        requireValid(tenantId, TENANT, "tenantId");
 
                         String parsed = statement
                                 .replace("__TENANT_ID__",tenantId )
@@ -112,6 +110,11 @@ public class EntityLevelRollbackService {
             log.error("❌ Error executing PL/pgSQL script", e);
             throw new RuntimeException(e); // Triggers rollback
         }
+    }
+
+    private static void requireValid(String val, Pattern p, String name) {
+        if (!p.matcher(val).matches())
+            throw new IllegalArgumentException("Invalid " + name);
     }
 
 }

@@ -268,7 +268,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDelete, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentDelete), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentDelete,
                     HttpMethod.PUT,
@@ -291,7 +292,9 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentHistory + "/" + LoggerHelper.sanitizeForLogs(object), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentHistory) + "/" + LoggerHelper.sanitizeForLogs(object),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentHistory + "/" + object,
                     HttpMethod.GET,
@@ -315,7 +318,9 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
 
-            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDownload + "?id=" + LoggerHelper.sanitizeForLogs(object), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentDownload )+ "?id=" + LoggerHelper.sanitizeForLogs(object),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentDownload + "?id=" + object,
                     HttpMethod.GET,
@@ -338,7 +343,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentBulkSave, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentBulkSave), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentBulkSave,
                     HttpMethod.POST,
@@ -361,7 +367,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeadersForBooking(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(obj, headers);
-            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(obj)));
+            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(this.documentStore),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(obj)));
             var response  = restTemplate.exchange(
                     this.documentStore,
                     HttpMethod.POST,
@@ -384,7 +391,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | temporaryUpload request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentTemporaryUpload, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | temporaryUpload request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentTemporaryUpload), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentTemporaryUpload,
                     HttpMethod.POST,
@@ -410,7 +418,8 @@ public class DocumentManagerRestClient {
             if (Objects.nonNull(page) && Objects.nonNull(size))
                 url += "?page=" + page + "&size=" + size;
 
-            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), url, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(url), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
@@ -432,7 +441,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), this.docTypeList, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.docTypeList), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.docTypeList,
                     HttpMethod.POST,
@@ -451,7 +461,9 @@ public class DocumentManagerRestClient {
     }
 
     private void logError(String method, Object object, Exception ex) {
-        log.error(LOG_ERROR, LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(method), LoggerHelper.sanitizeForLogs(ex.getMessage()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+        log.error(LoggerHelper.sanitizeForLogs(LOG_ERROR), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                LoggerHelper.sanitizeForLogs(method), LoggerHelper.sanitizeForLogs(ex.getMessage()),
+                LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
     }
 
     public DocumentManagerResponse<T> searchDocuments(Object requestBody) {
@@ -459,7 +471,8 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
-            log.info("{} | Calling Document Manager API: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), this.docTypeList, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
+            log.info("{} | Calling Document Manager API: {} | Request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.docTypeList), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
 
             var response = restTemplate.exchange(
                     this.docTypeList,

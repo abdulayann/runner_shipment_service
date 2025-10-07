@@ -93,12 +93,12 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException {
         String url = baseUrl + creditConfigUrl;
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
-        log.info("Request id {} MDM Request {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
+        log.info("Request id {} MDM Request {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).headers(headers).body(jsonHelper.convertToJson(request)), Object.class);
-            log.info("Request id {} MDM Response {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response)));
+            log.info("Request id {} MDM Response {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(response)));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){
             log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(ex.getMessage())));
@@ -135,7 +135,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createShipmentTaskFromBookingUrl;
         CreateShipmentTaskFromBookingTaskRequest request = (CreateShipmentTaskFromBookingTaskRequest) commonRequestModel.getData();
         try {
-            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
                 ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                         RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
@@ -240,7 +240,8 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         try {
             log.info("Calling MDM createTask api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<DependentServiceResponse> response =  restTemplate.postForEntity(url, jsonHelper.convertToJson(request), DependentServiceResponse.class);
-            log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
             Object data = Objects.requireNonNull(response.getBody()).getData();
 
             if (data instanceof List<?> dataList && !dataList.isEmpty()) {
@@ -259,7 +260,8 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public void approveOrRejectTask(MdmTaskApproveOrRejectRequest request) throws RunnerException {
         String url = baseUrl + approveOrRejectTaskUrl;
         try {
-            log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                 RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
                 DependentServiceResponse.class
