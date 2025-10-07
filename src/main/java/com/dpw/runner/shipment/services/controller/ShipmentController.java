@@ -496,6 +496,32 @@ public class ShipmentController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping(ApiConstants.EXPORT_LIST_2)
+    public ResponseEntity<IRunnerResponse> exportShipmentList2(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
+        String responseMsg = "Failure executing :(";
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Export shipment list request received. RequestId: {}, Request: {}", requestId, listCommonRequest);
+
+        try {
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+            log.debug("Built CommonRequestModel: {}", commonRequestModel);
+            ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+            exportExcelResponse.setEmailSent(false);
+            shipmentService.exportExcel2(response, commonRequestModel, exportExcelResponse);
+            log.info("Shipment export completed successfully. RequestId: {}", requestId);
+            if (exportExcelResponse.isEmailSent()) {
+                return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+            }
+        }  catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error exporting shipment list";
+            log.error("Exception occurred while exporting shipment list. RequestId: {}, Error: {}", requestId, responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return ResponseEntity.ok().build();
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
     public ResponseEntity<IRunnerResponse> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) throws RunnerException {

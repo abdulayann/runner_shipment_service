@@ -11157,5 +11157,77 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(1002L, response.getOriginBranch());
     }
 
+    @Test
+    void testExportExcel_NullRequest2(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        String errorMessage = "Shipment List Request is Null";
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel2(httpServletResponse, commonRequestModel, exportExcelResponse));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testExportExcel2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        CarrierDetails carrierDetails = CarrierDetails.builder()
+                .origin("origin_name")
+                .originPort("originPort_name")
+                .destination("destination_name")
+                .destinationPort("destinationPort_name")
+                .build();
+
+        shipmentDetailsList.add(ShipmentDetails.builder().status(1).carrierDetails(carrierDetails).build());
+
+        List<ShipmentExcelExportResponse> shipmentExcelExportResponseList = new ArrayList<>();
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .origin("origin_name")
+                .originPort("originPort_name")
+                .destination("destination_name")
+                .destinationPort("destinationPort_name")
+                .build();
+        shipmentExcelExportResponseList.add(ShipmentExcelExportResponse.builder().status(1).carrierDetails(carrierDetailResponse).build());
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ServletOutputStream servletOutputStream = new ServletOutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                outputStream.write(b);
+            }
+
+            @Override
+            public boolean isReady() {
+                return true;
+            }
+
+            @Override
+            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+        };
+        when(response.getOutputStream()).thenReturn(servletOutputStream);
+
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
+        ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
+        when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
+        lenient().when(applicationConfigService.getValue(EXPORT_EXCEL_EXPIRE_TIME)).thenReturn("5");
+        lenient().when(customKeyGenerator.cacheBaseKey()).thenReturn(new StringBuilder());
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.opsForValue().get(any())).thenReturn(null);
+        ExportExcelResponse exportExcelResponse = new ExportExcelResponse();
+        exportExcelResponse.setEmailSent(false);
+        shipmentService.exportExcel2(response, commonRequestModel, exportExcelResponse);
+
+        verify(response, times(1)).setContentType(anyString());
+        verify(response, times(1)).setHeader(anyString(), anyString());
+        verify(response, times(1)).getOutputStream();
+        assertNotNull(outputStream.toByteArray()); // Verify that the output stream contains data
+    }
+
 
 }

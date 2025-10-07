@@ -37,8 +37,17 @@ public class TenantAspect {
         if(checkExcludeTenantFilter(joinPoint)) {
             return;
         }
+        try
+        {
+            String methodName = joinPoint.getSignature().getName();
+            String className = joinPoint.getTarget().getClass().getSimpleName();
+            log.info("Called from class: {} , method: {} , TenantId: {}",  className , methodName, TenantContext.getCurrentTenant());
+        } catch (Exception e) {
+            log.error("Error while getting class and method name: {}",e.getMessage());
+        }
 
         try {
+
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.TENANT_FILTER_NAME);
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME);
         } catch (Exception ex) {
@@ -48,6 +57,7 @@ public class TenantAspect {
         Class<?> clazz = joinPoint.getSignature().getDeclaringType();
 
         long tenantId = TenantContext.getCurrentTenant();
+
 
         Map<String, Boolean> permissions = Optional.ofNullable(UserContext.getUser()).map(UsersDto::getPermissions).orElse(new HashMap<>());
         
