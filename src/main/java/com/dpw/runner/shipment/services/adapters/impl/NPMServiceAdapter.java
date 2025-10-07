@@ -157,7 +157,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -180,7 +180,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -218,7 +218,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            log.error("NPM Update contract failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException("Error from NPM while updating utilisation: " + npmErrorResponse.getErrorMessage());
         }
     }

@@ -2922,7 +2922,7 @@ public class ReportService implements IReportService {
     }
 
     private void saveDocDetailsIfHblOrSeawayBill(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
-        log.info("Save doc details when reportInfo is {} with request ID {}", reportRequest.getReportInfo(), LoggerHelper.getRequestIdFromMDC());
+        log.info("Save doc details when reportInfo is {} with request ID {}", LoggerHelper.sanitizeForLogs(reportRequest.getReportInfo()), LoggerHelper.getRequestIdFromMDC());
         if (documentServiceResponse.get("fileId") == null) {
             log.info("Did not save file id is null with request ID {}", LoggerHelper.getRequestIdFromMDC());
             return;

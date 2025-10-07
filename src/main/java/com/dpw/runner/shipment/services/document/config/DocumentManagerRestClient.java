@@ -459,8 +459,7 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
-            log.info("{} | Calling Document Manager API: {} | Request: {}",
-                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
+            log.info("{} | Calling Document Manager API: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), this.docTypeList, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
 
             var response = restTemplate.exchange(
                     this.docTypeList,

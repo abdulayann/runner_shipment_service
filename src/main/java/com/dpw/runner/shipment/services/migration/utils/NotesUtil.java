@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -108,7 +109,7 @@ public class NotesUtil {
             return;
         }
         Integer i =1;
-        log.info("containerList: {}", containersList);
+        log.info("containerList: {}", LoggerHelper.sanitizeForLogs(containersList));
         text.append("Container Details:").append("\n");
         for (Containers container : containersList) {
             text.append("Container Details #").append(i).append("\n");
@@ -131,7 +132,7 @@ public class NotesUtil {
         if (packingList == null || packingList.isEmpty()) {
             return;
         }
-        log.info("packingList: {}", packingList);
+        log.info("packingList: {}", LoggerHelper.sanitizeForLogs(packingList));
 
         Map<Long, Containers> containerIdMap = new HashMap<>();
         if(containersSet!=null && !containersSet.isEmpty()) {
