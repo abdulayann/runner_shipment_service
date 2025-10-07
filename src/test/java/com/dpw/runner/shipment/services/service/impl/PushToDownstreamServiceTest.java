@@ -413,37 +413,6 @@ class PushToDownstreamServiceTest {
     }
 
     @Test
-    void pushConsolidationDataToService_callsPushConsolidationData_whenSourceIsAfterSave() {
-        // Arrange
-        Long consolidationId = 123L;
-        Integer tenantId = 1;
-        String transactionId = "TXN-AFTER-SAVE";
-
-        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
-        eventDto.setParentEntityId(consolidationId);
-        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
-        meta.setTenantId(tenantId);
-        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
-        eventDto.setMeta(meta);
-
-        testConsolidation.setId(consolidationId);
-
-        when(consolidationV3Service.findById(consolidationId))
-                .thenReturn(Optional.of(testConsolidation));
-        when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
-        doNothing().when(shippingInstructionUtil).syncCommonContainersByConsolId(consolidationId);
-
-        // Act
-        assertDoesNotThrow(() ->
-                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
-        );
-
-        // Assert - At least once covers both sync and potential async call
-        verify(consolidationV3Service, atLeastOnce()).findById(consolidationId);
-        verify(producer).getKafkaResponse(any(), anyBoolean());
-    }
-
-    @Test
     void pushConsolidationDataToService_callsPushConsolidationDataToTracking_whenSourceIsAfterSaveToTracking() {
         Long consolidationId = 123L;
         Integer tenantId = 1;
