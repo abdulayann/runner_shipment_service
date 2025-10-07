@@ -125,6 +125,7 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.ERROR_MESSAGES;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.ERR_INTTRA_MISSING_KEY;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INTTRA_REFERENCE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INVALID_CARRIER_BOOKING_ID;
@@ -675,7 +676,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
-
         carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
 
@@ -789,10 +789,18 @@ public class CarrierBookingService implements ICarrierBookingService {
             concatenatedErrors = StreamSupport.stream(responseNode.spliterator(), false)
                     .map(errorNode -> errorNode.path(MESSAGE).asText())
                     .collect(Collectors.joining(" | "));
-        } else if (responseNode.has(MESSAGE)) {
-            concatenatedErrors = responseNode.path(MESSAGE).asText();
+        } else if (responseNode.has(ERROR_MESSAGES)) {
+            JsonNode errorMessagesNode = responseNode.path(ERROR_MESSAGES);
+            // Check if errorMessages is an array
+            if (errorMessagesNode.isArray()) {
+                concatenatedErrors = StreamSupport.stream(errorMessagesNode.spliterator(), false)
+                        .map(JsonNode::asText)
+                        .collect(Collectors.joining(" | "));
+            } else {
+                concatenatedErrors = errorMessagesNode.asText();
+            }
         } else {
-            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, MESSAGE));
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, ERROR_MESSAGES));
         }
 
         log.error("INTTRA booking failed - Carrier Booking ID: {}, Errors: {}",
