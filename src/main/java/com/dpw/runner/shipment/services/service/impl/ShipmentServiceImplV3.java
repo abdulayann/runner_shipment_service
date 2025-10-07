@@ -598,7 +598,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private ShipmentDetails fetchShipmentDetailsForExternal(String source, CommonGetRequest request, double start) throws RunnerException, AuthenticationException{
         if (request.getId() == null && request.getGuid() == null) {
-            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
         }
         Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
@@ -608,7 +608,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         double current = System.currentTimeMillis();
-        log.info(LoggerHelper.sanitizeForLogs(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG), LoggerHelper.sanitizeForLogs(request.getId()), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(current - start));
+        log.info(LoggerHelper.sanitizeForLogs(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG), LoggerHelper.sanitizeForLogs(request.getId()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         return shipmentDetails.get();
     }
 
@@ -644,7 +644,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         double current = System.currentTimeMillis();
-        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(id), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
+        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(LoggerHelper.sanitizeForLogs(id)), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         AtomicInteger pendingCount = new AtomicInteger(0);
         ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
         Long shipmentId = shipmentDetailsEntity.getId();
