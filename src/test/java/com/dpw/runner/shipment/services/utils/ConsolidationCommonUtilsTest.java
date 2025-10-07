@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -33,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -44,6 +46,9 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
 
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private IEventDao eventDao;
 
     @Mock
     private ProductIdentifierUtility productEngine;
@@ -232,6 +237,7 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
 
     @Test
     void testGenerateConsolidationNumber_Success1() throws RunnerException {
+        var spyService = Mockito.spy(consolidationCommonUtils);
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setConsolidationNumber(null);
         consolidationDetails.setReferenceNumber(null);
@@ -247,9 +253,9 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
         when(v1Service.getMaxConsolidationId()).thenReturn("123311");
-        when(consolidationCommonUtils.generateCustomBolNumber()).thenReturn("BOL2121");
+        doReturn("BOL2121").when(spyService).generateCustomBolNumber();
         mockShipmentSettings();
-        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        spyService.generateConsolidationNumber(consolidationDetails);
         assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
         assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
         assertEquals("BOL2121", consolidationDetails.getBol());
@@ -257,6 +263,7 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
 
     @Test
     void testGenerateConsolidationNumber_Success2() throws RunnerException {
+        var spyService = Mockito.spy(consolidationCommonUtils);
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setConsolidationNumber(null);
         consolidationDetails.setReferenceNumber(null);
@@ -271,12 +278,18 @@ class ConsolidationCommonUtilsTest extends CommonMocks {
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
         when(v1Service.getMaxConsolidationId()).thenReturn("123311");
-        when(consolidationCommonUtils.generateCustomBolNumber()).thenReturn("BOL2121");
+        doReturn("BOL2121").when(spyService).generateCustomBolNumber();
         mockShipmentSettings();
-        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+        spyService.generateConsolidationNumber(consolidationDetails);
         assertEquals("CONS000123311", consolidationDetails.getConsolidationNumber());
         assertEquals("CONS000123311", consolidationDetails.getReferenceNumber());
         assertEquals("BOL2121", consolidationDetails.getBol());
+    }
+
+    @Test
+    void testCreateEvent_Success() {
+        consolidationCommonUtils.createEvent(testConsol, "EventCode");
+        verify(eventDao, times(1)).save(any(Events.class));
     }
 
 }
