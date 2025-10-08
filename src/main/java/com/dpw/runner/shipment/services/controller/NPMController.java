@@ -87,7 +87,8 @@ public class NPMController {
                     : NPMConstants.CONTRACT_LIST_FAILED;
             log.error(responseMsg, e);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        String userresponsemsg = responseMsg;
+        return ResponseHelper.buildFailedResponse(userresponsemsg);
     }
 
     @PostMapping(NPMConstants.GET_OFFERS)
