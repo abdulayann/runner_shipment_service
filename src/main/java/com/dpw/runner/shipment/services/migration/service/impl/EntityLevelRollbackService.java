@@ -4,7 +4,11 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.support.EncodedResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
@@ -15,6 +19,7 @@ import javax.persistence.PersistenceContext;
 import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.LocalDateTime;
@@ -51,35 +56,35 @@ public class EntityLevelRollbackService {
     @Transactional(rollbackFor = Exception.class)
     @Async
     public void executeSqlFromFile(String tenantId, String schema) {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")))
-        )) {
+        requireValid(schema, SCHEMA, "schema");
+        requireValid(tenantId, TENANT, "tenantId");
 
-            String sql = reader.lines().collect(Collectors.joining("\n"));
-            for (String statement : sql.split(";")) {
-                if (!statement.trim().isEmpty()) {
-                    if (tenantId != null && schema != null) {
+        String sql = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")),
+                StandardCharsets.UTF_8))
+                .lines().collect(Collectors.joining("\n"));
 
-                        requireValid(schema, SCHEMA, "schema");
-                        requireValid(tenantId, TENANT, "tenantId");
+        javax.sql.DataSource ds = jdbcTemplate.getDataSource();
+        if (ds == null) throw new IllegalStateException("DataSource is null");
 
-                        String parsed = statement
-                                .replace("__TENANT_ID__",tenantId )
-                                .replace("__SCHEMA__", schema);
-
-                        parsed = parsed.replaceAll("[\\x00-\\x1F\\x7F]", " ").trim();
-                        log.info("Executing: {}", LoggerHelper.sanitizeForLogs(parsed));
-                        jdbcTemplate.execute(parsed);
-
-                    } else {
-                        log.error("❌ tenantId and schema cannot be null");
-                    }
-                }
+        Connection conn = DataSourceUtils.getConnection(ds);
+        try {
+            try {
+                conn.setSchema(schema);
+            } catch (Exception ignored) {
             }
-            log.info("✅ SQL script executed successfully.");
+
+            // Execute the whole script via the Connection
+            EncodedResource resource = new EncodedResource(
+                    new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)), "UTF-8");
+            ScriptUtils.executeSqlScript(conn, resource);
+
+            log.info("✅ SQL script executed for tenant {}", LoggerHelper.sanitizeForLogs(tenantId));
         } catch (Exception e) {
             log.error("❌ Error executing SQL script", e);
             throw new RuntimeException(e);
+        } finally {
+            DataSourceUtils.releaseConnection(conn, ds);
         }
     }
 
