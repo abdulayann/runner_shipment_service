@@ -27,7 +27,6 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
     @JsonProperty("commodityCode")
     private String commodityGroup;
 
-    @JsonProperty("container")
     private String containerNumber;
 
     private Long containerId;
