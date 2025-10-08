@@ -1939,7 +1939,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
                 .thenRunAsync(
                         masterDataUtils.withMdc(() -> networkTransferV3Util
-                                .syncNetworkTransferShipmentMappingsForEntity(SHIPMENT, shipmentDetails, null)),
+                                .syncNetworkTransferShipmentMappingsForConsolOrShipment(SHIPMENT, shipmentDetails, null)),
                         executorService
                 );
     }

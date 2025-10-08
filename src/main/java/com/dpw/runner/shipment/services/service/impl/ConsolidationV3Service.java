@@ -256,7 +256,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
 import java.util.function.IntConsumer;
 
 @SuppressWarnings("ALL")
@@ -944,7 +943,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
                 .thenRunAsync(
                         masterDataUtils.withMdc(() -> networkTransferV3Util
-                                .syncNetworkTransferShipmentMappingsForEntity(CONSOLIDATION, null, consolidationDetails)),
+                                .syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)),
                         executorService
                 );
     }
@@ -1996,7 +1995,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity(CONSOLIDATION, null, consolidationDetails)), executorService);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)), executorService);
 
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
@@ -3998,7 +3997,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity(CONSOLIDATION, null, consolidationDetails)), executorService);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)), executorService);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 

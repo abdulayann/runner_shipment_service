@@ -1560,11 +1560,11 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
                 .thenReturn(List.of("OLD-SHIP"));
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("SHIPMENT", shipmentDetails, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
 
-        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(
-                eq(mockTransfer.getId()), eq(List.of("OLD-SHIP"))
-        );
+        verify(networkTransferShipmentsMappingDao)
+                .deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("OLD-SHIP"));
+
         verify(networkTransferShipmentsMappingDao).saveAll(anyList());
     }
 
@@ -1578,7 +1578,7 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
                 .thenReturn(List.of(mockTransfer));
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("SHIPMENT", shipmentDetails, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
 
         verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
         verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
@@ -1596,7 +1596,7 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
                 .thenReturn(List.of(mockTransfer));
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("SHIPMENT", shipmentDetails, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
 
         verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
         verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
@@ -1617,9 +1617,9 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
                 .thenReturn(List.of("OLD-SHIP"));
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("SHIPMENT", shipmentDetails, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
 
-        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(eq(mockTransfer.getId()), eq(List.of("OLD-SHIP")));
+        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("OLD-SHIP"));
         verify(networkTransferShipmentsMappingDao).saveAll(anyList());
     }
 
@@ -1632,7 +1632,7 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
                 .thenReturn(Collections.emptyList());
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("SHIPMENT", shipmentDetails, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
 
         verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
         verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
@@ -1656,9 +1656,9 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
                 .thenReturn(List.of("S2"));
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("CONSOLIDATION", null, consolidation);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("CONSOLIDATION", null, consolidation);
 
-        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(eq(mockTransfer.getId()), eq(List.of("S2")));
+        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("S2"));
         verify(networkTransferShipmentsMappingDao).saveAll(anyList());
     }
 
@@ -1672,7 +1672,7 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(20L), "CONSOLIDATION"))
                 .thenReturn(Collections.emptyList());
 
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("CONSOLIDATION", null, consolidation);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("CONSOLIDATION", null, consolidation);
 
         verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
         verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
@@ -1680,7 +1680,7 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
     @Test
     void testSyncNetworkTransferShipmentMappingsForInvalidEntityType() {
-        networkTransferV3Util.syncNetworkTransferShipmentMappingsForEntity("UNKNOWN", null, null);
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("UNKNOWN", null, null);
         verifyNoInteractions(networkTransferDao);
         verifyNoInteractions(networkTransferShipmentsMappingDao);
     }
