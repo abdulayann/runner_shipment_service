@@ -72,6 +72,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -260,6 +261,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
+        CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(customerBooking, null);
 
         // Update NPM for contract utilization
         if(checkNPMContractUtilization(customerBooking)) {
@@ -267,6 +269,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         try {
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            populateUnlocCodeFuture.join();
             createEntities(customerBooking, customerBookingV3Request, containerTeuMap);
             customerBookingV3Util.updateCargoInformation(customerBooking, containerTeuMap, null, false);
             /**
@@ -331,6 +334,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(customerBooking, oldEntity.get());
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
@@ -341,6 +345,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+        populateUnlocCodeFuture.join();
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
         try {
             //Check 2
@@ -2664,5 +2669,21 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (RunnerException ex) {
             throw new MdmException(ex.getMessage());
         }
+    }
+
+    private CompletableFuture<Void> getPopulateUnlocCodeFuture(CustomerBooking entity, CustomerBooking oldEntity) {
+        CarrierDetails finalOldCarrierDetails = Optional.ofNullable(oldEntity).map(CustomerBooking::getCarrierDetails).orElse(null);
+
+        /* Set to extract the unlocations from entities whose unloc code needs to be saved */
+        Set<String> unlocationsSet = Collections.synchronizedSet(new HashSet<>());
+        Map<String, EntityTransferUnLocations> unLocationsMap = new ConcurrentHashMap<>();
+
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService)
+        ).join();
+        return CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
+                .thenCompose(v -> CompletableFuture.allOf(
+                        CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService)
+                ));
     }
 }
