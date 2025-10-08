@@ -2664,6 +2664,9 @@ public class CommonUtils {
             ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
             sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
 
+            // Add tenant data from all shipments sharing the same parent GUID
+            addTenantDataFromParentGuid(shipmentDetails.getParentGuid(), tenantIds, Constants.SHIPMENT);
+
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = shipmentDetails.getReceivingBranch();
                 triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
@@ -2677,6 +2680,9 @@ public class CommonUtils {
             }
             ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
             sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
+
+            // Add tenant IDs from all consolidation entities sharing the same parent GUID along with interbranch cases
+            addTenantDataFromParentGuid(consolidationDetails.getParentGuid(), tenantIds, Constants.CONSOLIDATION);
 
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = consolidationDetails.getReceivingBranch();
@@ -2693,6 +2699,67 @@ public class CommonUtils {
         addAllIfNotEmpty(tenantIds, triangulationPartners);
         addAllIfNotEmpty(tenantIds, otherIds);
         return tenantIds.stream().filter(Objects::nonNull).toList();
+    }
+
+    public void addTenantDataFromParentGuid(UUID parentGuid, Set<Long> tenantIds, String entity) {
+        if (parentGuid == null) {
+            return;
+        }
+        if (Objects.equals(entity, Constants.CONSOLIDATION)) {
+
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid);
+            if(optionalConsolidationDetails.isEmpty())
+                return;
+
+            ConsolidationDetails parentConsolidationDetails = optionalConsolidationDetails.get(); // parentConsolidation
+            handleParentEntity(tenantIds, parentConsolidationDetails.getTenantId(), parentConsolidationDetails.getSourceTenantId(), parentConsolidationDetails.getReceivingBranch(), parentConsolidationDetails.getTriangulationPartnerList());
+            handleInterbranchConsolidation(tenantIds, parentConsolidationDetails);
+
+            List<ConsolidationDetails> relatedConsolidations = consolidationDetailsDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedConsolidations)) {
+                relatedConsolidations.forEach(c -> addTenantIdAndTriangulationData(tenantIds, c.getTenantId(), c.getTriangulationPartnerList()));
+            }
+
+        } else if (Objects.equals(entity, Constants.SHIPMENT)) {
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(parentGuid);
+            if(optionalShipmentDetails.isEmpty())
+                return;
+
+            ShipmentDetails parentShipmentDetails = optionalShipmentDetails.get(); // parent Shipment
+            handleParentEntity(tenantIds, parentShipmentDetails.getTenantId(), parentShipmentDetails.getSourceTenantId(), parentShipmentDetails.getReceivingBranch(), parentShipmentDetails.getTriangulationPartnerList());
+
+            List<ShipmentDetails> relatedShipments = shipmentDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedShipments)) {
+                relatedShipments.forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+            }
+        }
+    }
+
+    public void addTenantIdAndTriangulationData(Set<Long> tenantIds, Integer tenantId, List<TriangulationPartner> triangulationPartnerList) {
+        if (tenantId != null) {
+            tenantIds.add(Long.valueOf(tenantId));
+        }
+        if (!CollectionUtils.isEmpty(triangulationPartnerList)) {
+            List<Long> triangulationPartners = extractTriangulationPartners(triangulationPartnerList);
+            addAllIfNotEmpty(tenantIds, triangulationPartners);
+        }
+    }
+
+    public void handleInterbranchConsolidation(Set<Long> tenantIds, ConsolidationDetails parentConsolidationDetails) {
+        if(Boolean.TRUE.equals(parentConsolidationDetails.getInterBranchConsole())) {
+            parentConsolidationDetails.getShipmentsList().forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+        }
+    }
+
+    public void handleParentEntity(Set<Long> tenantIds, Integer tenantId, Long receivingBranch, Long originBranch, List<TriangulationPartner> triangulationPartnerList) {
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch);
+        }
+        if (originBranch != null) {
+            tenantIds.add(originBranch);
+        }
+        addTenantIdAndTriangulationData(tenantIds, tenantId, triangulationPartnerList);
     }
 
     private Optional<ShipmentDetails> getShipmentDetails(ListCousinBranchesForEtRequest request) {

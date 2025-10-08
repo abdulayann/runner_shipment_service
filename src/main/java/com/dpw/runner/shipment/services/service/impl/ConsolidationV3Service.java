@@ -624,6 +624,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+        if (Objects.isNull(consolidationDetails.getParentTenantId()))
+            consolidationDetails.setParentTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
@@ -5173,6 +5175,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             response.setCreatedAt(LocalDateTime.now());
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+            response.setParentTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             // Populate default department
             response.setDepartment(commonUtils.getAutoPopulateDepartment(

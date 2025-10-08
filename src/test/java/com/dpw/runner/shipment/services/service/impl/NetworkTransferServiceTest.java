@@ -126,12 +126,16 @@ class NetworkTransferServiceTest extends CommonMocks{
         var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).entityType(Constants.SHIPMENT).isInterBranchEntity(false).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
-        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().shipmentId("entityNumber").assignedTo("abc").build()));
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("entityNumber").assignedTo("abc").build();
+        shipment.setCreatedBy("creator");
+        when(shipmentDao.findShipmentByIdWithQuery(12L)).thenReturn(Optional.of(shipment));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
+            mapArg.put("creator", "creator@example.com");
             return null;
-        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        }).when(commonUtils).getUserDetails(any(), anyMap());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         UserContext.getUser().setDisplayName("xyz");
         UserContext.getUser().setEmail("xyz@xyz.com");
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
@@ -182,6 +186,43 @@ class NetworkTransferServiceTest extends CommonMocks{
     }
 
     @Test
+    void testRequestForTransfer_ConsolidationEntity() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).entityType(Constants.CONSOLIDATION).isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
+        ConsolidationDetails consolidation = ConsolidationDetails.builder().assignedTo("consoleAssigned").build();
+        consolidation.setCreatedBy("consoleCreator");
+        when(consolidationDao.findConsolidationByIdWithQuery(12L)).thenReturn(Optional.of(consolidation));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("consoleAssigned", "console@example.com");
+            mapArg.put("consoleCreator", "creator@example.com");
+            return null;
+            }).when(commonUtils).getUserDetails(any(), anyMap());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+       void testIsNteAdditionalEmailFlagEnabled_NullSettings() {
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(null);
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).entityType(Constants.SHIPMENT).isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        networkTransferService.requestForTransfer(request);
+        verify(shipmentDao, never()).findShipmentByIdWithQuery(any());
+        }
+
+
+    @Test
     void requestForReassign() {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
@@ -195,14 +236,18 @@ class NetworkTransferServiceTest extends CommonMocks{
     void requestForReassign2() {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
-        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityType("SHIPMENT").isInterBranchEntity(false).build();
-        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityType("SHIPMENT").isInterBranchEntity(false).status(NetworkTransferStatus.TRANSFERRED).build();
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId(any()).build();
+        shipment.setCreatedBy("entityCreator");
+        when(shipmentDao.findShipmentByIdWithQuery(12L)).thenReturn(Optional.of(shipment));
         networkTransfer1.setCreatedBy("abc");
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@gmail.com");
+            mapArg.put("entityCreator", "entityCreator@gmail.com");
             return null;
         }).when(commonUtils).getUserDetails(any(), any());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         var response = networkTransferService.requestForReassign(request);
@@ -216,13 +261,18 @@ class NetworkTransferServiceTest extends CommonMocks{
         NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityNumber("abcd").entityType("SHIPMENT").isInterBranchEntity(false).build();
         networkTransfer1.setTenantId(3);
         networkTransfer1.setJobType(Constants.DIRECTION_IMP);
-        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().assignedTo("abc").build()));
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId(any()).assignedTo("abc").build();
+        shipment.setCreatedBy("entityCreator");
+        when(shipmentDao.findShipmentByIdWithQuery(12L)).thenReturn(Optional.of(shipment));
         networkTransfer1.setCreatedBy("bcd");
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@gmail.com");
+            mapArg.put("bcd", "bcd@gmail.com");
+            mapArg.put("entityCreator", "entityCreator@gmail.com");
             return null;
         }).when(commonUtils).getUserDetails(any(), any());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
@@ -248,6 +298,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         networkTransfer1.setEntityNumber("DIRECTION_CTS");
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -273,6 +324,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         networkTransfer1.setEntityNumber("DIRECTION_CTS");
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().assignedTo("abc").build()));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
@@ -320,6 +372,39 @@ class NetworkTransferServiceTest extends CommonMocks{
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void testRequestForReassign_ConsolidationEntity() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityType(Constants.CONSOLIDATION).isInterBranchEntity(false).status(NetworkTransferStatus.TRANSFERRED).build();
+        networkTransfer1.setEntityId(12L);
+        networkTransfer1.setTenantId(3);
+        networkTransfer1.setJobType(Constants.DIRECTION_IMP);
+        networkTransfer1.setCreatedBy("nteCreator");
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
+        ConsolidationDetails consolidation = ConsolidationDetails.builder().assignedTo("consoleAssigned").build();
+        consolidation.setCreatedBy("consoleCreator");
+        when(consolidationDao.findConsolidationByIdWithQuery(12L)).thenReturn(Optional.of(consolidation));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("consoleAssigned", "console@example.com");
+            mapArg.put("nteCreator", "nte@example.com");
+            mapArg.put("consoleCreator", "creator@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(any(), any());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        tenantModelMap.put(12, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test

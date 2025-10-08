@@ -1366,6 +1366,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsV3.setIsInland(false);
             consolidationDetailsV3.setCarrierBookingRef(shipmentDetailsV3.getBookingNumber());
             consolidationDetailsV3.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationDetailsV3.setParentTenantId(TenantContext.getCurrentTenant().longValue());
             consolidationDetailsV3.setDepartment(commonUtils.getAutoPopulateDepartment(
                     shipmentDetailsV3.getTransportMode(), shipmentDetailsV3.getDirection(), MdmConstants.CONSOLIDATION_MODULE
             ));
@@ -1701,6 +1702,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+        if (Objects.isNull(shipmentDetails.getParentTenantId()))
+            shipmentDetails.setParentTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         Set<ConsolidationDetails> consolidationDetails = oldEntity != null ? oldEntity.getConsolidationList() : new HashSet<>();
         shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, consolidationDetails);

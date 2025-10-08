@@ -90,6 +90,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private String ediTransactionId;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
@@ -142,6 +143,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
