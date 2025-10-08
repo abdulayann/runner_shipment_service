@@ -149,7 +149,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG), LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG), LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             this.setCarrierMasterData(response.getBody());
@@ -169,7 +169,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             String url = npmBaseUrl + npmContracts;
             log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
                     LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH),
-                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
             if(response.getBody() != null)
@@ -221,7 +221,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             String url = npmBaseUrl + npmUpdateUrl;
             log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
                     LoggerHelper.sanitizeForLogs(IntegrationType.NPM_UPDATE_UTILISATION),
-                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(updateContractRequest)));
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(updateContractRequest)));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
