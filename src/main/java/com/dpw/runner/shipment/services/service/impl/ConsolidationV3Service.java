@@ -223,6 +223,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.persistence.EntityManager;
@@ -5620,7 +5621,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponse(consolListResponse);
     }
 
-    public ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id) throws RunnerException, AuthenticationException {
+    public ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException {
         if (null == id) {
             throw new ValidationException("Shipment Id Is Mandatory");
         }
@@ -5642,7 +5643,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             setGeneralDetailsFromShipment(shipmentDetails, consolidationResponse, details, builder);
             // PARTY
             setAgentDetailsFromShipment(shipmentDetails, consolidationResponse);
+            // DEFAULT
+            setDefaultDetails(shipmentDetails, defaultConsolidation, consolidationResponse);
             consolidationResponse.setCarrierDetails(builder.build());
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(consolidationResponse);
+            consolidationResponse.setMasterDataMap(masterDataResponse);
             return consolidationResponse;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -5650,6 +5655,30 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
+    }
+
+    private <T> void copyIfNull(Supplier<T> getter, Consumer<T> setter, Supplier<T> defaultGetter) {
+        if (getter.get() == null && defaultGetter.get() != null) {
+            setter.accept(defaultGetter.get());
+        }
+    }
+
+    private void setDefaultDetails(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response defaultConsolidation, ConsolidationDetailsV3Response consolidationResponse) {
+        copyIfNull(consolidationResponse::getSourceTenantId, consolidationResponse::setSourceTenantId, defaultConsolidation::getSourceTenantId);
+        copyIfNull(consolidationResponse::getIsMainCarriageAvailable, consolidationResponse::setIsMainCarriageAvailable, defaultConsolidation::getIsMainCarriageAvailable);
+        copyIfNull(consolidationResponse::getOriginBranch, consolidationResponse::setOriginBranch, defaultConsolidation::getOriginBranch);
+        copyIfNull(consolidationResponse::getDepartment, consolidationResponse::setDepartment, defaultConsolidation::getDepartment);
+        copyIfNull(consolidationResponse::getIntraBranch, consolidationResponse::setIntraBranch, defaultConsolidation::getIntraBranch);
+        copyIfNull(consolidationResponse::getAllocations, consolidationResponse::setAllocations, defaultConsolidation::getAllocations);
+        copyIfNull(consolidationResponse::getAchievedQuantities, consolidationResponse::setAchievedQuantities, defaultConsolidation::getAchievedQuantities);
+        copyIfNull(consolidationResponse::getSendingAgent, consolidationResponse::setSendingAgent, defaultConsolidation::getSendingAgent);
+        if (null != shipmentDetails.getTransportMode() && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            copyIfNull(consolidationResponse::getModeOfBooking, consolidationResponse::setModeOfBooking, defaultConsolidation::getModeOfBooking);
+        }
+        copyIfNull(consolidationResponse::getIsMainCarriageAvailable, consolidationResponse::setIsMainCarriageAvailable, defaultConsolidation::getIsMainCarriageAvailable);
+        copyIfNull(consolidationResponse::getIsVesselVoyageOrCarrierFlightNumberAvailable, consolidationResponse::setIsVesselVoyageOrCarrierFlightNumberAvailable, defaultConsolidation::getIsVesselVoyageOrCarrierFlightNumberAvailable);
+        copyIfNull(consolidationResponse::getCreatedBy, consolidationResponse::setCreatedBy, defaultConsolidation::getCreatedBy);
+        copyIfNull(consolidationResponse::getCreatedAt, consolidationResponse::setCreatedAt, defaultConsolidation::getCreatedAt);
     }
 
     public void setHeaderDetailsFromShipment(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response consolidationResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {

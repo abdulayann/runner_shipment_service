@@ -128,7 +128,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
-    private boolean intraBranch;
+    private Boolean intraBranch;
     private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;
