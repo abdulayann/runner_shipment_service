@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -325,5 +327,36 @@ class ConsolidationV3ControllerTest {
     assertEquals(HttpStatus.OK, response.getStatusCode());
     verify(consolidationV3Service).getNewConsoleDataFromShipment(eq(shipmentId), Mockito.any());
   }
+
+  @Test
+  void testCreateConsoleAndAttachShipment_success() throws Exception {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(123L);
+    when(jsonHelper.convertToJson(any())).thenReturn("{json}");
+    when(consolidationV3Service.createConsoleDetailsAndAttachShipment(any()))
+            .thenReturn("Console attached successfully");
+    ResponseEntity<IRunnerResponse> response = controller.createConsoleAndAttachShipment(request);
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    verify(consolidationV3Service).createConsoleDetailsAndAttachShipment(any());
+    verify(jsonHelper).convertToJson(any());
+  }
+
+  @Test
+  void testCreateConsoleAndAttachShipment_shouldThrowRunnerException() throws Exception {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(123L);
+    when(jsonHelper.convertToJson(any())).thenReturn("{json}");
+    when(consolidationV3Service.createConsoleDetailsAndAttachShipment(any()))
+            .thenThrow(new RunnerException("Error during creation"));
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> controller.createConsoleAndAttachShipment(request)
+    );
+    assertEquals("Error during creation", ex.getMessage());
+    verify(consolidationV3Service).createConsoleDetailsAndAttachShipment(any());
+  }
+
 }
 

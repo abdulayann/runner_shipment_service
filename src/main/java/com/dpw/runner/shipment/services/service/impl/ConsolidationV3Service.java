@@ -122,23 +122,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -428,7 +412,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     ).flatMap(m -> m.entrySet().stream())
                     .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    private ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
+    public ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
@@ -652,7 +636,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return oldEntity;
     }
 
-    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
+    public void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         if (Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
         /* Future to populate unloc code in consoliation child entities*/
@@ -774,7 +758,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsV3Request consolidationDetailsRequest, Boolean isCreate,
+    public void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsV3Request consolidationDetailsRequest, Boolean isCreate,
                            ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
@@ -1632,7 +1616,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
+        return this.attachShipmentDetails(request);
+    }
 
+    public String attachShipmentDetails(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         boolean isConsolePullCall = false;
 
@@ -5509,5 +5496,22 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 commonUtils.mapIfSelected(commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getImportBroker()), consolidationResponse::setReceivingAgent); // destination ageint
             }
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String createConsoleDetailsAndAttachShipment(@NotNull ConsolidationDetailsV3Request request) throws RunnerException {
+        if (null == request.getAttachShipmentId()) {
+            throw new ValidationException("Attach Shipment Id Is Mandatory");
+        }
+        ConsolidationDetailsV3Response consoleResponse = this.createConsolidation(request, false);
+        ShipmentConsoleAttachDetachV3Request shipmentConsoleAttachRequest = new ShipmentConsoleAttachDetachV3Request();
+        shipmentConsoleAttachRequest.setConsolidationId(consoleResponse.getId());
+        shipmentConsoleAttachRequest.setFromConsolidation(true);
+        Set<Long> shipmentId = new HashSet<>();
+        shipmentId.add(request.getAttachShipmentId());
+        shipmentConsoleAttachRequest.setShipmentIds(shipmentId);
+        log.info("Received attachShipments request: {}", shipmentConsoleAttachRequest);
+        return this.attachShipmentDetails(shipmentConsoleAttachRequest);
     }
 }

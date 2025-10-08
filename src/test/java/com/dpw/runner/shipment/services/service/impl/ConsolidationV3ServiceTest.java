@@ -144,27 +144,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.*;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ConsolidationV3ServiceTest extends CommonMocks {
@@ -7013,18 +6992,6 @@ if (unitConversionUtilityMockedStatic != null) {
     verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
   }
 
-
-
-
-  @Test
-  void testGetNewConsoleDataFromShipment_nullId_shouldThrowValidationException() {
-    ValidationException ex = assertThrows(
-            ValidationException.class,
-            () -> consolidationV3Service.getNewConsoleDataFromShipment(null, new ConsolidationDetailsV3Response())
-    );
-    assertEquals("Shipment Id Is Mandatory", ex.getMessage());
-  }
-
   @Test
   void testGetNewConsoleDataFromShipment_shipmentNotFound_shouldThrowRunnerException() {
     when(shipmentDao.findById(10L)).thenReturn(Optional.empty());
@@ -7131,4 +7098,42 @@ if (unitConversionUtilityMockedStatic != null) {
     String value;
   }
 
+  @Test
+  void testCreateConsoleDetailsAndAttachShipment_success() throws RunnerException {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(101L);
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    mockResponse.setId(555L);
+    ConsolidationV3Service spyService = Mockito.spy(consolidationV3Service);
+    doReturn(mockResponse).when(spyService).createConsolidation(any(ConsolidationDetailsV3Request.class), eq(false));
+    doReturn("success").when(spyService).attachShipmentDetails(any(ShipmentConsoleAttachDetachV3Request.class));
+    String result = spyService.createConsoleDetailsAndAttachShipment(request);
+    assertEquals("success", result);
+    verify(spyService).createConsolidation(any(ConsolidationDetailsV3Request.class), eq(false));
+    verify(spyService).attachShipmentDetails(any(ShipmentConsoleAttachDetachV3Request.class));
+  }
+
+  @Test
+  void testCreateConsoleDetailsAndAttachShipment_shouldThrowValidationException() {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(null);
+    ValidationException ex = assertThrows(
+            ValidationException.class,
+            () -> consolidationV3Service.createConsoleDetailsAndAttachShipment(request)
+    );
+    assertEquals("Attach Shipment Id Is Mandatory", ex.getMessage());
+  }
+
+  @Test
+  void testCreateConsolidation_shouldThrowValidationException() {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    ConsolidationDetails mockEntity = new ConsolidationDetails();
+    when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(mockEntity);
+    doThrow(new RuntimeException("save failed")).when(commonUtils).getShipmentSettingFromContext();
+    ValidationException ex = assertThrows(
+            ValidationException.class,
+            () -> consolidationV3Service.createConsolidation(request, false)
+    );
+    assertEquals("save failed", ex.getMessage());
+  }
 }

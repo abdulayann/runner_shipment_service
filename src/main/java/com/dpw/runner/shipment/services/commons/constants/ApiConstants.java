@@ -235,5 +235,6 @@ public class ApiConstants {
     public static final String API_AMEND = "/amend/{id}";
 
     public static final String API_CONSOLE_FROM_SHIPMENT = "console-from-shipment";
+    public static final String API_CREATE_CONSOLE_ATTACH_SHIPMENT = "/create-console-attach-shipment";
 
 }

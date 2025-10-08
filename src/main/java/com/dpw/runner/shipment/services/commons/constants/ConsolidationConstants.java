@@ -73,4 +73,5 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String AIR_DRT_CONSOLIDATION_CREATION_ERROR = "Cannot create consolidation with transportMode as AIR and consolidationType as DRT";
     public static final String CONSOLE_DETAILS_FETCHED_SUCCESSFULLY = "Consolidation details fetched successfully";
+    public static final String CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL = "Consolidation Data Creation and Attach Shipment Successful";
 }
