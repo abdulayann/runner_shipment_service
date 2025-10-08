@@ -463,7 +463,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "quote_filter_start_date_type")
-    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
+    private ShipmentDetailsQuoteDateType quoteDateType;
 
     @MasterData(type = MasterDataType.COUNTRIES)
     @Column(name = "client_country")

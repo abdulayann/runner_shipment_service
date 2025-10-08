@@ -146,7 +146,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     @Size(max=64, message = "max size is 64 for contract type")
     private String contractType;
     private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private Boolean replaceConsoleRoute;
     private Boolean createMainLegRoute;
     private String clientCountry;

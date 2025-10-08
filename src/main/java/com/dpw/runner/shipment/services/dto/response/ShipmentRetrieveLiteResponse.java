@@ -150,7 +150,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String parentContractId;
     private String contractType;
     private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;

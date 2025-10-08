@@ -139,7 +139,7 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private String updatedBy;
     private String destinationContractType;
     private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private Integer pendingActionCount;
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;

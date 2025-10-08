@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
-public enum ShipmentDetailsQuoteFilterStartDateType {
+public enum ShipmentDetailsQuoteDateType {
     CURRENT_DATE,
     CUSTOMER_BOOKING_CREATED_DATE,
     SHIPMENT_CREATED_DATE,

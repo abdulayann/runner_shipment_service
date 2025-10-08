@@ -250,7 +250,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "quote_filter_start_date_type")
-    private CustomerBookingQuoteFilterStartDateType quoteDateType;
+    private CustomerBookingQuoteDateType quoteDateType;
 
     @Column(name = "primary_sales_agent_email")
     private String primarySalesAgentEmail;

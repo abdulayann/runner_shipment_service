@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentDetailsQuoteFilterStartDateType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentDetailsQuoteDateType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -182,5 +182,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String destinationContractId;
     private String destinationParentContractId;
     private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
+    private ShipmentDetailsQuoteDateType quoteDateType;
 }

@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteFilterStartDateType;
+import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteDateType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -92,7 +92,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String notifyPartyCountry;
     private String parentContractId;
     private LocalDateTime quoteDate;
-    private CustomerBookingQuoteFilterStartDateType quoteDateType;
+    private CustomerBookingQuoteDateType quoteDateType;
     private String salesBranch;
     private Boolean isNotifyConsigneeEqual;
     private Boolean isShipperClientEqual;
