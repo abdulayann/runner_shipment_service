@@ -922,7 +922,14 @@ public class ReportService implements IReportService {
             String documentName,
             String discrepancyNote) {
 
-        List<Packing> packingList = shipment.getPackingList();
+        List<Packing> packingList = Stream.concat(
+                Optional.ofNullable(shipment.getPackingList())
+                        .orElseGet(List::of).stream(),
+                Optional.ofNullable(shipment.getShipmentOrders()).orElseGet(List::of)
+                        .stream()
+                        .flatMap(order -> Optional.ofNullable(order.getOrderPackings()).orElseGet(List::of).stream())
+        ).toList();
+
         Set<Containers> containersList = shipment.getContainersList();
 
         if (ObjectUtils.isEmpty(packingList)) {

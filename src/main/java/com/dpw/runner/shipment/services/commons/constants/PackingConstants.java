@@ -15,6 +15,7 @@ public class PackingConstants {
     public static final String PACKING_LIST_SUCCESSFUL = "Successful Packing Data List Retrieval";
     public static final String PACKING_SUMMARY_SUCCESSFUL = "Successful Retrieved Packing Summary";
     public static final String PACKING_DELETE_SUCCESSFUL = "Successful Packing Delete";
+    public static final String ORDER_LINE_UPDATE_SUCCESSFUL = "Successful Order Lines Data Update";
     public static final String NO_DATA = "Not Found!";
     public static final String PACKING_ID = "Packing Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";

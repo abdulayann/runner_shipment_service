@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTENT_TYPE_FOR_EXCEL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.YYYY_MM_DD_HH_MM_SS_FORMAT;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -13,20 +25,26 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -34,25 +52,12 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -69,18 +74,20 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTENT_TYPE_FOR_EXCEL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.YYYY_MM_DD_HH_MM_SS_FORMAT;
-import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import javax.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -104,6 +111,10 @@ public class PackingV3Util {
     @Autowired
     @Lazy
     private IConsolidationV3Service consolidationV3Service;
+
+    @Autowired
+    @Lazy
+    private IShipmentServiceV3 shipmentService;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -397,6 +408,11 @@ public class PackingV3Util {
         return null;
     }
 
+    public ShipmentDetails getShipmentById(ShipmentOrder shipmentOrder) {
+        Long shipmentId = shipmentOrder.getShipmentId();
+        return shipmentService.findById(shipmentId).orElseThrow(() -> new ValidationException("Shipment not found"));
+    }
+
     public Long getConsolidationId(Long shipmentId) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
@@ -569,5 +585,120 @@ public class PackingV3Util {
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
+    }
+
+    public List<OrderLineV3Response> mapPackingV3RequestListToOrderLineList(List<PackingV3Request> packingRequests) {
+        if (packingRequests == null || packingRequests.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return packingRequests.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapPackingV3RequestToOrderLine)
+                .toList();
+    }
+
+    public OrderLineV3Response mapPackingV3RequestToOrderLine(PackingV3Request packingRequest) {
+        if (packingRequest == null) {
+            return null;
+        }
+        return OrderLineV3Response.builder()
+                .id(packingRequest.getId())
+                .guid(packingRequest.getGuid())
+                .commodityGroup(packingRequest.getCommodityGroup())
+                .containerNumber(packingRequest.getContainerNumber())
+                .containerId(packingRequest.getContainerId())
+                .goodsDescription(packingRequest.getGoodsDescription())
+                .HSCode(packingRequest.getHSCode())
+                .length(packingRequest.getLength())
+                .lengthUnit(packingRequest.getLengthUnit())
+                .width(packingRequest.getWidth())
+                .widthUnit(packingRequest.getWidthUnit())
+                .height(packingRequest.getHeight())
+                .heightUnit(packingRequest.getHeightUnit())
+                .weight(packingRequest.getWeight())
+                .weightUnit(packingRequest.getWeightUnit())
+                .volume(packingRequest.getVolume())
+                .volumeUnit(packingRequest.getVolumeUnit())
+                .netWeight(packingRequest.getNetWeight())
+                .netWeightUnit(packingRequest.getNetWeightUnit())
+                .packs(packingRequest.getPacks())
+                .packsType(packingRequest.getPacksType())
+                .orderLineId(packingRequest.getOrderLineId())
+                .lineNo(packingRequest.getLineNo())
+                .subLineNo(packingRequest.getSubLineNo())
+                .productCode(packingRequest.getProductCode())
+                .shipmentOrderId(packingRequest.getShipmentOrderId())
+                .build();
+    }
+
+    public List<ShipmentOrderAttachDetachRequest.OrderDetails> mapToOrderDetailsList(List<ShipmentOrderV3Request> shipmentOrderV3List) {
+        if (ObjectUtils.isEmpty(shipmentOrderV3List)) {
+            return Collections.emptyList();
+        }
+        return shipmentOrderV3List.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapToOrderDetails)
+                .toList();
+    }
+
+    public ShipmentOrderAttachDetachRequest.OrderDetails mapToOrderDetails(ShipmentOrderV3Request request) {
+        if (request == null) {
+            return null;
+        }
+        List<OrderLineV3Response> orderPackings = (request.getOrderPackings() == null) ? Collections.emptyList() : request.getOrderPackings();
+        return ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                .orderNumber(request.getOrderNumber())
+                .orderGuid(request.getOrderGuid())
+                .shipmentId(request.getShipmentId())
+                .orderDate(request.getOrderDate())
+                .orderPackings(orderPackings)
+                .build();
+    }
+
+    public List<PackingV3Request> mapOrderLineListToPackingV3RequestList(List<OrderLineV3Response> orderLinesList) {
+        if (orderLinesList == null || orderLinesList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orderLinesList.stream()
+                .filter(Objects::nonNull)
+                .map(this::mapOrderLineToPackingV3Request)
+                .toList();
+    }
+
+    public PackingV3Request mapOrderLineToPackingV3Request(OrderLineV3Response orderLineResponse) {
+        if (orderLineResponse == null) {
+            return null;
+        }
+
+        return PackingV3Request.builder()
+                .commodityGroup(orderLineResponse.getCommodityGroup())
+                .containerNumber(orderLineResponse.getContainerNumber())
+                .containerId(orderLineResponse.getContainerId())
+                .goodsDescription(orderLineResponse.getGoodsDescription())
+                .HSCode(orderLineResponse.getHSCode())
+                .commodity(orderLineResponse.getHSCode())
+                .length(orderLineResponse.getLength())
+                .lengthUnit(orderLineResponse.getLengthUnit())
+                .width(orderLineResponse.getWidth())
+                .widthUnit(orderLineResponse.getWidthUnit())
+                .height(orderLineResponse.getHeight())
+                .heightUnit(orderLineResponse.getHeightUnit())
+                .weight(orderLineResponse.getWeight())
+                .weightUnit(orderLineResponse.getWeightUnit())
+                .volume(orderLineResponse.getVolume())
+                .volumeUnit(orderLineResponse.getVolumeUnit())
+                .netWeight(orderLineResponse.getNetWeight())
+                .netWeightUnit(orderLineResponse.getNetWeightUnit())
+                .packs(orderLineResponse.getPacks())
+                .packsType(orderLineResponse.getPacksType())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .lineNo(orderLineResponse.getLineNo())
+                .subLineNo(orderLineResponse.getSubLineNo())
+                .productCode(orderLineResponse.getProductCode())
+                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .orderLineGuid(orderLineResponse.getOrderLineGuid())
+                .shipmentId(orderLineResponse.getShipmentId())
+                .build();
     }
 }

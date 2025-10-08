@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -231,4 +232,9 @@ public class PackingV3Controller {
         return ResponseHelper.buildSuccessResponse(packingV3Service.calculateCargoSummary(commonGetRequest));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.ORDER_LINE_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @PutMapping(value = ApiConstants.API_ORDER_LINE_UPDATES)
+    public ResponseEntity<IRunnerResponse> orderLineCreateUpdateDeleteBulk(@Valid @RequestBody OrderLineCreateUpdateDeleteRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(packingV3Service.orderLineCreateUpdateDeleteBulk(request, Constants.SHIPMENT_ORDER, false));
+    }
 }
