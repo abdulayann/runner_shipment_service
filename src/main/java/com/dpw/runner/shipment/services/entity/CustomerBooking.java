@@ -2,9 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.entity.enums.BookingSource;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
@@ -246,6 +244,13 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "parent_contract_id")
     private String parentContractId;
+
+    @Column(name = "quote_filter_start_date")
+    private LocalDateTime quoteDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_filter_start_date_type")
+    private CustomerBookingQuoteFilterStartDateType quoteDateType;
 
     @Column(name = "primary_sales_agent_email")
     private String primarySalesAgentEmail;

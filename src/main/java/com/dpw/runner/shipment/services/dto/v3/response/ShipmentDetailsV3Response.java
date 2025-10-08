@@ -165,6 +165,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String contractId;
     private String parentContractId;
     private String contractType;
+    private LocalDateTime quoteDate;
+    private ShipmentDetailsQuoteFilterStartDateType quoteDateType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
