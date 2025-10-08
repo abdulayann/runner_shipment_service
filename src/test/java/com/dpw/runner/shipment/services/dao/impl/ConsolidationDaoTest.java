@@ -1325,4 +1325,20 @@ class ConsolidationDaoTest extends CommonMocks {
         verify(consolidationRepository, times(1))
                 .deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
     }
+
+    @Test
+    void findByParentGuid() {
+        // Arrange
+        UUID parentGuid = UUID.randomUUID();
+        List<ConsolidationDetails> expectedConsolidations = List.of(new ConsolidationDetails());
+        when(consolidationRepository.findByParentGuid(parentGuid)).thenReturn(expectedConsolidations);
+
+        // Act
+        List<ConsolidationDetails> response = consolidationsDao.findByParentGuid(parentGuid);
+
+        // Assert
+        assertFalse(response.isEmpty());
+        assertEquals(expectedConsolidations, response);
+        verify(consolidationRepository, times(1)).findByParentGuid(parentGuid);
+    }
 }

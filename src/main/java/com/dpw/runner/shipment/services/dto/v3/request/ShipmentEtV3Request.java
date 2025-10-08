@@ -103,6 +103,7 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     private String shipmentType;
     private String source;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private Integer status;
     @Size(max=4, message = "max size is 4 for transport mode")
     private String transportMode;
@@ -151,6 +152,7 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;

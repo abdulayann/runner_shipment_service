@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.utils.Generated;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Generated
 public class ShippingInstructionsConstants {
 
     private ShippingInstructionsConstants() {
@@ -43,12 +47,12 @@ public class ShippingInstructionsConstants {
     public static final String REJECTED = "Rejected";
     public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
     public static final String PROCESSED = "Processed";
+    public static final String SHIPPING_INSTRUCTION_EMAIL_TEMPLATE = "SHIPPING_INSTRUCTION";
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
                     .dataType(ShippingInstructionStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("carrierBookingNo", RunnerEntityMapping.builder()
@@ -64,14 +68,16 @@ public class ShippingInstructionsConstants {
                     .fieldName("carrierBlNo")
                     .isContainsText(true)
                     .build()),
-
+            Map.entry("shippingInstructionType", RunnerEntityMapping.builder()
+                    .tableName(SI_TABLE)
+                    .dataType(ShippingInstructionType.class)
+                    .fieldName("shippingInstructionType")
+                    .build()),
             Map.entry("entityType", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
-                    .dataType(String.class)
+                    .dataType(EntityType.class)
                     .fieldName("entityType")
-                    .isContainsText(true)
                     .build()),
-
             Map.entry("entityId", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
                     .dataType(Long.class)
@@ -109,12 +115,6 @@ public class ShippingInstructionsConstants {
                     .dataType(LocalDateTime.class)
                     .fieldName("createdBy")
                     .isContainsText(false)
-                    .build()),
-            Map.entry("updatedBy", RunnerEntityMapping.builder()
-                    .tableName(SI_TABLE)
-                    .dataType(String.class)
-                    .fieldName("updatedBy")
-                    .isContainsText(true)
                     .build()),
             Map.entry("carrier", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)

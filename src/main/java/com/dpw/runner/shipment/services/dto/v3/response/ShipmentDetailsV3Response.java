@@ -92,6 +92,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private Long documentationPartner;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
@@ -174,6 +175,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;

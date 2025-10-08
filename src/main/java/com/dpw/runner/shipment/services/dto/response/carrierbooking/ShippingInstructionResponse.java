@@ -20,11 +20,13 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String status;
     private String bookingStatus;
     private String bookingNo;
+    private String crBookingId;
     private PartiesResponse contract;
     private PartiesResponse shipper;
     private PartiesResponse consignee;
     private PartiesResponse forwardingAgent;
     private PartiesResponse requestor;
+    private PartiesResponse notifyParty;
     private List<PartiesResponse> additionalParties;
     private BigDecimal shipperDeclaredValue;
     private String shipperDeclaredValueCurrency;
@@ -42,7 +44,10 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private Integer nonNegoUnFreightCopies;
     private ShippingInstructionType shippingInstructionType;
     private String serviceType;
-
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     private List<FreightDetailResponse> freightDetailList;
     private List<CommonPackageResponse> commonPackagesList;
     private List<CommonContainerResponse> commonContainersList;
@@ -57,5 +62,6 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String createByUserEmail;
     private String submitByUserEmail;
     private String comments;
+    private String contractNo;
     private String vgmStatus;
 }

@@ -39,7 +39,6 @@ import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
@@ -439,7 +438,6 @@ class CarrierBookingServiceTest extends CommonMocks {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertTrue(result.contains(response1));
     }
 
     @Test

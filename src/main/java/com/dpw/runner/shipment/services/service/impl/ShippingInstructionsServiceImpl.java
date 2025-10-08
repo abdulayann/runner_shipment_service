@@ -2,16 +2,15 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
@@ -34,6 +33,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
@@ -76,6 +76,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -135,12 +138,19 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     @Autowired
     private IBridgeServiceAdapter bridgeServiceAdapter;
+    @Autowired
+    private INotificationService notificationService;
+
 
 
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         shippingInstruction = validateFetchAndSetSI(shippingInstruction, true);
         shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
+        shippingInstruction.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(info.getInternalEmailsList()));
+        shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(info.getExternalEmailsList()));
+        shippingInstruction.setCreateByUserEmail(UserContext.getUser().getEmail());
+        shippingInstruction.setSubmitByUserEmail(UserContext.getUser().getEmail());
         ShippingInstruction savedInfo = repository.save(shippingInstruction);
         List<Parties> additionalPartiesList = shippingInstruction.getAdditionalParties();
         if (additionalPartiesList != null) {
@@ -372,6 +382,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
         response.setVgmStatus(getVgmStatus(instruction));
+        response.setCrBookingId(instruction.getCarrierBookingNo());
         if (Objects.nonNull(instruction.getPayloadJson())) {
             ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
@@ -390,7 +401,10 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private String getVgmStatus(ShippingInstruction instruction) {
         VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getEntityId());
-        return vgmEntity.getStatus().name();
+        if (Objects.nonNull(vgmEntity)){
+            return vgmEntity.getStatus().name();
+        }
+       return null;
     }
 
     public ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest shippingInstructionRequest) {
@@ -401,8 +415,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(shippingInstructionRequest, ShippingInstruction.class);
         validateSIRequest(shippingInstruction);
+        shippingInstruction.setCreateByUserEmail(shippingInstructionEntity.get().getCreateByUserEmail());
+        shippingInstruction.setSubmitByUserEmail(shippingInstructionEntity.get().getSubmitByUserEmail());
         shippingInstruction.setCommonContainersList(shippingInstructionEntity.get().getCommonContainersList());
         shippingInstruction.setCommonPackagesList(shippingInstructionEntity.get().getCommonPackagesList());
+        shippingInstruction.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getInternalEmailsList()));
+        shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getExternalEmailsList()));
         ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
         responseMapper.setShippingInstruction(shippingInstruction);
         populateReadOnlyFields(responseMapper);
@@ -554,7 +572,15 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+            if (!CollectionUtils.isEmpty(shippingInstruction.getReferenceNumbers())) {
+                Optional<ReferenceNumbers> contractReferenceNumber = shippingInstruction.getReferenceNumbers()
+                        .stream()
+                        .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
+                        .findFirst();
+                contractReferenceNumber.ifPresent(referenceNumbers -> shippingInstructionResponse.setContractNo(referenceNumbers.getReferenceNumber()));
+            }
             shippingInstructionResponse.setVgmStatus(getVgmStatus(shippingInstruction));
+            shippingInstructionResponse.setCrBookingId(shippingInstruction.getCarrierBookingNo());
             shippingInstructionResponses.add(shippingInstructionResponse);
         }
 
@@ -663,9 +689,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         // Step 3: Mark SI as submitted
         si.setStatus(Requested);
+        si.setSubmitByUserEmail(UserContext.getUser().getEmail());
         si.setPayloadJson(createPackageAndContainerPayload(si));
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(si, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(si));
+        instructionInttraRequest.setCrBookingId(si.getCarrierBookingNo());
         try {
             shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         } catch (Exception e) {
@@ -757,10 +785,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         // Step 3: Mark SI as amended
         shippingInstruction.setStatus(ShippingInstructionStatus.Changed);
+        shippingInstruction.setSubmitByUserEmail(UserContext.getUser().getEmail());
         shippingInstruction.setPayloadJson(createPackageAndContainerPayload(shippingInstruction));
         ShippingInstruction saved = repository.save(shippingInstruction);
         ShippingInstructionInttraRequest instructionInttraRequest = jsonHelper.convertValue(shippingInstruction, ShippingInstructionInttraRequest.class);
         instructionInttraRequest.setFileName(getFileName(shippingInstruction));
+        instructionInttraRequest.setCrBookingId(shippingInstruction.getCarrierBookingNo());
         try {
             shippingInstructionUtil.populateInttraSpecificData(instructionInttraRequest, remoteId);
         } catch (Exception e) {
@@ -808,6 +838,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 shippingInstruction.setComments(shippingInstructionEvent.getComments());
                 repository.save(shippingInstruction);
                 carrierBookingInttraUtil.createTransactionHistory(shippingInstructionStatus.name(), FlowType.Outbound, shippingInstructionStatus.getDescription(), SourceSystem.INTTRA, shippingInstruction.getId(), EntityTypeTransactionHistory.SI);
+                sendNotification(shippingInstruction);
             }
         }
     }
@@ -907,5 +938,22 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         };
 
     }
-
+    protected void sendNotification(ShippingInstruction shippingInstruction) {
+        try {
+            List<String> requests = new ArrayList<>(List.of(ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE));
+            List<EmailTemplatesRequest> emailTemplates = carrierBookingInttraUtil.fetchEmailTemplate(requests);
+            EmailTemplatesRequest verifiedGrossMassEmailTemplate = emailTemplates.stream()
+                    .filter(Objects::nonNull)
+                    .filter(template -> SHIPPING_INSTRUCTION_EMAIL_TEMPLATE.equalsIgnoreCase(template.getType()))
+                    .findFirst()
+                    .orElse(null);
+            if (Objects.nonNull(verifiedGrossMassEmailTemplate)) {
+                List<String> toEmails = shippingInstructionUtil.getSendEmailBaseRequest(shippingInstruction);
+                notificationService.sendEmail(verifiedGrossMassEmailTemplate.getBody(), verifiedGrossMassEmailTemplate.getSubject(), toEmails, new ArrayList<>());
+                log.info("Email Notification sent successfully for State Change of Shipping instruction Id: {}", shippingInstruction.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error in sending shipping instruction email: {}", e.getMessage());
+        }
+    }
 }

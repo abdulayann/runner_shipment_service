@@ -30,8 +30,10 @@ public class VerifiedGrossMassListResponse implements IRunnerResponse {
     private PartiesResponse responsible;
     private List<PartiesResponse> additionalParties;
 
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
 
     private SailingInformationResponse sailingInformation;
 

@@ -2703,4 +2703,20 @@ class ShipmentDaoTest extends CommonMocks {
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false, false);
         assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
+
+    @Test
+    void findByParentGuid() {
+        // Arrange
+        UUID parentGuid = UUID.randomUUID();
+        List<ShipmentDetails> expectedShipments = List.of(new ShipmentDetails());
+        when(shipmentRepository.findAllByParentGuid(parentGuid)).thenReturn(expectedShipments);
+
+        // Act
+        List<ShipmentDetails> result = shipmentDao.findByParentGuid(parentGuid);
+
+        // Assert
+        assertEquals(expectedShipments, result);
+        verify(shipmentRepository, times(1)).findAllByParentGuid(parentGuid);
+    }
+
 }

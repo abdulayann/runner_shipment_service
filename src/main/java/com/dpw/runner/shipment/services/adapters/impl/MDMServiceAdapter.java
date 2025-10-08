@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
@@ -15,17 +17,21 @@ import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.*;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.retry.RetryCallback;
@@ -37,6 +43,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,6 +56,15 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    CacheManager cacheManager;
+
+    @Autowired
+    CustomKeyGenerator keyGenerator;
+
+    @Autowired
+    MasterDataUtils masterDataUtils;
 
     @Value("${mdm.creditDetails}")
     String creditConfigUrl;
@@ -76,6 +92,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.getTaskUrl}")
     String getTaskUrl;
+
+    @Value("${mdm.govtIdListUrl}")
+    String govtIdListUrl;
 
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -294,5 +313,89 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             log.error("MDM getTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
             throw new RunnerException(errorMessage);
         }
+    }
+
+    private List<Map<String, Object>> getFirmsCodeList(Set<String> orgIds) {
+        String url = baseUrl + govtIdListUrl;
+        if (orgIds == null || orgIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            orgIds = orgIds.stream().filter(orgId -> orgId != null && !orgId.trim().isEmpty()).collect(Collectors.toSet());
+            List<MdmListCriteriaRequest.SearchCriteria> criteriaList = List.of(
+                    MdmListCriteriaRequest.SearchCriteria.builder().field("entityType").operator("eq").value("ORGANIZATION").build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field("entityId").operator("in").values(new ArrayList<>(orgIds)).build()
+            );
+            MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).searchCriteriaList(criteriaList).build();
+
+            ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
+            DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
+            log.info("MDM getGovtId(FirmsCode) response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
+            return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
+        }
+        catch (Exception e) {
+            log.error("MDM Service - error while fetching GovtId(FirmsCode) list", e);
+        }
+        return Collections.emptyList();
+    }
+
+    public Map<String, String> getFirmsCodeListFromCache(Set<String> orgIds) {
+        if(Objects.isNull(orgIds))
+            return new HashMap<>();
+        orgIds = orgIds.stream().filter(orgId -> orgId != null && !orgId.trim().isEmpty()).collect(Collectors.toSet());
+        Map<String, String> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        if (cache == null) {
+            log.warn("Cache '{}' not found, fetching all data from MDM for FIRMSCode", CacheConstants.CACHE_KEY_MASTER_DATA);
+            List<Map<String, Object>> firmsCodeResp = getFirmsCodeList(orgIds);
+            return getFirmsCodeMap(firmsCodeResp);
+        }
+        try{
+            Set<String> fetchFirmsCodeFromMDM = new HashSet<>();
+            String customCacheKey = CacheConstants.FIRMS_CODE;
+            for(String orgId : orgIds) {
+                Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, orgId));
+                if(Objects.isNull(value))
+                    fetchFirmsCodeFromMDM.add(orgId);
+                else
+                    responseMap.put(orgId, (String) value.get());
+            }
+            if(!fetchFirmsCodeFromMDM.isEmpty()) {
+                List<Map<String, Object>> firmsCodeResp = getFirmsCodeList(fetchFirmsCodeFromMDM);
+                Map<String, String> orgToFirmsCodeMap = getFirmsCodeMap(firmsCodeResp);
+                responseMap.putAll(orgToFirmsCodeMap);
+                masterDataUtils.pushToCache(orgToFirmsCodeMap, customCacheKey, fetchFirmsCodeFromMDM, "", null);
+            }
+            return responseMap;
+        }
+        catch (Exception e) {
+            throw new GenericException(e);
+        }
+    }
+
+    private Map<String, String> getFirmsCodeMap(List<Map<String,Object>> orgToFirmsCodeResp){
+        if (orgToFirmsCodeResp == null || orgToFirmsCodeResp.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return orgToFirmsCodeResp.stream()
+                .map(m -> {
+                    Object entityId = m.get("entityId");
+                    Object firmsCode = m.get("govtIdNumber");
+                    if (entityId == null || firmsCode == null) return null;
+
+                    String key = String.valueOf(entityId);
+                    String val = String.valueOf(firmsCode);
+                    if (key.isBlank() || val.isBlank()) return null;
+
+                    return Map.entry(key, val);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (existing, replacement) -> existing,
+                        LinkedHashMap::new
+                ));
     }
 }

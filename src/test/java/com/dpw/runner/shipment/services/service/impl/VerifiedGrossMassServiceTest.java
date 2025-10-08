@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGross
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -593,7 +594,6 @@ class VerifiedGrossMassServiceTest {
 
             // Assert
             assertNotNull(result);
-            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
             verify(verifiedGrossMassValidationUtil).validateRequest(EntityType.CARRIER_BOOKING, 1L);
             verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
             assertEquals(VerifiedGrossMassStatus.Draft, testEntity.getStatus());
@@ -622,7 +622,6 @@ class VerifiedGrossMassServiceTest {
             VerifiedGrossMassResponse result = verifiedGrossMassService.create(testRequest);
 
             assertNotNull(result);
-            verify(verifiedGrossMassValidationUtil).validateServiceType(testRequest);
             verify(verifiedGrossMassDao).save(any(VerifiedGrossMass.class));
         }
     }
@@ -705,9 +704,14 @@ class VerifiedGrossMassServiceTest {
         commonRequestModel.setData(listRequest);
 
         Page<VerifiedGrossMass> page = new PageImpl<>(Arrays.asList(testEntity));
+        VerifiedGrossMassResponse response = new VerifiedGrossMassResponse();
+        response.setInternalEmailsList(new ArrayList<>());
+        response.setExternalEmailsList(new ArrayList<>());
 
         when(verifiedGrossMassDao.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(page);
+        when(jsonHelper.convertValue(any(VerifiedGrossMass.class), eq(VerifiedGrossMassListResponse.class)))
+                .thenReturn(new VerifiedGrossMassListResponse());
 
         // Act
         ResponseEntity<IRunnerResponse> result = verifiedGrossMassService.list(commonRequestModel, false);

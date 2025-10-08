@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(TransactionHistoryConstants.TRANSACTION_HISTORY_API_HANDLE)
 @Slf4j
@@ -45,7 +47,7 @@ public class TransactionHistoryController {
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long entityId, @RequestParam EntityTypeTransactionHistory entityType) {
         log.info("Received Transaction History GET BY ID request with RequestId: {}, id: {} and entityType: {}",
                 LoggerHelper.getRequestIdFromMDC(), entityId, entityType);
-        ResponseEntity<IRunnerResponse> response = transactionHistoryService.retrieveById(entityId, entityType);
+        List<TransactionHistoryResponse> response = transactionHistoryService.retrieveById(entityId, entityType);
         log.info("Verified Gross Mass GET BY ID successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
         return ResponseHelper.buildSuccessResponse(response);
     }

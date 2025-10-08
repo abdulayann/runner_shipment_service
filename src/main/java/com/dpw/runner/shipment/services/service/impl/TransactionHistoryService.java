@@ -42,7 +42,7 @@ public class TransactionHistoryService implements ITransactionHistoryService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveById(Long entityId, EntityTypeTransactionHistory entityType) {
+    public List<TransactionHistoryResponse> retrieveById(Long entityId, EntityTypeTransactionHistory entityType) {
 
         validateIfEntityExists(entityType, entityId);
 
@@ -52,15 +52,13 @@ public class TransactionHistoryService implements ITransactionHistoryService {
 
         // Return empty transaction if not found for the given entity ID and type
         if (transactionHistoryList.isEmpty()) {
-            return ResponseHelper.buildListSuccessResponse(new ArrayList<>());
+            return new ArrayList<>();
         }
 
-        List<TransactionHistoryResponse> responseList = transactionHistoryList.stream()
+        return transactionHistoryList.stream()
                 .map(transactionHistory ->
                         jsonHelper.convertValue(transactionHistory, TransactionHistoryResponse.class))
                 .toList();
-
-        return ResponseHelper.buildListSuccessResponse(new ArrayList<>(responseList));
     }
 
     private void validateIfEntityExists(EntityTypeTransactionHistory entityType, Long entityId) {

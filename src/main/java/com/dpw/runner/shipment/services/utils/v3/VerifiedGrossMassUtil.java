@@ -52,14 +52,10 @@ public class VerifiedGrossMassUtil {
 
         List<String> requestorEmailsList = new ArrayList<>();
         // Add existing external emails if any
-        if (Objects.nonNull(verifiedGrossMass.getExternalEmails()) && !verifiedGrossMass.getExternalEmails().isBlank()) {
-            String[] externalEmails = verifiedGrossMass.getExternalEmails().split(";");
-            for (String email : externalEmails) {
-                if (!email.isBlank()) {
-                    requestorEmailsList.add(email.trim());
-                }
-            }
-        }
+        populateRequestorEmails(verifiedGrossMass.getExternalEmails(), requestorEmailsList, ",");
+
+        // Add existing other external emails if any
+        populateRequestorEmails(verifiedGrossMass.getOtherExternalEmails(), requestorEmailsList, ",");
 
         // Add createdBy and submitBy emails if present
         if (Objects.nonNull(verifiedGrossMass.getCreateByUserEmail()) && !verifiedGrossMass.getCreateByUserEmail().isBlank()) {
@@ -71,6 +67,18 @@ public class VerifiedGrossMassUtil {
         }
 
         return String.join(";", requestorEmailsList);
+    }
+
+    private void populateRequestorEmails(String externalEmails, List<String> requestorEmailsList, String delimiter) {
+
+        if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+            String[] externalEmailsList = externalEmails.split(delimiter);
+            for (String email : externalEmailsList) {
+                if (!email.isBlank()) {
+                    requestorEmailsList.add(email.trim());
+                }
+            }
+        }
     }
 
     public CommonContainerResponse buildContainerResponse(CommonContainers container) {
@@ -157,7 +165,8 @@ public class VerifiedGrossMassUtil {
     }
 
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map,
-                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse, String externalEmails) {
+                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse,
+                                       String externalEmails, String otherExternalEmails) {
 
         if (Objects.isNull(carrierDatav1Map)) return;
 
@@ -177,16 +186,23 @@ public class VerifiedGrossMassUtil {
             notificationContactResponse.setUsername(carrierContactPerson);
 
             // Adding Inttra emails (VGM external emails) to carrierNotificationContact with comma separation
-            if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
-                if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
-                    carrierNotificationContact += "," + externalEmails;
-                } else {
-                    carrierNotificationContact = externalEmails;
-                }
-            }
+            carrierNotificationContact = populateCarrierNotificationContract(externalEmails, carrierNotificationContact);
+            carrierNotificationContact = populateCarrierNotificationContract(otherExternalEmails, carrierNotificationContact);
+
             notificationContactResponse.setEmails(carrierNotificationContact);
             verifiedGrossMassInttraResponse.setCarrierNotificationContact(notificationContactResponse);
         }
+    }
+
+    private String populateCarrierNotificationContract(String externalEmails, String carrierNotificationContact) {
+        if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+            if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
+                carrierNotificationContact += "," + externalEmails;
+            } else {
+                carrierNotificationContact = externalEmails;
+            }
+        }
+        return carrierNotificationContact;
     }
 
 
