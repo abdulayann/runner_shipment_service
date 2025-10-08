@@ -293,5 +293,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
 
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime quoteDate;
 }

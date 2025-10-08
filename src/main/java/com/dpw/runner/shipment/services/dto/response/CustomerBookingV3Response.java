@@ -91,6 +91,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String consigneeCountry;
     private String notifyPartyCountry;
     private String parentContractId;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime quoteDate;
     private CustomerBookingQuoteDateType quoteDateType;
     private String salesBranch;

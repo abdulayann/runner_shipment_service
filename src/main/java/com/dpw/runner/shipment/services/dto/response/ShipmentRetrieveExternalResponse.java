@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
@@ -138,6 +139,8 @@ public class ShipmentRetrieveExternalResponse implements IRunnerResponse {
     private String destinationParentContractId;
     private String updatedBy;
     private String destinationContractType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime quoteDate;
     private ShipmentDetailsQuoteDateType quoteDateType;
     private Integer pendingActionCount;

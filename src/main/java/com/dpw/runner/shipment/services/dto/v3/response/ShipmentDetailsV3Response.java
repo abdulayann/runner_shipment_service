@@ -269,6 +269,8 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
 
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime quoteDate;
 
     private Long containerAssignedToShipmentCargo;
