@@ -1591,6 +1591,7 @@ public class ReportConstants {
     public static final String PACKAGES = "Packages";
 
     public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
+    public static final String FIRMS_CODE_SUFFIX = ".FIRMSCode";
 
     public static final String C_PACK = "C_Pack";
     public static final String C_PACK_TYPE = "C_PackType";

@@ -44,17 +44,17 @@ public class TransportInstructionReportHelper {
     private CommonUtils commonUtils;
 
 
-    public void addTransportInstructionLegsDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary) {
+    public void addTransportInstructionLegsDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary, Map<String, String> orgIdToFirmsCodeMap) {
         legsDictionary.put(ReportConstants.HAS_LEGS, true);
         TILegsModel tiLegsModel = modelMapper.map(tilegs, TILegsModel.class);
         tiLegsModel.setLegType(tilegs.getLegType().getDescription());
         tiLegsModel.setOrigin(getOriginFullName(tilegs));
         if (tilegs.getOrigin() != null) {
-            tiLegsModel.setOriginAddress(getFormattedAddress(modelMapper.map(tilegs.getOrigin(), PartiesModel.class), false));
+            tiLegsModel.setOriginAddress(getFormattedAddress(modelMapper.map(tilegs.getOrigin(), PartiesModel.class), false, orgIdToFirmsCodeMap));
         }
         tiLegsModel.setDestination(getDestinationFullName(tilegs));
         if (tilegs.getDestination() != null) {
-            tiLegsModel.setDestinationAddress(getFormattedAddress(modelMapper.map(tilegs.getDestination(), PartiesModel.class), false));
+            tiLegsModel.setDestinationAddress(getFormattedAddress(modelMapper.map(tilegs.getDestination(), PartiesModel.class), false, orgIdToFirmsCodeMap));
         }
         legsDictionary.put(ReportConstants.TI_LEGS, tiLegsModel);
         setOriginContactDetails(legsDictionary, tilegs);

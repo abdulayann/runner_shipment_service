@@ -41,7 +41,7 @@ public class ReportHelper {
         }
     }
 
-    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName) {
+    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName, Map<String, String> orgToFirmsCode) {
         if (partiesModel == null || partiesModel.getAddressData() == null) {
             return null;
         }
@@ -57,6 +57,8 @@ public class ReportHelper {
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
+        temp = appendFirmsCode(orgToFirmsCode, partiesModel.getOrgId(), temp);
+
 
         if (!CommonUtils.isStringNullOrEmpty(temp)) {
             if (response == null) {
@@ -88,6 +90,17 @@ public class ReportHelper {
                 response = x;
             else
                 response = response + ", " + x;
+        }
+        return response;
+    }
+
+    public static String appendFirmsCode(Map<String, String> orgToFirmsCode, String orgId, String response) {
+        if (orgToFirmsCode != null && orgId != null && orgToFirmsCode.containsKey(orgId) && !CommonUtils.isStringNullOrEmpty(orgToFirmsCode.get(orgId))) {
+            String firmsCode = orgToFirmsCode.get(orgId);
+            if (response == null)
+                response = firmsCode;
+            else
+                response = response + ", " + firmsCode;
         }
         return response;
     }

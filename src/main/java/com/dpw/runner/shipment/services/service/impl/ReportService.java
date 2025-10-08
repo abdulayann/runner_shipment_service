@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -100,6 +101,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private DocumentService documentService;
+
+    @Autowired
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -406,9 +410,18 @@ public class ReportService implements IReportService {
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
+
+            // add orgIds to fetch firmsCode for legs
+            Set<String> orgIds = new HashSet<>();
+            for(TiLegs tiLegs: tiLegsList){
+                addOrgIdIfNotNull(orgIds, tiLegs.getOrigin());
+                addOrgIdIfNotNull(orgIds, tiLegs.getDestination());
+            }
+            Map<String, String> orgIdToFirmsCodeMap = mdmServiceAdapter.getFirmsCodeListFromCache(orgIds);
+
             for (TiLegs tilegs : tiLegsList) {
                 Map<String, Object> legsDictionary = new HashMap<>(dictionary);
-                transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
+                transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary, orgIdToFirmsCodeMap);
                 transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
@@ -429,6 +442,12 @@ public class ReportService implements IReportService {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             return mainDocPage;
+        }
+    }
+
+    public void addOrgIdIfNotNull(Set<String> orgIds,  Parties party){
+        if(party != null && party.getOrgId() != null) {
+            orgIds.add(party.getOrgId());
         }
     }
 
