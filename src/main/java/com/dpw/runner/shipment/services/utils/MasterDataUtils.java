@@ -2230,6 +2230,38 @@ public class MasterDataUtils{
         return responseMap;
     }
 
+    public void getTenantDataFromCache(Set<String> tenantIds, Map<String, TenantModel> tenantMap) {
+        tenantMap.putAll(getTenantDataFromCache(tenantIds));
+    }
+
+
+    public Map<String, TenantModel> getTenantDataFromCache(Set<String> tenantIds) {
+        if(Objects.isNull(tenantIds))
+            return new HashMap<>();
+        Map<String, TenantModel> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> locCodesFetchFromV1 = new HashSet<>();
+        String customCacheKey = CacheConstants.TENANTS;
+        for(String tenant: tenantIds) {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, tenant));
+            if(Objects.isNull(value))
+                locCodesFetchFromV1.add(tenant);
+            else
+                responseMap.put(tenant, (TenantModel) value.get());
+        }
+        if(!locCodesFetchFromV1.isEmpty()) {
+            Map<String, TenantModel> unLocationsMap = fetchInTenantsList(locCodesFetchFromV1);
+            responseMap.putAll(unLocationsMap);
+            pushToCache(unLocationsMap, customCacheKey, locCodesFetchFromV1, new TenantModel(), null);
+        }
+        return responseMap;
+    }
+
+    public void getVesselDataFromCache(Set<String> vesselGuids, Map<String, EntityTransferVessels> vesselMap) {
+        vesselMap.putAll(getVesselDataFromCache(vesselGuids));
+    }
+
     public Map<String, EntityTransferVessels> getVesselDataFromCache(Set<String> vesselGuids) {
         if(Objects.isNull(vesselGuids))
             return new HashMap<>();
@@ -2251,6 +2283,10 @@ public class MasterDataUtils{
             pushToCache(entityTransferVesselsMap, customCacheKey, fetchVeseelFromV1, new EntityTransferVessels(), null);
         }
         return responseMap;
+    }
+
+    public void getCarrierDataFromCache(Set<String> carrierGuids, Map<String, EntityTransferCarrier> carrierMap) {
+        carrierMap.putAll(getCarrierDataFromCache(carrierGuids));
     }
 
     public Map<String, EntityTransferCarrier> getCarrierDataFromCache(Set<String> carrierSet) {

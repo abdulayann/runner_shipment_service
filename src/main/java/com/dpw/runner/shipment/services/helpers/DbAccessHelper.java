@@ -53,14 +53,14 @@ public class DbAccessHelper {
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
-
+        log.info("RequestId {}, sortRequest {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(sortRequest));
         Specification<T> specification = null;
         Map<String, Join<Class<T>, T>> map = new HashMap<>();
         if(filterCriteria.isEmpty()) {
             specification = where(createSpecificationWithoutFilter(request.getIncludeTbls()));
         }
         specification = gettSpecificationFromFilterCriteria(request, className, tableNames, filterCriteria, specification, sortRequest, map);
-        log.info("RequestId {}, Received Criteria Request from {} got completed", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
+        log.info("RequestId {}, Received Criteria Request from {} got completed", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(className.getSimpleName()));
         map.clear();
         return Pair.of(specification, pages);
     }
@@ -143,6 +143,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, List<String> tableName, Map<String, RunnerEntityMapping> tableNames) {
+        log.info("Inside getSpecificationFromFilters with RequestId {}, sortRequest {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(sortRequest));
         if (filter == null || filter.isEmpty()) {
             return createSpecificationWithoutFilter(tableName);
         }
@@ -164,6 +165,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromLogicalOperator(Map<String, Join<Class<T>, T>> map, String className, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        log.info("Inside getSpecificationFromLogicalOperator with RequestId {}, className {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(className));
         if (input.getLogicOperator().equalsIgnoreCase("OR")) {
             specification = specification.or(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
         } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
@@ -173,6 +175,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromInnerFilter(SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, List<String> tableName, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        log.info("Inside getSpecificationFromInnerFilter with RequestId {}, sortRequest {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(sortRequest));
         if (input.getLogicOperator() != null) {
             if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                 specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));
@@ -299,7 +302,7 @@ public class DbAccessHelper {
             cl = (Class<Enum>)Class.forName(enumFullName);
             return Enum.valueOf(cl, enumName);
         } catch (ClassNotFoundException e) {
-            log.error("An error occurred: {}", e.getMessage(), e);
+            log.error("An error occurred: {}",LoggerHelper.sanitizeForLogs( e.getMessage()), e);
         }
         return null;
     }

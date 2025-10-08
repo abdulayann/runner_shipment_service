@@ -38,6 +38,7 @@ public class CarrierBookingConstants {
     public static final String BOOKING_DETAILS= "bookingDetails";
     public static final String SERVICE_RESPONSE= "SERVICE_RESPONSE";
     public static final String SERVICE_HTTP_STATUS_CODE= "SERVICE_HTTP_STATUS_CODE";
+    public static final String ERROR_MESSAGES = "errorMessages";
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation

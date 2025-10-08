@@ -65,4 +65,6 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     private String updatedBy;
     private LocalDateTime updatedAt;
+    private Long vgmId;
+    private Long siId;
 }

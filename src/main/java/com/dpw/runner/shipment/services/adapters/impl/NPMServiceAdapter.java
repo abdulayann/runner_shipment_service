@@ -149,7 +149,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG), LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH), jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             this.setCarrierMasterData(response.getBody());
@@ -157,7 +157,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -167,7 +167,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH),
+                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(listContractRequest)));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
             if(response.getBody() != null)
@@ -180,7 +182,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -191,7 +194,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
             ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
             String url = npmBaseUrl + npmContracts;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
             List<NPMContractsResponse.NPMContractResponse> filteredContracts = filterContracts(npmContractsResponse, listContractsWithFilterRequest);
@@ -203,7 +208,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -213,12 +219,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(updateContractRequest)));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_UPDATE_UTILISATION),
+                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(updateContractRequest)));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            log.error("NPM Update contract failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException("Error from NPM while updating utilisation: " + npmErrorResponse.getErrorMessage());
         }
     }
@@ -229,14 +237,16 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
         var request = createNPMOffersRequest(fetchOffersRequest);
         try {
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_OFFER_FETCH_V2),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
             this.setMeasurementBasis(response.getBody());
             this.modifyOffersAPIData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            log.error("NPM fetch offer failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
     }
@@ -247,12 +257,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
             var request = createNPMOffersV8Request(fetchOffersRequest);
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
+            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_OFFER_FETCH_V8),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM fetch offers v8/offers failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            log.error("NPM fetch offers v8/offers failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
 
@@ -268,7 +280,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
+            log.error("NPM awb auto sell failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse.getError())));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
@@ -281,12 +293,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             var req = jsonHelper.convertToJson(importRatesRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
             NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
-            log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
+            log.info("Updated AWB from npm service : {}", LoggerHelper.sanitizeForLogs(npmAwbImportRateResponse.updatedAwb));
             awbDao.save(npmAwbImportRateResponse.updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));
+            log.error("NPM awb import rates failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse.getError())));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
@@ -336,7 +348,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     cont.getCarrier_codes().remove(null);
                     if(!cont.getCarrier_codes().isEmpty()) {
                         carrier.add(cont.getCarrier_codes().get(0));
-                        log.info("Carrier data from npm {}", carrier);
+                        log.info("Carrier data from npm {}", LoggerHelper.sanitizeForLogs(carrier));
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriersBySCACCode(carrier.stream().toList()));
                         if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
                             EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
@@ -808,13 +820,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmMultiLangChargeCode;
-            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
+            log.info("{}" + LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE),
+                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
             ResponseEntity<NPMFetchLangChargeCodeResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), NPMFetchLangChargeCodeResponse.class);
-            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response.getBody())));
+            log.info("{}" + LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE),
+                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response.getBody())));
             return response.getBody();
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Fetch MultiLang Charge Code failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            log.error("NPM Fetch MultiLang Charge Code failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException("Error from NPM while fetching MultiLang Charge Code: " + npmErrorResponse.getErrorMessage());
         }
     }
@@ -890,7 +908,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
+            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }

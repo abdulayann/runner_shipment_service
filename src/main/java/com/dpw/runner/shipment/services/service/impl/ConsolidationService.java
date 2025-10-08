@@ -6892,7 +6892,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request.getGuid() == null) {
-                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
                 throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             UUID guid = UUID.fromString(request.getGuid());
@@ -7016,7 +7016,7 @@ public class ConsolidationService implements IConsolidationService {
         PendingNotificationRequest request = (PendingNotificationRequest) commonRequestModel.getData();
         PendingNotificationResponse<PendingConsolidationActionResponse> response = new PendingNotificationResponse<>();
         if (request.getConsolidationIdList() == null || request.getConsolidationIdList().isEmpty()) {
-            log.info("Received empty request for pending notification in consolidation", LoggerHelper.getRequestIdFromMDC());
+            log.info("Received empty request for pending notification in consolidation", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             return ResponseHelper.buildSuccessResponse(response);
         }
         var notificationMap = getNotificationMap(request);
@@ -7090,7 +7090,7 @@ public class ConsolidationService implements IConsolidationService {
 
         }
         catch(Exception e) {
-            log.error("Error while generating notification map for input Consolidation", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+            log.error("Error while generating notification map for input Consolidation", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(e.getMessage()));
         }
 
         return notificationResultMap;

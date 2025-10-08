@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
@@ -37,17 +38,28 @@ public class TenantAspect {
         if(checkExcludeTenantFilter(joinPoint)) {
             return;
         }
+        try
+        {
+            String methodName = joinPoint.getSignature().getName();
+            String className = joinPoint.getTarget().getClass().getSimpleName();
+            log.info("Called from class: {} , method: {} , TenantId: {}",  LoggerHelper.sanitizeForLogs(className) , LoggerHelper.sanitizeForLogs(methodName),
+                    LoggerHelper.sanitizeForLogs(TenantContext.getCurrentTenant()));
+        } catch (Exception e) {
+            log.error("Error while getting class and method name: {}",LoggerHelper.sanitizeForLogs(e.getMessage()));
+        }
 
         try {
+
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.TENANT_FILTER_NAME);
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME);
         } catch (Exception ex) {
-            log.error("{}", ex.getLocalizedMessage());
+            log.error("{}", LoggerHelper.sanitizeForLogs(ex.getLocalizedMessage()));
         }
 
         Class<?> clazz = joinPoint.getSignature().getDeclaringType();
 
         long tenantId = TenantContext.getCurrentTenant();
+
 
         Map<String, Boolean> permissions = Optional.ofNullable(UserContext.getUser()).map(UsersDto::getPermissions).orElse(new HashMap<>());
         

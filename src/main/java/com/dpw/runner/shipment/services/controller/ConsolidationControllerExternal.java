@@ -53,7 +53,8 @@ public class ConsolidationControllerExternal {
                                                                 @RequestHeader(value = SOURCE_SERVICE_TYPE) String xSource
     ) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
-        log.info("Received Consolidation External retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(xSource), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+        log.info("Received Consolidation External retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.sanitizeForLogs(xSource)),
+                LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternal(request));
     }
 
@@ -62,14 +63,16 @@ public class ConsolidationControllerExternal {
     @PostMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT_PARTIAL)
     public ResponseEntity<IRunnerResponse> retrieveByIdExternalPartial(@RequestBody @Valid CommonGetRequest request, @RequestHeader(value = SOURCE_SERVICE_TYPE) String source
     ) throws RunnerException, AuthenticationException {
-        log.info("Received Consolidation External Partial retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(source), LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+        log.info("Received Consolidation External Partial retrieve request with Source: {} RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(source), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternalPartial(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationControllerExternal.MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST_EXT)
     public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        log.info("Received Consolidation list External request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        log.info("Received Consolidation list External request with RequestId: {} and payload: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listCommonRequest)));
         ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.listExternal(listCommonRequest);
         return ResponseHelper.buildListSuccessConsolidationResponse(consolidationListV3Response.getConsolidationListResponses(), consolidationListV3Response.getTotalPages(),
                 consolidationListV3Response.getNumberOfRecords());
