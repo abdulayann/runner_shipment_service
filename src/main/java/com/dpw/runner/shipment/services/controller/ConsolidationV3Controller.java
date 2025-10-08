@@ -232,7 +232,8 @@ public class ConsolidationV3Controller {
     @GetMapping(ApiConstants.API_CONSOLE_FROM_SHIPMENT)
     public ResponseEntity<IRunnerResponse> getNewConsoleDataFromShipmentId(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException, AuthenticationException {
         log.info("Received getNewConsoleDataFromShipmentId: {}" , id);
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getNewConsoleDataFromShipment(id));
+        ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getNewConsoleDataFromShipment(id, defaultConsolidation));
     }
 
 }
