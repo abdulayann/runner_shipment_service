@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -50,6 +53,7 @@ class GetNextNumberHelperTest {
         UsersDto mockUser = new UsersDto();
         mockUser.setCode("CODE");
         UserContext.setUser(mockUser);
+        mockUser.setTimeZoneId("UTC");
     }
 
 
@@ -85,12 +89,16 @@ class GetNextNumberHelperTest {
         ));
     }
 
-    @Test
-    void generateCustomSequenceGenerationTypeRegex() {
+    @ParameterizedTest
+    @CsvSource({
+            "{branch}{cc}{Month;1}{seq;4}{dd}",
+            "{branch}{cc}{seq;4}{dd}",
+            "{branch}{cc}{seq;4}{yy}"
+    })
+    void generateCustomSequenceGenerationTypeRegex(String regexPattern) {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
         sequenceSettings.setGenerationType(GenerationType.Regex);
-        String regexPattern = "{branch}{cc}{Month;1}{seq;4}{dd}";
         int tenantId = 1;
         boolean updateCounter = true;
         UsersDto user = UserContext.getUser();
@@ -109,6 +117,36 @@ class GetNextNumberHelperTest {
         catch(Exception e) {
             fail(e);
         }
+    }
+
+    @Test
+    void needResetCounter_daily() throws RunnerException {
+        ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
+        sequenceSettings.setSequenceStartTime(LocalDateTime.now().minusYears(1L));
+        String resetFreq = Constants.DAILY;
+        var resp = GetNextNumberHelper.needResetCounter(sequenceSettings, resetFreq);
+        assertTrue(resp);
+
+    }
+
+    @Test
+    void needResetCounter_monthly() throws RunnerException {
+        ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
+        sequenceSettings.setSequenceStartTime(LocalDateTime.now().minusYears(1L));
+        String resetFreq = Constants.MONTHLY;
+        var resp = GetNextNumberHelper.needResetCounter(sequenceSettings, resetFreq);
+        assertTrue(resp);
+
+    }
+
+    @Test
+    void needResetCounter_yearly() throws RunnerException {
+        ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
+        sequenceSettings.setSequenceStartTime(LocalDateTime.now().minusYears(1L));
+        String resetFreq = Constants.YEARLY;
+        var resp = GetNextNumberHelper.needResetCounter(sequenceSettings, resetFreq);
+        assertTrue(resp);
+
     }
 
     @Test
@@ -204,6 +242,7 @@ class GetNextNumberHelperTest {
 
     @Test
     void getNextRegexSequenceNumberThrowsExceptionForNullTimeZoneId() {
+        UserContext.getUser().setTimeZoneId(null);
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         String resetFreq = "daily";
 

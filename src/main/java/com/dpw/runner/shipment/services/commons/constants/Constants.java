@@ -741,6 +741,11 @@ public class Constants {
     public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
     public static final String DOT = ".";
 
+    public static final String DAILY = "daily";
+    public static final String MONTHLY = "monthly";
+    public static final String YEARLY = "yearly";
+    public static final String MONTH = "month";
+
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
     public static final String BEARER = "Bearer ";
 

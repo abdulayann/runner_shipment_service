@@ -71,16 +71,11 @@ public class GetNextNumberHelper {
             DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
             // Format the date to get the month in "MMMM" format
             String monthName = df.format(currDate);
-            valueOf.put("month", monthName);
+            valueOf.put(Constants.MONTH, monthName);
             valueOf.put("cc", ""); // Empty string
             valueOf.put("seq", ""); // Empty string
 
-            List<String> segments = new ArrayList<>();
-            while (matches.find()) {
-                segments.add(matches.group(1) != null ? matches.group(1) : matches.group(2));
-            }
-            // Filter out empty or whitespace-only segments
-            segments = segments.stream().filter(s -> !s.trim().isEmpty()).toList();
+            List<String> segments = listSegments(matches);
 
             String resetFreq = determineResetFrequency(segments);
 
@@ -114,6 +109,16 @@ public class GetNextNumberHelper {
         return prefix + suffix;
     }
 
+    private List<String> listSegments(Matcher matches) {
+        List<String> segments = new ArrayList<>();
+        while (matches.find()) {
+            segments.add(matches.group(1) != null ? matches.group(1) : matches.group(2));
+        }
+        // Filter out empty or whitespace-only segments
+        segments = segments.stream().filter(s -> !s.trim().isEmpty()).toList();
+        return segments;
+    }
+
     public static String determineResetFrequency(List<String> segments) {
         boolean isDailyReset = false;
         boolean isMonthlyReset = false;
@@ -124,38 +129,32 @@ public class GetNextNumberHelper {
             var wordSplit = word.split(";");
             String key = wordSplit[0].toLowerCase();
 
-            // Handle individual date tokens
+            // Priority: daily > monthly > yearly
             if ("dd".equalsIgnoreCase(key))
-                isDailyReset = true;
-            else if ("mm".equalsIgnoreCase(key) || "mon".equalsIgnoreCase(key) || "month".equalsIgnoreCase(key))
-                isMonthlyReset = true;
+                return Constants.DAILY;
+            else if ("mm".equalsIgnoreCase(key) || "mon".equalsIgnoreCase(key) || Constants.MONTH.equalsIgnoreCase(key))
+                return Constants.MONTHLY;
             else if ("yy".equalsIgnoreCase(key) || "yyyy".equalsIgnoreCase(key))
-                isYearlyReset = true;
+                return Constants.YEARLY;
                 // Handle date format strings
             else if ("date".equalsIgnoreCase(key) && wordSplit.length > 1)
             {
                 String dateFormat = wordSplit[1].toLowerCase();
-
-                // Check if format contains day components
-                if (dateFormat.contains("dd"))
-                    isDailyReset = true;
-                // Check if format contains month components
-                if (dateFormat.contains("mm") || dateFormat.contains("mon") || dateFormat.contains("month"))
-                    isMonthlyReset = true;
-                // Check if format contains year components
-                if (dateFormat.contains("yy") || dateFormat.contains("yyyy"))
-                    isYearlyReset = true;
+                return setResetRequired(dateFormat, isDailyReset, isMonthlyReset, isYearlyReset);
             }
         }
-
-        // Priority: daily > monthly > yearly
-        if (isDailyReset)
-            return "daily";
-        if (isMonthlyReset)
-            return "monthly";
-        if (isYearlyReset)
-            return "yearly";
-
+        return "";
+    }
+    private static String setResetRequired(String dateFormat, boolean isDailyReset, boolean isMonthlyReset, boolean isYearlyReset) {
+        // Check if format contains day components
+        if (dateFormat.contains("dd"))
+            return Constants.DAILY;
+        // Check if format contains month components
+        if (dateFormat.contains("mm") || dateFormat.contains("mon") || dateFormat.contains(Constants.MONTH))
+            return Constants.MONTHLY;
+        // Check if format contains year components
+        if (dateFormat.contains("yy") || dateFormat.contains("yyyy"))
+            return Constants.YEARLY;
         return "";
     }
 
@@ -163,8 +162,7 @@ public class GetNextNumberHelper {
     private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> valueOf, String resetFreq) throws RunnerException {
         if (wordSplit.size() > 1) {
             if (wordSplit.get(0).equalsIgnoreCase("seq")) {
-                if(Strings.isNullOrEmpty(resetFreq))
-                    resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+                resetFreq = setResetFreq(wordSplit, resetFreq);
                 suffix += padLeft(
                     getNextRegexSequenceNumber(sequenceSettings, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
@@ -185,6 +183,12 @@ public class GetNextNumberHelper {
         }
         else suffix += valueOf.get(wordSplit.get(0).toLowerCase());
         return suffix;
+    }
+
+    private String setResetFreq(List<String> wordSplit, String resetFreq) {
+        if (Strings.isNullOrEmpty(resetFreq))
+            return wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+        return resetFreq;
     }
 
     public String getNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
@@ -220,16 +224,19 @@ public class GetNextNumberHelper {
                 .getSequenceStartTime() == null;
 
 
-        if ("daily".equalsIgnoreCase(resetFreq) || "monthly".equalsIgnoreCase(resetFreq) || "yearly".equalsIgnoreCase(resetFreq))
+        if (Constants.DAILY.equalsIgnoreCase(resetFreq) || Constants.MONTHLY.equalsIgnoreCase(resetFreq) || Constants.YEARLY.equalsIgnoreCase(resetFreq))
         {
-            if (localTimeStart.toLocalDate().isBefore(localTimeNow.toLocalDate())  && "daily".equalsIgnoreCase(resetFreq))
-                resetCounter = true;
-            else if ((localTimeStart.toLocalDate().getMonthValue() < localTimeNow.toLocalDate().getMonthValue() || localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear()) && "monthly".equalsIgnoreCase(resetFreq))
-                resetCounter = true;
-            else if (localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear() && "yearly".equalsIgnoreCase(resetFreq))
-                resetCounter = true;
+            resetCounter = isResetRequired(localTimeStart, resetFreq, localTimeNow);
         }
         return resetCounter;
+    }
+
+    private static boolean isResetRequired(LocalDateTime localTimeStart, String resetFreq, LocalDateTime localTimeNow) {
+        if (localTimeStart.toLocalDate().isBefore(localTimeNow.toLocalDate())  && Constants.DAILY.equalsIgnoreCase(resetFreq))
+            return true;
+        else if ((localTimeStart.toLocalDate().getMonthValue() < localTimeNow.toLocalDate().getMonthValue() || localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear()) && Constants.MONTHLY.equalsIgnoreCase(resetFreq))
+            return true;
+        else return localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear() && Constants.YEARLY.equalsIgnoreCase(resetFreq);
     }
 
     public ProductSequenceConfig getProductSequence(Long productId, ProductProcessTypes processType) {
