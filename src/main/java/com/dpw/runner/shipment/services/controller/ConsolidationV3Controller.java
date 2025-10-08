@@ -38,8 +38,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
-
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
 @Slf4j
@@ -234,6 +232,17 @@ public class ConsolidationV3Controller {
         log.info("Received getNewConsoleDataFromShipmentId: {}" , id);
         ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getNewConsoleDataFromShipment(id, defaultConsolidation));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL, response = ConsolidationV3Controller.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_CONSOLE_ATTACH_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> createConsoleAndAttachShipment(@RequestBody @Valid @NonNull ConsolidationDetailsV3Request request) throws RunnerException {
+        log.info("Received Consolidation createConsoleAndAttachShipment request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = consolidationV3Service.createConsoleDetailsAndAttachShipment(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }
