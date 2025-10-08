@@ -132,6 +132,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private List<PartiesResponse> shipmentAddresses;
     private String flightStatus;
     private Boolean containsHazardous;
@@ -165,8 +166,6 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String contractId;
     private String parentContractId;
     private String contractType;
-    private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteDateType quoteDateType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
@@ -269,6 +268,9 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
+
+    private LocalDateTime quoteDate;
+
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
     private Long originBranch;

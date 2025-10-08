@@ -131,8 +131,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String contractId;
     private String parentContractId;
     private String contractType;
-    private LocalDateTime quoteDate;
     private ShipmentDetailsQuoteDateType quoteDateType;
+    private LocalDateTime quoteDate;
     private Boolean replaceConsoleRoute;
     private Boolean createMainLegRoute;
     private String clientCountry;

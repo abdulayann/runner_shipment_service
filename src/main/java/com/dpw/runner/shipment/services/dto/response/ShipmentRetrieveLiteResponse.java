@@ -149,8 +149,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String contractId;
     private String parentContractId;
     private String contractType;
-    private LocalDateTime quoteDate;
-    private ShipmentDetailsQuoteDateType quoteDateType;
     private String clientCountry;
     private String consignorCountry;
     private String consigneeCountry;
@@ -166,12 +164,12 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long notifyPartyDpsAddressId;
     private List<String> implicationList;
     private Long shipmentCount;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
 
-    private String currentPartyForQuote;
     private Boolean entityTransfer;
     private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
@@ -181,6 +179,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String destinationParentContractId;
     private String destinationContractType;
     private String updatedBy;
+    private String currentPartyForQuote;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentGateInDate;
@@ -224,6 +223,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
+    private LocalDateTime quoteDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;

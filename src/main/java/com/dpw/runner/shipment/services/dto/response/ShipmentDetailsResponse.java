@@ -182,7 +182,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String contractId;
     private String parentContractId;
     private String contractType;
-    private LocalDateTime quoteDate;
     private ShipmentDetailsQuoteDateType quoteDateType;
     private String clientCountry;
     private String consignorCountry;
@@ -293,4 +292,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Integer slac;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+
+    private LocalDateTime quoteDate;
 }
