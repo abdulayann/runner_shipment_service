@@ -754,8 +754,21 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         syncShipmentDataInPlatform(consolidationDetails);
         if (oldEntity != null)
             consolidationDetails.setTenantId(oldEntity.getTenantId());
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
+        CompletableFuture<Void> networkTransferFuture = CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> automaticTransferFuture = CompletableFuture.completedFuture(null);
+
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+            networkTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
+        }
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
+            automaticTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
+        }
+        CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
+                .thenRunAsync(
+                        masterDataUtils.withMdc(() -> networkTransferV3Util
+                                .syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)),
+                        executorService
+                );
     }
 
     private void syncShipmentDataInPlatform(ConsolidationDetails consolidationDetails) {
@@ -1730,6 +1743,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)), executorService);
 
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
@@ -3731,6 +3745,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment(CONSOLIDATION, null, consolidationDetails)), executorService);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }

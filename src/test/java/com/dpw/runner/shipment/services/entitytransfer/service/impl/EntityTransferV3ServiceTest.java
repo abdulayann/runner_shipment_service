@@ -177,6 +177,9 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Mock
     private ContainerV3Service containerV3Service;
 
+    @Mock
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
 

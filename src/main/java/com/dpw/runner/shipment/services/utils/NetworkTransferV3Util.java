@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferShipmentsMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -45,6 +47,8 @@ public class NetworkTransferV3Util {
     @Autowired
     private CommonUtils commonUtils;
 
+    @Autowired
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
 
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
@@ -142,6 +146,93 @@ public class NetworkTransferV3Util {
             }
         }
         return false;
+    }
+
+    public void syncNetworkTransferShipmentMappingsForConsolOrShipment(String entityType, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
+            processNetworkTransferToUpdateNetworkTransferShipmentMapping(shipmentDetails.getId(), shipmentDetails.getShipmentId(), SHIPMENT, List.of(shipmentDetails.getShipmentId()));
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
+            updateNetworkTransferShipmentMappingForConsolidation(consolidationDetails);
+        }
+    }
+
+    private void updateNetworkTransferShipmentMappingForConsolidation(ConsolidationDetails consolidationDetails) {
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+
+        if(!Objects.isNull(consolidationDetails.getShipmentsList())) {
+            shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
+        }
+
+        List<String> shipmentNumbersList = shipmentDetailsList.stream().map(ShipmentDetails::getShipmentId).toList();
+        processNetworkTransferToUpdateNetworkTransferShipmentMapping(consolidationDetails.getId(), consolidationDetails.getConsolidationNumber(), CONSOLIDATION, shipmentNumbersList);
+
+        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole()) && !Objects.isNull(consolidationDetails.getShipmentsList())) {
+            shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
+
+            for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails1.getReceivingBranch()), shipmentDetails1.getId(), SHIPMENT);
+                if(optionalNetworkTransfer.isPresent()) {
+                    processNetworkTransferToUpdateNetworkTransferShipmentMapping(shipmentDetails1.getId(), shipmentDetails1.getShipmentId(), SHIPMENT, List.of(shipmentDetails1.getShipmentId()));
+                }
+            }
+        }
+    }
+
+    private void processNetworkTransferToUpdateNetworkTransferShipmentMapping(Long entityId, String entityNumber, String entityType, List<String> shipmentNumbersList) {
+        List<NetworkTransfer> networkTransferList = networkTransferDao.findByEntityIdsAndEntityType(Set.of(entityId), entityType);
+        if (networkTransferList.isEmpty()) {
+            return;
+        }
+        for(NetworkTransfer networkTransfer : networkTransferList) {
+
+            if (shouldUpdateNetworkShipmentMappings(networkTransfer)) {
+                createOrUpdateNetworkTransferShipmentMappings(networkTransfer, entityType, entityNumber, shipmentNumbersList);
+            }
+        }
+    }
+
+    private boolean shouldUpdateNetworkShipmentMappings(NetworkTransfer networkTransfer) {
+        NetworkTransferStatus status = networkTransfer.getStatus();
+        return List.of(NetworkTransferStatus.SCHEDULED, NetworkTransferStatus.REQUESTED_TO_TRANSFER).contains(status)
+                || (NetworkTransferStatus.REASSIGNED.equals(status)
+                && networkTransfer.getEntityPayload() != null
+                && !networkTransfer.getEntityPayload().isEmpty())
+                || (NetworkTransferStatus.ACCEPTED.equals(status)
+                && !Objects.equals(networkTransfer.getSourceBranchId(), TenantContext.getCurrentTenant()));
+    }
+
+    private void createOrUpdateNetworkTransferShipmentMappings(NetworkTransfer networkTransfer, String entityType, String entityNumber, List<String> shipmentNumbersList) {
+        log.info("Updating NetworkTransferShipmentMappings for NetworkTransfer Id {}", networkTransfer.getId());
+        Long networkTransferId = networkTransfer.getId();
+
+        List<String> existingShipmentNumbers = networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(networkTransferId);
+        Set<String> existingShipmentNumbersSet = new HashSet<>(existingShipmentNumbers);
+        Set<String> newShipmentNumbersSet = new HashSet<>(shipmentNumbersList);
+
+        Set<String> shipmentsNumbersToInsert = new HashSet<>(newShipmentNumbersSet);
+        shipmentsNumbersToInsert.removeAll(existingShipmentNumbersSet);
+
+        Set<String> shipmentNumbersToDelete = new HashSet<>(existingShipmentNumbersSet);
+        shipmentNumbersToDelete.removeAll(newShipmentNumbersSet);
+
+        if (!shipmentNumbersToDelete.isEmpty()) {
+            log.info("Removing {} NetworkTransferShipmentMappings for networkTransferId={}", shipmentNumbersToDelete.size(), networkTransferId);
+            networkTransferShipmentsMappingDao.deleteByNetworkTransferIdAndShipmentNumbers(networkTransferId, new ArrayList<>(shipmentNumbersToDelete));
+        }
+
+        if (!shipmentsNumbersToInsert.isEmpty()) {
+            log.info("Adding {} nNetworkTransferShipmentMappings for networkTransferId={}", shipmentsNumbersToInsert.size(), networkTransferId);
+
+            List<NetworkTransferShipmentsMapping> newMappings = shipmentsNumbersToInsert.stream()
+                    .map(shipmentNumber -> new NetworkTransferShipmentsMapping()
+                            .setNetworkTransferId(networkTransferId)
+                            .setEntityType(entityType)
+                            .setEntityNumber(entityNumber)
+                            .setShipmentNumber(shipmentNumber))
+                    .toList();
+
+            networkTransferShipmentsMappingDao.saveAll(newMappings);
+        }
     }
 
     private void processOldEntityInterBranch(ConsolidationDetails consolidationDetails){

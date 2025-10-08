@@ -16,6 +16,8 @@ import org.hibernate.annotations.TypeDef;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -87,5 +89,9 @@ public class NetworkTransfer extends MultiTenancy {
     @Column(name = "migration_status")
     @Enumerated(EnumType.STRING)
     private MigrationStatus migrationStatus;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "network_transfer_id")
+    private List<NetworkTransferShipmentsMapping> networkShipmentsMappings = new ArrayList<>();
 
 }
