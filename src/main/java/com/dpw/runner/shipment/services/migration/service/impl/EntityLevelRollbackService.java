@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
-
-
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
@@ -69,6 +67,7 @@ public class EntityLevelRollbackService {
                                 .replace("__TENANT_ID__",tenantId )
                                 .replace("__SCHEMA__", schema);
 
+                        parsed = parsed.replaceAll("[\\x00-\\x1F\\x7F]", " ").trim();
                         log.info("Executing: {}", LoggerHelper.sanitizeForLogs(parsed));
                         jdbcTemplate.execute(parsed);
 
