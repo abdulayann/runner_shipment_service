@@ -60,6 +60,12 @@ public class VerifiedGrossMass extends MultiTenancy {
     @Column(name = "external_emails", columnDefinition = "TEXT")
     private String externalEmails;
 
+    @Column(name = "other_internal_emails", columnDefinition = "TEXT")
+    private String otherInternalEmails;
+
+    @Column(name = "other_external_emails", columnDefinition = "TEXT")
+    private String otherExternalEmails;
+
     @Column(name = "created_by_user_email")
     private String createByUserEmail;
 

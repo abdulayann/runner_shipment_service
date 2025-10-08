@@ -34,6 +34,8 @@ public class VerifiedGrossMassRequest implements Serializable {
     private String entityNumber;
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     @NotNull(message = "Requester can not be null")
     private PartiesRequest requestor;
     private PartiesRequest authorised;
