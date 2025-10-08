@@ -90,7 +90,8 @@ public class NetworkTransfer extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private MigrationStatus migrationStatus;
 
-    @OneToMany(mappedBy = "networkTransfer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<NetworkShipmentsMapping> networkShipmentsMappings = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "network_transfer_id")
+    private List<NetworkTransferShipmentsMapping> networkShipmentsMappings = new ArrayList<>();
 
 }
