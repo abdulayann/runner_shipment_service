@@ -2991,6 +2991,18 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testReplaceDefaultTagsFromData() {
+        Map<String, Object> dictionary = new HashMap<>();
+        emailTemplateModel = new EmailTemplatesRequest();
+        emailTemplateModel.setBody("Hello, {name}");
+        emailTemplateModel.setSubject("Shipment Update");
+        dictionary.put("name", "John Doe");
+
+        // Assert
+        assertEquals("Hello, name:John Doe", commonUtils.replaceDefaultTagsFromData(dictionary, emailTemplateModel.getBody()));
+    }
+
+    @Test
     void testGetEmailTemplates_Success() {
         // Arrange: Mock the iv1Service response
         V1DataResponse mockV1DataResponse = new V1DataResponse();

@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.TransactionHistoryResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
-import org.springframework.http.ResponseEntity;
+import java.util.List;
 
 public interface ITransactionHistoryService {
 
@@ -11,8 +11,8 @@ public interface ITransactionHistoryService {
      *
      * @param entityId entityId
      * @param entityType entityType
-     * @return ResponseEntity<IRunnerResponse>
+     * @return List<TransactionHistoryResponse>
      */
-    ResponseEntity<IRunnerResponse> retrieveById(Long entityId, EntityTypeTransactionHistory entityType);
+    List<TransactionHistoryResponse> retrieveById(Long entityId, EntityTypeTransactionHistory entityType);
 
 }

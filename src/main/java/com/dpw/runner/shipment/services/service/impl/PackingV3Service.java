@@ -168,7 +168,6 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
-        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -177,6 +176,7 @@ public class PackingV3Service implements IPackingV3Service {
         Long consolidationId = null;
         if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = (ShipmentDetails) entity;
+            validateCommodity(List.of(packingRequest), module, false, shipmentDetails);
             consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(packing));
             packingV3Util.setColoadingStation(shipmentDetails);
         }
@@ -390,7 +390,6 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
@@ -403,6 +402,7 @@ public class PackingV3Service implements IPackingV3Service {
         Long consolidationId = null;
         if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = (ShipmentDetails) entity;
+            validateCommodity(List.of(packingRequest), module, false, shipmentDetails);
             consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(newPacking));
         }
 
@@ -491,7 +491,6 @@ public class PackingV3Service implements IPackingV3Service {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
@@ -526,6 +525,7 @@ public class PackingV3Service implements IPackingV3Service {
         Long consolidationId = null;
         if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = (ShipmentDetails) entity;
+            validateCommodity(packingRequestList, module, isFromQuote, shipmentDetails);
             consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, updatedPackings);
             setConsolidationId(shipmentDetails, newPackings, consolidationId);
             packingV3Util.setColoadingStation(shipmentDetails);
@@ -579,6 +579,12 @@ public class PackingV3Service implements IPackingV3Service {
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private void validateCommodity(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote, ShipmentDetails shipmentDetails) {
+        if (!Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
+        }
     }
 
     private void validateOpenAttachmentFlag(String module, Object entity) {

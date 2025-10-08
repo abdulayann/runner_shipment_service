@@ -29,4 +29,6 @@ public interface IShippingInstructionsService {
     ShippingInstructionResponse amendShippingInstruction(Long shippingInstId);
 
     void updateShippingInstructionsStatus(ShippingInstructionEventDto shippingInstruction, String fileName);
+    void cancelShippingInstruction(Long id);
+
 }

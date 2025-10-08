@@ -32,6 +32,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> fetchShipments(CommonRequestModel commonRequestModel);
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException;
+    void exportExcel2(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException;
 
     ResponseEntity<IRunnerResponse> retrieveByIdWithBookingNotes(CommonRequestModel commonRequestModel);
 

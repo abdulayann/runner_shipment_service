@@ -36,7 +36,7 @@ public interface IShippingInstructionDao {
 
     List<ShippingConsoleIdProjection> findByEntityTypeAndEntityIdIn(EntityType entityType, List<Long> allConsolId);
 
-    List<ShippingConsoleIdProjection> findByCarrierBookingConsolId(List<Long> allConsolNumbers);
+    List<ShippingConsoleIdProjection>   findByCarrierBookingConsolId(List<Long> allConsolNumbers);
 
     List<CarrierBookingInfoProjection> findBookingByConsolId(String consolidationNumber);
 

@@ -38,6 +38,7 @@ public class CarrierBookingConstants {
     public static final String BOOKING_DETAILS= "bookingDetails";
     public static final String SERVICE_RESPONSE= "SERVICE_RESPONSE";
     public static final String SERVICE_HTTP_STATUS_CODE= "SERVICE_HTTP_STATUS_CODE";
+    public static final String ERROR_MESSAGES = "errorMessages";
 
     private CarrierBookingConstants() {
         // private constructor to prevent instantiation
@@ -75,7 +76,6 @@ public class CarrierBookingConstants {
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(CarrierBookingStatus.class)   // CarrierBookingStatus is an enum stored as string
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("bookingNo", RunnerEntityMapping.builder()
@@ -229,14 +229,12 @@ public class CarrierBookingConstants {
                     .tableName(SHIPPING_INSTRUCTION)
                     .dataType(ShippingInstructionStatus.class)
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("vgmStatus", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS)
                     .dataType(VerifiedGrossMassStatus.class)
                     .fieldName(STATUS)
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("carrier", RunnerEntityMapping.builder()
