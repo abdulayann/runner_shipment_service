@@ -91,7 +91,7 @@ public class ConsolidationDetailsV3Response extends ConsolidationDetailsBaseResp
     private Long warehouseId;
     private String ediTransactionId;
     private Long triangulationPartner;
-    private boolean intraBranch;
+    private Boolean intraBranch;
     private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;

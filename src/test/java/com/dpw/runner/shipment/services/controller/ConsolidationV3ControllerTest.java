@@ -314,13 +314,16 @@ class ConsolidationV3ControllerTest {
       verify(consolidationV3Service).getDefaultConsolidation();
   }
 
-  @Test void testGetNewConsoleDataFromShipmentId_shouldReturnSuccessResponse() throws AuthenticationException, RunnerException {
+  @Test
+  void testGetNewConsoleDataFromShipmentId_shouldReturnSuccessResponse() throws AuthenticationException, RunnerException {
     ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
-    when(consolidationV3Service.getNewConsoleDataFromShipment(Mockito.anyLong())).thenReturn(mockResponse);
-    ResponseEntity<IRunnerResponse> response = controller.getNewConsoleDataFromShipmentId(Mockito.anyLong());
+    when(consolidationV3Service.getNewConsoleDataFromShipment(Mockito.anyLong(), Mockito.any()))
+            .thenReturn(mockResponse);
+    long shipmentId = 123L;
+    ResponseEntity<IRunnerResponse> response = controller.getNewConsoleDataFromShipmentId(shipmentId);
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    verify(consolidationV3Service).getNewConsoleDataFromShipment(Mockito.anyLong());
+    verify(consolidationV3Service).getNewConsoleDataFromShipment(eq(shipmentId), Mockito.any());
   }
 
 }

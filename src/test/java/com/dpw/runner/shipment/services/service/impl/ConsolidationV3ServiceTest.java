@@ -116,6 +116,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -6996,16 +6997,22 @@ if (unitConversionUtilityMockedStatic != null) {
       if (consumerObj instanceof Consumer<?>) {
         @SuppressWarnings("unchecked")
         Consumer<Object> consumer = (Consumer<Object>) consumerObj;
-        consumer.accept(value == null ? null : "mocked");
+        consumer.accept(value == null ? null : "SEA");
       }
       return null;
     }).when(commonUtils).mapIfSelected(any(), any());
-    ConsolidationDetailsV3Response result = consolidationV3Service.getNewConsoleDataFromShipment(1L);
+    ConsolidationV3Service spyService = spy(consolidationV3Service);
+    doReturn(Collections.singletonMap("key", "value"))
+            .when(spyService).fetchAllMasterDataByKey(any(ConsolidationDetailsV3Response.class));
+    ConsolidationDetailsV3Response defaultConsole = new ConsolidationDetailsV3Response();
+    defaultConsole.setOriginBranch(1L);
+    ConsolidationDetailsV3Response result = spyService.getNewConsoleDataFromShipment(1L, defaultConsole);
     assertNotNull(result);
-    assertEquals("mocked", result.getTransportMode());
+    assertEquals("SEA", result.getTransportMode()); // or "mocked" if set via mapIfSelected
     verify(shipmentDao).findById(1L);
     verify(commonUtils, atLeastOnce()).mapIfSelected(any(), any());
   }
+
 
 
 
@@ -7013,7 +7020,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetNewConsoleDataFromShipment_nullId_shouldThrowValidationException() {
     ValidationException ex = assertThrows(
             ValidationException.class,
-            () -> consolidationV3Service.getNewConsoleDataFromShipment(null)
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(null, new ConsolidationDetailsV3Response())
     );
     assertEquals("Shipment Id Is Mandatory", ex.getMessage());
   }
@@ -7023,7 +7030,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(shipmentDao.findById(10L)).thenReturn(Optional.empty());
     RunnerException ex = assertThrows(
             RunnerException.class,
-            () -> consolidationV3Service.getNewConsoleDataFromShipment(10L)
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(10L, new ConsolidationDetailsV3Response())
     );
     assertTrue(ex.getMessage().contains("Data retrieval") || ex.getMessage() != null);
   }
@@ -7033,7 +7040,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(shipmentDao.findById(5L)).thenThrow(new RuntimeException("DB Failure"));
     RunnerException ex = assertThrows(
             RunnerException.class,
-            () -> consolidationV3Service.getNewConsoleDataFromShipment(5L)
+            () -> consolidationV3Service.getNewConsoleDataFromShipment(5L, new ConsolidationDetailsV3Response())
     );
     assertEquals("DB Failure", ex.getMessage());
   }
@@ -7093,6 +7100,35 @@ if (unitConversionUtilityMockedStatic != null) {
     doNothing().when(commonUtils).mapIfSelected(any(), any());
     service.setAgentDetailsFromShipment(shipment, response);
     verify(commonUtils, times(2)).mapIfSelected(any(), any());
+  }
+  @Test
+  void testCopyIfNull() throws Exception {
+    ConsolidationV3Service service = new ConsolidationV3Service();
+    StringHolder holder = new StringHolder();
+    holder.value = null;
+    String defaultValue = "default";
+    Method copyIfNullMethod = ConsolidationV3Service.class.getDeclaredMethod(
+            "copyIfNull", Supplier.class, Consumer.class, Supplier.class
+    );
+    copyIfNullMethod.setAccessible(true);
+    copyIfNullMethod.invoke(
+            service,
+            (Supplier<String>) () -> holder.value,
+            (Consumer<String>) v -> holder.value = v,
+            (Supplier<String>) () -> defaultValue
+    );
+    assertEquals("default", holder.value);
+    holder.value = "existing";
+    copyIfNullMethod.invoke(
+            service,
+            (Supplier<String>) () -> holder.value,
+            (Consumer<String>) v -> holder.value = v,
+            (Supplier<String>) () -> defaultValue
+    );
+    assertEquals("existing", holder.value);
+  }
+  static class StringHolder {
+    String value;
   }
 
 }
