@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
@@ -104,6 +105,19 @@ public class ReportController {
         String responseMsg;
         try {
             return ResponseHelper.buildSuccessResponse(reportService.getPreAlertEmailTemplateData(shipmentId, emailTemplateId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = FETCH_SUCCESSFUL)})
+    @PostMapping(ReportConstants.EMAIL_TEMPLATE_DATA)
+    public ResponseEntity<IRunnerResponse> getEmailTemplateData(@RequestBody DefaultEmailTemplateRequest defaultEmailTemplateRequest) {
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(reportService.getDefaultEmailTemplateData(defaultEmailTemplateRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
             log.error(responseMsg, e);

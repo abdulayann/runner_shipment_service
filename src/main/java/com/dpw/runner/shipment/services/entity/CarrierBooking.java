@@ -69,6 +69,9 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "booking_office", length = 100)
     private String bookingOffice;
 
+    @Column(name = "booking_office_loc_code")
+    private String bookingOfficeLocCode;
+
     @Column(name = "booking_comment", length = 10000)
     private String bookingComment;
 
@@ -80,6 +83,12 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "external_emails", columnDefinition = "TEXT")
     private String externalEmails;
+
+    @Column(name = "other_internal_emails", columnDefinition = "TEXT")
+    private String otherInternalEmails;
+
+    @Column(name = "other_external_emails", columnDefinition = "TEXT")
+    private String otherExternalEmails;
 
     @Column(name = "pickup_from_req_empty_positioning_date")
     private LocalDateTime pickupFromReqEmptyPositioningDate;
@@ -110,6 +119,9 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "delivery_to_contact_no")
     private String deliveryToContactNo;
+
+    @Column(name = "inttra_reference")
+    private String inttraReference;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "requester_id", referencedColumnName = "id")

@@ -1,26 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -28,12 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -46,23 +20,11 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
@@ -75,12 +37,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -90,25 +47,6 @@ import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -128,6 +66,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @SuppressWarnings("java:S4165")
@@ -217,7 +171,6 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
-        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -234,6 +187,7 @@ public class PackingV3Service implements IPackingV3Service {
             }
 
             if (shipmentDetails != null) {
+                validateCommodity(List.of(packingRequest), module, false, shipmentDetails);
                 consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(packing));
                 packingV3Util.setColoadingStation(shipmentDetails);
             }
@@ -453,8 +407,6 @@ public class PackingV3Service implements IPackingV3Service {
             log.error("Packing not found for id: {}", packingRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-
-        validateCommodityInPackingRequest(List.of(packingRequest), false, module);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
 
         Packing oldPacking = optionalPacking.get();
@@ -473,6 +425,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (Constants.SHIPMENT.equalsIgnoreCase(module) || Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
             shipmentDetails = extractShipmentDetails(entity);
             if (shipmentDetails != null) {
+                validateCommodity(List.of(packingRequest), module, false, shipmentDetails);
                 consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(newPacking));
                 log.info("ConsolidationId updated from ShipmentDetails: {}", consolidationId);
             }
@@ -643,21 +596,19 @@ public class PackingV3Service implements IPackingV3Service {
 
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
-
+        // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        log.info("Collected incoming IDs count={}", incomingIds.size());
-
-        validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
         log.info("Fetched existing packings count={}", existingPackings.size());
 
         validateOpenAttachmentFlag(module, entity);
+        // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
         // Split requests
@@ -672,16 +623,19 @@ public class PackingV3Service implements IPackingV3Service {
         List<Packing> newPackings = jsonHelper.convertValueToList(split.createRequests, Packing.class);
 
         // Shipment & consolidation
-        ShipmentConsolidationContext ctx = handleShipmentAndConsolidation(entity, module, packingRequestList, updatedPackings, newPackings);
+        ShipmentConsolidationContext ctx = handleShipmentAndConsolidation(entity, module, packingRequestList, updatedPackings, newPackings, isFromQuote);
 
         List<Packing> savedUpdatedPackings = saveIfNotEmpty(updatedPackings);
         List<Packing> savedNewPackings = saveIfNotEmpty(newPackings);
 
+        // Combine results for parent calculation and auditing
         List<Packing> allSavedPackings = new ArrayList<>();
         allSavedPackings.addAll(savedNewPackings);
         allSavedPackings.addAll(savedUpdatedPackings);
 
         ParentResult parentResult = getParentDetails(allSavedPackings, module);
+
+        // Audit logs
         auditLogsChanges(oldConvertedPackings, savedUpdatedPackings, savedNewPackings, parentResult);
 
         // Auto-sell detection
@@ -692,9 +646,11 @@ public class PackingV3Service implements IPackingV3Service {
             log.info("Booking module detected, packing info updated in booking");
         }
 
+        // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
         afterSave(allSavedPackings, module, ctx.shipmentDetails, ctx.consolidationDetails, ctx.oldShipmentWtVolResponse, oldConvertedPackings);
 
+        // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(allSavedPackings, isAutoSell, module);
 
         log.info("Bulk packing update completed for module={} totalSavedPackings={} isAutoSell={}", module, allSavedPackings.size(), isAutoSell);
@@ -734,7 +690,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private ShipmentConsolidationContext handleShipmentAndConsolidation(Object entity, String module,
-            List<PackingV3Request> packingRequestList, List<Packing> updatedPackings, List<Packing> newPackings) throws RunnerException {
+            List<PackingV3Request> packingRequestList, List<Packing> updatedPackings, List<Packing> newPackings, boolean isFromQuote) throws RunnerException {
 
         ShipmentConsolidationContext ctx = new ShipmentConsolidationContext();
         Long consolidationId = null;
@@ -750,6 +706,7 @@ public class PackingV3Service implements IPackingV3Service {
 
             if (ctx.shipmentDetails != null) {
                 consolidationId = packingV3Util.updateConsolidationIdInPackings(ctx.shipmentDetails, updatedPackings);
+                validateCommodity(packingRequestList, module, isFromQuote, ctx.shipmentDetails);
                 setConsolidationId(ctx.shipmentDetails, newPackings, consolidationId);
                 packingV3Util.setColoadingStation(ctx.shipmentDetails);
                 log.info("ConsolidationId updated via shipment flow, consolidationId={}", consolidationId);
@@ -785,6 +742,12 @@ public class PackingV3Service implements IPackingV3Service {
         }
         log.info("No auto-sell detected");
         return false;
+    }
+
+    private void validateCommodity(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote, ShipmentDetails shipmentDetails) {
+        if (!Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            validateCommodityInPackingRequest(packingRequestList, isFromQuote, module);
+        }
     }
 
     private void validateOpenAttachmentFlag(String module, Object entity) {

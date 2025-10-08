@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
 import org.springframework.http.ResponseEntity;
 
 public interface IShippingInstructionsService {
@@ -26,5 +27,8 @@ public interface IShippingInstructionsService {
     ShippingInstructionResponse submitShippingInstruction(Long shippingInstId);
 
     ShippingInstructionResponse amendShippingInstruction(Long shippingInstId);
+
+    void updateShippingInstructionsStatus(ShippingInstructionEventDto shippingInstruction, String fileName);
+    void cancelShippingInstruction(Long id);
 
 }

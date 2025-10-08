@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,11 +23,9 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -46,7 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,6 +97,9 @@ class PushToDownstreamServiceTest {
     @Mock
     private IContainerDao containerDao;
 
+    @Mock
+    private ShippingInstructionUtil shippingInstructionUtil;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
     private static Containers testContainer;
@@ -137,7 +135,7 @@ class PushToDownstreamServiceTest {
     void testPushContainerData() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushContainerData(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.pushContainerData(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -152,7 +150,7 @@ class PushToDownstreamServiceTest {
     void testPushConsolidationData() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationData(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationData(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -203,7 +201,7 @@ class PushToDownstreamServiceTest {
     void testPushConsolidationDataToTracking() {
         PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
         pushToDownstreamEventDto.setParentEntityId(123L);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationDataToTracking(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.pushConsolidationDataToTracking(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -244,7 +242,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.SHIPMENT);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -281,7 +279,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.CUSTOMER_BOOKING);
-        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -290,7 +288,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(List.of(new PushToDownstreamEventDto.Triggers(123L, Constants.SHIPMENT, "")));
         pushToDownstreamEventDto.setParentEntityName(Constants.SHIPMENT);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -302,7 +300,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
         pushToDownstreamEventDto.setMeta(meta);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -314,7 +312,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
         pushToDownstreamEventDto.setMeta(meta);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -326,7 +324,7 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
         pushToDownstreamEventDto.setMeta(meta);
-        Assert.assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
     @Test
     void testProcess9() {
@@ -341,6 +339,146 @@ class PushToDownstreamServiceTest {
         when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
         when(pickupDeliveryDetailsService.findByShipmentId(anyLong())).thenReturn(List.of(pickupDeliveryDetails));
         assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void syncContainerWithCommonContainer_success_whenConsolidationExists() {
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-123";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        eventDto.setMeta(meta);
+
+        testConsolidation.setId(consolidationId);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.of(testConsolidation));
+        doNothing().when(shippingInstructionUtil).syncCommonContainersByConsolId(consolidationId);
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.syncContainerWithCommonContainer(eventDto, transactionId)
+        );
+        verify(consolidationV3Service).findById(consolidationId);
+        verify(shippingInstructionUtil).syncCommonContainersByConsolId(consolidationId);
+    }
+
+    @Test
+    void syncContainerWithCommonContainer_shouldThrow_whenConsolidationNotFound() {
+        Long consolidationId = 999L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-456";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        eventDto.setMeta(meta);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                pushToDownstreamService.syncContainerWithCommonContainer(eventDto, transactionId)
+        );
+
+        assertThat(exception.getMessage())
+                .contains("[InternalKafkaConsume] Consolidation: " + consolidationId)
+                .contains(transactionId)
+                .contains("not found");
+
+        verify(consolidationV3Service).findById(consolidationId);
+        verify(shippingInstructionUtil, never()).syncCommonContainersByConsolId(any());
+    }
+
+    @Test
+    void syncContainerWithCommonContainer_handlesNullMeta() {
+        // Arrange
+        Long consolidationId = 100L;
+        String transactionId = "TXN-NULL";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        eventDto.setMeta(null);
+
+        // Act & Assert
+        assertThrows(NullPointerException.class, () ->
+                pushToDownstreamService.syncContainerWithCommonContainer(eventDto, transactionId)
+        );
+
+        verifyNoInteractions(consolidationV3Service, shippingInstructionUtil);
+    }
+
+    @Test
+    void pushConsolidationDataToService_callsPushConsolidationDataToTracking_whenSourceIsAfterSaveToTracking() {
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-TRACKING";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+        eventDto.setMeta(meta);
+
+        testConsolidation.setId(consolidationId);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.of(testConsolidation));
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+        verify(consolidationV3Service).findById(consolidationId);
+    }
+
+    @Test
+    void pushConsolidationDataToService_doesNothing_whenSourceInfoDoesNotMatch() {
+        // Arrange
+        Long consolidationId = 123L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-NO-MATCH";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo("UNKNOWN_SOURCE");
+        eventDto.setMeta(meta);
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+
+        verifyNoInteractions(consolidationV3Service, producer, shippingInstructionUtil);
+    }
+
+    @Test
+    void pushConsolidationDataToService_asyncCompletesEvenIfMainFails() {
+        // Arrange
+        Long consolidationId = 666L;
+        Integer tenantId = 1;
+        String transactionId = "TXN-MAIN-FAIL";
+
+        PushToDownstreamEventDto eventDto = new PushToDownstreamEventDto();
+        eventDto.setParentEntityId(consolidationId);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(tenantId);
+        meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE);
+        eventDto.setMeta(meta);
+
+        when(consolidationV3Service.findById(consolidationId))
+                .thenReturn(Optional.empty()); // This will cause pushConsolidationData to throw
+
+        // Act
+        assertThrows(ValidationException.class, () ->
+                pushToDownstreamService.pushConsolidationDataToService(eventDto, transactionId)
+        );
+
+        // Assert
+        verify(consolidationV3Service).findById(consolidationId);
     }
 
     @Test

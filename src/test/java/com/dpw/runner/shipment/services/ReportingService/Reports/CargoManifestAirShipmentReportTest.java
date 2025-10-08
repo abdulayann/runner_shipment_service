@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAir
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -91,6 +93,12 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private IContainerDao containerDao;

@@ -91,6 +91,7 @@ public class ConsolidationEtV3Request extends CommonRequest implements IRunnerRe
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private String ediTransactionId;
     private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
@@ -131,6 +132,7 @@ public class ConsolidationEtV3Request extends CommonRequest implements IRunnerRe
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private String efreightStatus;
     private Boolean hazardous;
     private String emergencyContactNumber;

@@ -80,12 +80,12 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private String ediTransactionId;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
-    private Long triangulationPartner;
-    private Long receivingBranch;
 
     private Long originBranch;
+    private Long receivingBranch;
 
     private boolean intraBranch;
     private Long documentationPartner;

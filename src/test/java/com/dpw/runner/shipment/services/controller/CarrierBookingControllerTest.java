@@ -232,5 +232,30 @@ class CarrierBookingControllerTest {
 
         assertNotNull(responseEntity);
     }
+    @Test
+    void consolidatedList_WithoutMasterData() {
+        // Mock
+        when(carrierBookingService.consolidatedList(any(), eq(false))).thenReturn(ResponseEntity.ok().build());
 
+        // Test
+        var responseEntity = carrierBookingController.consolidatedList(new ListCommonRequest(), false);
+
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+    @Test
+    void cloneBooking_Exception_WithMessage() {
+        // Mock
+        Long carrierBookingId = 123L;
+        String errorMessage = "Custom error message";
+
+        when(carrierBookingService.cloneBooking(carrierBookingId))
+                .thenThrow(new RuntimeException(errorMessage));
+
+        // Test
+        carrierBookingController.cloneCarrierBooking(carrierBookingId);
+
+        // Assert
+        verify(carrierBookingService).cloneBooking(carrierBookingId);
+    }
 }

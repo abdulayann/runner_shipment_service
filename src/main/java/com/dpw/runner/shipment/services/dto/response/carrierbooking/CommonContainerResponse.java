@@ -55,4 +55,5 @@ public class CommonContainerResponse implements IRunnerResponse {
     private String marksNums;
     private String integrationCode;
     private PartiesResponse weighingParty;
+    private UUID containerRefGuid;
 }

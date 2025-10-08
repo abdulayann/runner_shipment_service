@@ -22,6 +22,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String status;
     private String bookingNo;
     private String carrierBookingNo;
+    private String inttraReference;
     private String carrierBlNo;
     private String consolidationNo;
     private EntityType entityType;
@@ -29,6 +30,7 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String entityNumber;
     private String serviceType;
     private String bookingOffice;
+    private String bookingOfficeLocCode;
     private LocalDateTime pickupFromReqEmptyPositioningDate;
     private LocalDateTime pickupFromReqFullPickupDate;
     private String pickupFromContactName;
@@ -39,8 +41,10 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String deliveryToContactNo;
     private String bookingComment;
     private String carrierComment;
-    private String internalEmails;
-    private String externalEmails;
+    private List<String> internalEmailsList;
+    private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     private String createByUserEmail;
     private String submitByUserEmail;
     private Map<String, Object> loadedContainerDropOffDetails;
@@ -59,4 +63,10 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private List<ReferenceNumberResponse> referenceNumbersList;
     private List<CarrierRoutingResponse> carrierRoutingList;
     private List<ContainerMisMatchWarning> containerMismatchWarningList;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private String updatedBy;
+    private LocalDateTime updatedAt;
+    private Long vgmId;
+    private Long siId;
 }

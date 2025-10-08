@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.KAFKA_CONSUME;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +46,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,6 +94,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     private static final String NOT_FOUND_CONSTANT = " not found.";
     @Autowired
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+    @Autowired
+    private ShippingInstructionUtil shippingInstructionUtil;
 
     @Transactional
     @Override
@@ -210,9 +217,21 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         }
     }
 
-    private void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId) {
+    public void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId) {
         if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
             this.pushConsolidationData(message, transactionId);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    this.syncContainerWithCommonContainer(message, transactionId);
+                } catch (Exception e) {
+                    log.error("Error syncing container with common container | Transaction ID: {} | Container ID: {} | Error: {}",
+                            transactionId, message.getParentEntityId(), e.getMessage(), e);
+                }
+            }).exceptionally(ex -> {
+                log.error("Async execution failed for syncContainerWithCommonContainer | Transaction ID: {} | Container ID: {}",
+                        transactionId, message.getParentEntityId(), ex);
+                return null;
+            });
         }
         if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
             this.pushConsolidationDataToTracking(message, transactionId);
@@ -254,7 +273,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         log.info("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
                 message, transactionId);
 
-        if(container.getConsolidationId() != null) {
+        if (container.getConsolidationId() != null) {
             List<Containers> containersList1 = containerDao.findByConsolidationId(container.getConsolidationId());
             containerV3Service.pushContainersToDependentServices(containersList1);
         }
@@ -277,7 +296,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
         if (consolidationDetailsOpt.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
+            String errMsg = KAFKA_CONSUME + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -329,7 +348,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
 
         if (consolidationDetailsOpt.isEmpty()) {
-            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
+            String errMsg = KAFKA_CONSUME + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
             log.error(errMsg);
             throw new ValidationException(errMsg);
         }
@@ -430,6 +449,24 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
+    }
+
+
+    @Override
+    public void syncContainerWithCommonContainer(PushToDownstreamEventDto eventDto, String transactionId) {
+        Long parentEntityId = eventDto.getParentEntityId();
+        Integer tenantId = eventDto.getMeta().getTenantId();
+
+        TenantContext.setCurrentTenant(tenantId);
+
+        Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
+        if (consolidationDetailsOpt.isEmpty()) {
+            String errMsg = "[InternalKafkaConsume] Consolidation: " + parentEntityId + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
+            log.error(errMsg);
+            throw new ValidationException(errMsg);
+        }
+
+        shippingInstructionUtil.syncCommonContainersByConsolId(parentEntityId);
     }
 
 

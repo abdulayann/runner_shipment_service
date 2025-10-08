@@ -1,12 +1,22 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
+import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -31,6 +43,9 @@ public class ShippingInstructionUtil {
 
     @Autowired
     private IShippingInstructionDao shippingInstructionDao;
+
+    @Autowired
+    private IContainerDao containerDao;
 
     public List<ShippingInstructionContainerWarningResponse> compareContainerDetails(
             List<CommonContainers> oldContainers,
@@ -144,91 +159,120 @@ public class ShippingInstructionUtil {
     }
 
 
-    public void syncCommonContainers(List<Containers> containers) {
+    public void syncCommonContainersByConsolId(Long consolId) {
+        if (consolId == null) {
+            return;
+        }
+
+        List<Long> siIds = resolveShippingInstructionIds(consolId);
+        if (siIds.isEmpty()) {
+            return;
+        }
+
+        List<Containers> containers = containerDao.findByConsolidationId(consolId);
         if (containers == null || containers.isEmpty()) {
             return;
         }
 
-        // --- Step 1: Collect all unique consolidation numbers from containers ---
-        List<Long> allConsolId = containers.stream()
-                .map(Containers::getConsolidationId) // assuming this field exists
+        Map<UUID, CommonContainers> commonMap = buildCommonContainersMap(containers);
+        List<CommonContainers> toSave = updateContainers(containers, commonMap, siIds);
+
+        if (!toSave.isEmpty()) {
+            commonContainersDao.saveAll(toSave);
+        }
+    }
+
+    private List<Long> resolveShippingInstructionIds(Long consolId) {
+        List<Long> siIds = findDirectShippingInstructions(consolId);
+
+        if (siIds.isEmpty()) {
+            siIds = findShippingInstructionsViaCarrier(consolId);
+        }
+
+        return siIds;
+    }
+
+    private List<Long> findDirectShippingInstructions(Long consolId) {
+        return shippingInstructionDao
+                .findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, List.of(consolId))
+                .stream()
+                .map(ShippingConsoleIdProjection::getId)
                 .filter(Objects::nonNull)
-                .distinct()
                 .toList();
+    }
 
-        if (allConsolId.isEmpty()) {
-            return;
-        }
-
-        // --- Step 2a: Direct lookup (entityType = CONSOLIDATION) ---
-        List<ShippingConsoleIdProjection> direct = shippingInstructionDao
-                .findByEntityTypeAndEntityIdIn(EntityType.CONSOLIDATION, allConsolId);
-
-        Map<Long, List<Long>> consolToInstructionMap = direct.stream()
-                .filter(p -> p.getEntityId() != null)
-                .collect(Collectors.groupingBy(
-                        ShippingConsoleIdProjection::getEntityId,
-                        Collectors.mapping(ShippingConsoleIdProjection::getId, Collectors.toList())
-                ));
-
-        // --- Step 2b: Indirect lookup via CarrierBooking for missing consol numbers ---
-        List<Long> missingConsols = allConsolId.stream()
-                .filter(c -> !consolToInstructionMap.containsKey(c))
+    private List<Long> findShippingInstructionsViaCarrier(Long consolId) {
+        return shippingInstructionDao
+                .findByCarrierBookingConsolId(List.of(consolId))
+                .stream()
+                .map(ShippingConsoleIdProjection::getId)
+                .filter(Objects::nonNull)
                 .toList();
+    }
 
-        if (!missingConsols.isEmpty()) {
-            List<ShippingConsoleIdProjection> viaCarrier = shippingInstructionDao
-                    .findByCarrierBookingConsolId(missingConsols);
-
-            viaCarrier.stream()
-                    .filter(p -> p.getEntityId() != null)
-                    .forEach(p -> consolToInstructionMap
-                            .computeIfAbsent(p.getEntityId(), k -> new ArrayList<>())
-                            .add(p.getId()));
-        }
-
-        // --- Step 3: Fetch existing commons ---
+    private Map<UUID, CommonContainers> buildCommonContainersMap(List<Containers> containers) {
         List<UUID> guids = containers.stream()
                 .map(Containers::getGuid)
                 .filter(Objects::nonNull)
                 .toList();
 
-        if (guids.isEmpty()) {
-            return;
+        Map<UUID, CommonContainers> commonMap = new HashMap<>();
+        Set<UUID> conflictedGuids = new HashSet<>();
+
+        for (CommonContainers cc : commonContainersDao.getAll(guids)) {
+            UUID guid = cc.getContainerRefGuid();
+            if (guid == null) {
+                continue;
+            }
+
+            if (commonMap.containsKey(guid)) {
+                conflictedGuids.add(guid);
+                commonMap.remove(guid);
+                log.warn("Duplicate containerRefGuid found: {}. Skipping both entries.", guid);
+            } else if (!conflictedGuids.contains(guid)) {
+                commonMap.put(guid, cc);
+            }
         }
 
-        Map<UUID, CommonContainers> commonMap = commonContainersDao.getAll(guids)
-                .stream()
-                .collect(Collectors.toMap(CommonContainers::getContainerRefGuid, c -> c));
+        return commonMap;
+    }
+
+    private List<CommonContainers> updateContainers(
+            List<Containers> containers,
+            Map<UUID, CommonContainers> commonMap,
+            List<Long> siIds) {
 
         List<CommonContainers> toSave = new ArrayList<>();
+        Long firstSiId = siIds.isEmpty() ? null : siIds.get(0);
 
-        // --- Step 4: Build/Update CommonContainers with ShippingInstructionId ---
         for (Containers container : containers) {
-            CommonContainers common = commonMap.get(container.getGuid());
-            if (common == null) {
-                common = new CommonContainers();
-                common.setContainerRefGuid(container.getGuid());
+            if (container.getGuid() == null) {
+                continue;
             }
 
+            CommonContainers common = getOrCreateCommonContainer(container, commonMap);
             updateCommonContainerFromContainer(common, container);
 
-            // Attach SI id(s) from consolidation number
-            Long consolNumber = container.getConsolidationId();
-            if (consolNumber != null) {
-                List<Long> siIds = consolToInstructionMap.getOrDefault(consolNumber, List.of());
-                if (!siIds.isEmpty()) {
-                    // Option A: attach only one
-                    common.setShippingInstructionId(siIds.get(0));
-
-                }
+            if (firstSiId != null) {
+                common.setShippingInstructionId(firstSiId);
             }
+
             toSave.add(common);
         }
 
-        if (!toSave.isEmpty()) {
-            commonContainersDao.saveAll(toSave);
+        return toSave;
+    }
+
+    private CommonContainers getOrCreateCommonContainer(
+            Containers container,
+            Map<UUID, CommonContainers> commonMap) {
+
+        CommonContainers common = commonMap.get(container.getGuid());
+        if (common == null) {
+            common = new CommonContainers();
+            common.setContainerRefGuid(container.getGuid());
         }
+        return common;
     }
 
 
@@ -272,9 +316,17 @@ public class ShippingInstructionUtil {
             return;
         }
 
+        List<Long> siIds = new ArrayList<>();
         // --- Step 2a: Direct lookup (entityType = CONSOLIDATION) ---
         List<ShippingConsoleNoProjection> direct = shippingInstructionDao
                 .findByEntityTypeAndEntityNoIn(EntityType.CONSOLIDATION, allConsolNumbers);
+
+        if (!direct.isEmpty()) {
+            siIds.addAll(direct.stream()
+                    .map(ShippingConsoleNoProjection::getId)
+                    .filter(Objects::nonNull)
+                    .toList());
+        }
 
         Map<String, List<Long>> consolToInstructionMap = direct.stream()
                 .filter(p -> p.getEntityId() != null)
@@ -297,6 +349,10 @@ public class ShippingInstructionUtil {
                     .forEach(p -> consolToInstructionMap
                             .computeIfAbsent(p.getEntityId(), k -> new ArrayList<>())
                             .add(p.getId()));
+            siIds.addAll(viaCarrier.stream()
+                    .map(ShippingConsoleNoProjection::getId)
+                    .filter(Objects::nonNull)
+                    .toList());
         }
 
         // --- Step 3: Fetch existing commons ---
@@ -318,16 +374,15 @@ public class ShippingInstructionUtil {
         for (Packing packing : packings) {
             CommonPackages common = commonMap.get(packing.getGuid());
             if (common != null) {
-                updateCommonPackingFromPacking(common, packing);
+                updateCommonPackingFromPacking(common, packing, siIds.get(0));
                 toSave.add(common);
             } else {
                 CommonPackages newCommon = new CommonPackages();
                 newCommon.setPackingRefGuid(packing.getGuid()); // ref guid
-                updateCommonPackingFromPacking(newCommon, packing);
+                updateCommonPackingFromPacking(newCommon, packing, siIds.get(0));
                 toSave.add(newCommon);
             }
         }
-
         commonPackagesDao.saveAll(toSave);
     }
 
@@ -356,7 +411,7 @@ public class ShippingInstructionUtil {
         common.setCustomsSealNumber(container.getCustomsSealNumber());
     }
 
-    public void updateCommonPackingFromPacking(CommonPackages common, Packing packing) {
+    public void updateCommonPackingFromPacking(CommonPackages common, Packing packing, Long siId) {
         common.setContainerNo(packing.getContainerId() != null ? String.valueOf(packing.getContainerId()) : null);
         common.setPacks(tryParseInt(packing.getPacks(), null));
         common.setPacksUnit(packing.getPacksType());
@@ -369,6 +424,7 @@ public class ShippingInstructionUtil {
         common.setGrossWeightUnit(packing.getWeightUnit());
         common.setVolume(packing.getVolume());
         common.setVolumeUnit(packing.getVolumeUnit());
+        common.setShippingInstructionId(siId);
     }
 
 
@@ -378,6 +434,139 @@ public class ShippingInstructionUtil {
         } catch (NumberFormatException e) {
             return fallback;
         }
+    }
+
+    public void populateInttraSpecificData(ShippingInstructionInttraRequest instructionInttraResponse, String inttraId) throws RunnerException {
+        List<CommonContainerResponse> containers = instructionInttraResponse.getCommonContainersList();
+
+        if (containers == null) {
+            setDefaultTotals(instructionInttraResponse);
+            instructionInttraResponse.setInttraOrgId(inttraId);
+            return;
+        }
+
+        calculateEquipmentTotals(instructionInttraResponse, containers);
+        convertUnitsAndCalculateTotals(instructionInttraResponse, containers);
+        instructionInttraResponse.setInttraOrgId(inttraId);
+    }
+
+    private void setDefaultTotals(ShippingInstructionInttraRequest response) {
+        response.setTotalNumberOfEquipments(0);
+        response.setTotalNoOfPackages(0);
+        response.setTotalGrossWeight(0.0);
+        response.setTotalGrossVolume(0.0);
+    }
+
+    private void calculateEquipmentTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) {
+        int totalEquipments = containers.stream()
+                .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                .sum();
+
+        int totalPackages = containers.stream()
+                .mapToInt(container -> container.getPacks() != null ? container.getPacks() : 0)
+                .sum();
+
+        response.setTotalNumberOfEquipments(totalEquipments);
+        response.setTotalNoOfPackages(totalPackages);
+    }
+
+    private void convertUnitsAndCalculateTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) throws RunnerException {
+        double totalWeight = 0.0;
+        double totalVolume = 0.0;
+
+        for (CommonContainerResponse container : containers) {
+            totalWeight += convertAndUpdateWeight(container);
+            totalVolume += convertAndUpdateVolume(container);
+        }
+
+        response.setTotalGrossWeight(totalWeight);
+        response.setTotalGrossVolume(totalVolume);
+    }
+
+    private double convertAndUpdateWeight(CommonContainerResponse container) throws RunnerException {
+        double totalWeight = 0.0;
+
+        // Convert and update gross weight
+        if (container.getGrossWeight() != null) {
+            BigDecimal convertedWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getGrossWeight(),
+                    container.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setGrossWeight(convertedWeight);
+            container.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+            totalWeight = convertedWeight.doubleValue();
+        }
+
+        // Convert and update net weight
+        if (container.getNetWeight() != null) {
+            BigDecimal convertedNetWeight = BigDecimal.valueOf(convertUnit(Constants.MASS, container.getNetWeight(),
+                    container.getNetWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue());
+            container.setNetWeight(convertedNetWeight);
+            container.setNetWeightUnit(Constants.WEIGHT_UNIT_KG);
+        }
+
+        return totalWeight;
+    }
+
+    private double convertAndUpdateVolume(CommonContainerResponse container) throws RunnerException {
+        if (container.getVolume() != null) {
+            BigDecimal convertedVolume = BigDecimal.valueOf(convertUnit(Constants.VOLUME, container.getVolume(),
+                    container.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue());
+            container.setVolume(convertedVolume);
+            container.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+            return convertedVolume.doubleValue();
+        }
+        return 0.0;
+    }
+
+    public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map, ShippingInstructionInttraRequest shippingInstructionInttraRequest) {
+
+        if (Objects.isNull(carrierDatav1Map)) return;
+
+        // Process each carrier and fetch the required details
+        for (Map.Entry<String, EntityTransferCarrier> entry : carrierDatav1Map.entrySet()) {
+            EntityTransferCarrier carrier = entry.getValue();
+
+            String carrierScacCode = carrier.ItemValue;
+            String carrierDescription = carrier.ItemDescription;
+
+            // Set the fetched details in the VerifiedGrossMassInttraResponse
+            shippingInstructionInttraRequest.setCarrierScacCode(carrierScacCode);
+            shippingInstructionInttraRequest.setCarrierDescription(carrierDescription);
+        }
+    }
+
+    public List<String> getSendEmailBaseRequest(ShippingInstruction shippingInstruction) {
+        StringBuilder toEmails = new StringBuilder();
+
+        // Add internal emails if present
+        if (Objects.nonNull(shippingInstruction.getInternalEmails()) && !shippingInstruction.getInternalEmails().trim().isEmpty()) {
+            toEmails.append(shippingInstruction.getInternalEmails());
+        }
+
+        // Add the 'createByUserEmail' only if it's not blank
+        String createByUserEmail = shippingInstruction.getCreateByUserEmail();
+        if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(createByUserEmail);
+        }
+
+        // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
+        String submitByUserEmail = shippingInstruction.getSubmitByUserEmail();
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty()
+                && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+            if (!toEmails.isEmpty()) {
+                toEmails.append(",");
+            }
+            toEmails.append(submitByUserEmail);
+        }
+
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(toEmails.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // remove duplicates if any
+                .toList();
     }
 
 }

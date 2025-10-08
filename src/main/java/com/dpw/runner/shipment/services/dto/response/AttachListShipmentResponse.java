@@ -80,6 +80,7 @@ public class AttachListShipmentResponse implements IRunnerResponse {
     private String bookingNumber;
     private String route;
     private long sourceTenantId;
+    private long parentTenantId;
     private long documentationPartner;
     private Long triangulationPartner;
     private Long originBranch;

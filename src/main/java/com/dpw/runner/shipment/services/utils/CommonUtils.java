@@ -1,5 +1,233 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IQuoteContractsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
+import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonPackageResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
+import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.CarrierRouting;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.CommonPackages;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfCopy;
+import com.itextpdf.text.pdf.PdfGState;
+import com.itextpdf.text.pdf.PdfImportedPage;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfStamper;
+import com.itextpdf.text.pdf.PdfWriter;
+import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
+import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.jetbrains.annotations.Nullable;
+import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
+import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMM;
@@ -138,236 +366,6 @@ import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedTyp
 import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IQuoteContractsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierRoutingResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonPackageResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
-import com.dpw.runner.shipment.services.entity.AuditLog;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.CarrierRouting;
-import com.dpw.runner.shipment.services.entity.CommonContainers;
-import com.dpw.runner.shipment.services.entity.CommonPackages;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Jobs;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.QuoteContracts;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
-import com.dpw.runner.shipment.services.notification.service.INotificationService;
-import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
-import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfCopy;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfImportedPage;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.PdfWriter;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.imageio.ImageIO;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.barbecue.Barcode;
-import net.sourceforge.barbecue.BarcodeException;
-import net.sourceforge.barbecue.BarcodeFactory;
-import net.sourceforge.barbecue.BarcodeImageHandler;
-import net.sourceforge.barbecue.output.OutputException;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.jetbrains.annotations.Nullable;
-import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
-import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
-import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionSystemException;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 @Component
 @Slf4j
@@ -1726,6 +1724,21 @@ public class CommonUtils {
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
     }
+    @SuppressWarnings("java:S5857")
+    public String replaceDefaultTagsFromData(Map<String, Object> map, String val) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (Objects.nonNull(entry.getValue()) && Objects.nonNull(entry.getKey())) {
+                boolean isEmptyDocument = (entry.getKey().equalsIgnoreCase(SUMMARY_DOCUMENTS) && entry.getValue().toString().isEmpty())
+                        || (entry.getKey().equalsIgnoreCase(LIST_ALL_DOCUMENTS) && entry.getValue().toString().isEmpty());
+
+                if (!isEmptyDocument) {
+                    val = val.replace("{" + entry.getKey() + "}", entry.getKey() + ":" + entry.getValue().toString());
+                }
+            }
+        }
+        val = val.replaceAll("\\{.*?\\}", "");
+        return val;
+    }
 
     public void getEmailTemplate(Map<ShipmentRequestedType, EmailTemplatesRequest> response) {
         List<String> requests = new ArrayList<>(List.of(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE, SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE, SHIPMENT_PUSH_REJECTED_EMAIL_TYPE, SHIPMENT_PULL_REJECTED_EMAIL_TYPE,
@@ -2663,6 +2676,9 @@ public class CommonUtils {
             ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
             sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
 
+            // Add tenant data from all shipments sharing the same parent GUID
+            addTenantDataFromParentGuid(shipmentDetails.getParentGuid(), tenantIds, Constants.SHIPMENT);
+
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = shipmentDetails.getReceivingBranch();
                 triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
@@ -2676,6 +2692,9 @@ public class CommonUtils {
             }
             ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
             sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
+
+            // Add tenant IDs from all consolidation entities sharing the same parent GUID along with interbranch cases
+            addTenantDataFromParentGuid(consolidationDetails.getParentGuid(), tenantIds, Constants.CONSOLIDATION);
 
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = consolidationDetails.getReceivingBranch();
@@ -2692,6 +2711,67 @@ public class CommonUtils {
         addAllIfNotEmpty(tenantIds, triangulationPartners);
         addAllIfNotEmpty(tenantIds, otherIds);
         return tenantIds.stream().filter(Objects::nonNull).toList();
+    }
+
+    public void addTenantDataFromParentGuid(UUID parentGuid, Set<Long> tenantIds, String entity) {
+        if (parentGuid == null) {
+            return;
+        }
+        if (Objects.equals(entity, Constants.CONSOLIDATION)) {
+
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid);
+            if(optionalConsolidationDetails.isEmpty())
+                return;
+
+            ConsolidationDetails parentConsolidationDetails = optionalConsolidationDetails.get(); // parentConsolidation
+            handleParentEntity(tenantIds, parentConsolidationDetails.getTenantId(), parentConsolidationDetails.getSourceTenantId(), parentConsolidationDetails.getReceivingBranch(), parentConsolidationDetails.getTriangulationPartnerList());
+            handleInterbranchConsolidation(tenantIds, parentConsolidationDetails);
+
+            List<ConsolidationDetails> relatedConsolidations = consolidationDetailsDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedConsolidations)) {
+                relatedConsolidations.forEach(c -> addTenantIdAndTriangulationData(tenantIds, c.getTenantId(), c.getTriangulationPartnerList()));
+            }
+
+        } else if (Objects.equals(entity, Constants.SHIPMENT)) {
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(parentGuid);
+            if(optionalShipmentDetails.isEmpty())
+                return;
+
+            ShipmentDetails parentShipmentDetails = optionalShipmentDetails.get(); // parent Shipment
+            handleParentEntity(tenantIds, parentShipmentDetails.getTenantId(), parentShipmentDetails.getSourceTenantId(), parentShipmentDetails.getReceivingBranch(), parentShipmentDetails.getTriangulationPartnerList());
+
+            List<ShipmentDetails> relatedShipments = shipmentDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedShipments)) {
+                relatedShipments.forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+            }
+        }
+    }
+
+    public void addTenantIdAndTriangulationData(Set<Long> tenantIds, Integer tenantId, List<TriangulationPartner> triangulationPartnerList) {
+        if (tenantId != null) {
+            tenantIds.add(Long.valueOf(tenantId));
+        }
+        if (!CollectionUtils.isEmpty(triangulationPartnerList)) {
+            List<Long> triangulationPartners = extractTriangulationPartners(triangulationPartnerList);
+            addAllIfNotEmpty(tenantIds, triangulationPartners);
+        }
+    }
+
+    public void handleInterbranchConsolidation(Set<Long> tenantIds, ConsolidationDetails parentConsolidationDetails) {
+        if(Boolean.TRUE.equals(parentConsolidationDetails.getInterBranchConsole())) {
+            parentConsolidationDetails.getShipmentsList().forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+        }
+    }
+
+    public void handleParentEntity(Set<Long> tenantIds, Integer tenantId, Long receivingBranch, Long originBranch, List<TriangulationPartner> triangulationPartnerList) {
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch);
+        }
+        if (originBranch != null) {
+            tenantIds.add(originBranch);
+        }
+        addTenantIdAndTriangulationData(tenantIds, tenantId, triangulationPartnerList);
     }
 
     private Optional<ShipmentDetails> getShipmentDetails(ListCousinBranchesForEtRequest request) {
