@@ -1,0 +1,105 @@
+
+-- Update Parties
+UPDATE parties
+SET
+    org_code = 'FRC00037485',
+    address_code = 'FRO00039118',
+    org_id = '157329',
+    address_id = '263204',
+    updated_at = NOW(),
+    org_data = '{
+        "Id": 157329,
+        "City": "Trittau",
+        "Guid": "95da1a62-5ccf-4c92-b3d3-a4622cab7282",
+        "Email": "steffen.schwan@canada-trade.de",
+        "IsGSA": false,
+        "Phone": "41548981322",
+        "State": "SH",
+        "label": "CT Canada Trade GmbH",
+        "value": "FRC00037485",
+        "Broker": false,
+        "Source": "CRP",
+        "Carrier": false,
+        "Country": "DEU",
+        "Address1": "Technologiepark 24",
+        "FullName": "CT Canada Trade GmbH",
+        "IsActive": 1,
+        "Payables": false,
+        "Services": false,
+        "TenantId": 442,
+        "CompanyId": 372,
+        "Consignee": true,
+        "Consigner": true,
+        "IsParnter": false,
+        "PANNumber": "HRB 13140HL",
+        "TaxVendor": false,
+        "WareHouse": false,
+        "AirCarrier": false,
+        "ExtraParam": "",
+        "InsertDate": "2025-07-07T16:46:33.000",
+        "SeaCarrier": false,
+        "UpdateDate": "2025-08-26T23:32:13.000",
+        "IsSuspended": false,
+        "RailCarrier": false,
+        "Receivables": true,
+        "RoadCarrier": false,
+        "ZipPostCode": "22946",
+        "ActiveClient": true,
+        "CurrencyCode": "EUR",
+        "EmailInvoice": false,
+        "InsertUserId": 1712,
+        "UpdateUserId": 1712,
+        "VatRegNumber": "DE815430066",
+        "ForworderAgent": false,
+        "IsCreditEnabled": false,
+        "IsV2PaymentTerm": false,
+        "TransportClient": false,
+        "IsWalkInCustomer": false,
+        "OrganizationCode": "FRC00037485",
+        "EnableBulkInvoice": false,
+        "CustomerIdentifier": "1938034_001",
+        "ReceivableTermsDate": 2,
+        "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+        "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+        "IsClientEInvoiceEnabled": false,
+        "ImportExportClearanceLock": false,
+        "FusionCreditlimitOverrideApproved": false
+    }',
+    address_data = '{
+        "Id": 263204,
+        "City": "Trittau",
+        "Email": "steffen.schwan@canada-trade.de",
+        "State": "SH",
+        "label": "FRO00039118",
+        "value": "FRO00039118",
+        "Country": "DEU",
+        "OrgGuid": "95da1a62-5ccf-4c92-b3d3-a4622cab7282",
+        "Address1": "Technologiepark 24",
+        "OrgSource": "CRP",
+        "AddressType": 2,
+        "CompanyName": "CT Canada Trade GmbH",
+        "OrgFullName": "CT Canada Trade GmbH",
+        "OrgPayables": false,
+        "ZipPostCode": "22946",
+        "TaxRegNumber": "DE815430066",
+        "OrgReceivables": true,
+        "OrgActiveClient": true,
+        "AddressShortCode": "FRO00039118",
+        "OrgOrganizationCode": "FRC00037485"
+    }'
+WHERE
+    id = 1757513
+    AND tenant_id = 474;
+
+-- Update Shipments
+UPDATE shipment_details
+SET
+    client_dps_address_id = 117860,
+    updated_at = NOW()
+WHERE
+    id = 109349
+    AND tenant_id = 474;
+
+-- ========================================
+-- END OF UPDATE QUERY
+-- ========================================
