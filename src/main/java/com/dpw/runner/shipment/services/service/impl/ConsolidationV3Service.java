@@ -64,6 +64,42 @@ import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -86,23 +122,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -392,7 +412,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     ).flatMap(m -> m.entrySet().stream())
                     .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    private ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
+    public ConsolidationDetailsV3Response createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
@@ -616,7 +636,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return oldEntity;
     }
 
-    private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
+    public void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         if (Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
         /* Future to populate unloc code in consoliation child entities*/
@@ -738,7 +758,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsV3Request consolidationDetailsRequest, Boolean isCreate,
+    public void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsV3Request consolidationDetailsRequest, Boolean isCreate,
                            ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
@@ -1609,7 +1629,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
+        return this.attachShipmentDetails(request);
+    }
 
+    public String attachShipmentDetails(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         boolean isConsolePullCall = false;
 
@@ -5383,4 +5406,127 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponse(consolListResponse);
     }
 
+    public ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException {
+        if (null == id) {
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        String responseMsg;
+        try {
+            Optional<ShipmentDetails> shipmentData = shipmentDao.findById(id);
+            if (shipmentData.isEmpty()) {
+                log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentDetails shipmentDetails = shipmentData.get();
+            commonUtils.validateAirSecurityPermission(StringUtility.convertToString(shipmentDetails.getTransportMode()), StringUtility.convertToString(shipmentDetails.getDirection()));
+            ConsolidationDetailsV3Response consolidationResponse = new ConsolidationDetailsV3Response();
+            CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+            CarrierDetails details = shipmentDetails.getCarrierDetails();
+            //HEADERS
+            setHeaderDetailsFromShipment(shipmentDetails, consolidationResponse, details, builder);
+            //GENERAL
+            setGeneralDetailsFromShipment(shipmentDetails, consolidationResponse, details, builder);
+            // PARTY
+            setAgentDetailsFromShipment(shipmentDetails, consolidationResponse);
+            // DEFAULT
+            setDefaultDetails(shipmentDetails, defaultConsolidation, consolidationResponse);
+            consolidationResponse.setCarrierDetails(builder.build());
+            Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(consolidationResponse);
+            consolidationResponse.setMasterDataMap(masterDataResponse);
+            return consolidationResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private <T> void copyIfNull(Supplier<T> getter, Consumer<T> setter, Supplier<T> defaultGetter) {
+        if (getter.get() == null && defaultGetter.get() != null) {
+            setter.accept(defaultGetter.get());
+        }
+    }
+
+    private void setDefaultDetails(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response defaultConsolidation, ConsolidationDetailsV3Response consolidationResponse) {
+        copyIfNull(consolidationResponse::getSourceTenantId, consolidationResponse::setSourceTenantId, defaultConsolidation::getSourceTenantId);
+        copyIfNull(consolidationResponse::getIsMainCarriageAvailable, consolidationResponse::setIsMainCarriageAvailable, defaultConsolidation::getIsMainCarriageAvailable);
+        copyIfNull(consolidationResponse::getOriginBranch, consolidationResponse::setOriginBranch, defaultConsolidation::getOriginBranch);
+        copyIfNull(consolidationResponse::getDepartment, consolidationResponse::setDepartment, defaultConsolidation::getDepartment);
+        copyIfNull(consolidationResponse::getIntraBranch, consolidationResponse::setIntraBranch, defaultConsolidation::getIntraBranch);
+        copyIfNull(consolidationResponse::getAllocations, consolidationResponse::setAllocations, defaultConsolidation::getAllocations);
+        copyIfNull(consolidationResponse::getAchievedQuantities, consolidationResponse::setAchievedQuantities, defaultConsolidation::getAchievedQuantities);
+        copyIfNull(consolidationResponse::getSendingAgent, consolidationResponse::setSendingAgent, defaultConsolidation::getSendingAgent);
+        if (null != shipmentDetails.getTransportMode() && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            copyIfNull(consolidationResponse::getModeOfBooking, consolidationResponse::setModeOfBooking, defaultConsolidation::getModeOfBooking);
+        }
+        copyIfNull(consolidationResponse::getIsMainCarriageAvailable, consolidationResponse::setIsMainCarriageAvailable, defaultConsolidation::getIsMainCarriageAvailable);
+        copyIfNull(consolidationResponse::getIsVesselVoyageOrCarrierFlightNumberAvailable, consolidationResponse::setIsVesselVoyageOrCarrierFlightNumberAvailable, defaultConsolidation::getIsVesselVoyageOrCarrierFlightNumberAvailable);
+        copyIfNull(consolidationResponse::getCreatedBy, consolidationResponse::setCreatedBy, defaultConsolidation::getCreatedBy);
+        copyIfNull(consolidationResponse::getCreatedAt, consolidationResponse::setCreatedAt, defaultConsolidation::getCreatedAt);
+    }
+
+    public void setHeaderDetailsFromShipment(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response consolidationResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        commonUtils.mapIfSelected(shipmentDetails.getTransportMode(), consolidationResponse::setTransportMode); // Mode
+        commonUtils.mapIfSelected(shipmentDetails.getDirection(), consolidationResponse::setShipmentType); // Shipment Type
+        commonUtils.mapIfSelected(shipmentDetails.getShipmentType(), consolidationResponse::setContainerCategory); // Cargo Type
+        commonUtils.mapIfSelected(shipmentDetails.getJobType(), consolidationResponse::setConsolidationType); // 	Consol Type
+        commonUtils.mapIfSelected(shipmentDetails.getServiceType(), consolidationResponse::setDeliveryMode); // service type
+        if (null != details) {
+            commonUtils.mapIfSelected(details.getOrigin(), builder::origin);
+            commonUtils.mapIfSelected(details.getOriginCountry(), builder::originCountry);
+            commonUtils.mapIfSelected(details.getDestination(), builder::destination);
+            commonUtils.mapIfSelected(details.getDestinationCountry(), builder::destinationCountry);
+            commonUtils.mapIfSelected(details.getOriginPort(), builder::originPort);
+            commonUtils.mapIfSelected(details.getOriginPortCountry(), builder::originPortCountry);
+            commonUtils.mapIfSelected(details.getDestinationPort(), builder::destinationPort);
+            commonUtils.mapIfSelected(details.getDestinationPortCountry(), builder::destinationPortCountry);
+        }
+    }
+
+    public void setGeneralDetailsFromShipment(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response consolidationResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        commonUtils.mapIfSelected(shipmentDetails.getPartner(), consolidationResponse::setPartner); // 	Partner
+        commonUtils.mapIfSelected(shipmentDetails.getCoLoadCarrierName(), consolidationResponse::setCoLoadCarrierName); // 	Co-Loader
+        commonUtils.mapIfSelected(shipmentDetails.getCoLoadBkgNumber(), consolidationResponse::setCoLoadBookingReference); // 	Coloader BKG No  //	Booking Agent BKG No
+        commonUtils.mapIfSelected(shipmentDetails.getCoLoadBlNumber(), consolidationResponse::setCoLoadMBL); // 	Coloader BL No // Booking Agent BL No
+        commonUtils.mapIfSelected(shipmentDetails.getBookingAgent(), consolidationResponse::setBookingAgent); // 	Booking Agent
+        commonUtils.mapIfSelected(shipmentDetails.getBookingNumber(), consolidationResponse::setBookingNumber); // 	Carrier BKG No
+        commonUtils.mapIfSelected(shipmentDetails.getMasterBill(), consolidationResponse::setBol); // MAWB No/ MBL No (Carrier BL NO)
+        if (null != details) {
+            commonUtils.mapIfSelected(details.getEtd(), builder::etd);
+            commonUtils.mapIfSelected(details.getEta(), builder::eta);
+            commonUtils.mapIfSelected(details.getAtd(), builder::atd);
+            commonUtils.mapIfSelected(details.getAta(), builder::ata);
+            commonUtils.mapIfSelected(details.getShippingLine(), builder::shippingLine); // 	Carrier
+            commonUtils.mapIfSelected(details.getAircraftType(), builder::aircraftType); // Aircraft Type
+        }
+    }
+
+    public void setAgentDetailsFromShipment(ShipmentDetails shipmentDetails, ConsolidationDetailsV3Response consolidationResponse) {
+        if (null != shipmentDetails.getAdditionalDetails()) {
+            if (null != shipmentDetails.getAdditionalDetails().getExportBroker()) {
+                commonUtils.mapIfSelected(commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getExportBroker()), consolidationResponse::setSendingAgent); // origin
+            }
+            if (null != shipmentDetails.getAdditionalDetails().getImportBroker()) {
+                commonUtils.mapIfSelected(commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getImportBroker()), consolidationResponse::setReceivingAgent); // destination ageint
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String createConsoleDetailsAndAttachShipment(@NotNull ConsolidationDetailsV3Request request) throws RunnerException {
+        if (null == request.getAttachShipmentId()) {
+            throw new ValidationException("Attach Shipment Id Is Mandatory");
+        }
+        ConsolidationDetailsV3Response consoleResponse = this.createConsolidation(request, false);
+        ShipmentConsoleAttachDetachV3Request shipmentConsoleAttachRequest = new ShipmentConsoleAttachDetachV3Request();
+        shipmentConsoleAttachRequest.setConsolidationId(consoleResponse.getId());
+        shipmentConsoleAttachRequest.setFromConsolidation(true);
+        Set<Long> shipmentId = new HashSet<>();
+        shipmentId.add(request.getAttachShipmentId());
+        shipmentConsoleAttachRequest.setShipmentIds(shipmentId);
+        log.info("Received attachShipments request: {}", shipmentConsoleAttachRequest);
+        return this.attachShipmentDetails(shipmentConsoleAttachRequest);
+    }
 }
