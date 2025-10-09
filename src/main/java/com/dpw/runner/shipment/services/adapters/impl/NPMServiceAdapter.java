@@ -220,7 +220,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
-            List<NPMContractsResponse.NPMContractResponse> sortedContracts = new ArrayList<>();
+            List<NPMContractsResponse.NPMContractResponse> sortedContracts;
             if(!Objects.isNull(npmContractsResponse) && !Objects.isNull(npmContractsResponse.getContracts()) && !Objects.isNull(listContractsWithFilterRequest.getSortRequest()) ) {
                 sortedContracts = sortNpmContracts(npmContractsResponse.getContracts(), listContractsWithFilterRequest.getSortRequest());
                 npmContractsResponse.setContracts(sortedContracts);

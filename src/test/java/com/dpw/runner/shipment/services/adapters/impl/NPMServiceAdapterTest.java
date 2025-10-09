@@ -1764,6 +1764,23 @@ class NPMServiceAdapterTest {
                 .anyMatch(p -> "FRC0000678".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
     }
 
+    @Test
+    void testFetchContractsWithFilterException() {
+        // Arrange
+        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
+        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
+                .thenReturn(buildResult);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        when(commonRequestModel.getData()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+
+        // Act and Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel));
+        verify(commonRequestModel).getData();
+        verify(jsonHelper).convertToJson(isA(NpmErrorResponse.class));
+        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
+    }
+
     private static Stream<Arguments> provideDgContractTestData() {
         List<String> nullDgList = new ArrayList<>();
         nullDgList.add(null);
