@@ -581,7 +581,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 totalPage = (int) ((totalElements + pageSize - 1) / pageSize);
             }
 
-            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentConstants.TABLES_NAMES);
+                Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentConstants.TABLES_NAMES);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_V3_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
@@ -597,7 +597,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentListResponses.add(shipmentListResponse);
             }
             List<IRunnerResponse> filteredList = convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData, shipmentListResponses, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()));
-
             return ResponseHelper.buildListSuccessResponse(
                     filteredList,
                     totalPage,
@@ -2164,7 +2163,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-
+        includeColumns.add(Constants.CONTAINERS_LIST);
         // Handle pending notifications
         handlePendingNotifications(lst, shipmentListResponses);
 
