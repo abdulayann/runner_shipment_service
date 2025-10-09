@@ -97,12 +97,12 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     public OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
-            log.info("Request to Order Service with url: {}", url);
+            log.info("Request to Order Service with url: {}", LoggerHelper.sanitizeForLogs(url));
             HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
             var response = restTemplate.exchange(url,
                     HttpMethod.GET, httpEntity,
                     OrderManagementResponse.class);
-            log.info("OrderManagementResponse from Order Service: {}", response.getBody());
+            log.info("OrderManagementResponse from Order Service: {}", LoggerHelper.sanitizeForLogs(response.getBody()));
             return Objects.requireNonNull(response.getBody()).getOrder();
         } catch (Exception e) {
             log.error(e.getMessage());

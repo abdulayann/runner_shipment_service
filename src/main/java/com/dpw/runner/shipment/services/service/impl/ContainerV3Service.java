@@ -1932,13 +1932,13 @@ public class ContainerV3Service implements IContainerV3Service {
             List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIds);
 
             if (shipments == null || shipments.isEmpty()) {
-                log.info("No shipments found for IDs: {}", shipmentIds);
+                log.info("No shipments found for IDs: {}", LoggerHelper.sanitizeForLogs(shipmentIds));
                 return;
             }
 
             for (ShipmentDetails shipment : shipments) {
                 if (shipment == null) {
-                    log.info("Encountered null shipment while processing IDs: {}", shipmentIds);
+                    log.info("Encountered null shipment while processing IDs: {}", LoggerHelper.sanitizeForLogs(shipmentIds));
                     continue;
                 }
                 shipmentService.triggerPushToDownStream(shipment, shipment, false);
@@ -1946,7 +1946,9 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         } catch (Exception ex) {
             log.error("Unexpected error while fetching shipments for Pushing to Internal queue for IDs {}: {}",
-                    shipmentIds, ex.getMessage(), ex);
+                    LoggerHelper.sanitizeForLogs(shipmentIds),
+                    LoggerHelper.sanitizeForLogs(ex.getMessage()),
+                    ex);
         }
     }
 
