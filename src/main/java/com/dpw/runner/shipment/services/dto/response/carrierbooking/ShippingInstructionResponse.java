@@ -9,6 +9,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -64,4 +65,5 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String comments;
     private String contractNo;
     private String vgmStatus;
+    private Integer tenantId;
 }
