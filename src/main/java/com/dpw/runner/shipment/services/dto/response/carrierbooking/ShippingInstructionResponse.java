@@ -64,4 +64,5 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String comments;
     private String contractNo;
     private String vgmStatus;
+    private Integer tenantId;
 }

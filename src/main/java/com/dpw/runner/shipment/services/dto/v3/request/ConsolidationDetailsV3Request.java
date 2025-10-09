@@ -190,4 +190,5 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private Boolean triggerMigrationWarning;
     private Boolean controlled;
     private String controlledReferenceNumber;
+    private Long attachShipmentId;
 }

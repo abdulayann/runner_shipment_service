@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
+import lombok.NonNull;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
@@ -92,4 +93,7 @@ public interface IConsolidationV3Service {
     ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException;
     void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
                                                 ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment);
+    ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException;
+
+    String createConsoleDetailsAndAttachShipment(@Valid @NonNull ConsolidationDetailsV3Request request) throws RunnerException;
 }
