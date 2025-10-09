@@ -24,6 +24,12 @@ public class StringUtility {
         }
         return value.toUpperCase();
     }
+    public static String convertNullToEmpty(String value) {
+        if(value == null){
+            return "";
+        }
+        return value;
+    }
 
     public static String toLowerCase(String value) {
         if(isEmpty(value)){

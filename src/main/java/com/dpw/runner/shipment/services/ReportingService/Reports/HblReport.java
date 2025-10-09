@@ -493,7 +493,7 @@ public class HblReport extends IReport {
         addDeliverToTag(hblModel, dictionary);
 
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-            buildCargoSectionForV3FromShipment(dictionary, hblModel);
+            buildCargoSectionForV3FromShipment(dictionary, hblModel, v1TenantSettingsResponse);
         }
 
         if (hblModel.consolidation != null) {
@@ -528,35 +528,41 @@ public class HblReport extends IReport {
                 .collect(Collectors.joining(", "));
     }
 
-    public String getPackingSummary(List<PackingModel> packages, Map<String, MasterData> packTypeMap) {
+    public String getPackingSummary(List<PackingModel> packages, Map<String, MasterData> packTypeMap, ShipmentModel shipment) {
         if (packages == null || packages.isEmpty()) return null;
 
         // Sort
         packages.sort(Comparator.comparing(PackingModel::getPacksType));
 
         // Group by packType and sum counts
-        Map<String, Long> packageTypeCountMap = packages.stream()
+        Map<String, Long> packageTypeCountMap = packages.stream().filter(x-> !StringUtility.isEmpty(x.getPacks()))
                 .collect(Collectors.groupingBy(
                         PackingModel::getPacksType,
                         Collectors.summingLong(p -> Long.parseLong(p.getPacks()))
                 ));
 
-        // Total count
-        long totalCount = packageTypeCountMap.values().stream().mapToLong(Long::longValue).sum();
+        String packSummary = "";
+        if(shipment.getNoOfPacks() != null) {
+            if(shipment.getNoOfPacks() == 0){
+                return "";
+            }
+            packSummary = shipment.getNoOfPacks().toString();
+        }
+
+        if(!StringUtils.isEmpty(shipment.getPacksUnit())) {
+            packSummary += " " + getPackDescription(shipment.getPacksUnit(), packTypeMap);
+        }
+        if(packageTypeCountMap.size() == 1 && packageTypeCountMap.containsKey(shipment.getPacksUnit())){
+            return packSummary;
+        }
 
         // Build summary
-        return totalCount + " PACKAGE(S)" + " (" + packageTypeCountMap.entrySet().stream()
-                .map(e -> {
-                    if(packTypeMap.containsKey(e.getKey())) {
-                        return e.getValue() + " " + StringUtility.toUpperCase(packTypeMap.get(e.getKey()).getItemDescription()) + "(S)";
-                    }
-                    return e.getValue() + " " + StringUtility.toUpperCase(e.getKey()) + "(S)";
-
-                })
+        return packSummary + " (" + packageTypeCountMap.entrySet().stream()
+                .map(e -> e.getValue() + " " + getPackDescription(e.getKey(), packTypeMap))
                 .collect(Collectors.joining(", ")) + ")";
     }
 
-    private void buildCargoSectionForV3FromShipment(Map<String, Object> dictionary, HblModel hblModel) {
+    private void buildCargoSectionForV3FromShipment(Map<String, Object> dictionary, HblModel hblModel, V1TenantSettingsResponse settings) {
 
         if(!Strings.isNullOrEmpty(hblModel.shipment.getGoodsDescription()))
             dictionary.put(ReportConstants.SHIPMENT_DESCRIPTION, StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
@@ -568,12 +574,15 @@ public class HblReport extends IReport {
         List<Map<String, Object>> cargoSectionList = new ArrayList<>();
         Map<Long, List<PackingModel>> cargoMap;
         Set<String> packTypes = new HashSet<>();
+        if(!StringUtils.isEmpty(hblModel.shipment.getPacksUnit())) {
+            packTypes.add(hblModel.shipment.getPacksUnit());
+        }
         if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
             cargoMap = hblModel.shipment.getPackingList().stream().filter(pack -> pack.getContainerId() != null)
                     .collect(Collectors.groupingBy(PackingModel::getContainerId));
             packTypes = hblModel.shipment.getPackingList().stream().map(PackingModel::getPacksType)
                     .filter(StringUtility::isNotEmpty).collect(Collectors.toSet());
-            long totalCount = hblModel.shipment.getPackingList().stream().filter(x->StringUtility.isNotEmpty(x.getPacksType())).map(x ->Long.parseLong(x.getPacks())).mapToLong(Long::longValue).sum();
+            long totalCount = hblModel.shipment.getPackingList().stream().filter(x->StringUtility.isNotEmpty(x.getPacks())).map(x ->Long.parseLong(x.getPacks())).mapToLong(Long::longValue).sum();
             if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) ||
                 Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_ROR) ||
                     Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_BBK))
@@ -597,17 +606,17 @@ public class HblReport extends IReport {
         var packTypeMap = masterDataUtils.getMultipleMasterListData(MasterDataType.PACKS_UNIT, packTypes);
 
         if(!CommonUtils.listIsNullOrEmpty(hblModel.shipment.getPackingList())) {
-            dictionary.put(ReportConstants.TOTAL_PACKS_AND_TYPE, getPackingSummary(hblModel.shipment.getPackingList(), packTypeMap));
+            dictionary.put(ReportConstants.TOTAL_PACKS_AND_TYPE, getPackingSummary(hblModel.shipment.getPackingList(), packTypeMap, hblModel.shipment));
         }
         if(!CommonUtils.listIsNullOrEmpty(containerList)) {
-            cargoSectionList = prepareContainerListTags(containerList, hblModel, cargoMap, packTypeMap);
+            cargoSectionList = prepareContainerListTags(containerList, hblModel, cargoMap, packTypeMap, settings);
         }
 
         dictionary.put(ReportConstants.S_CONTAINERS, cargoSectionList);
 
     }
 
-    private List<Map<String, Object>> prepareContainerListTags(List<ContainerModel> containerList, HblModel hblModel, Map<Long, List<PackingModel>> cargoMap, Map<String, MasterData> packTypeMap) {
+    private List<Map<String, Object>> prepareContainerListTags(List<ContainerModel> containerList, HblModel hblModel, Map<Long, List<PackingModel>> cargoMap, Map<String, MasterData> packTypeMap, V1TenantSettingsResponse settings) {
         List<Map<String, Object>> cargoSectionList = new ArrayList<>();
         containerList.forEach(cont -> {
             Map<String, Object> mp = new HashMap<>();
@@ -616,65 +625,97 @@ public class HblReport extends IReport {
             mp.put(INFO, StringUtility.toUpperCase(info));
             cargoSectionList.add(mp);
 
-            BigDecimal totalPacks = BigDecimal.ZERO;
-            BigDecimal totalWeight = BigDecimal.ZERO;
-            BigDecimal totalVolume = BigDecimal.ZERO;
+            String packUnit = ReportConstants.PACKAGE_STRING;
+            BigDecimal[] summaryValues = new BigDecimal[3];
+            summaryValues[0] = BigDecimal.ZERO;  // totalPacks
+            summaryValues[1] = BigDecimal.ZERO;  // totalWeight
+            summaryValues[2] = BigDecimal.ZERO;  // totalVolume
 
             if(cargoMap.containsKey(cont.getId())) {
                 List<PackingModel> assignedPackList = cargoMap.get(cont.getId());
+                Set<String> packTypes = new HashSet<>();
                 if (!CommonUtils.listIsNullOrEmpty(assignedPackList)) {
                     for (var pack: assignedPackList){
-                        Map<String, Object> packMp = buildPackingMap(pack, packTypeMap);
+                        Map<String, Object> packMp = buildPackingMap(pack, packTypeMap, settings);
 
-                        totalPacks = totalPacks.add(safeBigDecimal(pack.getPacks()));
-                        totalWeight = totalWeight.add(convertToKg(pack.getWeight(), pack.getWeightUnit()));
-                        totalVolume = totalVolume.add(convertToM3(pack.getVolume(), pack.getVolumeUnit()));
+                        summaryValues[0] = summaryValues[0].add(safeBigDecimal(pack.getPacks()));
+                        summaryValues[1] = summaryValues[1].add(convertToKg(pack.getWeight(), pack.getWeightUnit()));
+                        summaryValues[2] = summaryValues[2].add(convertToM3(pack.getVolume(), pack.getVolumeUnit()));
+                        packTypes.add(pack.getPacksType());
                         cargoSectionList.add(packMp);
                     }
+                    packUnit = getPackTypeForPacks(packTypes, packUnit, packTypeMap);
                 }
             }
-            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)){
-                mp.put(WEIGHT, totalWeight + " " + Constants.WEIGHT_UNIT_KG);
-                mp.put(VOLUME, totalVolume + " " + Constants.VOLUME_UNIT_M3);
-                mp.put(PACKS, totalPacks + " " + ReportConstants.PACKAGE_STRING);
+            mp.put(MARKS_N_NUMS, StringUtility.convertNullToEmpty(StringUtility.toUpperCase(cont.getMarksNums())));
+            mp.put(DESCRIPTION, StringUtility.convertNullToEmpty(StringUtility.toUpperCase(cont.getDescriptionOfGoods())));
+
+            if(Objects.equals(hblModel.shipment.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+                if(Objects.equals(hblModel.shipment.getContainerAssignedToShipmentCargo(), cont.getId())) {
+                    summaryValues[1] = convertToKg(hblModel.shipment.getWeight(), hblModel.shipment.getWeightUnit());
+                    summaryValues[2] = convertToM3(hblModel.shipment.getVolume(), hblModel.shipment.getVolumeUnit());
+                    summaryValues[0] = safeBigDecimal(hblModel.shipment.getNoOfPacks());
+                    packUnit = getPackDescription(cont.getPacksType(), packTypeMap);
+                }
+                mp.put(WEIGHT, convertToWeightNumberFormat(summaryValues[1], settings) + " " + Constants.WEIGHT_UNIT_KG);
+                mp.put(VOLUME, convertToVolumeNumberFormat(summaryValues[2], settings) + " " + Constants.VOLUME_UNIT_M3);
+                mp.put(PACKS, summaryValues[0] + " " + packUnit);
             }
             else {
-                prepareContainersField(cont, mp, packTypeMap);
+                prepareContainersField(cont, mp, packTypeMap, settings);
             }
 
         });
         return cargoSectionList;
     }
 
-    private void prepareContainersField(ContainerModel cont, Map<String, Object> mp, Map<String, MasterData> packTypeMap) {
-        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(cont.getMarksNums()));
-        mp.put(DESCRIPTION, StringUtility.toUpperCase(cont.getDescriptionOfGoods()));
-        if (cont.getGrossWeight() != null)
-            mp.put(WEIGHT, cont.getGrossWeight() + " " + cont.getGrossWeightUnit());
-        if (cont.getGrossVolume() != null)
-            mp.put(VOLUME, cont.getGrossVolume() + " " + cont.getGrossVolumeUnit());
-        if (StringUtility.isNotEmpty(cont.getPacks())) {
-            if (packTypeMap.containsKey(cont.getPacksType())) {
-                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(cont.getPacksType()).getItemDescription()) + "(S)");
-            } else
-                mp.put(PACKS, cont.getPacks() + " " + StringUtility.toUpperCase(cont.getPacksType()));
+    private String getPackTypeForPacks(Set<String> packTypes, String packUnit, Map<String, MasterData> packTypeMap) {
+        if(packTypes.size() == 1) {
+            return getPackDescription(packTypes.iterator().next(), packTypeMap);
         }
-
+        return packUnit;
     }
 
-    private Map<String, Object> buildPackingMap(PackingModel assignedPack, Map<String, MasterData> packTypeMap) {
+    private String getPackDescription(String packType, Map<String, MasterData> packTypeMap){
+        if(packTypeMap.containsKey(packType))
+            return StringUtility.toUpperCase(packTypeMap.get(packType).getItemDescription()) + "(S)";
+        else
+            return StringUtility.toUpperCase(packType) + "(S)";
+    }
+
+
+
+    private void prepareContainersField(ContainerModel cont, Map<String, Object> mp, Map<String, MasterData> packTypeMap, V1TenantSettingsResponse settings) {
+        if (cont.getGrossWeight() != null)
+            mp.put(WEIGHT, convertToWeightNumberFormat(cont.getGrossWeight(), settings) + " " + cont.getGrossWeightUnit());
+        else
+            mp.put(WEIGHT, "");
+        if (cont.getGrossVolume() != null)
+            mp.put(VOLUME, convertToVolumeNumberFormat(cont.getGrossVolume(), settings) + " " + cont.getGrossVolumeUnit());
+        else
+            mp.put(VOLUME, "");
+        if (StringUtility.isNotEmpty(cont.getPacks())) {
+            mp.put(PACKS, cont.getPacks() + " " + getPackDescription(cont.getPacksType(), packTypeMap));
+        } else
+            mp.put(PACKS, "");
+    }
+
+    private Map<String, Object> buildPackingMap(PackingModel assignedPack, Map<String, MasterData> packTypeMap, V1TenantSettingsResponse settings) {
         Map<String, Object> mp = new HashMap<>();
-        mp.put(MARKS_N_NUMS, StringUtility.toUpperCase(assignedPack.getMarksnNums()));
-        mp.put(DESCRIPTION, StringUtility.toUpperCase(assignedPack.getGoodsDescription()));
+        mp.put(MARKS_N_NUMS, StringUtility.convertNullToEmpty(StringUtility.toUpperCase(assignedPack.getMarksnNums())));
+        mp.put(DESCRIPTION, StringUtility.convertNullToEmpty(StringUtility.toUpperCase(assignedPack.getGoodsDescription())));
         if(assignedPack.getWeight() != null)
-            mp.put(WEIGHT, assignedPack.getWeight() + " " + assignedPack.getWeightUnit());
+            mp.put(WEIGHT, convertToWeightNumberFormat(convertToKg(assignedPack.getWeight(), assignedPack.getWeightUnit()), settings) + " " + Constants.WEIGHT_UNIT_KG);
+        else
+            mp.put(WEIGHT, "");
         if(assignedPack.getVolume() != null)
-            mp.put(VOLUME, assignedPack.getVolume() + " " + assignedPack.getVolumeUnit());
+            mp.put(VOLUME, convertToVolumeNumberFormat(convertToM3(assignedPack.getVolume(), assignedPack.getVolumeUnit()), settings) + " " + Constants.VOLUME_UNIT_M3);
+        else
+            mp.put(VOLUME, "");
         if(StringUtility.isNotEmpty(assignedPack.getPacks())) {
-            if(packTypeMap.containsKey(assignedPack.getPacksType())) {
-                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(packTypeMap.get(assignedPack.getPacksType()).getItemDescription()) + "(S)");
-            } else
-                mp.put(PACKS, assignedPack.getPacks() + " " + StringUtility.toUpperCase(assignedPack.getPacksType()));
+            mp.put(PACKS, assignedPack.getPacks() + " " + getPackDescription(assignedPack.getPacksType(), packTypeMap));
+        } else {
+            mp.put(PACKS, "");
         }
         return mp;
     }

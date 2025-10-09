@@ -64,6 +64,8 @@ public class ShipmentModel implements IDocumentModel {
     private String consolRef;
     @JsonProperty("ContainerAutoWeightVolumeUpdate")
     private Boolean containerAutoWeightVolumeUpdate;
+    @JsonProperty("ContainerAssignedToShipmentCargo")
+    private Long containerAssignedToShipmentCargo;
     @JsonProperty("ContainersList")
     private List<ContainerModel> containersList = new ArrayList<>();
     @JsonProperty("Direction")
