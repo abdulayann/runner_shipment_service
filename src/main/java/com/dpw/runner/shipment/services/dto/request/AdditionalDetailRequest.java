@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@ApiModel("Shipment Additional Details Request Model")
+@Schema(description = "Shipment Additional Details Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

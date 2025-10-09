@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;

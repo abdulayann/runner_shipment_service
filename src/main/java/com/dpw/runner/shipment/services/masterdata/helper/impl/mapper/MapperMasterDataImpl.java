@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 
 @Service

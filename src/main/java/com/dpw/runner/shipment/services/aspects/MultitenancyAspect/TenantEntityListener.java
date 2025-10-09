@@ -10,10 +10,10 @@ import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.Map;
 import java.util.Objects;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.PrePersist;
-import javax.persistence.PreRemove;
-import javax.persistence.PreUpdate;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
+import jakarta.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 

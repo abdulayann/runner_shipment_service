@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;

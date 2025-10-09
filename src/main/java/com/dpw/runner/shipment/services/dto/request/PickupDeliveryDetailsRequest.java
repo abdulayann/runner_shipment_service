@@ -6,10 +6,10 @@ import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -17,7 +17,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@ApiModel("Pickup Delivery Details Request Model")
+@Schema(description = "Pickup Delivery Details Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

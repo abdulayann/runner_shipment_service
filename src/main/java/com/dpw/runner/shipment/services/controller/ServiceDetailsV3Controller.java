@@ -13,10 +13,13 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkServiceDetailsRespon
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsV3Service;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -44,39 +47,39 @@ public class ServiceDetailsV3Controller {
         this.serviceDetailsV3Service = serviceDetailsV3Service;
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_CREATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody ServiceDetailsRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.create(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.SHIPMENT + ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> deleteFromShipment(@RequestParam @Valid Long id) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.delete(id, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_UPDATE_SUCCESSFUL, response = BulkServiceDetailsResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkServiceDetailsResponse.class)))})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@RequestBody List<ServiceDetailsRequest> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.updateBulk(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL, response = BulkServiceDetailsResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkServiceDetailsResponse.class)))})
     @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ServiceDetailsRequest> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.deleteBulk(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam(required = false) Long id,
-                                                        @ApiParam(value = Constants.GUID) @RequestParam(required = false) String guid,
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = Constants.ID) @RequestParam(required = false) Long id,
+                                                        @Parameter(description = Constants.GUID) @RequestParam(required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.retrieveById(id, guid, xSource));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_LIST_SUCCESSFUL, response = ServiceDetailsListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.SERVICE_DETAILS_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ServiceDetailsListResponse.class)))})
     @PostMapping(ApiConstants.SHIPMENT_SERVICES)
     public ResponseEntity<IRunnerResponse> fetchShipmentServices(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                  @RequestHeader(value = "x-source", required = false) String xSource) {
@@ -84,9 +87,9 @@ public class ServiceDetailsV3Controller {
         return ResponseHelper.buildSuccessResponse(serviceDetailsListResponse, serviceDetailsListResponse.getTotalPages(), serviceDetailsListResponse.getTotalCount());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ServiceDetailsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id,
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@Parameter(description = Constants.ID, required = true) @RequestParam Long id,
                                                             @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(serviceDetailsV3Service.getAllMasterData(id, xSource));
     }

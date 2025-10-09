@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.section.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import java.util.List;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -14,7 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;

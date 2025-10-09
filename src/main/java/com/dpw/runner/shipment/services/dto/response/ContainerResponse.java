@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.Setter;
 
@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @Data
 @Setter
-@ApiModel("Container Response Model")
+@Schema(description = "Container Response Model")
 public class ContainerResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

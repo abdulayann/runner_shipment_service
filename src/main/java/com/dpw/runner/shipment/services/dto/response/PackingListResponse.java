@@ -3,14 +3,14 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
 @Data
-@ApiModel(value = "Packing response model")
+@Schema(value = "Packing response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PackingListResponse implements IRunnerResponse {
     private List<PackingResponse> packings = new ArrayList<>();

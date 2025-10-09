@@ -11,8 +11,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITransactionHistoryService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,8 +42,8 @@ public class TransactionHistoryController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = TransactionHistoryController.MyResponseClass.class, message = TransactionHistoryConstants.TRANSACTION_HISTORY_RETRIEVE_BY_ID_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = TransactionHistoryController.MyResponseClass.class)), description = TransactionHistoryConstants.TRANSACTION_HISTORY_RETRIEVE_BY_ID_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long entityId, @RequestParam EntityTypeTransactionHistory entityType) {

@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.PackCategory;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-@ApiModel(value = "Packing response model")
+@Schema(description = "Packing response model")
 public class PackingResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

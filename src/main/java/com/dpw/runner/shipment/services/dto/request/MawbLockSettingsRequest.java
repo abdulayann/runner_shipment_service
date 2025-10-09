@@ -2,12 +2,12 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Getter
 @Setter
-@ApiModel("Mawb Lock Settings Request Model")
+@Schema("Mawb Lock Settings Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

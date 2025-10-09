@@ -3,16 +3,16 @@ package com.dpw.runner.shipment.services.dto.v3.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
 @Setter
-@ApiModel(value = "Order line V3 response model")
+@Schema(value = "Order line V3 response model")
 @ToString
 @Builder
 @AllArgsConstructor

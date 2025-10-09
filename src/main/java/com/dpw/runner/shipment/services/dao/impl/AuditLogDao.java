@@ -7,9 +7,9 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAuditLogRepositor
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.type.StandardBasicTypes;

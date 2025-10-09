@@ -47,8 +47,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotNull;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;

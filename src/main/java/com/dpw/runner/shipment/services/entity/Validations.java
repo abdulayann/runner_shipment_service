@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Map;
 
 @Entity

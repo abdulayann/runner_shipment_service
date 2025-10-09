@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
 

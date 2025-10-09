@@ -28,10 +28,10 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.NonNull;
 import org.apache.http.auth.AuthenticationException;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

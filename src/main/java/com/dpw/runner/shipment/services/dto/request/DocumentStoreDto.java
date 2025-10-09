@@ -2,13 +2,13 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.UUID;
 
 @Data
-@ApiModel("External Document Request Model")
+@Schema("External Document Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

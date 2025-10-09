@@ -2,9 +2,9 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
-import javax.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +15,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @Builder
-@ApiModel("Routings Bulk Update Request Model")
+@Schema("Routings Bulk Update Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

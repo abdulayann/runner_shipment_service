@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.*;
 
@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@ApiModel("Default Email Templates Request Model")
+@Schema("Default Email Templates Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

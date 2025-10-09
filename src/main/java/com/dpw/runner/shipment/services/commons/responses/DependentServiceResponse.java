@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
-import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,25 +12,26 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuppressWarnings("java:S1948")
+@JsonPropertyOrder({ "success", "requestId", "data", "count", "pageSize", "pageNo", "error" })
 public class DependentServiceResponse implements IRunnerResponse{
-    @ApiModelProperty(position = 1, name = "success")
+    @Schema(  name = "success")
     private boolean success;
 
-    @ApiModelProperty(position = 2, name = "requestId")
+    @Schema( name = "requestId")
     private String requestId;
 
-    @ApiModelProperty(position = 3, name = "data")
+    @Schema(name = "data")
     private Object data;
 
-    @ApiModelProperty(position = 4, name = "count")
+    @Schema(name = "count")
     private long numberOfRecords;
 
-    @ApiModelProperty(position = 5, name = "pageSize")
+    @Schema(name = "pageSize")
     private long pageSize;
 
-    @ApiModelProperty(position = 6, name = "pageNo")
+    @Schema(name = "pageNo")
     private long pageNo;
 
-    @ApiModelProperty(position = 7, name = "error")
+    @Schema(name = "error")
     private ApiError error;
 }

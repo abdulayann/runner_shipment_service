@@ -6,10 +6,10 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @Entity

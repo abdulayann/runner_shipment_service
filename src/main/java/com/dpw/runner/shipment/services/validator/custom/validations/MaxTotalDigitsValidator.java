@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.validator.annotations.MaxTotalDigits;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.math.BigDecimal;
 
 public class MaxTotalDigitsValidator implements ConstraintValidator<MaxTotalDigits, BigDecimal> {

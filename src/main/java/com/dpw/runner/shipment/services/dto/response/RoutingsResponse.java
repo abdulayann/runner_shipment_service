@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import lombok.ToString;
 
 @Data
 @Builder
-@ApiModel("Routings Response Model")
+@Schema(description = "Routings Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

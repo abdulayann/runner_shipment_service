@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -13,7 +13,7 @@ import lombok.ToString;
 
 @Data
 @Builder
-@ApiModel("Order Number Response")
+@Schema(description = "Order Number Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
