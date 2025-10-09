@@ -346,6 +346,7 @@ public class HblReport extends IReport {
         setBlObject(hblModel);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
+        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
@@ -429,7 +430,6 @@ public class HblReport extends IReport {
 
         processShipmentPickupDetails(hblModel, dictionary, tsDateTimeFormat);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
-        processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         getPartiesModel(hblModel, dictionary);
 
         dictionary.put(USER_FULLNAME, hblModel.user.getDisplayName());
@@ -622,6 +622,10 @@ public class HblReport extends IReport {
             String info = buildContainerInfo(hblModel, cont);
 
             mp.put(INFO, StringUtility.toUpperCase(info));
+            mp.put(VETERINARY_SEAL, cont.getVeterinarySealNumber());
+            mp.put(CUSTOMS_SEAL, cont.getCustomsSealNumber());
+            mp.put(SHIPPER_SEAL, cont.getShipperSealNumber());
+            mp.put(CARRIER_SEAL, cont.getCarrierSealNumber());
             cargoSectionList.add(mp);
 
             BigDecimal totalPacks = BigDecimal.ZERO;
@@ -700,10 +704,6 @@ public class HblReport extends IReport {
         if(!Strings.isNullOrEmpty(container.getContainerNumber())) {
             checkAndAppendDelimiter(sb, newLine);
             sb.append(container.getContainerNumber());
-        }
-        if(!Strings.isNullOrEmpty(container.getCarrierSealNumber())) {
-            checkAndAppendDelimiter(sb, newLine);
-            sb.append(container.getCarrierSealNumber());
         }
         return sb.toString();
     }
@@ -1069,6 +1069,8 @@ public class HblReport extends IReport {
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
+            dictionary.put(BL_PLACE_OF_ISSUE, hblModel.blObject.getHblData().getPlaceOfIssue() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfIssue()));
+            dictionary.put(BL_PAYABLE_AT, hblModel.blObject.getHblData().getPayableAt() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPayableAt()));
         }
     }
 

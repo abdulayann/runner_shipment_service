@@ -623,4 +623,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_restore_running")
     private Boolean isRestoreRunning;
 
+    @Column(name = "include_ports_in_ship_console_attach_filter")
+    private Boolean includePortsInShipConsoleAttachFilter;
+
 }

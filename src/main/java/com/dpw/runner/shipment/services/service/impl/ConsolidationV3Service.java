@@ -2204,7 +2204,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 !Objects.equals(console.getCarrierBookingRef(), oldEntity.getCarrierBookingRef()) ||
                 !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
                 !Objects.equals(console.getConsolidationType(), oldEntity.getConsolidationType()) ||
-                !Objects.equals(console.getIncoterms(), oldEntity.getIncoterms()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                         (!Objects.equals(console.getCarrierDetails().getVoyage(), oldEntity.getCarrierDetails().getVoyage()) ||
                                 !Objects.equals(console.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()) ||

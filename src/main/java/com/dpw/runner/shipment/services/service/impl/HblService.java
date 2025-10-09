@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
+
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -31,19 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblLockSettings;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -63,18 +51,6 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +63,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REGEX_S_COMMA_S;
+
 
 
 @Slf4j
@@ -289,7 +273,7 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
-        
+
         hbl = hblDao.save(hbl);
         return hbl;
     }
@@ -555,6 +539,7 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        hblData.setCargoTerms(getCargoTerms(shipmentDetail));
         populateTotalUnitsReceivedByCarrier(shipmentDetail, hblData);
         boolean syncShipment = getSyncShipment(shipmentDetail);
         hblData.setHouseBill(shipmentDetail.getHouseBill());
@@ -599,6 +584,28 @@ public class HblService implements IHblService {
         }
 
         return hblData;
+    }
+
+    public String getCargoTerms(ShipmentDetails shipmentDetails) {
+        if(Constants.CARGO_TYPE_FCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_FCL_FCL;
+        }
+        if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_LCL_LCL;
+        }
+        if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_BCN.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_LCL_FCL;
+        }
+        if(Constants.CARGO_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_SCN.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_FCL_LCL;
+        }
+        if(Constants.SHIPMENT_TYPE_BBK.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_BREAKBULK;
+        }
+        if(Constants.SHIPMENT_TYPE_ROR.equals(shipmentDetails.getShipmentType()) && Constants.SHIPMENT_TYPE_STD.equals(shipmentDetails.getJobType())) {
+            return Constants.CARGO_TERMS_RORO;
+        }
+        return null;
     }
 
     private void populateTotalUnitsReceivedByCarrier(ShipmentDetails shipmentDetail, HblDataDto hblData) {
@@ -1336,7 +1343,7 @@ public class HblService implements IHblService {
         return masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toSet()), EntityTransferConstants.LOCATION_SERVICE_GUID);
     }
 
-    private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) {
+    private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) { //NOSONAR
         switch (onField) {
             case "PortOfLoad":
                 if (!Objects.isNull(carrierDetails))
@@ -1355,6 +1362,14 @@ public class HblService implements IHblService {
                 if (!Objects.isNull(additionalDetails))
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
                 break;
+            case "PlaceOfIssue":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
+                break;
+            case "PayableAt":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                break;
             case "All":
                 if (!Objects.isNull(carrierDetails)) {
                     hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
@@ -1363,6 +1378,8 @@ public class HblService implements IHblService {
                 }
                 if (!Objects.isNull(additionalDetails)) {
                     hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
+                    hblDataDto.setPayableAt(getUnLocationsName(v1Data, additionalDetails.getPaidPlace()));
+                    hblDataDto.setPlaceOfIssue(getUnLocationsName(v1Data, additionalDetails.getPlaceOfIssue()));
                 }
                 break;
             default:
@@ -1390,21 +1407,33 @@ public class HblService implements IHblService {
     }
 
     private String getUnLocationsNameV3(Map<String, EntityTransferUnLocations> v1Data, String key) {
-        // Extract country code from UNLOC using initial 2 characters
-        String countryCode = v1Data.get(key).getLocCode().substring(0, 2);
-        if (US.equalsIgnoreCase(countryCode)) {
-            String cityName = Optional.ofNullable(v1Data.get(key).getCityName()).orElse("").trim();
-            String stateCode = Optional.ofNullable(v1Data.get(key).getState()).orElse("").trim();
-
-            if (cityName.isEmpty() && stateCode.isEmpty()) {
-                return "";
-            } else if (!cityName.isEmpty() && !stateCode.isEmpty()) {
-                return (cityName + "," + stateCode).toUpperCase();
-            } else {
-                return (!cityName.isEmpty() ? cityName : stateCode).toUpperCase();
-            }
+        if (v1Data == null || key == null || !v1Data.containsKey(key)) {
+            return "";
         }
-        return v1Data.get(key).getNameWoDiacritics().toUpperCase();
+        EntityTransferUnLocations location = v1Data.get(key);
+        if (location == null) {
+            return "";
+        }
+        String name = location.getNameWoDiacritics();
+        if (name == null) {
+            return "";
+        }
+        name = name.toUpperCase();
+        if (location.getState() != null && !location.getState().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getState().trim())) {
+            String state = location.getState().toUpperCase();
+            return String.format(REGEX_S_COMMA_S, name, state);
+        }
+        // Fallback to country if state is not available
+        if (location.getCountry() != null && !location.getCountry().trim().isEmpty() && !"NULL".equalsIgnoreCase(location.getCountry().trim())) {
+            String country = location.getCountry().toUpperCase();
+            return String.format(REGEX_S_COMMA_S, name, country);
+        }
+        // Final fallback to country code from LocCode
+        if (location.getLocCode() != null && location.getLocCode().length() >= 2) {
+            String countryCode = location.getLocCode().substring(0, 2).toUpperCase();
+            return String.format(REGEX_S_COMMA_S, name, countryCode);
+        }
+        return name;
     }
 
 }

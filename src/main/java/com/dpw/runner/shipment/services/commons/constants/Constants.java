@@ -175,6 +175,15 @@ public class Constants {
     public static final String DIRECTION_CTS = "CTS";
     public static final String DIRECTION_DOM = "DOM";
 
+    // Cargo Terms
+
+    public static final String CARGO_TERMS_FCL_FCL = "FCL/FCL";
+    public static final String CARGO_TERMS_LCL_LCL = "LCL/LCL";
+    public static final String CARGO_TERMS_LCL_FCL = "LCL/FCL";
+    public static final String CARGO_TERMS_FCL_LCL = "FCL/LCL";
+    public static final String CARGO_TERMS_BREAKBULK = "Breakbulk";
+    public static final String CARGO_TERMS_RORO = "RO-RO";
+
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
 
@@ -765,6 +774,8 @@ public class Constants {
     public static final String CARRIER_BOOKING_INTTRA_AMEND = "CARRIER_BOOKING_INTTRA_AMEND";
     public static final String CARRIER_BOOKING_INTTRA_CREATE = "CARRIER_BOOKING_INTTRA_CREATE";
     public static final String JSON_PARSING_EXCEPTION = "Exception thrown while parsing json: {}";
+    public static final String REGEX_S_COMMA_S = "%s, %s";
+
     public static final String KAFKA_CONSUME = "[InternalKafkaConsume] Consolidation: ";
     private Constants() {
     }
