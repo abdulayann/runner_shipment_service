@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CacheRequest;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
@@ -52,7 +53,7 @@ public class CacheEvictionController {
     public ResponseEntity<IRunnerResponse> evictCache(@RequestBody CacheRequest request, @RequestHeader(ApiConstants.X_API_KEY) String xApiKey) {
         String responseMsg;
         try {
-            log.info("Request received for EVICT_CACHE_BY_KEY with key: {}", request.getKey());
+            log.info("Request received for EVICT_CACHE_BY_KEY with key: {}", LoggerHelper.sanitizeForLogs(request.getKey()));
             authenticationService.authenticate(CacheConstants.CACHE, xApiKey);
             cacheEviction.clearCacheByName(CommonRequestModel.builder().data(request).build());
             return ResponseHelper.buildSuccessResponse();

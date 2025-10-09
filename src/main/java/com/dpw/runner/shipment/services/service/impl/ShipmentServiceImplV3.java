@@ -714,10 +714,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private Optional<ShipmentDetails> fetchShipmentDetails(String source, CommonGetRequest request) throws AuthenticationException, RunnerException {
         Long requestId = request.getId();
         if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
-            log.debug("Source {} can fetch details without tenant filter for the input with Request Id {}", source, requestId);
+            log.debug("Source {} can fetch details without tenant filter for the input with Request Id {}", LoggerHelper.sanitizeForLogs(source), LoggerHelper.sanitizeForLogs(requestId));
             return retrieveShipmentByIdWithQuery(request, source);
         } else {
-            log.debug("Source is {} for the input with Request Id {}", source, requestId);
+            log.debug("Source is {} for the input with Request Id {}", LoggerHelper.sanitizeForLogs(source), LoggerHelper.sanitizeForLogs(requestId));
             if (requestId != null) {
                 return shipmentDao.findById(requestId);
             } else {
@@ -783,7 +783,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private ShipmentDetails fetchShipmentDetailsForExternal(String source, CommonGetRequest request, double start) throws RunnerException, AuthenticationException{
         if (request.getId() == null && request.getGuid() == null) {
-            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
         }
         Optional<ShipmentDetails> shipmentDetails = fetchShipmentDetails(source, request);
@@ -793,7 +793,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         double current = System.currentTimeMillis();
-        log.info(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG, request.getId(), LoggerHelper.getRequestIdFromMDC(), current - start);
+        log.info(LoggerHelper.sanitizeForLogs(SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG), LoggerHelper.sanitizeForLogs(request.getId()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         return shipmentDetails.get();
     }
 
@@ -829,7 +829,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         double current = System.currentTimeMillis();
-        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(LoggerHelper.sanitizeForLogs(id)), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         AtomicInteger pendingCount = new AtomicInteger(0);
         ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
         Long shipmentId = shipmentDetailsEntity.getId();
@@ -1034,7 +1034,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .setFirstResult((pageNo - 1) * pageSize)
                 .setMaxResults(pageSize)
                 .getResultList();
-        log.info("Time taken in executing query: {} ms, filterCriteria: {}", (System.currentTimeMillis()-start), listCommonRequest.getFilterCriteria().toString());
+        log.info("Time taken in executing query: {} ms, filterCriteria: {}", LoggerHelper.sanitizeForLogs(System.currentTimeMillis()-start), LoggerHelper.sanitizeForLogs(listCommonRequest.getFilterCriteria().toString()));
         // Step 8: Convert flat to nested map with array support
         List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
@@ -1243,7 +1243,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         TypedQuery<Object[]> query = entityManager.createQuery(cq);
         long start = System.currentTimeMillis();
         List<Object[]> results = query.getResultList();
-        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", (System.currentTimeMillis()-start), commonGetRequest.getId(), commonGetRequest.getGuid());
+        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", LoggerHelper.sanitizeForLogs(System.currentTimeMillis()-start), LoggerHelper.sanitizeForLogs(commonGetRequest.getId()), LoggerHelper.sanitizeForLogs(commonGetRequest.getGuid()));
         // Convert result list to List<Map<String, Object>>
         List<Map<String, Object>> finalResult = new ArrayList<>();
         for (Object[] row : results) {
@@ -2122,7 +2122,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldEntity)
                 && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()));
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
         }
     }
@@ -3593,7 +3593,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     .build());
         } catch (Exception ex) {
             log.error("CR-ID {} || Error in addFilesFromBookingToShipment: {} with Shipment Guid as: {}",
-                    LoggerHelper.getRequestIdFromMDC(), ex.getLocalizedMessage(), shipmentGuid);
+                    LoggerHelper.getRequestIdFromMDC(), ex.getLocalizedMessage(), LoggerHelper.sanitizeForLogs(shipmentGuid));
         }
         return null;
     }
@@ -3828,7 +3828,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         boolean isShipmentdg = isOceanDG(shipmentDetails);
         log.info("DG Approval Processing: requestId={}, shipmentId={}, isOceanDgUser={}, currentStatus={}, updatedStatus={}, operationType={}, isShipmentdg={}",
-                LoggerHelper.getRequestIdFromMDC(), shipId, isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
+                LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipId),LoggerHelper.sanitizeForLogs(isOceanDgUser), LoggerHelper.sanitizeForLogs(dgStatus),
+                LoggerHelper.sanitizeForLogs(updatedDgStatus), LoggerHelper.sanitizeForLogs(operationType), LoggerHelper.sanitizeForLogs(isShipmentdg));
 
         String warning = null;
         if (!isShipmentdg) {
@@ -4780,7 +4781,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
-        log.info("{} | attachListShipment | Final Criteria: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listRequest));
+        log.info("{} | attachListShipment | Final Criteria: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listRequest)));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
@@ -4969,10 +4970,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
             if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(LoggerHelper.sanitizeForLogs(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR), LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -5136,7 +5137,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
-            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipment.getShipmentId()));
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
         createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());

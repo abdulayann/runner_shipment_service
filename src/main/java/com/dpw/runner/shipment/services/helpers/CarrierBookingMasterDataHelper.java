@@ -57,7 +57,7 @@ public class CarrierBookingMasterDataHelper {
     public void getMasterDataForList(List<CarrierBooking> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
         if (getMasterData) {
             try {
-                log.debug("Carrier Booking List:" +  lst + " include columns" + includeColumns);
+                log.debug("Carrier Booking List:" +  LoggerHelper.sanitizeForLogs(lst) + " include columns" + LoggerHelper.sanitizeForLogs(includeColumns));
                 double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);

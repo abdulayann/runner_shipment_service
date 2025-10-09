@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.entity.enums.OrderPartiesPartyType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -82,9 +83,9 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
             HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
-            log.info("Request to Order Service: {}", url);
+            log.info("Request to Order Service: {}", LoggerHelper.sanitizeForLogs(url));
             var response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, OrderManagementResponse.class);
-            log.info("Response from Order Service: {}", response.getBody());
+            log.info("Response from Order Service: {}", LoggerHelper.sanitizeForLogs(response.getBody()));
             return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -96,12 +97,12 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     public OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
-            log.info("Request to Order Service with url: {}", url);
+            log.info("Request to Order Service with url: {}", LoggerHelper.sanitizeForLogs(url));
             HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
             var response = restTemplate.exchange(url,
                     HttpMethod.GET, httpEntity,
                     OrderManagementResponse.class);
-            log.info("OrderManagementResponse from Order Service: {}", response.getBody());
+            log.info("OrderManagementResponse from Order Service: {}", LoggerHelper.sanitizeForLogs(response.getBody()));
             return Objects.requireNonNull(response.getBody()).getOrder();
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -124,14 +125,14 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             try {
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, v2AuthHelper.getOrderManagementServiceSourceHeader());
 
-            log.info("Request to Order Service: {}", url);
+            log.info("Request to Order Service: {}", LoggerHelper.sanitizeForLogs(url));
             var response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, OrderListResponse.class);
-            log.info("Response from Order Service: {}", response.getBody());
+            log.info("Response from Order Service: {}", LoggerHelper.sanitizeForLogs(response.getBody()));
 
             List<OrderManagementDTO> orders = Objects.requireNonNull(response.getBody()).getData();
             return getPurchaseOrderDataFromOrders(orders);
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error(LoggerHelper.sanitizeForLogs(e.getMessage()));
             throw new RunnerException(e.getMessage());
         }
     }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ public class CommonRequestModel {
     }
 
     public static CommonRequestModel buildRequest(IRunnerRequest data) {
-        log.debug(RECEIVED_REQUEST_MSG, data);
+        log.debug(RECEIVED_REQUEST_MSG, LoggerHelper.sanitizeForLogs(data));
         return CommonRequestModel.builder().data(data).build();
     }
 
@@ -73,7 +74,7 @@ public class CommonRequestModel {
     }
 
     public static CommonRequestModel buildDependentDataRequest(Object data) {
-        log.debug(RECEIVED_REQUEST_MSG, data);
+        log.debug(RECEIVED_REQUEST_MSG, LoggerHelper.sanitizeForLogs(data));
         return CommonRequestModel.builder().dependentData(data).build();
     }
 

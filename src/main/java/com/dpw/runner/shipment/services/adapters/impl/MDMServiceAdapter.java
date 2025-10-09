@@ -112,15 +112,15 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException {
         String url = baseUrl + creditConfigUrl;
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
-        log.info("Request id {} MDM Request {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        log.info("Request id {} MDM Request {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).headers(headers).body(jsonHelper.convertToJson(request)), Object.class);
-            log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
+            log.info("Request id {} MDM Response {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(response)));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){
-            log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(ex.getMessage()));
+            log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(ex.getMessage())));
             throw new RunnerException("Error from MDM while fetching credit limit: " + ex.getMessage());
         }
     }
@@ -139,11 +139,11 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                         return CustomerBookingConstants.MDM_FINAL_STATUS_NO_APPROVAL_NEEDED;
                     finalStatus = (String) firstDataObject.get("finalStatus");
                 }
-                log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseBody));
+                log.info("Request id {} MDM Response {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(responseBody)));
                 return finalStatus;
             }catch (Exception ex){
-                log.error("Error getting the approval status for the parties : {}", commonRequestModel.getData());
-                log.error("ERROR : {}", ex.getMessage());
+                log.error("Error getting the approval status for the parties : {}", LoggerHelper.sanitizeForLogs(commonRequestModel.getData()));
+                log.error("ERROR : {}",LoggerHelper.sanitizeForLogs( ex.getMessage()));
             }
         }
         return null;
@@ -154,7 +154,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createShipmentTaskFromBookingUrl;
         CreateShipmentTaskFromBookingTaskRequest request = (CreateShipmentTaskFromBookingTaskRequest) commonRequestModel.getData();
         try {
-            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM createShipmentTaskFromBooking api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
                 ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                         RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
@@ -162,10 +162,10 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 );
                 return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
             });
-            log.info("MDM createShipmentTaskFromBooking api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(resp)));
+            log.info("MDM createShipmentTaskFromBooking api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(resp))));
             return resp;
         } catch (Exception ex) {
-            log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            log.error("MDM Credit Details Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(ex.getMessage())));
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
@@ -175,13 +175,13 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createNonBillableCustomer;
         CompanyDetailsRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), CompanyDetailsRequest.class);
         try {
-            log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
             ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                     RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)),
                     DependentServiceResponse.class
                 );
-            log.info("MDM createNonBillableCustomer api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM createNonBillableCustomer api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
             return ResponseHelper.buildSuccessResponse(response.getBody());
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
@@ -190,7 +190,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 String msg = jsonHelper.readFromJson(json, MDMServiceResponse.class).getMessage();
                 errorMessage = msg != null ? msg : errorMessage;
             }
-            log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            log.error("MDM createNonBillableCustomer Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(errorMessage)));
             return ResponseHelper.buildFailedResponse(errorMessage);
         }
     }
@@ -208,11 +208,11 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
             DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
-            log.info("MDM getDepartmentList response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
+            log.info("MDM getDepartmentList response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity))));
             return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
         }
         catch (Exception e) {
-            log.error("MDM Service - error while fetching departments list", e);
+            log.error("MDM Service - error while fetching departments list", LoggerHelper.sanitizeForLogs(e));
         }
         return Collections.emptyList();
     }
@@ -231,11 +231,11 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
             DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
-            log.info("MDM getTask response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
+            log.info("MDM getTask response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity))));
             return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
         }
         catch (Exception e) {
-            log.error("MDM Service - error while fetching task list", e);
+            log.error("MDM Service - error while fetching task list", LoggerHelper.sanitizeForLogs(e));
         }
         return Collections.emptyList();
     }
@@ -248,7 +248,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
             return Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
         } catch (Exception ex){
-            log.error("MDM Service - error while fetching container type list", ex.getMessage());
+            log.error("MDM Service - error while fetching container type list", LoggerHelper.sanitizeForLogs(ex.getMessage()));
             throw new RunnerException("Error while fetching container type list: " + ex.getMessage());
         }
     }
@@ -257,9 +257,10 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public MdmTaskCreateResponse createTask(MdmTaskCreateRequest request) throws RunnerException {
         String url = baseUrl + createTaskUrl;
         try {
-            log.info("Calling MDM createTask api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM createTask api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<DependentServiceResponse> response =  restTemplate.postForEntity(url, jsonHelper.convertToJson(request), DependentServiceResponse.class);
-            log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
             Object data = Objects.requireNonNull(response.getBody()).getData();
 
             if (data instanceof List<?> dataList && !dataList.isEmpty()) {
@@ -269,7 +270,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MdmTaskCreateResponse.class);
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
-            log.error("MDM createTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            log.error("MDM createTask Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(errorMessage)));
             throw new RunnerException(errorMessage);
         }
     }
@@ -278,15 +279,16 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public void approveOrRejectTask(MdmTaskApproveOrRejectRequest request) throws RunnerException {
         String url = baseUrl + approveOrRejectTaskUrl;
         try {
-            log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
             ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                 RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
                 DependentServiceResponse.class
             );
-            log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
-            log.error("MDM approveOrReject Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            log.error("MDM approveOrReject Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(errorMessage)));
             throw new RunnerException(errorMessage);
         }
     }
@@ -298,9 +300,11 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             url = baseUrl + getTaskUrl + "?id=" + id;
         }
         try {
-            log.info("Calling MDM Get Task api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC());
+            if (log.isInfoEnabled()) {
+                log.info("Calling MDM Get Task api for requestId : {} Request for {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
+            }
             ResponseEntity<DependentServiceResponse> response =  restTemplate.getForEntity(url, DependentServiceResponse.class);
-            log.info("MDM getTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            log.info("MDM getTask api response for requestId - {} : {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody()))));
             Object data = Objects.requireNonNull(response.getBody()).getData();
 
             if (data instanceof List<?> dataList && !dataList.isEmpty()) {
@@ -310,7 +314,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MDMTaskRetrieveResponse.class);
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
-            log.error("MDM getTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            log.error("MDM getTask Failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(errorMessage)));
             throw new RunnerException(errorMessage);
         }
     }

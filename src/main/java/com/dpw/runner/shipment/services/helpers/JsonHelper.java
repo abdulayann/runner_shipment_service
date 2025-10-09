@@ -118,7 +118,7 @@ public class JsonHelper {
             return mapper.readValue(jsonString, clazz);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json " + jsonString);
-            log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
+            log.info(Constants.JSON_PARSING_EXCEPTION, LoggerHelper.sanitizeForLogs(e.toString()));
             throw new JsonParseException(e);
         }
     }
@@ -127,7 +127,7 @@ public class JsonHelper {
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            log.error("Failed Parsed Object: {}", object.toString());
+            log.error("Failed Parsed Object: {}", LoggerHelper.sanitizeForLogs(object.toString()));
             log.error("Failed to Parse given Json: " + e.getMessage());
             log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
             throw new JsonParseException(e);
@@ -215,7 +215,7 @@ public class JsonHelper {
         try {
             return mapper.readTree(jsonString);
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse given JSON string: {}", jsonString);
+            log.error("Failed to parse given JSON string: {}", LoggerHelper.sanitizeForLogs(jsonString));
             log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
             throw new JsonParseException(e);
         }

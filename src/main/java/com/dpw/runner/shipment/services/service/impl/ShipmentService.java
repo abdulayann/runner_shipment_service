@@ -3068,7 +3068,7 @@ public class ShipmentService implements IShipmentService {
     private void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldEntity)
                 && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()));
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
         }
     }
@@ -3261,7 +3261,7 @@ public class ShipmentService implements IShipmentService {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
                     null, jobType, null, false);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), ex.getMessage());
         }
     }
 
@@ -3294,7 +3294,7 @@ public class ShipmentService implements IShipmentService {
 
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), ex.getMessage());
         }
     }
 
@@ -3375,7 +3375,7 @@ public class ShipmentService implements IShipmentService {
                 triggerConsoleTransfer(shipmentDetails);
             }
         } catch (Exception e) {
-            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), e.getMessage());
         }
     }
 
@@ -4349,7 +4349,7 @@ public class ShipmentService implements IShipmentService {
         Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
         request.setPageSize(exportExcelLimit);
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.TENANT_ID, UserContext.getUser().getTenantId(), Constants.EQ, request);
-        log.info("{}", jsonHelper.convertToJson(listCommonRequest.getFilterCriteria()));
+        log.info("{}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listCommonRequest.getFilterCriteria())));
         Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(listCommonRequest);
         long shipmentCount = shipmentDetailsPage.getTotalElements();
 
@@ -4409,10 +4409,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void emailShipmentListExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) {
-        log.info("Starting email of shipment list Excel. Request model: {}", listCommonRequest);
+        log.info("Starting email of shipment list Excel. Request model: {}", LoggerHelper.sanitizeForLogs(listCommonRequest));
 
         Page<ShipmentDetails> shipmentDetailsPage =  fetchShipmentsPage(listCommonRequest);
-        log.info("Fetched {} shipment(s) for Excel email.", shipmentDetailsPage.getTotalElements());
+        log.info("Fetched {} shipment(s) for Excel email.", LoggerHelper.sanitizeForLogs(shipmentDetailsPage.getTotalElements()));
 
         exportShipmentListToExcel(shipmentDetailsPage, response, true);
         log.info("Shipment list Excel email process completed successfully.");
@@ -4420,7 +4420,7 @@ public class ShipmentService implements IShipmentService {
 
     private Page<ShipmentDetails> fetchShipmentsPage(ListCommonRequest request){
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
-        log.info("Fetching data with tables included: {}", request.getIncludeTbls());
+        log.info("Fetching data with tables included: {}", LoggerHelper.sanitizeForLogs(request.getIncludeTbls()));
         log.info("Tenant in fetchData: {}", TenantContext.getCurrentTenant());
         log.info("User in fetchData: {}", UserContext.getUser());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
@@ -4851,7 +4851,7 @@ public class ShipmentService implements IShipmentService {
 
             Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findByGuid(UUID.fromString(commonRequestModel.getGuid()));
             if (!optionalShipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, commonRequestModel.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, LoggerHelper.sanitizeForLogs(commonRequestModel.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
@@ -5412,7 +5412,7 @@ public class ShipmentService implements IShipmentService {
             }
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             double current = System.currentTimeMillis();
-            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(id), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
@@ -5464,7 +5464,7 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         double current = System.currentTimeMillis();
-        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+        log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", LoggerHelper.sanitizeForLogs(id), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(current - start));
         AtomicInteger pendingCount = new AtomicInteger(0);
         Long shipmentId = shipmentDetails.get().getId();
         UUID guid = shipmentDetails.get().getGuid();
@@ -5789,13 +5789,13 @@ public class ShipmentService implements IShipmentService {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
-                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
+                log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(shipmentId), counter++);
                 if(shipmentSettingsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsOptional.get().getCustomisedSequence())) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
-                        log.error("Execption during common sequence {}", ignored.getMessage());
-                        log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
+                        log.error("Execption during common sequence {}", LoggerHelper.sanitizeForLogs(ignored.getMessage()));
+                        log.error("Execption occurred for common sequence {}", LoggerHelper.sanitizeForLogs(ignored.getStackTrace()));
                         shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                     }
                 }
@@ -7407,10 +7407,10 @@ public class ShipmentService implements IShipmentService {
             }
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
             if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -7433,10 +7433,10 @@ public class ShipmentService implements IShipmentService {
             }
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getId());
             if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(shipmentDetails.get().getGuid()).build());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -7584,17 +7584,17 @@ public class ShipmentService implements IShipmentService {
         try {
             V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
             if(v1DataResponse.entities == null) {
-                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, LoggerHelper.sanitizeForLogs(orgCode));
                 return ResponseHelper.buildSuccessResponse();
             }
             List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
             if(creditLimitResponses == null || creditLimitResponses.isEmpty()) {
-                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
+                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, LoggerHelper.sanitizeForLogs(orgCode));
                 return ResponseHelper.buildSuccessResponse();
             }
             return ResponseHelper.buildDependentServiceResponse(creditLimitResponses.get(0), 0, 0);
         } catch (Exception e) {
-            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
+            log.debug("No Data found for org code {} {}", LoggerHelper.sanitizeForLogs(orgCode), e.getMessage());
         }
 
         return ResponseHelper.buildSuccessResponse();
@@ -8578,7 +8578,7 @@ public class ShipmentService implements IShipmentService {
             UUID guid = UUID.fromString(request.getGuid());
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
             if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, LoggerHelper.sanitizeForLogs(request.getGuid()), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             MeasurementBasisResponse response = modelMapper.map(shipmentDetails.get(), MeasurementBasisResponse.class);
@@ -8778,7 +8778,7 @@ public class ShipmentService implements IShipmentService {
 
         boolean isShipmentdg = isOceanDG(shipmentDetails);
         log.info("DG Approval Processing: requestId={}, shipmentId={}, isOceanDgUser={}, currentStatus={}, updatedStatus={}, operationType={}, isShipmentdg={}",
-            LoggerHelper.getRequestIdFromMDC(), shipId, isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
+            LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipId), isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
 
         String warning = null;
         if(!isShipmentdg){
@@ -9040,7 +9040,7 @@ public class ShipmentService implements IShipmentService {
             v1Service.updateTask(taskUpdateRequest);
         }
         catch (Exception ex) {
-            log.error("task updatation is failed for taskId from V1: " + taskUpdateRequest.getEntityId());
+            log.error("task updatation is failed for taskId from V1: " + LoggerHelper.sanitizeForLogs(taskUpdateRequest.getEntityId()));
         }
     }
 
@@ -9699,7 +9699,7 @@ public class ShipmentService implements IShipmentService {
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
-            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(shipment.getShipmentId()));
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
         createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());

@@ -762,7 +762,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                         try {
                             return (double) convertUnit(MASS, c.getGrossWeight(), c.getGrossWeightUnit(), WEIGHT_UNIT_KG);
                         } catch (RunnerException e) {
-                            log.warn("Failed to convert weight for container {}: {}", c.getContainerCode(), e.getMessage());
+                            log.warn("Failed to convert weight for container {}: {}",LoggerHelper.sanitizeForLogs( c.getContainerCode()), LoggerHelper.sanitizeForLogs(e.getMessage()));
                             return 0.0;
                         }
                     }).sum();

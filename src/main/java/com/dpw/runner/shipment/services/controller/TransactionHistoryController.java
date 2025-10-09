@@ -46,7 +46,7 @@ public class TransactionHistoryController {
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long entityId, @RequestParam EntityTypeTransactionHistory entityType) {
         log.info("Received Transaction History GET BY ID request with RequestId: {}, id: {} and entityType: {}",
-                LoggerHelper.getRequestIdFromMDC(), entityId, entityType);
+                LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(entityId), LoggerHelper.sanitizeForLogs(entityType));
         List<TransactionHistoryResponse> response = transactionHistoryService.retrieveById(entityId, entityType);
         log.info("Verified Gross Mass GET BY ID successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
         return ResponseHelper.buildSuccessResponse(response);

@@ -92,7 +92,7 @@ public class AuthFilter extends OncePerRequestFilter {
             ShipmentVersionContext.markV3();
         }
 
-        log.info("Request For Shipment Service API: {} with RequestId: {} from Source Service: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC(), getSourceServiceType(req));
+        log.info("Request For Shipment Service API: {} with RequestId: {} from Source Service: {}",LoggerHelper.sanitizeForLogs(servletRequest.getRequestURI()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(getSourceServiceType(req)));
         if(shouldNotFilter(req))
         {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -112,7 +112,7 @@ public class AuthFilter extends OncePerRequestFilter {
             user = userService.getUserByToken(authToken);
         } catch (HttpStatusCodeException e)
         {
-            log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), authToken, e);
+            log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), LoggerHelper.sanitizeForLogs(authToken), e);
             res.setContentType(APPLICATION_JSON);
             res.setStatus(e.getRawStatusCode());
             return;
@@ -126,7 +126,7 @@ public class AuthFilter extends OncePerRequestFilter {
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
-        log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), servletRequest.getRequestURI(), user.getUsername(), user.getTenantId());
+            log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(servletRequest.getRequestURI()), LoggerHelper.sanitizeForLogs(user.getUsername()), LoggerHelper.sanitizeForLogs(user.getTenantId()));
         VersionContext.setVersionFromPath(req.getServletPath());
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
@@ -153,7 +153,7 @@ public class AuthFilter extends OncePerRequestFilter {
         double timeTaken = (double) System.currentTimeMillis() - time;
         log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (timeTaken), LoggerHelper.getRequestIdFromMDC()));
         if (timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, servletRequest.getRequestURI());
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, LoggerHelper.sanitizeForLogs(servletRequest.getRequestURI()));
         }finally {
             MDC.clear();
             ShipmentVersionContext.remove();

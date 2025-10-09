@@ -652,7 +652,7 @@ public class EventService implements IEventService {
                     Optional.ofNullable(eventCodeMap.get(getEventCode.apply(event)))
                             .ifPresentOrElse(
                                     masterList -> setDescription.accept(event, masterList.getItemDescription()),
-                                    () -> log.warn("No mapping found for event code: {}", getEventCode.apply(event))
+                                    () -> log.warn("No mapping found for event code: {}", LoggerHelper.sanitizeForLogs(getEventCode.apply(event)))
                             )
             );
         } catch (Exception e) {
@@ -746,44 +746,45 @@ public class EventService implements IEventService {
         String transportMode = shipmentDetails.getTransportMode();
 
         // Log the input values for debugging
-        log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
+        log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", LoggerHelper.sanitizeForLogs(eventCode),
+                LoggerHelper.sanitizeForLogs(shipmentType), LoggerHelper.sanitizeForLogs(transportMode), LoggerHelper.sanitizeForLogs(messageId));
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.VSDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.ARDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
         if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
-            log.info("Event code {} matches air transport shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches air transport shipment criteria. messageId {}", LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
             return true;
         }
 
-        log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
+        log.info("Event code {} does not match any processing criteria. messageId {}", LoggerHelper.sanitizeForLogs(eventCode), LoggerHelper.sanitizeForLogs(messageId));
         return false;
     }
 
@@ -828,7 +829,7 @@ public class EventService implements IEventService {
             Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, String shipmentId, String messageId, Integer tenantId) {
         // Log the start of mapping
         log.info("Mapping tracking event with container number {} and event code {}. messageId {}",
-                trackingEvent.getContainerNumber(), trackingEvent.getEventCode(), messageId);
+                trackingEvent.getContainerNumber(), trackingEvent.getEventCode(), LoggerHelper.sanitizeForLogs(messageId));
 
         // Map the tracking event to a new Events object
         Events event = populateEventDetails(trackingEvent, entityId, entityType, identifier2ToLocationRoleMap, messageId);
@@ -869,7 +870,7 @@ public class EventService implements IEventService {
         // Convert and set the location role
         String convertedLocationRole = convertLocationRoleWRTMasterData(identifier2ToLocationRoleMap, event.getLocationRole());
         event.setLocationRole(convertedLocationRole);
-        log.info("Converted location role: {} messageId {}", convertedLocationRole, messageId);
+        log.info("Converted location role: {} messageId {}", LoggerHelper.sanitizeForLogs(convertedLocationRole), LoggerHelper.sanitizeForLogs(messageId));
 
         // Set entity details and source
         event.setEntityId(entityId);
@@ -914,19 +915,19 @@ public class EventService implements IEventService {
         try {
             updateCarrierDetails(shipment, shipmentAta, shipmentAtd);
         } catch (Exception e) {
-            log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
+            log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()), LoggerHelper.sanitizeForLogs(messageId));
         }
         // Try to update actual event times
         try {
             updateActual(shipment, container);
         } catch (Exception e) {
-            log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
+            log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", LoggerHelper.sanitizeForLogs(shipment.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()), LoggerHelper.sanitizeForLogs(messageId));
         }
     }
 
     private void updateActual(ShipmentDetails shipmentDetails, Container trackingContainer) {
         if (trackingContainer == null || trackingContainer.getEvents() == null) {
-            log.warn("No trackingContainer or events available for shipment ID {}", shipmentDetails.getShipmentId());
+            log.warn("No trackingContainer or events available for shipment ID {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()));
             return;
         }
 
@@ -965,9 +966,9 @@ public class EventService implements IEventService {
                 if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
                     shipmentEvent.setActual(eventFromTracking.getActualEventTime().getDateTime());
                     log.info("Updated actual event time for event code {} in trackingContainer {}",
-                            shipmentEventsResponse.getEventCode(), shipmentEventsResponse.getContainerNumber());
+                            LoggerHelper.sanitizeForLogs(shipmentEventsResponse.getEventCode()), LoggerHelper.sanitizeForLogs(shipmentEventsResponse.getContainerNumber()));
                 } else {
-                    log.warn("No matching event found or missing actual event time for key: {}", key);
+                    log.warn("No matching event found or missing actual event time for key: {}", LoggerHelper.sanitizeForLogs(key));
                 }
             }
         });
@@ -1216,7 +1217,7 @@ public class EventService implements IEventService {
                 .map(ContainerBase::getShipmentReference)
                 .orElse(container.getShipmentReference());
 
-        log.info("Shipment number extracted: {} messageId {}", shipmentNumber, messageId);
+        log.info("Shipment number extracted: {} messageId {}", LoggerHelper.sanitizeForLogs(shipmentNumber), LoggerHelper.sanitizeForLogs(messageId));
 
         if (ObjectUtils.isEmpty(shipmentNumber)) {
             log.warn("Shipment number is empty or null. Skipping further processing. messageId {}", messageId);
@@ -1224,20 +1225,20 @@ public class EventService implements IEventService {
         }
 
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByShipmentId(shipmentNumber);
-        log.info("Found {} shipment details for shipment number: {} messageId {}", shipmentDetailsList.size(), shipmentNumber, messageId);
+        log.info("Found {} shipment details for shipment number: {} messageId {}", shipmentDetailsList.size(), LoggerHelper.sanitizeForLogs(shipmentNumber), LoggerHelper.sanitizeForLogs(messageId));
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             boolean updateSuccess = true;
             try {
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-                log.info("Processing shipment details id: {} messageId {} Current tenant id as: {}", shipmentDetails.getId(), messageId, TenantContext.getCurrentTenant());
+                log.info("Processing shipment details id: {} messageId {} Current tenant id as: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getId()), LoggerHelper.sanitizeForLogs(messageId), TenantContext.getCurrentTenant());
                 updateSuccess = updateShipmentWithTrackingEvents(jsonHelper.convertValueToList(trackingEvents, Events.class), shipmentDetails, container, messageId);
                 isSuccess &= updateSuccess;
             } finally {
                 log.info("Clearing tenant context. Removing tenant {}", TenantContext.getCurrentTenant());
                 TenantContext.removeTenant();
             }
-            log.info("Updated shipment: {} with tracking events. Success: {} messageId {}", shipmentDetails.getShipmentId(), updateSuccess, messageId);
+            log.info("Updated shipment: {} with tracking events. Success: {} messageId {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), updateSuccess, LoggerHelper.sanitizeForLogs(messageId));
         }
 
         //moving this from here to tracking consumer -> v1Service.clearAuthContext()
@@ -1260,7 +1261,7 @@ public class EventService implements IEventService {
     private boolean updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
             Container container, String messageId) {
         log.info("Starting updateShipmentWithTrackingEvents for shipment: {} and container: {} messageId {}",
-                shipmentDetails.getShipmentId(), jsonHelper.convertToJson(container), messageId);
+                LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(container)), LoggerHelper.sanitizeForLogs(messageId));
 
         boolean isSuccess = true;
         Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
@@ -1272,7 +1273,7 @@ public class EventService implements IEventService {
         log.info("Saving tracking events to Events for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
         List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents,
                 Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap, messageId);
-        log.info("Saved {} events to Events table for shipment: {} messageId {}", eventSaved, shipmentDetails.getShipmentId(), messageId);
+        log.info("Saved {} events to Events table for shipment: {} messageId {}", LoggerHelper.sanitizeForLogs(eventSaved), LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(messageId));
 
         // Extract ATA and ATD from container's journey details
         LocalDateTime shipmentAta = Optional.ofNullable(container.getJourney())
@@ -1285,7 +1286,8 @@ public class EventService implements IEventService {
                 .map(TrackingServiceApiResponse.DateAndSources::getDateTime)
                 .orElse(null);
 
-        log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId(), messageId);
+        log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}",
+                LoggerHelper.sanitizeForLogs(shipmentAta), LoggerHelper.sanitizeForLogs(shipmentAtd),LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(messageId));
 
         updateShipmentDetails(shipmentDetails, shipmentAta, shipmentAtd, container, messageId);
         log.info("Finished updating shipment with tracking events. Success: {} messageId {}", isSuccess, messageId);
@@ -1295,7 +1297,7 @@ public class EventService implements IEventService {
     @Override
     public List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source) {
         log.info("Listing events without tenant filter | shipmentNumber={} | consolidationId={} | source={}",
-                request.getShipmentNumber(), request.getConsolidationId(), source);
+                LoggerHelper.sanitizeForLogs(request.getShipmentNumber()), LoggerHelper.sanitizeForLogs(request.getConsolidationId()), LoggerHelper.sanitizeForLogs(source));
 
         // Step 1: Fetch events and prepare base response list
         List<EventsResponse> allEventResponses = fetchAndPrepareEvents(request);
@@ -1314,7 +1316,7 @@ public class EventService implements IEventService {
         String shipmentNumber = request.getShipmentNumber();
         Long consolidationId = request.getConsolidationId();
 
-        log.info("Fetching events | shipmentNumber={} | consolidationId={}", shipmentNumber, consolidationId);
+        log.info("Fetching events | shipmentNumber={} | consolidationId={}", LoggerHelper.sanitizeForLogs(shipmentNumber), LoggerHelper.sanitizeForLogs(consolidationId));
 
         // Convert incoming tracking request into a common list request format
         ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
@@ -1322,7 +1324,7 @@ public class EventService implements IEventService {
         // Fetch events based on shipmentNumber or consolidationId
         List<Events> events = new ArrayList<>();
         if (shipmentNumber != null) {
-            log.info("Fetching events for shipmentNumber={}", shipmentNumber);
+            log.info("Fetching events for shipmentNumber={}", LoggerHelper.sanitizeForLogs(shipmentNumber));
             events = fetchEventsWithoutTenantFilter(shipmentNumber, null, listRequest);
         } else if (consolidationId != null) {
             log.info("Fetching events for consolidationId={}", consolidationId);
@@ -1393,15 +1395,15 @@ public class EventService implements IEventService {
     }
 
     private List<Events> fetchEventsWithoutTenantFilter(String shipmentNumber, Long consolidationId, ListCommonRequest listRequest) {
-        log.info("Fetching events without tenant filter | shipmentNumber={} | consolidationId={}", shipmentNumber, consolidationId);
+        log.info("Fetching events without tenant filter | shipmentNumber={} | consolidationId={}", LoggerHelper.sanitizeForLogs(shipmentNumber), LoggerHelper.sanitizeForLogs(consolidationId));
 
         // Build criteria based on shipmentNumber or consolidationId
         if (ObjectUtils.isNotEmpty(shipmentNumber)) {
-            log.info("Applying filter by shipmentNumber={} with entityType={}", shipmentNumber, Constants.SHIPMENT);
+            log.info("Applying filter by shipmentNumber={} with entityType={}", LoggerHelper.sanitizeForLogs(shipmentNumber), Constants.SHIPMENT);
             listRequest = CommonUtils.andCriteria(EventConstants.SHIPMENT_NUMBER, shipmentNumber, "=", listRequest);
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
         } else if (ObjectUtils.isNotEmpty(consolidationId)) {
-            log.info("Applying filter by consolidationId={}", consolidationId);
+            log.info("Applying filter by consolidationId={}", LoggerHelper.sanitizeForLogs(consolidationId));
             listRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, consolidationId, "=", listRequest);
         } else {
             log.info("No shipmentNumber or consolidationId provided. No filters applied.");

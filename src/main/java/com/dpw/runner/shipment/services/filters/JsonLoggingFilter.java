@@ -46,12 +46,12 @@ public class JsonLoggingFilter extends OncePerRequestFilter {
             requestBody = new String(requestWrapper.getContentAsByteArray(), requestWrapper.getCharacterEncoding());
         }
         log.info("{} | REQUEST RECEIVED [HTTP Method={}] [URL={}] [LOGGING_DURATION = {} ms] [QUERY={}] [HEADERS={}] [BODY={}]", LoggerHelper.getRequestIdFromMDC(),
-                method,
-                url,
+                LoggerHelper.sanitizeForLogs(method),
+                LoggerHelper.sanitizeForLogs(url),
                 System.currentTimeMillis() - startRequest,
-                query != null ? query : "",
-                headers,
-                requestBody);
+                LoggerHelper.sanitizeForLogs(query != null ? query : ""),
+                LoggerHelper.sanitizeForLogs(headers),
+                LoggerHelper.sanitizeForLogs(requestBody));
 
         try {
             filterChain.doFilter(requestWrapper, responseWrapper);
@@ -64,7 +64,7 @@ public class JsonLoggingFilter extends OncePerRequestFilter {
                 responseBody = new String(responseWrapper.getContentAsByteArray(), responseWrapper.getCharacterEncoding());
             }
             log.info("{} | RESPONSE RETURNED [URL={}] [LOGGING_DURATION = {} ms] [DURATION = {} ms] [RESPONSE={}]",
-                    LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - endRequest, duration, responseBody);
+                    LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(url), System.currentTimeMillis() - endRequest, duration, LoggerHelper.sanitizeForLogs(responseBody));
 
             responseWrapper.copyBodyToResponse();
         }

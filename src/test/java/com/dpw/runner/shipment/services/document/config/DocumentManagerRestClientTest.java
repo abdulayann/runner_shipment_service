@@ -232,7 +232,7 @@ class DocumentManagerRestClientTest {
         boolean isSuccess = true;
         when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
-        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.getFileHistory(new Object());
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.getFileHistory(1L);
         assertNull(actualResponse);
         assertTrue(isSuccess);
     }
@@ -243,7 +243,7 @@ class DocumentManagerRestClientTest {
         ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
-        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.getFileHistory(new Object()));
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.getFileHistory(1L));
         assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 

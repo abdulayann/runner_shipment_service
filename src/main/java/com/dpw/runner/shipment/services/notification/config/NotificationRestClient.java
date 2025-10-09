@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.reportService.MailAuditLogRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.notification.request.CreateTagsRequest;
 import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
@@ -127,8 +128,8 @@ public class NotificationRestClient {
                     .build();
             reportServiceAdapter.postRequest(request, null);
         } catch (Exception ex) {
-            log.error(ex.getMessage());
-            log.error("CANNOT SEND MAIL AUDIT LOG REQUEST");
+            log.error(LoggerHelper.sanitizeForLogs(ex.getMessage()));
+            log.error(LoggerHelper.sanitizeForLogs("CANNOT SEND MAIL AUDIT LOG REQUEST"));
         }
         return responseEntity.getBody();
     }

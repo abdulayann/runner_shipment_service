@@ -84,11 +84,11 @@ public class ControllerLoggingAspect {
 
         log.info("{} | REQUEST RECEIVED [HTTP Method={}] [URL={}] [QUERY={}] [HEADERS={}] [BODY={}]",
                 LoggerHelper.getRequestIdFromMDC(),
-                method,
-                url,
-                query != null ? query : "",
-                headers,
-                jsonBodies);
+                LoggerHelper.sanitizeForLogs(method),
+                LoggerHelper.sanitizeForLogs(url),
+                query != null ? LoggerHelper.sanitizeForLogs(query) : "",
+                LoggerHelper.sanitizeForLogs(headers),
+                LoggerHelper.sanitizeForLogs(jsonBodies));
     }
 
 

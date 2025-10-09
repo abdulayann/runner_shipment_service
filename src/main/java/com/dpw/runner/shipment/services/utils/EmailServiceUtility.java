@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.utils.config.EmailConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.esapi.StringUtilities;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,7 @@ public class EmailServiceUtility {
         msg.setRecipients(Message.RecipientType.TO, convertAddress(emailIds));
         if (!Objects.isNull(cc))
             msg.setRecipients(Message.RecipientType.CC, convertAddress(cc));
-        msg.setSubject(subject);
+        msg.setSubject(sanitizeSubject(subject));
         Multipart multipart = new MimeMultipart();
         MimeBodyPart textPart = new MimeBodyPart();
 
@@ -75,7 +76,7 @@ public class EmailServiceUtility {
     private Address[] convertAddress(List<String> emailIds) throws AddressException {
         Address[] addresses = new Address[emailIds.size()];
         for (int i = 0; i < emailIds.size(); i++) {
-            addresses[i] = new InternetAddress(emailIds.get(i));
+            addresses[i] = new InternetAddress(sanitizeEmailAddress(emailIds.get(i)));
         }
         return addresses;
     }
@@ -102,5 +103,25 @@ public class EmailServiceUtility {
 
     public void sendMigrationEmails(String body, String subject) throws MessagingException, IOException {
         this.sendEmail(body, subject, migrationEmailIds, null, null, null);
+    }
+
+    /**
+     * Sanitizes email subject to prevent CRLF injection attacks (CWE 93)
+     */
+    private String sanitizeSubject(String subject) {
+        if (subject == null) {
+            return "";
+        }
+        return StringUtilities.stripControls(subject).trim();
+    }
+
+    /**
+     * Sanitizes email address to prevent CRLF injection attacks (CWE 93)
+     */
+    private String sanitizeEmailAddress(String email) {
+        if (email == null) {
+            return "";
+        }
+        return StringUtilities.stripControls(email).trim();
     }
 }

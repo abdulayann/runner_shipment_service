@@ -2226,12 +2226,12 @@ public class V1ServiceImpl implements IV1Service {
                 headers = v1AuthHelper.getHeadersForDataSync();
             String requestPayload = jsonHelper.convertToJson(request);
             String headersString = headers.toString();
-            log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, requestPayload, headersString);
+            log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), IntegrationType.V1_DATA_SYNC, LoggerHelper.sanitizeForLogs(requestPayload), LoggerHelper.sanitizeForLogs(headersString));
             HttpEntity<Object> entity = new HttpEntity<>(request, headers);
             tiDataResponse = this.restTemplate.postForEntity(this.DATA_SYNC_URL, entity, V1DataSyncResponse.class, new Object[0]);
             String responsePayload = jsonHelper.convertToJson(tiDataResponse.getBody());
-            log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, responsePayload);
-            log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
+            log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), IntegrationType.V1_DATA_SYNC, LoggerHelper.sanitizeForLogs(responsePayload));
+            log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()) ,(System.currentTimeMillis() - time));
             return tiDataResponse.getBody();
         } catch (Exception var7) {
             return V1DataSyncResponse.builder().error(var7.getMessage()).isSuccess(false).build();

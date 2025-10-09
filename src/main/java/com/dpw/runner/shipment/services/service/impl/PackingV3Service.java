@@ -1,26 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -28,12 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -46,23 +20,12 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
@@ -75,12 +38,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -90,25 +48,6 @@ import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -128,6 +67,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @SuppressWarnings("java:S4165")
@@ -213,14 +168,16 @@ public class PackingV3Service implements IPackingV3Service {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
 
-        log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
+        log.info("Starting packing creation | Request ID: {} | Request Body: {}",
+                LoggerHelper.sanitizeForLogs(requestId),
+                LoggerHelper.sanitizeForLogs(packingRequest));
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
-        log.info("Converted packing request to entity | Entity: {}", packing);
+        log.info("Converted packing request to entity | Entity: {}", LoggerHelper.sanitizeForLogs(packing));
         ShipmentDetails shipmentDetails = null;
         Long consolidationId = null;
         if (Constants.SHIPMENT.equalsIgnoreCase(module) || Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
@@ -251,7 +208,8 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Save to DB
         Packing savedPacking = packingDao.save(packing);
-        log.info("Saved packing entity to DB | Packing ID: {} | Request ID: {}", savedPacking.getId(), requestId);
+        log.info("Saved packing entity to DB | Packing ID: {} | Request ID: {}", LoggerHelper.sanitizeForLogs(savedPacking.getId()),
+                LoggerHelper.sanitizeForLogs(requestId));
 
         ParentResult parentResult = getParentDetails(List.of(savedPacking), module);
         if(Objects.equals(module, BOOKING)) {
@@ -259,10 +217,11 @@ public class PackingV3Service implements IPackingV3Service {
         }
         // Audit logging
         recordAuditLogs(null, List.of(savedPacking), DBOperationType.CREATE, parentResult);
-        log.info("Audit log recorded for packing creation | Packing ID: {}", savedPacking.getId());
+        log.info("Audit log recorded for packing creation | Packing ID: {}", LoggerHelper.sanitizeForLogs(savedPacking.getId()));
 
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
-        log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
+        log.info("Returning packing response | Packing ID: {} | Response: {}", LoggerHelper.sanitizeForLogs(savedPacking.getId()),
+                LoggerHelper.sanitizeForLogs(response));
         afterSave(List.of(savedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(savedPacking), true, module);
@@ -443,14 +402,15 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
-        log.info("Updating Packing with request: {} for module: {}", packingRequest, module);
+        log.info("Updating Packing with request: {} for module: {}", LoggerHelper.sanitizeForLogs(packingRequest),
+                LoggerHelper.sanitizeForLogs(module));
 
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
 
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
-            log.error("Packing not found for id: {}", packingRequest.getId());
+            log.error("Packing not found for id: {}", LoggerHelper.sanitizeForLogs(packingRequest.getId()));
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
@@ -458,7 +418,8 @@ public class PackingV3Service implements IPackingV3Service {
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
             log.info("ContainerId mismatch detected. Request ContainerId: {}, Existing ContainerId: {}",
-                    packingRequest.getContainerId(), oldPacking.getContainerId());
+                    LoggerHelper.sanitizeForLogs(packingRequest.getContainerId()),
+                    LoggerHelper.sanitizeForLogs(oldPacking.getContainerId()));
             throw new ValidationException("Changes are available for Package section, Please refresh for latest updates.");
         }
 
@@ -473,13 +434,13 @@ public class PackingV3Service implements IPackingV3Service {
             if (shipmentDetails != null) {
                 validateCommodity(List.of(packingRequest), module, false, shipmentDetails);
                 consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(newPacking));
-                log.info("ConsolidationId updated from ShipmentDetails: {}", consolidationId);
+                log.info("ConsolidationId updated from ShipmentDetails: {}", LoggerHelper.sanitizeForLogs(consolidationId));
             }
         }
 
         if (consolidationId == null && packingRequest.getShipmentId() != null) {
             consolidationId = packingV3Util.getConsolidationId(packingRequest.getShipmentId());
-            log.info("ConsolidationId resolved from ShipmentId: {}", consolidationId);
+            log.info("ConsolidationId resolved from ShipmentId: {}", LoggerHelper.sanitizeForLogs(consolidationId));
         }
 
         ConsolidationDetails consolidationDetails = null;
@@ -487,7 +448,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (consolidationId != null) {
             consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
             oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(consolidationDetails);
-            log.info("Fetched ConsolidationDetails and calculated old Wt/Vol for consolidationId: {}", consolidationId);
+            log.info("Fetched ConsolidationDetails and calculated old Wt/Vol for consolidationId: {}", LoggerHelper.sanitizeForLogs(consolidationId));
         }
 
         log.info("Saving updated Packing entity for id: {}", packingRequest.getId());
@@ -495,7 +456,7 @@ public class PackingV3Service implements IPackingV3Service {
 
         ParentResult parentResult = getParentDetails(List.of(updatedPacking), module);
         if (Objects.equals(module, BOOKING)) {
-            log.info("Updating Packing info in Booking for bookingId: {}", packingRequest.getBookingId());
+            log.info("Updating Packing info in Booking for bookingId: {}", LoggerHelper.sanitizeForLogs(packingRequest.getBookingId()));
             customerBookingV3Service.updatePackingInfoInBooking(packingRequest.getBookingId());
         }
 
@@ -507,12 +468,15 @@ public class PackingV3Service implements IPackingV3Service {
                 || !Objects.equals(oldConvertedPacking.getPacks(), updatedPacking.getPacks());
 
         log.debug("AutoSell flag determined as: {} (Old PacksType: {}, New PacksType: {}, Old Packs: {}, New Packs: {})",
-                isAutoSell, oldConvertedPacking.getPacksType(), updatedPacking.getPacksType(),
-                oldConvertedPacking.getPacks(), updatedPacking.getPacks());
+                LoggerHelper.sanitizeForLogs(isAutoSell),
+                LoggerHelper.sanitizeForLogs(oldConvertedPacking.getPacksType()),
+                LoggerHelper.sanitizeForLogs(updatedPacking.getPacksType()),
+                LoggerHelper.sanitizeForLogs(oldConvertedPacking.getPacks()),
+                LoggerHelper.sanitizeForLogs(updatedPacking.getPacks()));
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(updatedPacking), isAutoSell, module);
-        log.info("Packing update completed successfully for id: {}", updatedPacking.getId());
+        log.info("Packing update completed successfully for id: {}", LoggerHelper.sanitizeForLogs(updatedPacking.getId()));
 
         return convertEntityToDto(updatedPacking);
     }
@@ -579,24 +543,29 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse orderLineCreateUpdateDeleteBulk(OrderLineCreateUpdateDeleteRequest request, String module, boolean fromQuote) throws RunnerException {
-        log.info("Order Lines Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        log.info("Order Lines Update with Request Id {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         if (ObjectUtils.isNotEmpty(request.getCreateOrderLines()) || ObjectUtils.isNotEmpty(request.getUpdateOrderLines())) {
             List<PackingV3Request> orderLineCreateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getCreateOrderLines());
             List<PackingV3Request> orderLineUpdateRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getUpdateOrderLines());
-            log.info("Update Packing id and guid for order line update request with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.info("Update Packing id and guid for order line update request with Request Id {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineUpdateRequestList);
 
             List<PackingV3Request> combinedOrderLineCreateRequestList = new ArrayList<>();
             combinedOrderLineCreateRequestList.addAll(orderLineCreateRequestList);
             combinedOrderLineCreateRequestList.addAll(orderLineUpdateRequestList);
 
-            log.info("Combine create request list with count {} and update request list with count {} Request Id {}", orderLineCreateRequestList.size(), orderLineUpdateRequestList.size(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Combine create request list with count {} and update request list with count {} Request Id {}",
+                    LoggerHelper.sanitizeForLogs(orderLineCreateRequestList.size()),
+                    LoggerHelper.sanitizeForLogs(orderLineUpdateRequestList.size()),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             return self.updateBulk(combinedOrderLineCreateRequestList, module, fromQuote);
         }
 
         if (ObjectUtils.isNotEmpty(request.getDeleteOrderLines())) {
             List<PackingV3Request> orderLineDeleteRequestList = packingV3Util.mapOrderLineListToPackingV3RequestList(request.getDeleteOrderLines());
-            log.info("Update Packing id and guid for order line delete request list with count {} with Request Id {}", orderLineDeleteRequestList.size(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Update Packing id and guid for order line delete request list with count {} with Request Id {}",
+                    LoggerHelper.sanitizeForLogs(orderLineDeleteRequestList.size()),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(orderLineDeleteRequestList);
             return self.deleteBulk(orderLineDeleteRequestList, module);
         }
@@ -605,7 +574,8 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void updatePackingIdsAndGuidsInRequestForOrderLineUpdateAndDelete(List<PackingV3Request> packingRequestList) throws RunnerException {
-        log.info("Update Packing id and guid based on order lines guid existing in db with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        log.info("Update Packing id and guid based on order lines guid existing in db with Request Id {}",
+                LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         Map<String, Packing> mappings = fetchMappingForPackagesWithOrderLineGuid(packingRequestList);
         for (PackingV3Request packingRequest : packingRequestList) {
             Packing packing = mappings.get(packingRequest.getOrderLineGuid());
@@ -637,8 +607,11 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
-        log.info("Starting bulk packing update for module={} isFromQuote={} requestSize={}", module, isFromQuote, packingRequestList.size());
-        log.debug("PackingRequestList: {}", packingRequestList);
+        log.info("Starting bulk packing update for module={} isFromQuote={} requestSize={}",
+                LoggerHelper.sanitizeForLogs(module),
+                LoggerHelper.sanitizeForLogs(isFromQuote),
+                LoggerHelper.sanitizeForLogs(packingRequestList.size()));
+        log.debug("PackingRequestList: {}", LoggerHelper.sanitizeForLogs(packingRequestList));
 
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
@@ -651,7 +624,7 @@ public class PackingV3Service implements IPackingV3Service {
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
         List<Packing> existingPackings = fetchExistingPackings(incomingIds);
-        log.info("Fetched existing packings count={}", existingPackings.size());
+        log.info("Fetched existing packings count={}", LoggerHelper.sanitizeForLogs(existingPackings.size()));
 
         validateOpenAttachmentFlag(module, entity);
         // Validate incoming request
@@ -699,7 +672,10 @@ public class PackingV3Service implements IPackingV3Service {
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(allSavedPackings, isAutoSell, module);
 
-        log.info("Bulk packing update completed for module={} totalSavedPackings={} isAutoSell={}", module, allSavedPackings.size(), isAutoSell);
+        log.info("Bulk packing update completed for module={} totalSavedPackings={} isAutoSell={}",
+                LoggerHelper.sanitizeForLogs(module),
+                LoggerHelper.sanitizeForLogs(allSavedPackings.size()),
+                LoggerHelper.sanitizeForLogs(isAutoSell));
 
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
@@ -725,7 +701,9 @@ public class PackingV3Service implements IPackingV3Service {
             }
         }
 
-        log.info("Split requests: updateRequests={} createRequests={}", split.updateRequests.size(), split.createRequests.size());
+        log.info("Split requests: updateRequests={} createRequests={}",
+                split.updateRequests.size(),
+                split.createRequests.size());
         return split;
     }
 
@@ -755,7 +733,7 @@ public class PackingV3Service implements IPackingV3Service {
                 validateCommodity(packingRequestList, module, isFromQuote, ctx.shipmentDetails);
                 setConsolidationId(ctx.shipmentDetails, newPackings, consolidationId);
                 packingV3Util.setColoadingStation(ctx.shipmentDetails);
-                log.info("ConsolidationId updated via shipment flow, consolidationId={}", consolidationId);
+                log.info("ConsolidationId updated via shipment flow, consolidationId={}", LoggerHelper.sanitizeForLogs(consolidationId));
             }
         }
 
@@ -782,7 +760,11 @@ public class PackingV3Service implements IPackingV3Service {
             if (!Objects.equals(old.getPacksType(), packing.getPacksType())
                     || !Objects.equals(old.getPacks(), packing.getPacks())) {
                 log.info("Auto-sell detected for packingGuid={} oldPacksType={} newPacksType={} oldPacks={} newPacks={}",
-                        packing.getGuid(), old.getPacksType(), packing.getPacksType(), old.getPacks(), packing.getPacks());
+                        LoggerHelper.sanitizeForLogs(packing.getGuid()),
+                        LoggerHelper.sanitizeForLogs(old.getPacksType()),
+                        LoggerHelper.sanitizeForLogs(packing.getPacksType()),
+                        LoggerHelper.sanitizeForLogs(old.getPacks()),
+                        LoggerHelper.sanitizeForLogs(packing.getPacks()));
                 return true;
             }
         }
@@ -965,7 +947,10 @@ public class PackingV3Service implements IPackingV3Service {
                                 .build()
                 );
             } catch (Exception ex) {
-                log.error("Failed to add audit log for packing ID {} and operation [{}]: {}", id, operationType, ex.getMessage(), ex);
+                log.error("Failed to add audit log for packing ID {} and operation [{}]: {}",
+                        LoggerHelper.sanitizeForLogs(id),
+                        LoggerHelper.sanitizeForLogs(operationType),
+                        LoggerHelper.sanitizeForLogs(ex.getMessage()), ex);
             }
         }
     }
@@ -1030,7 +1015,9 @@ public class PackingV3Service implements IPackingV3Service {
                 }
             }
             if (packing.isEmpty()) {
-                log.debug(PackingConstants.PACKING_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
+                log.debug(LoggerHelper.sanitizeForLogs(PackingConstants.PACKING_RETRIEVE_BY_ID_ERROR),
+                        LoggerHelper.sanitizeForLogs(id),
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Packing fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -1038,7 +1025,7 @@ public class PackingV3Service implements IPackingV3Service {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
+            log.error(LoggerHelper.sanitizeForLogs(responseMsg), e);
             throw new ValidationException(responseMsg);
         }
     }
@@ -1046,7 +1033,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     public PackingListResponse list(ListCommonRequest request, boolean getMasterData, String source, String type) {
         if (request == null) {
-            log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             throw new ValidationException("Request cannot be null for list request.");
         }
         Long entityId = commonUtils.getLongValue(request.getEntityId());
@@ -1066,7 +1053,7 @@ public class PackingV3Service implements IPackingV3Service {
             packingPage = packingDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
-        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         PackingListResponse packingListResponse = new PackingListResponse();
         if (packingPage != null) {
             List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
@@ -1099,10 +1086,16 @@ public class PackingV3Service implements IPackingV3Service {
                 var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
                 var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}",
+                        LoggerHelper.sanitizeForLogs(LoggerEvent.PACKING_LIST_MASTER_DATA),
+                        LoggerHelper.sanitizeForLogs((System.currentTimeMillis() - startTime)),
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
                 return masterDataResponse;
             } catch (Exception ex) {
-                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
+                log.error(LoggerHelper.sanitizeForLogs(Constants.ERROR_OCCURRED_FOR_EVENT),
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                        LoggerHelper.sanitizeForLogs(IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST),
+                        LoggerHelper.sanitizeForLogs(ex.getLocalizedMessage()));
             }
         }
         return masterDataResponse;
@@ -1124,7 +1117,7 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setPageSize(request.getPageSize());
         listCommonRequest.setContainsText(request.getContainsText());
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource, SHIPMENT);
-        log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
             assignedPackages = packingDao.getPackingAssignmentCountByShipmentAndTenant(Long.valueOf(request.getEntityId()), TenantContext.getCurrentTenant());
@@ -1185,7 +1178,7 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setPageSize(request.getPageSize());
         listCommonRequest.setContainsText(request.getContainsText());
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource, CONSOLIDATION);
-        log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
             assignedPackages = packingDao.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, TenantContext.getCurrentTenant());
@@ -1559,7 +1552,7 @@ public class PackingV3Service implements IPackingV3Service {
                 int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
                 totalInnerPacks += innerPacks;
             } catch (NumberFormatException e) {
-                log.error("Error in getTotalInnerPacks to convert {} to integer for pack:{}", packing.getInnerPackageNumber(), packing.getId());
+                log.error("Error in getTotalInnerPacks to convert {} to integer for pack:{}", LoggerHelper.sanitizeForLogs(packing.getInnerPackageNumber()), LoggerHelper.sanitizeForLogs(packing.getId()));
             }
         }
         return totalInnerPacks;

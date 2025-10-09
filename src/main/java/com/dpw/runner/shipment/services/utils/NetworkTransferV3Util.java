@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +68,7 @@ public class NetworkTransferV3Util {
                 processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), ex.getMessage());
         }
 
     }
@@ -190,7 +191,7 @@ public class NetworkTransferV3Util {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
                     consolidationDetails, jobType, null, isInterBranchConsole);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
         }
 
     }
@@ -573,7 +574,7 @@ public class NetworkTransferV3Util {
                 processNonEligibleNTE(oldEntity);
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
         }
     }
 
@@ -663,7 +664,7 @@ public class NetworkTransferV3Util {
                 triggerConsoleTransfer(shipmentDetails);
             }
         } catch (Exception e) {
-            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()));
         }
     }
 
@@ -1000,7 +1001,7 @@ public class NetworkTransferV3Util {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
                     null, jobType, null, false);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
         }
     }
 

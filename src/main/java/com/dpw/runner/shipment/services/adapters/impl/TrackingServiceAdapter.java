@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -222,7 +223,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         UniversalTrackingPayload trackingPayload = null;
         ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId());
         trackingPayload = mapDetailsToTSData(consol, shipmentDetails, true);
-        log.info("Shipment Tracking Update: {}", trackingPayload.toString());
+        log.info("Shipment Tracking Update: {}", LoggerHelper.sanitizeForLogs(trackingPayload.toString()));
         return trackingPayload;
     }
 
