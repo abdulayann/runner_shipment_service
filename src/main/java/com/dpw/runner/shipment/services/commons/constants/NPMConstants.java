@@ -42,4 +42,19 @@ public class NPMConstants {
     public static final String PER_BL_AWB = "Per_Bl_Awb";
     public static final String CUSTOM = "Custom";
 
+    public static final String ORIGIN = "origin";
+    public static final String DESTINATION = "destination";
+    public static final String LOAD_TYPE = "load_type";
+    public static final String COMMODITY_CLASSIFICATION = "commodity_classification";
+    public static final String PARENT_CONTRACT_ID = "parent_contract_id";
+    public static final String MIN_TRANSIT_HOURS = "min_transit_hours";
+    public static final String MAX_TRANSIT_HOURS = "max_transit_hours";
+    public static final String VALID_TILL = "valid_till";
+
+    public static final String HAZARDOUS = "HAZ";
+    public static final int HOURS_PER_DAY = 24;
+
+    public static final String MIN_TRANSIT_DAYS = "minTransitDays";
+    public static final String MAX_TRANSIT_DAYS = "maxTransitDays";
+
 }

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -58,7 +59,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
@@ -189,14 +193,16 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) {
         try {
             ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
+            populateAdditionalFiltersInListContractRequest(listContractsWithFilterRequest);
             ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
-            List<NPMContractsResponse.NPMContractResponse> filteredContracts = filterContracts(npmContractsResponse, listContractsWithFilterRequest);
-            if (npmContractsResponse != null) {
-                npmContractsResponse.setContracts(filteredContracts);
+            List<NPMContractsResponse.NPMContractResponse> sortedContracts;
+            if(!Objects.isNull(npmContractsResponse) && !Objects.isNull(npmContractsResponse.getContracts()) && !Objects.isNull(listContractsWithFilterRequest.getSortRequest()) ) {
+                sortedContracts = sortNpmContracts(npmContractsResponse.getContracts(), listContractsWithFilterRequest.getSortRequest());
+                npmContractsResponse.setContracts(sortedContracts);
             }
 
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
@@ -1071,31 +1077,85 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return containerList;
     }
 
-    private List<NPMContractsResponse.NPMContractResponse> filterContracts(NPMContractsResponse response, ListContractsWithFilterRequest filterRequest) {
-        if (response == null || response.getContracts() == null || response.getContracts().isEmpty()) {
-            return Collections.emptyList();
+    private void populateAdditionalFiltersInListContractRequest(ListContractsWithFilterRequest filterRequest) {
+        ListContractRequest listContractRequest = filterRequest.getListContractRequest();
+
+        Map<String, Object> additionalFilters = new HashMap<>();
+        if(!Objects.isNull(filterRequest.getOrigin())) {
+            additionalFilters.put(ORIGIN, filterRequest.getOrigin());
         }
-        return response.getContracts().stream().filter(c -> isValidContract(c, filterRequest)).toList();
+        if(!Objects.isNull(filterRequest.getDestination())) {
+            additionalFilters.put(DESTINATION, filterRequest.getDestination());
+        }
+        if(!Objects.isNull(filterRequest.getCargoType())) {
+            additionalFilters.put(LOAD_TYPE, filterRequest.getCargoType());
+        }
+        if (Boolean.TRUE.equals(filterRequest.getIsDgEnabled())) {
+            additionalFilters.put(COMMODITY_CLASSIFICATION, HAZARDOUS);
+        }
+        if(!Objects.isNull(filterRequest.getParentContractId())) {
+            additionalFilters.put(PARENT_CONTRACT_ID, filterRequest.getParentContractId());
+        }
+        if(!Objects.isNull(filterRequest.getMinTransitDays())) {
+            additionalFilters.put(MIN_TRANSIT_HOURS, filterRequest.getMinTransitDays() * 24);
+        }
+        if(!Objects.isNull(filterRequest.getMaxTransitDays())) {
+            additionalFilters.put(MAX_TRANSIT_HOURS, filterRequest.getMaxTransitDays() * 24);
+        }
+        listContractRequest.setAdditionalFilters(additionalFilters);
     }
 
-    private boolean isValidContract(NPMContractsResponse.NPMContractResponse contract,
-                                    ListContractsWithFilterRequest filter) {
-        if (contract.getValidTill() == null || LocalDateTime.now().isAfter(contract.getValidTill())) {
-            return false;
+    private List<NPMContractsResponse.NPMContractResponse> sortNpmContracts(List<NPMContractsResponse.NPMContractResponse> contracts, SortRequest sortRequest) {
+        if (sortRequest == null || sortRequest.getFieldName() == null) {
+            return contracts;
         }
-        if (filter.getCargoType() != null && !filter.getCargoType().equals(contract.getProduct_type())) {
-            return false;
+
+        String field = sortRequest.getFieldName();
+        boolean asc = !"desc".equalsIgnoreCase(sortRequest.getOrder());
+
+        Comparator<NPMContractsResponse.NPMContractResponse> comparator = switch (field) {
+            case "validTill" -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getValidTill,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case ORIGIN -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getOrigin,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case DESTINATION -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getDestination,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case CARGO_TYPE -> Comparator.comparing(
+                    c -> (c.getLoadTypes() != null && !c.getLoadTypes().isEmpty())
+                            ? c.getLoadTypes().get(0)
+                            : null,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case MIN_TRANSIT_DAYS -> Comparator.comparing(
+                    c -> parseDoubleSafe(c.getMeta() != null ? c.getMeta().getMinTransitHours() : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case MAX_TRANSIT_DAYS -> Comparator.comparing(
+                    c -> parseDoubleSafe(c.getMeta() != null ? c.getMeta().getMaxTransitHours() : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            default -> throw new IllegalArgumentException("Unsupported sort field: " + field);
+        };
+
+        if (!asc) {
+            comparator = comparator.reversed();
         }
-        if (filter.getOrigin() != null && !filter.getOrigin().equals(contract.getOrigin())) {
-            return false;
+        return contracts.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
+    }
+
+    private static Double parseDoubleSafe(String value) {
+        try {
+            return value != null ? Double.parseDouble(value) : null;
+        } catch (NumberFormatException e) {
+            return null;
         }
-        if (filter.getDestination() != null && !filter.getDestination().equals(contract.getDestination())) {
-            return false;
-        }
-        if (Boolean.TRUE.equals(filter.getIsDgEnabled())) {
-            List<String> dgClass = contract.getDgClass();
-            return dgClass != null && !dgClass.isEmpty() && dgClass.get(0) != null;
-        }
-        return true;
     }
 }

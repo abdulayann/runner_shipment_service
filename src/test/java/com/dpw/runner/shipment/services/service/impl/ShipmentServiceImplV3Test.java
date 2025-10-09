@@ -8915,24 +8915,20 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testResetShipmentQuoteRules_NullShipmentId() {
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> shipmentServiceImplV3.resetShipmentQuoteRules(null)
-        );
-        assertEquals("Shipment Id Is Mandatory", ex.getMessage());
-    }
-
-    @Test
-    void testResetShipmentQuoteRules_ShipmentNotFound() {
-        Long shipmentId = 1L;
-        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
-
-        DataRetrievalFailureException ex = assertThrows(
-                DataRetrievalFailureException.class,
-                () -> shipmentServiceImplV3.resetShipmentQuoteRules(shipmentId)
-        );
-        assertTrue(Objects.requireNonNull(ex.getMessage()).contains("No Shipment found with Shipment Id"));
+    void testResetShipmentQuoteRules_ForNewShipment() {
+        QuoteResetRulesResponse response = shipmentServiceImplV3.resetShipmentQuoteRules(null);
+        QuoteResetField polField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POL"))
+                .findFirst()
+                .orElseThrow();
+        QuoteResetField podField = response.getQuotesResetFields().stream()
+                .filter(f -> f.getLabel().equals("POD"))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(polField.isEditable());
+        assertTrue(polField.isSelected());
+        assertTrue(podField.isEditable());
+        assertTrue(podField.isSelected());
     }
 
     @Test

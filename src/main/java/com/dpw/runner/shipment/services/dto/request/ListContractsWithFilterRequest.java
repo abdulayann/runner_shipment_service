@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -14,5 +17,9 @@ public class ListContractsWithFilterRequest implements IRunnerRequest {
     private String origin;
     private String destination;
     private Boolean isDgEnabled = false;
+    private String parentContractId;
+    private Long minTransitDays;
+    private Long maxTransitDays;
     private ListContractRequest listContractRequest;
+    private SortRequest sortRequest;
 }
