@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -8,7 +10,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -23,9 +28,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -43,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -279,7 +288,7 @@ class PushToDownstreamServiceTest {
         pushToDownstreamEventDto.setParentEntityId(123L);
         pushToDownstreamEventDto.setTriggers(new ArrayList<>());
         pushToDownstreamEventDto.setParentEntityName(Constants.CUSTOMER_BOOKING);
-        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 
     @Test
@@ -391,7 +400,7 @@ class PushToDownstreamServiceTest {
                 .contains("not found");
 
         verify(consolidationV3Service).findById(consolidationId);
-        verify(shippingInstructionUtil, never()).syncCommonContainersByConsolId(any());
+        verify(shippingInstructionUtil, Mockito.never()).syncCommonContainersByConsolId(any());
     }
 
     @Test
@@ -479,5 +488,58 @@ class PushToDownstreamServiceTest {
 
         // Assert
         verify(consolidationV3Service).findById(consolidationId);
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_PLATFORM_SYNC() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_PLATFORM_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_OMS_SYNC() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_OMS_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+
+    @Test
+    void testProcess_CUSTOMER_BOOKING_TO_OMS_SYNC_shouldProduceToKafka() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(1L)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(100)
+                        .sourceInfo(CUSTOMER_BOOKING_TO_OMS_SYNC)
+                        .isCreate(true).build())
+                .build();
+
+        CustomerBooking fakeCustomerBooking = CustomerBooking.builder().build();
+        fakeCustomerBooking.setOrderManagementId("ORD_NUM_00001");
+        fakeCustomerBooking.setOrderManagementNumber("ORD_MGMT_00001");
+        fakeCustomerBooking.setBookingStatus(BookingStatus.CANCELLED);
+        fakeCustomerBooking.setBookingNumber("BOOKING_NUM_00001");
+        fakeCustomerBooking.setGuid(UUID.randomUUID());
+        fakeCustomerBooking.setTenantId(100);
+
+        when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(fakeCustomerBooking));
+
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+        verify(producer).produceToKafka(any(), any(), any());
     }
 }

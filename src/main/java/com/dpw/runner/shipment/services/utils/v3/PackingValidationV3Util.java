@@ -3,19 +3,19 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +24,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -37,6 +42,9 @@ public class PackingValidationV3Util {
 
     @Autowired
     private ICustomerBookingService customerBookingService;
+
+    @Autowired
+    private IShipmentOrderService shipmentOrderService;
 
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
@@ -115,8 +123,21 @@ public class PackingValidationV3Util {
             return validateConsolidation(packingRequest);
         } else if (Constants.BOOKING.equalsIgnoreCase(module)) {
             return validateBooking(packingRequest);
+        } else if (Constants.SHIPMENT_ORDER.equalsIgnoreCase(module)) {
+            return validateShipmentOrder(packingRequest);
         }
         return null;
+    }
+
+    private ShipmentOrder validateShipmentOrder(PackingV3Request packingRequest) {
+        if (packingRequest.getShipmentOrderId() == null || packingRequest.getShipmentOrderId() <= 0) {
+            throw new ValidationException("Shipment Order Id is empty");
+        }
+        Optional<ShipmentOrder> shipmentOrder = shipmentOrderService.findById(packingRequest.getShipmentOrderId());
+        if (shipmentOrder.isEmpty()) {
+            throw new ValidationException("Please provide the valid Shipment Order id");
+        }
+        return shipmentOrder.get();
     }
 
     private CustomerBooking validateBooking(PackingV3Request packingRequest) {
@@ -161,6 +182,7 @@ public class PackingValidationV3Util {
             case Constants.SHIPMENT -> validateSameId(requestList, PackingV3Request::getShipmentId, "shipmentId");
             case Constants.CONSOLIDATION -> validateSameId(requestList, PackingV3Request::getConsolidationId, "consolidationId");
             case Constants.BOOKING -> validateSameId(requestList, PackingV3Request::getBookingId, "bookingId");
+            case Constants.SHIPMENT_ORDER -> validateSameId(requestList, PackingV3Request::getShipmentOrderId, "shipmentOrderId");
             default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
         }
     }

@@ -4,11 +4,14 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
-import java.util.*;
 
 public interface IPackingDao {
     Packing save(Packing packing);
@@ -18,6 +21,8 @@ public interface IPackingDao {
     Optional<Packing> findById(Long id);
 
     Optional<Packing> findByGuid(UUID id);
+
+    List<Packing> findByOrderLineGuidIn(List<String> orderLineGuidList);
 
     void delete(Packing packing);
 
@@ -32,6 +37,8 @@ public interface IPackingDao {
 
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException;
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException;
+
+    List<Packing> saveEntityFromShipmentOrder(List<Packing> packings, Long shipmentOrderId);
 
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap);

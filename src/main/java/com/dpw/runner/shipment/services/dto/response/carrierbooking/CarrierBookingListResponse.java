@@ -42,6 +42,8 @@ public class CarrierBookingListResponse implements IRunnerResponse {
     private PartiesResponse deliveryTo;
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     private ShippingInstructionStatus siStatus;
     private VerifiedGrossMassStatus vgmStatus;
     private SailingInformationResponse sailingInformation;

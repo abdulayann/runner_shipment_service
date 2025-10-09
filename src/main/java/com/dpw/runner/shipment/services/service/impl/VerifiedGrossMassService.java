@@ -610,7 +610,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
             verifiedGrossMassUtil.populateCarrierDetails(
                     verifiedGrossMassUtil.fetchCarrierDetailsForBridgePayload(verifiedGrossMass),
-                    verifiedGrossMassInttraResponse, verifiedGrossMass.getExternalEmails());
+                    verifiedGrossMassInttraResponse, verifiedGrossMass.getExternalEmails(), verifiedGrossMass.getOtherExternalEmails());
 
             // Generates number between 10000 and 99999 and set fileName
             SecureRandom random = new SecureRandom();

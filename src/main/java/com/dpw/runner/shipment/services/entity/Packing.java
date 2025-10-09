@@ -3,18 +3,27 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.PackCategory;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import javax.persistence.*;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "packing")
@@ -266,5 +275,25 @@ public class Packing extends MultiTenancy {
     @Column(name = "pack_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String packWeightUnit;
+
+    @Column(name = "pack_category")
+    @Enumerated(EnumType.STRING)
+    private PackCategory packCategory;
+
+    @Column(name = "line_no")
+    private BigDecimal lineNo;
+
+    @Column(name = "sub_line_no")
+    private BigDecimal subLineNo;
+
+    @Column(name = "product_code")
+    private String productCode;
+
+    @Column(name = "shipment_order_id")
+    private Long shipmentOrderId;
+
+    @Column(name = "order_line_guid")
+    private String orderLineGuid;
+
 }
 

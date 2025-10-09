@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleR
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -440,6 +442,35 @@ class ShipmentControllerV3Test {
         // Verify
         verify(jsonHelper).convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
         verify(shipmentService).partialUpdate(any());
+    }
+
+    @Test
+    void testAttachDetachOrder_Success() {
+        ShipmentOrderAttachDetachRequest request = ShipmentOrderAttachDetachRequest.builder()
+                .shipmentGuid(UUID.randomUUID())
+                .event("random-even")
+                .orderDetailsForAttach(List.of())
+                .build();
+        when(shipmentService.attachDetachOrder(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.attachDetachOrder(request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testAttachDetachOrder_ServiceThrowsException() {
+        String errorMessage = "test validation exception";
+        ShipmentOrderAttachDetachRequest request = ShipmentOrderAttachDetachRequest.builder()
+                .shipmentGuid(UUID.randomUUID())
+                .event("random-even")
+                .orderDetailsForAttach(List.of())
+                .build();
+        when(shipmentService.attachDetachOrder(any())).thenThrow(new ValidationException(errorMessage));
+
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.attachDetachOrder(request);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
 }

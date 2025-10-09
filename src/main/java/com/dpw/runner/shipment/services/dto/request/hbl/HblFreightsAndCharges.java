@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.hbl;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
@@ -9,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @Data
 @ApiModel("Hbl Freights and Charges Data Model")
 @ToString
@@ -16,7 +17,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class HblFreightsAndCharges {
+public class HblFreightsAndCharges implements Serializable {
 
     private String charges;
     private Double value;

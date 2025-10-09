@@ -50,7 +50,7 @@ public class NetworkTransferV3Util {
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || !isNetworkTransferEntityEnabled)
+            if(consolidationDetails.getShipmentType()==null || !(Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) || DIRECTION_CTS.equals(consolidationDetails.getShipmentType())) || !isNetworkTransferEntityEnabled)
                 return;
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
             boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(oldEntity.getInterBranchConsole());
@@ -60,9 +60,10 @@ public class NetworkTransferV3Util {
                 processOldEntityInterBranch(consolidationDetails);
 
             if (consolidationDetails.getTransportMode()!=null && !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) {
-                processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
-                        oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
-                        reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
+                if(Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP))
+                    processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                            oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                            reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
 
                 processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
             }
@@ -556,12 +557,9 @@ public class NetworkTransferV3Util {
                 return;
 
             // Check if the shipment is eligible for network transfer
-            if (isEligibleForNetworkTransfer(shipmentDetails)) {
+            if (isEligibleForNetworkTransferForNTSchedule(shipmentDetails)) {
 
-                // Process the receiving branch for network transfer
-                processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                        oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
-                        reverseDirection(shipmentDetails.getDirection()));
+                processReceivingBranch(shipmentDetails, oldEntity);
 
                 if (shipmentDetails.getTriangulationPartnerList() != null) {
                     processTriangulationPartnerList(shipmentDetails, oldEntity);
@@ -577,6 +575,15 @@ public class NetworkTransferV3Util {
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
+        }
+    }
+
+    private void processReceivingBranch(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(Objects.equals(shipmentDetails.getShipmentType(), DIRECTION_EXP)) {
+            // Process the receiving branch for network transfer
+            processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                    reverseDirection(shipmentDetails.getDirection()));
         }
     }
 
@@ -842,6 +849,13 @@ public class NetworkTransferV3Util {
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
         return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
                 && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) && Constants.DIRECTION_EXP.equals(details.getDirection());
+    }
+
+    private boolean isEligibleForNetworkTransferForNTSchedule(ShipmentDetails details) {
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
+                && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) &&
+                (Constants.DIRECTION_EXP.equals(details.getDirection()) || Constants.DIRECTION_CTS.equals(details.getDirection())
+                        || DIRECTION_IMP.equals(details.getDirection()));
     }
 
     private void processInterBranchEntityCase(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

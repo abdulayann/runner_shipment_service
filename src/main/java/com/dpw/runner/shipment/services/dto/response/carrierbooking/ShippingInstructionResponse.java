@@ -46,6 +46,8 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String serviceType;
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     private List<FreightDetailResponse> freightDetailList;
     private List<CommonPackageResponse> commonPackagesList;
     private List<CommonContainerResponse> commonContainersList;

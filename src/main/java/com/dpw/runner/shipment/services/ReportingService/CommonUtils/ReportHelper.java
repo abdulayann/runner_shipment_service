@@ -41,7 +41,7 @@ public class ReportHelper {
         }
     }
 
-    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName) {
+    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName, Map<String, String> orgToFirmsCode) {
         if (partiesModel == null || partiesModel.getAddressData() == null) {
             return null;
         }
@@ -57,6 +57,8 @@ public class ReportHelper {
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
+        temp = appendFirmsCode(orgToFirmsCode, partiesModel.getOrgId(), temp);
+
 
         if (!CommonUtils.isStringNullOrEmpty(temp)) {
             if (response == null) {
@@ -88,6 +90,17 @@ public class ReportHelper {
                 response = x;
             else
                 response = response + ", " + x;
+        }
+        return response;
+    }
+
+    public static String appendFirmsCode(Map<String, String> orgToFirmsCode, String orgId, String response) {
+        if (orgToFirmsCode != null && orgId != null && orgToFirmsCode.containsKey(orgId) && !CommonUtils.isStringNullOrEmpty(orgToFirmsCode.get(orgId))) {
+            String firmsCode = orgToFirmsCode.get(orgId);
+            if (response == null)
+                response = firmsCode;
+            else
+                response = response + ", " + firmsCode;
         }
         return response;
     }
@@ -261,6 +274,57 @@ public class ReportHelper {
 
         return list;
 
+    }
+
+    public static List<String> getOrgAddressWithNameAndCity(String name, String address1, String address2,
+                                                            String city, String stateCode, String pinCode, String countryCode) {
+        List<String> list = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+
+        // Add Name in the first Line to the list if not empty
+        if (StringUtility.isNotEmpty(name)) {
+            sb.append(name).append("\n");
+        }
+
+        // Add Address lines (address1 and address2) with a line difference in between if both are present
+        if (StringUtility.isNotEmpty(address1)) {
+            sb.append(address1).append("\n");
+        }
+        if (StringUtility.isNotEmpty(address2)) {
+            sb.append(address2).append("\n");
+        }
+
+        // Add City, State, Zipcode, and Country in the same line, with space between them if present/non-empty
+        StringBuilder addressLine2 = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city)) {
+            addressLine2.append(city).append(" ");
+        }
+        if (StringUtility.isNotEmpty(stateCode)) {
+            addressLine2.append(stateCode).append(" ");
+        }
+        if (StringUtility.isNotEmpty(pinCode)) {
+            addressLine2.append(pinCode).append(" ");
+        }
+
+        if (StringUtility.isNotEmpty(countryCode)) {
+            addressLine2.append(countryCode);
+        }
+
+        // Add address line 2 to the main StringBuilder if it's not empty
+        // and remove trailing space if any
+        if (StringUtility.isNotEmpty(addressLine2.toString())) {
+            sb.append(addressLine2.toString().trim());
+        }
+
+        // Only add the line to the list if something is in it
+        // Trim to remove any leading/trailing spaces
+        if (sb.length() > 0) {
+            list.add(sb.toString().trim());
+        }
+
+        // Return the list (empty list if no valid information is available)
+        return list.isEmpty() ? Collections.emptyList() : list;
     }
 
     public static List<String> getOrgAddress(PartiesModel party) {

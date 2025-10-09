@@ -1,5 +1,38 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SECURITY_PERMISSION_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SERVICE_MODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TESLA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION_PORT_LOC_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN_PORT_LOC_CODE;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.NOTIFY_PARTY_REQUEST;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -8,33 +41,114 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.npm.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3DeleteResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3ListResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
+import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetField;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentRetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.QuoteContracts;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
+import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.PartyType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.*;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -46,10 +160,37 @@ import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Ser
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.utils.v3.CustomerBookingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -65,27 +206,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION_PORT_LOC_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN_PORT_LOC_CODE;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 @Service
 @Slf4j
@@ -260,6 +380,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(masterDataUtils.withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
+        CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(customerBooking, null);
 
         // Update NPM for contract utilization
         if(checkNPMContractUtilization(customerBooking)) {
@@ -267,6 +388,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         try {
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            populateUnlocCodeFuture.join();
             createEntities(customerBooking, customerBookingV3Request, containerTeuMap);
             customerBookingV3Util.updateCargoInformation(customerBooking, containerTeuMap, null, false);
             /**
@@ -278,7 +400,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
                 // Triggering Event for customer booking for DependentServices update
-                triggerPushToDownStreamForCustomerBooking(customerBooking);
+                triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_PLATFORM_SYNC);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -287,24 +409,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
-    private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking) {
+    private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking, boolean isCreate, String sourceInfo) {
         Long bookingId = customerBooking.getId();
         String transactionId = bookingId.toString();
 
-        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | bookingId={} | transactionId={}",
-                bookingId, transactionId);
+        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | bookingId={} | transactionId={} | sourceInfo={}",
+                bookingId, transactionId, sourceInfo);
 
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(bookingId)
                 .parentEntityName(CUSTOMER_BOOKING)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .tenantId(customerBooking.getTenantId())
-                        .isCreate(true).build())
+                        .sourceInfo(sourceInfo)
+                        .isCreate(isCreate).build())
                 .build();
         dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);
 
-        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | bookingId={} | transactionId={}",
-               bookingId, bookingId);
+        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | bookingId={} | transactionId={} | sourceInfo={}",
+               bookingId, bookingId, sourceInfo);
     }
 
     @Override
@@ -331,6 +454,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(customerBooking, oldEntity.get());
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
@@ -341,6 +465,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+        populateUnlocCodeFuture.join();
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
         try {
             //Check 2
@@ -349,7 +474,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
 
                 // Triggering Event for customer booking for DependentServices update
-                triggerPushToDownStreamForCustomerBooking(customerBooking);
+                triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_PLATFORM_SYNC);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -1965,7 +2090,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         processBookingChargesRequest(customerBooking, bookingChargesRequest, containerMap);
         if(request.getOrderManagementId() != null)
         {
-            pushCustomerBookingDataToDependentService(customerBooking, true);
+            triggerPushToDownStreamForCustomerBooking(customerBooking, true, CUSTOMER_BOOKING_TO_OMS_SYNC);
         }
         try {
             auditLogService.addAuditLog(
@@ -2215,18 +2340,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {
-        try {
-            OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder().orderManagementId(customerBooking.getOrderManagementId()).orderManagementNumber(customerBooking.getOrderManagementNumber()).moduleId(customerBooking.getBookingNumber()).moduleGuid(customerBooking.getGuid().toString()).tenantId(TenantContext.getCurrentTenant()).build();
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(orderManagement, isCreate);
-            log.info("Producing order management data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(customerBooking.getGuid()));
-        }
-        catch (Exception e) {
-            log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
-        }
-    }
-
     private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
@@ -2294,6 +2407,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             customerBooking = processReadyForShipmentBooking(customerBooking, request, tenantSettingsResponse);
         }
+        removeOrderLinkageOnCancellation(customerBooking, request);
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -2311,6 +2425,20 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(e.getMessage());
         }
         return customerBooking;
+    }
+
+    private void removeOrderLinkageOnCancellation(CustomerBooking customerBooking, CustomerBookingV3Request request) {
+        if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
+            return;
+        }
+
+        customerBooking.setOrderManagementId(null);
+        customerBooking.setOrderManagementNumber(null);
+        customerBooking = customerBookingDao.save(customerBooking);
+
+        if (request.getOrderManagementId() != null) {
+            triggerPushToDownStreamForCustomerBooking(customerBooking, false, CUSTOMER_BOOKING_TO_OMS_SYNC);
+        }
     }
 
     public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {
@@ -2664,5 +2792,21 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (RunnerException ex) {
             throw new MdmException(ex.getMessage());
         }
+    }
+
+    private CompletableFuture<Void> getPopulateUnlocCodeFuture(CustomerBooking entity, CustomerBooking oldEntity) {
+        CarrierDetails finalOldCarrierDetails = Optional.ofNullable(oldEntity).map(CustomerBooking::getCarrierDetails).orElse(null);
+
+        /* Set to extract the unlocations from entities whose unloc code needs to be saved */
+        Set<String> unlocationsSet = Collections.synchronizedSet(new HashSet<>());
+        Map<String, EntityTransferUnLocations> unLocationsMap = new ConcurrentHashMap<>();
+
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService)
+        ).join();
+        return CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
+                .thenCompose(v -> CompletableFuture.allOf(
+                        CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService)
+                ));
     }
 }

@@ -2308,8 +2308,6 @@ class MasterDataUtilsTest extends CommonMocks {
         boolean isSuccess = true;
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(TenantModel::new);
 
         masterDataUtils.fetchTenantIdForList(List.of(ConsolidationListResponse.builder().tenantId(1).build()));
 

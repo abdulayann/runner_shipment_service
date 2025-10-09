@@ -263,6 +263,7 @@ public class ReportConstants {
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
     public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
+    public static final String SHIPPED_ONBOARD_NEW = "BL_ShippedOnBoard";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -398,6 +399,7 @@ public class ReportConstants {
     public static final String BL_NETWEIGHT_UNIT = "BL_NetWeightUnit";
     public static final String BL_DELIVERYAGENT = "BL_DeliveryAgent";
     public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAgentAddress";
+    public static final String BL_TOTAL_PACKS_COUNT = "BL_TotalPacksCount";
     public static final String TOTAL_PCS = "ToatalPcs";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";
@@ -561,6 +563,10 @@ public class ReportConstants {
     public static final String BL_VESSEL_NAME = "BL_VesselName";
     public static final String BL_VOYAGE = "BL_Voyage";
     public static final String BL_NOTIFY_PARTY = "BL_NotifyParty";
+    public static final String BL_NEW_SHIPPER = "BL_NewShipper";
+    public static final String BL_NEW_CONSIGNEE = "BL_NewConsignee";
+    public static final String BL_FORWARDER = "BL_Forwarder";
+    public static final String BL_DELIVERY = "BL_Delivery";
     public static final String TOTAL_PACKS_WEIGHT = "TotalPacksWeight";
     public static final String TOTAL_PACKS_VOLUME = "TotalPacksVolume";
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";
@@ -636,6 +642,7 @@ public class ReportConstants {
     public static final String BL_DELIVERY_AGENT_ADDRESS = "BL_DeliveryAgentAddress";
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
+    public static final String BL_REMARKS = "BLRemarks";
     public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
     public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
     public static final String BL_CHARGES = "BLCharges";
@@ -1120,6 +1127,7 @@ public class ReportConstants {
     public static final String PORT_OF_LOADING_IN_CAPS = "PortOfLoadingInCaps";
     public static final String BL_DESCRIPTION = "BLDescription";
     public static final String CARGO_TERMS_DESCRIPTION = "CargoTermsDescription";
+    public static final String CARGO_TERMS = "CargoTerms";
     public static final String LOAD_DESCRIPTION_REMARKS = "LoadRemarksDescription";
     public static final String CONSOLE_DELIVERY_MODE_IN_CAPS = "ConsolDeliveryMode";
     public static final String CONSOLE_MARKS_N_NUMBERS_IN_CAPS = "ConsolMarksandNumber";
@@ -1583,6 +1591,7 @@ public class ReportConstants {
     public static final String PACKAGES = "Packages";
 
     public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
+    public static final String FIRMS_CODE_SUFFIX = ".FIRMSCode";
 
     public static final String C_PACK = "C_Pack";
     public static final String C_PACK_TYPE = "C_PackType";

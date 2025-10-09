@@ -1,5 +1,95 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SECURITY_PERMISSION_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CROSS_TENANT_SOURCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POD_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POL_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_CONSOLIDATION_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -14,7 +104,11 @@ import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
@@ -31,9 +125,39 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
+import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -93,6 +217,46 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfGState;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfWriter;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
@@ -106,60 +270,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.*;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
-
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -4751,7 +4873,7 @@ class CommonUtilsTest {
         String volumeUnit = commonUtils.getDefaultVolumeUnit();
         assertEquals("M3", volumeUnit);
     }
-    
+
     @Test
     void getTaskIdHyperLinkV2_Success(){
         String result = commonUtils.getTaskIdHyperLinkV2("SH", "TA");
@@ -7269,4 +7391,238 @@ class CommonUtilsTest {
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
     }
+    @Test
+    void testAddTenantIdAndTriangulationData_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build(),
+                TriangulationPartner.builder().triangulationPartner(300L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+
+        assertEquals(3, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullTenantId() {
+        Set<Long> tenantIds = new HashSet<>();
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, null, partners);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, null);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_emptyPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, Collections.emptyList());
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testHandleParentEntity_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        Long receivingBranch = 200L;
+        Long originBranch = 300L;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, receivingBranch, originBranch, partners);
+
+        assertEquals(2, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleParentEntity_nullBranches() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, null, null, partners);
+
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchFalse() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(false);
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_noShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+        consolidation.setShipmentsList(new HashSet<>());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_withShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setTenantId(101);
+        shipment1.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(102L).build()));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setTenantId(201);
+        shipment2.setTriangulationPartnerList(Collections.emptyList());
+
+        consolidation.setShipmentsList(new HashSet<>(Arrays.asList(shipment1, shipment2)));
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 101, shipment1.getTriangulationPartnerList());
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 201, shipment2.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_nullGuid() {
+        Set<Long> tenantIds = new HashSet<>();
+        commonUtils.addTenantDataFromParentGuid(null, tenantIds, "SHIPMENT");
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(shipmentDao).findShipmentByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_noRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(Collections.emptyList());
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(shipmentDao).findByParentGuid(parentGuid);
+        verify(commonUtils, never()).handleInterbranchConsolidation(anySet(), any());
+        verify(commonUtils, times(0)).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+
+        ShipmentDetails relatedShipment = new ShipmentDetails();
+        relatedShipment.setTenantId(10);
+        relatedShipment.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(11L).build()));
+
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedShipment));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 10, relatedShipment.getTriangulationPartnerList());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails parentConsolidation = new ConsolidationDetails();
+        parentConsolidation.setTenantId(1);
+
+        ConsolidationDetails relatedConsolidation = new ConsolidationDetails();
+        relatedConsolidation.setTenantId(20);
+        relatedConsolidation.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(21L).build()));
+
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentConsolidation));
+        when(consolidationDetailsDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedConsolidation));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).handleInterbranchConsolidation(anySet(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).handleInterbranchConsolidation(tenantIds, parentConsolidation);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 20, relatedConsolidation.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(consolidationDetailsDao).findConsolidationByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
 }
