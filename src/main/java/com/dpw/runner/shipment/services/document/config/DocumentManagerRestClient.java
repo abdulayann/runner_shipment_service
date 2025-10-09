@@ -288,22 +288,22 @@ public class DocumentManagerRestClient {
 
     }
 
-    public DocumentManagerResponse<T> getFileHistory(Object object) {
+    public DocumentManagerResponse<T> getFileHistory(Long docId) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            HttpEntity<Long> httpEntity = new HttpEntity<>(docId, headers);
             log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(this.documentHistory) + "/" + LoggerHelper.sanitizeForLogs(object),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+                    LoggerHelper.sanitizeForLogs(this.documentHistory) + "/" + LoggerHelper.sanitizeForLogs(docId),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docId)));
             var response  = restTemplate.exchange(
-                    this.documentHistory + "/" + object,
+                    this.documentHistory + "/" + docId,
                     HttpMethod.GET,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("getFileHistory", object, ex);
+            this.logError("getFileHistory", docId, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -313,23 +313,23 @@ public class DocumentManagerRestClient {
 
     }
 
-    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Object object) {
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Long docId) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            HttpEntity<Long> httpEntity = new HttpEntity<>(docId, headers);
 
             log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(this.documentDownload )+ "?id=" + LoggerHelper.sanitizeForLogs(object),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
+                    LoggerHelper.sanitizeForLogs(this.documentDownload )+ "?id=" + LoggerHelper.sanitizeForLogs(docId),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docId)));
             var response  = restTemplate.exchange(
-                    this.documentDownload + "?id=" + object,
+                    this.documentDownload + "?id=" + docId,
                     HttpMethod.GET,
                     httpEntity,
                     byte[].class
             );
             return ResponseEntity.ok(DocumentDownloadResponse.builder().content(response.getBody()).headers(response.getHeaders()).build());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("downloadDocument", object, ex);
+            this.logError("downloadDocument", docId, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
