@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -1391,6 +1392,7 @@ class NPMServiceAdapterTest {
         dgContract.setDestination("Destination1");
         dgContract.setValidTill(LocalDateTime.now().plusDays(1));
         dgContract.setDgClass(List.of("3"));
+
         NPMContractsResponse.NPMContractResponse nonDgContract = new NPMContractsResponse.NPMContractResponse();
         nonDgContract.setProduct_type("CargoType2");
         nonDgContract.setOrigin("Origin2");
@@ -1416,6 +1418,7 @@ class NPMServiceAdapterTest {
         listContractsWithFilterRequest.setCargoType("CargoType1");
         listContractsWithFilterRequest.setOrigin("Origin1");
         listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder()
                 .data(listContractsWithFilterRequest)
@@ -1425,6 +1428,163 @@ class NPMServiceAdapterTest {
                 .build();
 
         ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContracts(commonRequestModel);
+
+        // Verify
+        verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));
+        verify(jsonHelper, atLeastOnce()).convertToJson(any());
+
+        DependentServiceResponse response = (DependentServiceResponse) result.getBody();
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        List<NPMContractsRunnerResponse> responseList = (List<NPMContractsRunnerResponse>) response.getData();
+        assertNotNull(responseList);
+        assertFalse(responseList.isEmpty());
+
+        List<NPMContractsResponse.NPMContractResponse> contracts = responseList.get(0).getContracts();
+        assertEquals(1, contracts.size());
+        assertEquals("CargoType1", contracts.get(0).getProduct_type());
+        assertEquals("Origin1", contracts.get(0).getOrigin());
+        assertEquals("Destination1", contracts.get(0).getDestination());
+        assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    static Stream<SortRequest> provideSortRequests() {
+        return Stream.of(
+                SortRequest.builder().fieldName("validTill").order("ASC").build(),
+                SortRequest.builder().fieldName("destination").order("ASC").build(),
+                SortRequest.builder().fieldName("origin").order("ASC").build(),
+                SortRequest.builder().fieldName("cargoType").order("ASC").build(),
+                SortRequest.builder().fieldName("maxTransitDays").order("ASC").build(),
+                SortRequest.builder().fieldName("minTransitDays").order("ASC").build()
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSortRequests")
+    void testFetchContractsWithSortRequests(SortRequest sortRequest) throws RunnerException {
+        // Mock JSON helper conversion
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        // Prepare contract response object
+        NPMContractsResponse.NPMContractResponse dgContract = new NPMContractsResponse.NPMContractResponse();
+        dgContract.setProduct_type("CargoType1");
+        dgContract.setOrigin("Origin1");
+        dgContract.setDestination("Destination1");
+        dgContract.setValidTill(LocalDateTime.now().plusDays(1));
+        dgContract.setDgClass(List.of("3"));
+        dgContract.setMeta(ListContractResponse.Meta.builder()
+                // Set transit hours based on sort field if related
+                .maxTransitHours(sortRequest.getFieldName().equals("maxTransitDays") ? "20" : null)
+                .minTransitHours(sortRequest.getFieldName().equals("minTransitDays") ? "20" : null)
+                .build());
+        if (sortRequest.getFieldName().equals("cargoType")) {
+            dgContract.setLoadTypes(List.of("FCL"));
+        }
+
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        npmContractsResponse.setContracts(List.of(dgContract));
+
+        // Mock REST call returning the contract response
+        when(restTemplate3.exchange(any(RequestEntity.class), any(Class.class)))
+                .thenReturn(new ResponseEntity<>(npmContractsResponse, HttpStatus.OK));
+
+        // Mock unlocation response for dependent service
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+
+        // Prepare filter request
+        ListContractsWithFilterRequest listContractsWithFilterRequest = new ListContractsWithFilterRequest();
+        listContractsWithFilterRequest.setIsDgEnabled(true);
+        listContractsWithFilterRequest.setCargoType("CargoType1");
+        listContractsWithFilterRequest.setOrigin("Origin1");
+        listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setParentContractId("DPWP-0001-2345");
+        listContractsWithFilterRequest.setMaxTransitDays(2L);
+        listContractsWithFilterRequest.setMinTransitDays(1L);
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
+        listContractsWithFilterRequest.setSortRequest(sortRequest);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(listContractsWithFilterRequest)
+                .guid("1234")
+                .id(1L)
+                .dependentData("Dependent Data")
+                .build();
+
+        // Call method under test
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel);
+
+        // Verify interactions
+        verify(restTemplate3).exchange(any(RequestEntity.class), any(Class.class));
+        verify(jsonHelper, atLeastOnce()).convertToJson(any());
+
+        // Assert response
+        assertNotNull(result);
+        DependentServiceResponse response = (DependentServiceResponse) result.getBody();
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        List<NPMContractsRunnerResponse> responseList = (List<NPMContractsRunnerResponse>) response.getData();
+        assertNotNull(responseList);
+        assertFalse(responseList.isEmpty());
+
+        List<NPMContractsResponse.NPMContractResponse> contracts = responseList.get(0).getContracts();
+        assertEquals(1, contracts.size());
+        assertEquals("CargoType1", contracts.get(0).getProduct_type());
+        assertEquals("Origin1", contracts.get(0).getOrigin());
+        assertEquals("Destination1", contracts.get(0).getDestination());
+        assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    @Test
+    void testFetchContractsWithNewFilters() throws RunnerException {
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        NPMContractsResponse.NPMContractResponse dgContract = new NPMContractsResponse.NPMContractResponse();
+        dgContract.setProduct_type("CargoType1");
+        dgContract.setOrigin("Origin1");
+        dgContract.setDestination("Destination1");
+        dgContract.setValidTill(LocalDateTime.now().plusDays(1));
+        dgContract.setDgClass(List.of("3"));
+
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        npmContractsResponse.setContracts(Arrays.asList(dgContract));
+
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(new ResponseEntity(npmContractsResponse, HttpStatus.OK));
+
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+
+        ListContractsWithFilterRequest listContractsWithFilterRequest = new ListContractsWithFilterRequest();
+        listContractsWithFilterRequest.setIsDgEnabled(true);
+        listContractsWithFilterRequest.setCargoType("CargoType1");
+        listContractsWithFilterRequest.setOrigin("Origin1");
+        listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setParentContractId("DPWP-0001-2345");
+        listContractsWithFilterRequest.setMaxTransitDays(2L);
+        listContractsWithFilterRequest.setMinTransitDays(1L);
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
+        listContractsWithFilterRequest.setSortRequest(SortRequest.builder().fieldName("minTransitDays").order("ASC").build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(listContractsWithFilterRequest)
+                .guid("1234")
+                .id(1L)
+                .dependentData("Dependent Data")
+                .build();
+
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel);
 
         // Verify
         verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));

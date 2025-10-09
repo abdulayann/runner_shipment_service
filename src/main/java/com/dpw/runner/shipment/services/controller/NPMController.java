@@ -72,6 +72,24 @@ public class NPMController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(NPMConstants.LIST_CONTRACTS_WITH_FILTERS)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> fetchContractsWithFilters(@RequestBody @Valid ListContractsWithFilterRequest request) {
+        String responseMsg;
+        try {
+            return  npmService.fetchContractsWithFilters(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NPMConstants.CONTRACT_LIST_FAILED;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @PostMapping(NPMConstants.RETRIEVE_CONTRACT)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),

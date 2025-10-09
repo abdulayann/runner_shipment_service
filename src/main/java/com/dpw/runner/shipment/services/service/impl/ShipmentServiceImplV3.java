@@ -52,28 +52,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -1085,18 +1065,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId) {
-        if(Objects.isNull(shipmentId)) {
-            log.error("ShipmentId is null with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Shipment Id Is Mandatory");
+        boolean hasMainCarriage = false;
+        if(!Objects.isNull(shipmentId)) {
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+            if(optionalShipmentDetails.isPresent()) {
+                hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
+                        .map(Routings::getCarriage)
+                        .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
+            } else {
+                log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
+            }
         }
-        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
-        if(optionalShipmentDetails.isEmpty()) {
-            log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
-        }
-        boolean hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
-                .map(Routings::getCarriage)
-                .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
 
         List<QuoteResetField> quoteResetFields = new ArrayList<>();
         quoteResetFields.add(QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build());
