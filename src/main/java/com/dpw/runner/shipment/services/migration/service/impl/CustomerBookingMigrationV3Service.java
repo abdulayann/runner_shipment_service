@@ -368,6 +368,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             container.setId(null); // Ensure new identity
             container.setGuid(UUID.randomUUID());
             container.setConsolidationId(null);
+            container.setEventsList(null);
         }
         return newContainerList;
     }
