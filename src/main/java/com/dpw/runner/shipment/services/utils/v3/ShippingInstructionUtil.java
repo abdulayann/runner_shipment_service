@@ -166,6 +166,7 @@ public class ShippingInstructionUtil {
 
         List<Long> siIds = resolveShippingInstructionIds(consolId);
         if (siIds.isEmpty()) {
+            log.info("Containers not linked with any shipping instruction");
             return;
         }
 
@@ -353,6 +354,11 @@ public class ShippingInstructionUtil {
                     .map(ShippingConsoleNoProjection::getId)
                     .filter(Objects::nonNull)
                     .toList());
+        }
+
+        if (siIds.isEmpty()) {
+            log.info("Packages not linked with any shipping instruction");
+            return;
         }
 
         // --- Step 3: Fetch existing commons ---
