@@ -56,38 +56,29 @@ public class EntityLevelRollbackService {
     @Transactional(rollbackFor = Exception.class)
     @Async
     public void executeSqlFromFile(String tenantId, String schema) {
-        requireValid(schema, SCHEMA, "schema");
-        requireValid(tenantId, TENANT, "tenantId");
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")))
+        )) {
 
-        String sql = new BufferedReader(new InputStreamReader(
-                Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")),
-                StandardCharsets.UTF_8))
-                .lines().collect(Collectors.joining("\n"));
+            String sql = reader.lines().collect(Collectors.joining("\n"));
+            for (String statement : sql.split(";")) {
+                if (!statement.trim().isEmpty()) {
 
-        javax.sql.DataSource ds = jdbcTemplate.getDataSource();
-        if (ds == null) throw new IllegalStateException("DataSource is null");
+                    String parsed = statement.replace("__TENANT_ID__", tenantId).replace("__SCHEMA__", schema);
 
-        Connection conn = DataSourceUtils.getConnection(ds);
-        try {
-            try {
-                conn.setSchema(schema);
-            } catch (Exception ignored) {
+                    log.info("Executing: {}", parsed);
+                    String sanitizedParsed =LoggerHelper.sanitizeForLogs(parsed);
+                    log.info("Executing: {}", sanitizedParsed);
+                    jdbcTemplate.execute(sanitizedParsed);
+
+                }
             }
-
-            // Execute the whole script via the Connection
-            EncodedResource resource = new EncodedResource(
-                    new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)), "UTF-8");
-            ScriptUtils.executeSqlScript(conn, resource);
-
-            log.info("✅ SQL script executed for tenant {}", LoggerHelper.sanitizeForLogs(tenantId));
+            log.info("✅ SQL script executed successfully.");
         } catch (Exception e) {
             log.error("❌ Error executing SQL script", e);
             throw new RuntimeException(e);
-        } finally {
-            DataSourceUtils.releaseConnection(conn, ds);
         }
     }
-
     @Transactional(rollbackFor = Exception.class)
     @Async
     public String backupEntity(Integer tenantId) {
