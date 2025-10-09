@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -59,6 +61,9 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
     @Mock
     private CommonErrorLogsDao commonErrorLogsDao;
+
+    @Mock
+    private IApplicationConfigService applicationConfigService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
@@ -1547,6 +1552,46 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
     }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_RailTransferDisabled_ShouldSkipProcessing() {
+        // Arrange
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .isNetworkTransferEntityEnabled(true)
+                .build();
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI); // Set transport mode to Rail
+
+        // Mock the feature flag to be disabled
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("false");
+
+        // Act
+        networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, null);
+
+        // Assert
+        verify(networkTransferService, never()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_RailTransferEnabled_ShouldProcess() {
+        // Arrange
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .isNetworkTransferEntityEnabled(true)
+                .build();
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI); // Set transport mode to Rail
+        consoleDetails.setReceivingBranch(123L);
+
+        // Mock the feature flag to be enabled
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+
+        // Act
+        networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, null);
+
+        // Assert
+        verify(networkTransferService, atLeastOnce()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
+    }
+
 
 
 }
