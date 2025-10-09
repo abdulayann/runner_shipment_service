@@ -5,13 +5,24 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementListResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementListResponse.OrderDataWrapper;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderPartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.OrderPartiesPartyType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -19,21 +30,27 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.client.RestTemplate;
-import com.dpw.runner.shipment.services.utils.V2AuthHelper;
-
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Slf4j
 @Service
@@ -51,6 +68,8 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderbyGuidUrl;
     @Value("${order.management.getOrderbyCriteria}")
     private String getOrderbyCriteria;
+    @Value("${order.management.fetchWithOrderLine}")
+    private String fetchWithOrderLine;
 
     @Autowired
     private V2AuthHelper v2AuthHelper;
@@ -106,6 +125,78 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, OrderManagementDTO> fetchOrdersWithOrderLineAsMap(List<String> orderIds) throws RunnerException {
+        try {
+            String url = baseUrl + fetchWithOrderLine;
+            log.info("Request to Order Service (fetch-with-orderline) with URL: {}", url);
+
+            // Build request payload
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("orderIds", orderIds);
+
+            // Prepare entity with headers + body
+            HttpEntity<Map<String, Object>> httpEntity =
+                    new HttpEntity<>(requestBody, v2AuthHelper.getOrderManagementServiceSourceHeader());
+
+            // Log what was sent
+            log.info("Request payload sent to Order Service (fetch-with-orderline): {}", requestBody);
+
+            // Execute POST call
+            ResponseEntity<OrderManagementListResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpEntity,
+                    OrderManagementListResponse.class
+            );
+
+            log.info("Response received from fetch-with-orderline API: {}", response.getBody());
+
+            OrderManagementListResponse responseBody = response.getBody();
+            if (responseBody == null || responseBody.getData() == null) {
+                throw new RunnerException("Empty response from fetch-with-orderline API");
+            }
+
+            // Prepare result map
+            Map<String, OrderManagementDTO> resultMap = new HashMap<>();
+
+            // Iterate and build map safely
+            for (OrderDataWrapper dataWrapper : responseBody.getData()) {
+                if (dataWrapper == null || dataWrapper.getOrder() == null) {
+                    log.info("Skipping null order entry in response for request: {}", requestBody);
+                    continue;
+                }
+
+                OrderManagementDTO order = dataWrapper.getOrder();
+                String orderId = String.valueOf(order.getOrderId());
+
+                if (orderId == null || orderId.isBlank()) {
+                    log.info("Order found without valid orderId: {}", order);
+                    continue;
+                }
+
+                resultMap.put(orderId, order);
+            }
+
+            // Log final summary
+            log.info("Fetched {} orders successfully out of {} requested.", resultMap.size(), orderIds.size());
+
+            // Log missing IDs, if any
+            if (resultMap.size() < orderIds.size()) {
+                List<String> missing = orderIds.stream()
+                        .filter(id -> !resultMap.containsKey(id))
+                        .collect(Collectors.toList());
+                log.info("Missing or invalid orders not returned by service: {}", missing);
+            }
+
+            return resultMap;
+
+        } catch (Exception e) {
+            log.error("Error while calling fetch-with-orderline API: {}", e.getMessage(), e);
+            throw new RunnerException("Failed to fetch orders with orderline: " + e.getMessage());
         }
     }
 

@@ -6,8 +6,8 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-
 import java.util.List;
+import java.util.Map;
 
 public interface IOrderManagementAdapter {
 
@@ -16,6 +16,8 @@ public interface IOrderManagementAdapter {
     ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException;
 
     OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException;
+
+    Map<String, OrderManagementDTO> fetchOrdersWithOrderLineAsMap(List<String> orderIds) throws RunnerException;
 
     List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException;
 
