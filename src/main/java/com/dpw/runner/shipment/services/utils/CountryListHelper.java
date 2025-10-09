@@ -29,6 +29,8 @@ public class CountryListHelper {
         public static String getAlpha2FromAlpha3(String alpha3) {
             if(isStringNullOrEmpty(alpha3))
                 return null;
+            if(alpha3.length() < 3)
+                return alpha3;
             ISO3166Country iso3166Country = fromAlpha3(alpha3);
             return iso3166Country.getAlpha2();
         }
