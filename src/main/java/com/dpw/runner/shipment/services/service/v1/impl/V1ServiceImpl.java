@@ -2226,11 +2226,11 @@ public class V1ServiceImpl implements IV1Service {
                 headers = v1AuthHelper.getHeadersForDataSync();
             String requestPayload = jsonHelper.convertToJson(request);
             String headersString = headers.toString();
-            log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}",
-                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
-                    LoggerHelper.sanitizeForLogs(requestPayload),
-                    LoggerHelper.sanitizeForLogs(headersString));
+//            log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}",
+//                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+//                    LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
+//                    LoggerHelper.sanitizeForLogs(requestPayload),
+//                    LoggerHelper.sanitizeForLogs(headersString));
             HttpEntity<Object> entity = new HttpEntity<>(request, headers);
             tiDataResponse = this.restTemplate.postForEntity(this.DATA_SYNC_URL, entity, V1DataSyncResponse.class, new Object[0]);
             String responsePayload = jsonHelper.convertToJson(tiDataResponse.getBody());
