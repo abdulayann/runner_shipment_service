@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -70,17 +71,20 @@ public class GetNextNumberHelper {
             DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
             // Format the date to get the month in "MMMM" format
             String monthName = df.format(currDate);
-            valueOf.put("month", monthName);
+            valueOf.put(Constants.MONTH, monthName);
             valueOf.put("cc", ""); // Empty string
             valueOf.put("seq", ""); // Empty string
 
-            while (matches.find()) {
-                String word = matches.group(1);
+            List<String> segments = listSegments(matches);
+
+            String resetFreq = determineResetFrequency(segments);
+
+            for (var word : segments) {
                 List<String> wordSplit = List.of(word.split(";"));
                 if (valueOf.get(wordSplit.get(0).toLowerCase()) == null) {
                     throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
                 }
-                suffix = getSuffixValue(sequenceSettings, user, updateBranchCode, wordSplit, suffix, valueOf);
+                suffix = getSuffixValue(sequenceSettings, user, updateBranchCode, wordSplit, suffix, valueOf, resetFreq);
             }
         }
         else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
@@ -105,11 +109,60 @@ public class GetNextNumberHelper {
         return prefix + suffix;
     }
 
+    private List<String> listSegments(Matcher matches) {
+        List<String> segments = new ArrayList<>();
+        while (matches.find()) {
+            segments.add(matches.group(1) != null ? matches.group(1) : matches.group(2));
+        }
+        // Filter out empty or whitespace-only segments
+        segments = segments.stream().filter(s -> !s.trim().isEmpty()).toList();
+        return segments;
+    }
+
+    public static String determineResetFrequency(List<String> segments) {
+        boolean isDailyReset = false;
+        boolean isMonthlyReset = false;
+        boolean isYearlyReset = false;
+
+        for (String word : segments)
+        {
+            var wordSplit = word.split(";");
+            String key = wordSplit[0].toLowerCase();
+
+            // Priority: daily > monthly > yearly
+            if ("dd".equalsIgnoreCase(key))
+                return Constants.DAILY;
+            else if ("mm".equalsIgnoreCase(key) || "mon".equalsIgnoreCase(key) || Constants.MONTH.equalsIgnoreCase(key))
+                return Constants.MONTHLY;
+            else if ("yy".equalsIgnoreCase(key) || "yyyy".equalsIgnoreCase(key))
+                return Constants.YEARLY;
+                // Handle date format strings
+            else if ("date".equalsIgnoreCase(key) && wordSplit.length > 1)
+            {
+                String dateFormat = wordSplit[1].toLowerCase();
+                return setResetRequired(dateFormat, isDailyReset, isMonthlyReset, isYearlyReset);
+            }
+        }
+        return "";
+    }
+    private static String setResetRequired(String dateFormat, boolean isDailyReset, boolean isMonthlyReset, boolean isYearlyReset) {
+        // Check if format contains day components
+        if (dateFormat.contains("dd"))
+            return Constants.DAILY;
+        // Check if format contains month components
+        if (dateFormat.contains("mm") || dateFormat.contains("mon") || dateFormat.contains(Constants.MONTH))
+            return Constants.MONTHLY;
+        // Check if format contains year components
+        if (dateFormat.contains("yy") || dateFormat.contains("yyyy"))
+            return Constants.YEARLY;
+        return "";
+    }
+
     @NotNull
-    private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> valueOf) throws RunnerException {
+    private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> valueOf, String resetFreq) throws RunnerException {
         if (wordSplit.size() > 1) {
             if (wordSplit.get(0).equalsIgnoreCase("seq")) {
-                String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+                resetFreq = setResetFreq(wordSplit, resetFreq);
                 suffix += padLeft(
                     getNextRegexSequenceNumber(sequenceSettings, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
@@ -132,36 +185,58 @@ public class GetNextNumberHelper {
         return suffix;
     }
 
+    private String setResetFreq(List<String> wordSplit, String resetFreq) {
+        if (Strings.isNullOrEmpty(resetFreq))
+            return wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+        return resetFreq;
+    }
+
     public String getNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
-        LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
-        boolean resetCounter = seqStartTime == null;
-        if (resetFreq.equalsIgnoreCase("daily")) {
-            LocalDateTime localTimeStart;
-            LocalDateTime localTimeNow;
-
-            String timeZoneId = UserContext.getUser().TimeZoneId;
-            if (timeZoneId == null || timeZoneId.isEmpty())
-                throw new RunnerException("TimeZoneId Required if resetFreq is Daily");
-
-            TimeZone localZone = TimeZone.getTimeZone(timeZoneId);
-            localTimeNow =
-                (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
-            localTimeStart =
-                sequenceSettings.getSequenceStartTime() != null
-                    ? sequenceSettings
-                          .getSequenceStartTime()
-                          .atZone(localZone.toZoneId())
-                          .toLocalDateTime()
-                    : localTimeNow;
-
-            if (localTimeStart.isBefore(localTimeNow)) resetCounter = true;
-        }
+        boolean resetCounter = needResetCounter(sequenceSettings, resetFreq);
         if (resetCounter) {
             sequenceSettings.setSerialCounter(0);
             sequenceSettings.setSequenceStartTime(LocalDateTime.now(Clock.systemUTC()));
         }
         sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
         return sequenceSettings.getSerialCounter().toString();
+    }
+
+    public static boolean needResetCounter(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
+
+        LocalDateTime localTimeStart;
+        LocalDateTime localTimeNow;
+
+        String timeZoneId = UserContext.getUser().TimeZoneId;
+        if (timeZoneId == null || timeZoneId.isEmpty())
+            throw new RunnerException("TimeZoneId Required if resetFreq is Daily");
+
+        TimeZone localZone = TimeZone.getTimeZone(timeZoneId);
+        localTimeNow =
+                (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
+        localTimeStart =
+                sequenceSettings.getSequenceStartTime() != null
+                        ? sequenceSettings
+                        .getSequenceStartTime()
+                        .atZone(localZone.toZoneId())
+                        .toLocalDateTime()
+                        : localTimeNow;
+        boolean resetCounter = sequenceSettings
+                .getSequenceStartTime() == null;
+
+
+        if (Constants.DAILY.equalsIgnoreCase(resetFreq) || Constants.MONTHLY.equalsIgnoreCase(resetFreq) || Constants.YEARLY.equalsIgnoreCase(resetFreq))
+        {
+            resetCounter = isResetRequired(localTimeStart, resetFreq, localTimeNow);
+        }
+        return resetCounter;
+    }
+
+    private static boolean isResetRequired(LocalDateTime localTimeStart, String resetFreq, LocalDateTime localTimeNow) {
+        if (localTimeStart.toLocalDate().isBefore(localTimeNow.toLocalDate())  && Constants.DAILY.equalsIgnoreCase(resetFreq))
+            return true;
+        else if ((localTimeStart.toLocalDate().getMonthValue() < localTimeNow.toLocalDate().getMonthValue() || localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear()) && Constants.MONTHLY.equalsIgnoreCase(resetFreq))
+            return true;
+        else return localTimeStart.toLocalDate().getYear() < localTimeNow.toLocalDate().getYear() && Constants.YEARLY.equalsIgnoreCase(resetFreq);
     }
 
     public ProductSequenceConfig getProductSequence(Long productId, ProductProcessTypes processType) {

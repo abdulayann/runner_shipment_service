@@ -168,7 +168,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
 
 
     @Test
-    void testGenerateShipmentId_CustomSequence_Success() {
+    void testGenerateShipmentId_CustomSequence_Success() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -193,7 +193,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_CustomSequenceFails_FallbackToDefault() {
+    void testGenerateShipmentId_CustomSequenceFails_FallbackToDefault() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -236,7 +236,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_ShipmentIdAlreadyExists_RetryUntilUnique() {
+    void testGenerateShipmentId_ShipmentIdAlreadyExists_RetryUntilUnique() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -267,7 +267,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_CustomSequenceIsEmpty_FallsBackToSerial() {
+    void testGenerateShipmentId_CustomSequenceIsEmpty_FallsBackToSerial() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -288,7 +288,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_IdentifiedProductNull_FallsBack() {
+    void testGenerateShipmentId_IdentifiedProductNull_FallsBack() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -311,7 +311,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_SequenceSettingsNull_DefaultProductAlsoNull() {
+    void testGenerateShipmentId_SequenceSettingsNull_DefaultProductAlsoNull() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -427,7 +427,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testGenerateShipmentId_DefaultProductSameAsIdentified_ReturnsEmptyAndFallbacks() {
+    void testGenerateShipmentId_DefaultProductSameAsIdentified_ReturnsEmptyAndFallbacks() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
