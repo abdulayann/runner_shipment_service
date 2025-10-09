@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
@@ -75,11 +74,11 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private Long documentationPartner;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
-    private Long triangulationPartner;
-    private Long receivingBranch;
     private Long originBranch;
+    private Long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
     @JsonProperty("isShipmentReadOnly")

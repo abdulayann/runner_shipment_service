@@ -16,6 +16,7 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @SuperBuilder
 @NoArgsConstructor
@@ -90,7 +91,7 @@ public class ConsolidationDetailsV3Response extends ConsolidationDetailsBaseResp
     private Long warehouseId;
     private String ediTransactionId;
     private Long triangulationPartner;
-    private boolean intraBranch;
+    private Boolean intraBranch;
     private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;
@@ -114,4 +115,6 @@ public class ConsolidationDetailsV3Response extends ConsolidationDetailsBaseResp
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
     private Map<String, Object> masterDataMap;
+    private UUID parentGuid;
+    private Long parentTenantId;
 }

@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Ro
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -169,6 +170,9 @@ class HblReportTest extends CommonMocks {
 
     @Mock
     private HblService hblService;
+
+    @Mock
+    private MDMServiceAdapter mdmServiceAdapter;
 
     @BeforeAll
     static void init() throws IOException {

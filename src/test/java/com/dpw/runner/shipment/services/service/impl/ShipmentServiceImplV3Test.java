@@ -65,6 +65,7 @@ import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -79,6 +80,7 @@ import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
@@ -102,6 +104,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
@@ -270,7 +273,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
@@ -291,6 +293,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -8925,4 +8928,300 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("Invalid job type change", exception.getMessage());
     }
 
+    @Test
+    void testSetShipmentOrderFromCustomerBookingRequest_withNullOrderId() {
+        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
+        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder().build();
+        assertDoesNotThrow(() -> {
+            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
+        });
+    }
+
+    @Test
+    void testSetShipmentOrderFromCustomerBookingRequest() throws RunnerException {
+        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
+        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
+                .orderManagementId("ORD_MGMT_ID")
+                .build();
+        doReturn(null).when(orderManagementAdapter).getOrderManagementDTOByGuid("ORD_MGMT_ID");
+        assertDoesNotThrow(() -> {
+            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
+        });
+    }
+
+    @Test
+    void testSetShipmentOrderFromCustomerBookingRequest_throwError() throws RunnerException {
+        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
+        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
+                .orderManagementId("ORD_MGMT_ID")
+                .build();
+        doThrow(new RunnerException("Failed to call Order Management"))
+                .when(orderManagementAdapter)
+                .getOrderManagementDTOByGuid(anyString());
+
+        assertThrows(RunnerException.class, () -> {
+            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
+        });
+    }
+
+    @Test
+    void testSetShipmentOrderFromCustomerBookingRequest_returnsDTO() throws RunnerException {
+        ShipmentV3Request shipmentRequest = ShipmentV3Request.builder().build();
+        UUID uuid = UUID.randomUUID();
+        CustomerBookingV3Request customerBookingRequest = CustomerBookingV3Request.builder()
+                .orderManagementId(uuid.toString())
+                .build();
+        OrderManagementDTO dto = OrderManagementDTO.builder().build();
+        doReturn(dto).when(orderManagementAdapter).getOrderManagementDTOByGuid(uuid.toString());
+        assertDoesNotThrow(() -> {
+            shipmentServiceImplV3.setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
+        });
+    }
+
+    @Test
+    void createShipmentInV3Test_shouldSetShipmentOrderFieldAndSaveInDB() throws RunnerException {
+        Containers containers = Containers.builder().containerCount(2L).commodityGroup("FAK").build();
+        containers.setId(1L);
+        containers.setGuid(UUID.randomUUID());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingV3Request packingV3Request = PackingV3Request.builder().packs("2").packsType("BAG").commodity("FAK").build();
+        packingV3Request.setWeight(BigDecimal.valueOf(11.5));
+        packingV3Request.setVolume(BigDecimal.valueOf(11));
+        packingV3Request.setLengthUnit("M");
+        ReferenceNumbersRequest referenceNumbersRequest = ReferenceNumbersRequest.builder().build();
+        referenceNumbersRequest.setReferenceNumber("SHP2411-A1PG00784");
+        referenceNumbersRequest.setType("CRR");
+        referenceNumbersRequest.setShipmentId(16787L);
+        referenceNumbersRequest.setCountryOfIssue("IND");
+        CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
+        customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
+        customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
+        customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
+        customerBookingV3Request.setEstimatedBrokerageAtDestinationDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedDeliveryAtDestinationDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedPickupAtOriginDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedBrokerageAtOriginDate(LocalDateTime.now());
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
+        shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().id(123L).containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(shipmentDao.save(any(), eq(false), eq(true) )).thenReturn(shipmentDetails1);
+        ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
+        when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+
+        OrderLineV3Response orderLine = OrderLineV3Response.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+
+        List<OrderLineV3Response> orderLines = List.of(orderLine);
+        OrderManagementDTO dto = OrderManagementDTO.builder()
+                .orderLines(orderLines)
+                .build();
+        when(orderManagementAdapter.getOrderManagementDTOByGuid(any())).thenReturn(dto);
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                        .orderNumber("1")
+                        .orderGuid(UUID.randomUUID())
+                        .orderPackings(orderLines)
+                        .build();
+        when(packingV3Util.mapToOrderDetailsList(any())).thenReturn(List.of(orderDetails));
+
+        ShipmentOrder savedShipmentOrder = ShipmentOrder.builder().build();
+        when(shipmentOrderDao.save(any())).thenReturn(savedShipmentOrder);
+
+        ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
+        assertNull(response);
+
+        verify(shipmentOrderDao, times(1)).save(any());
+        verify(packingV3Service, times(1)).create(any(), any());
+    }
+
+    @Test
+    void test_attachDetachOrder_nullRequest_throws() {
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.attachDetachOrder(null));
+    }
+
+    @Test
+    void test_attachDetachOrder_noAttachNoDetach_returnsSuccess() {
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(UUID.randomUUID());
+        req.setEvent(Constants.ATTACH);
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+    }
+
+    @Test
+    void test_attachDetachOrder_validAttach_success() {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.randomUUID());
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.ATTACH);
+        req.setOrderDetailsForAttach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of());
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(shipmentOrderDao, times(1)).save(any());
+    }
+
+    @Test
+    void test_attachDetachOrder_validDetach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.DETACH);
+        req.setOrderDetailsForDetach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(shipmentOrder));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+    }
+
+    @Test
+    void test_attachDetachOrder_validDetachAndAttach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest.OrderDetails detachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        detachOrder.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        detachOrder.setOrderNumber("ORD-DETACH");
+        detachOrder.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest.OrderDetails attachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        attachOrder.setOrderGuid(UUID.randomUUID());
+        attachOrder.setOrderNumber("ORD-ATTACH");
+        attachOrder.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.DETACH_AND_ATTACH);
+        req.setOrderDetailsForDetach(List.of(detachOrder));
+        req.setOrderDetailsForAttach(List.of(attachOrder));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        ShipmentOrder existingOrder = ShipmentOrder.builder()
+                .shipmentId(100L)
+                .orderGuid(detachOrder.getOrderGuid())
+                .build();
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(existingOrder));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+        verify(shipmentOrderDao, times(1)).save(any());
+        verify(packingV3Service, times(1)).create(any(), anyString());
+    }
+
+    @Test
+    void test_attachDetachOrder_invalidAttach_throws() {
+        UUID shipmentGuid = UUID.randomUUID();
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderGuid(UUID.randomUUID());
+        orderDetails.setOrderNumber("ORD-1");
+        orderDetails.setOrderPackings(List.of());
+
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent("INVALID-CASE");
+        req.setOrderDetailsForAttach(List.of(orderDetails));
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of());
+
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.attachDetachOrder(req));
+    }
 }

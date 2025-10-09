@@ -103,6 +103,7 @@ public class ShipmentDetailsV3Response extends BaseShipmentResponse {
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
     private Boolean b2b;
+    private Long parentTenantId;
     private Boolean isCoLoadEnabled;
     private String issuingCarrierName;
     private String oceanBlNumber;

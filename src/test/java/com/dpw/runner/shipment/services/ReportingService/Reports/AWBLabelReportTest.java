@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Ro
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.TruckDriverDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -45,6 +46,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -115,6 +117,12 @@ class AWBLabelReportTest extends CommonMocks {
 
     @Mock
     private IContainerDao containerDao;
+
+    @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -394,6 +402,7 @@ class AWBLabelReportTest extends CommonMocks {
         mockTenantSettings();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        handleShipmentTransportIntsructionTest();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -420,6 +429,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         v1DataResponse.entities = unlocationsResponses;
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         mockTenantSettings();
@@ -451,6 +461,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         mockTenantSettings();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
@@ -483,6 +494,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
@@ -522,6 +534,7 @@ class AWBLabelReportTest extends CommonMocks {
 //        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        handleShipmentTransportIntsructionTest();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -557,6 +570,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(packingService.calculatePackSummary(any(), any(), any(),any())).thenReturn(null);
+        handleShipmentTransportIntsructionTest();
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
@@ -594,6 +608,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         doThrow(new RunnerException()).when(packingService).calculatePackSummary(any(), any(), any(),any());
+        handleShipmentTransportIntsructionTest();
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
@@ -631,6 +646,7 @@ class AWBLabelReportTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        handleShipmentTransportIntsructionTest();
 //        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
 //        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
@@ -665,6 +681,7 @@ class AWBLabelReportTest extends CommonMocks {
         unlocationsResponses.add(unlocationsResponse);
 
         V1DataResponse v1DataResponse = new V1DataResponse();
+        handleShipmentTransportIntsructionTest();
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         v1DataResponse.entities = unlocationsResponses;
 //        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
@@ -701,6 +718,7 @@ class AWBLabelReportTest extends CommonMocks {
         unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
         unlocationsResponses.add(unlocationsResponse);
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        handleShipmentTransportIntsructionTest();
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
@@ -740,6 +758,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1075,6 +1094,7 @@ class AWBLabelReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         when(packingService.calculatePackSummary(any(), any(), any(),any())).thenReturn(new PackSummaryResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        handleShipmentTransportIntsructionTest();
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
@@ -1141,6 +1161,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingService.calculatePackSummary(any(), any(), any(),any())).thenReturn(new PackSummaryResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        handleShipmentTransportIntsructionTest();
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
@@ -1173,6 +1194,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1205,6 +1227,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1437,6 +1460,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1476,8 +1500,13 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        handleShipmentTransportIntsructionTest();
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    private void handleShipmentTransportIntsructionTest(){
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(Collections.emptyList());
     }
 
 }

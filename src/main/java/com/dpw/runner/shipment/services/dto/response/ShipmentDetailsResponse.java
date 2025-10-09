@@ -105,6 +105,7 @@ public class ShipmentDetailsResponse extends BaseShipmentResponse {
     private CustomerCategoryRates customerCategory;
     private UUID sourceGuid;
     private UUID clonedGuid;
+    private Long parentTenantId;
     private List<String> implicationList;
     private Map<String, Object> masterDataMap;
     private DateBehaviorType dateType;

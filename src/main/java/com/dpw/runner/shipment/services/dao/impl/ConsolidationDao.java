@@ -874,6 +874,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
     }
 
+    @Override
+    public List<ConsolidationDetails> findByParentGuid(UUID parentGuid) {
+        return consolidationRepository.findByParentGuid(parentGuid);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
         if (!errors.isEmpty())
