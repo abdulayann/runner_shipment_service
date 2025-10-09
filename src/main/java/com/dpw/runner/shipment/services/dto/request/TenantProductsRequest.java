@@ -3,14 +3,14 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Setter
-@ApiModel("Tenant Products Request Model")
+@Schema("Tenant Products Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

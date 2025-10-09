@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import lombok.Data;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 

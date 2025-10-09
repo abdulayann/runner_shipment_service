@@ -1,7 +1,8 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,27 +14,28 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuppressWarnings( "java:S1948")
+@JsonPropertyOrder({ "success", "requestId", "data", "pageNo", "count", "error", "warning" })
 public class RunnerResponse<T> implements IRunnerResponse {
 
-    @ApiModelProperty(position = 1, name = "success")
+    @SchemaProperty(  name = "success")
     private boolean success;
 
-    @ApiModelProperty(position = 2, name = "requestId")
+    @SchemaProperty( name = "requestId")
     private String requestId;
 
-    @ApiModelProperty(position = 3, name = "data")
+    @SchemaProperty(  name = "data")
     private T data;
 
-    @ApiModelProperty(position = 4, name = "pageNo")
+    @SchemaProperty( name = "pageNo")
     private int pageNo;
 
-    @ApiModelProperty(position = 5, name = "count")
+    @SchemaProperty(  name = "count")
     private long count;
 
-    @ApiModelProperty(position = 6, name = "error")
+    @SchemaProperty( name = "error")
     private ApiError error;
 
-    @ApiModelProperty(position = 7, name = "warning")
+    @SchemaProperty(  name = "warning")
     private String warning;
 
     @SuppressWarnings("unchecked")

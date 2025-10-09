@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.dto.request.awb;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("AWB Goods Description Info Model")
+@Schema(description = "AWB Goods Description Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -3,13 +3,13 @@ package com.dpw.runner.shipment.services.dto.CalculationAPIsDto;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 
-import javax.persistence.Table;
+import jakarta.persistence.Table;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
 
 
 @Table(name = "container_package_payload")

@@ -4,14 +4,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 
 @Data
 @Builder
-@ApiModel("Truck Driver Details Request Model")
+@Schema(description = "Truck Driver Details Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

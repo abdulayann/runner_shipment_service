@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionExcept
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import java.util.Objects;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;

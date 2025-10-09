@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsC
 import com.dpw.runner.shipment.services.validator.annotations.ValidContainerRequest;
 import org.springframework.util.StringUtils;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class ContainerRequestValidator implements ConstraintValidator<ValidContainerRequest, TransportInstructionLegsContainersRequest> {
 

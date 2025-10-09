@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 public interface ICargoService {
     CargoDetailsResponse getCargoDetails(@Valid CargoDetailsRequest cargoDetailsRequest) throws RunnerException;

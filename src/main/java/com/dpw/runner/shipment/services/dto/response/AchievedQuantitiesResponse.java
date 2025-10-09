@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Achieved Quantities Response Model")
+@Schema(description = "Achieved Quantities Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

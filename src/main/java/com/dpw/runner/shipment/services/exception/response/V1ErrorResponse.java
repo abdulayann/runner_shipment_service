@@ -2,11 +2,11 @@ package com.dpw.runner.shipment.services.exception.response;
 
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @SuppressWarnings("unused")
-@ApiModel(description = "V1 Error Model")
+@Schema(description = "V1 Error Model")
 @Builder @Data @AllArgsConstructor
 @NoArgsConstructor @Getter @Generated
 public class V1ErrorResponse {

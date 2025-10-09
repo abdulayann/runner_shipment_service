@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-@ApiModel(value = "Network request model")
+@Schema(value = "Network request model")
 @ToString
 @Builder
 @AllArgsConstructor

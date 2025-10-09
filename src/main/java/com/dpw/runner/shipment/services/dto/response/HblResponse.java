@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 //@Builder
-@ApiModel("Hbl Response Model")
+@Schema("Hbl Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

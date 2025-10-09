@@ -22,16 +22,13 @@ import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncReque
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Optional;
 
 @RestController

@@ -25,7 +25,7 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

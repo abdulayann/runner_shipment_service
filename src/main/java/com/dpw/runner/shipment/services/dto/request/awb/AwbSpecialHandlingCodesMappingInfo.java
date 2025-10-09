@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serializable;
 
 @Data
 @Builder
-@ApiModel("AWB Special Handling Codes Mapping Info Model")
+@Schema(description = "AWB Special Handling Codes Mapping Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

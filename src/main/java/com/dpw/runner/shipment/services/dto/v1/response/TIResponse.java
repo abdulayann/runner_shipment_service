@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.entity.enums.TransportInstructionTemplat
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.time.LocalDateTime;
 
 @Data

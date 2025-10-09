@@ -8,7 +8,7 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.JoinPoint;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 

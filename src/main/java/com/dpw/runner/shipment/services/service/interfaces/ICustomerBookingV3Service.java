@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Map;
 
 public interface ICustomerBookingV3Service {

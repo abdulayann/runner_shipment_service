@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serializable;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Data
 @Builder
-@ApiModel("AWB Payment Info Model")
+@Schema(description = "AWB Payment Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

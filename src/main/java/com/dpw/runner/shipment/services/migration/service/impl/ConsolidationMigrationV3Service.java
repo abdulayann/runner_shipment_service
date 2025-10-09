@@ -44,7 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.Generated;

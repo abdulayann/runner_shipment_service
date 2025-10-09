@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel("Cargo Details Response Model")
+@Schema("Cargo Details Response Model")
 public class CargoDetailsResponse {
     private String transportMode;
     private String shipmentType;

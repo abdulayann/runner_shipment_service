@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_API_HANDLE)

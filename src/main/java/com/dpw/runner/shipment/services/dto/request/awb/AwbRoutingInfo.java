@@ -3,14 +3,14 @@ package com.dpw.runner.shipment.services.dto.request.awb;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
-@ApiModel("AWB Routing Info Model")
+@Schema(description = "AWB Routing Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

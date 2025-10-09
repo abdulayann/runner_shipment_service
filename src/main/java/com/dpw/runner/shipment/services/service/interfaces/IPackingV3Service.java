@@ -22,7 +22,7 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

@@ -7,7 +7,7 @@ import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Data

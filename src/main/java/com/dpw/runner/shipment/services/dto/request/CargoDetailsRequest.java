@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Setter
 @Getter
-@ApiModel("Cargo Details Request Model")
+@Schema("Cargo Details Request Model")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

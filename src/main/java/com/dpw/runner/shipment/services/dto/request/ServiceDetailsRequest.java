@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
-@ApiModel("Service Details Request Model")
+@Schema(description = "Service Details Request Model")
 @ToString
 @Builder
 @NoArgsConstructor

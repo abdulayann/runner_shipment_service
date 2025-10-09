@@ -2,7 +2,8 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import io.swagger.annotations.ApiModel;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Parties Response Model")
+@Schema(description = "Parties Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

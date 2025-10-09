@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.validator.custom.validations;
 
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class TICommonValidator {
     private TICommonValidator() {

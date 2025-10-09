@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Truck Driver Details Response Model")
+@Schema("Truck Driver Details Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

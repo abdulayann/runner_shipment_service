@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Booking Charges Request Model for Platform")
+@Schema("Booking Charges Request Model for Platform")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.entity.enums.CommonErrorType;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import javax.persistence.*;
-import javax.validation.constraints.Size;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Setter

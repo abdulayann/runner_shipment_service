@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.SchemaProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MDMServiceResponse extends DependentServiceResponse{
 
-    @ApiModelProperty(name = "message")
+    @SchemaProperty(name = "message")
     private String message;
 
 }
