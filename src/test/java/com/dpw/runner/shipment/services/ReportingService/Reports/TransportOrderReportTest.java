@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -72,6 +74,12 @@ class TransportOrderReportTest extends CommonMocks {
     private IContainerDao containerDao;
 
     @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
     private ShipmentServiceImplV3 shipmentServiceImplV3;
     Map<String, Object> mapMock = new HashMap<>();
 
@@ -127,6 +135,7 @@ class TransportOrderReportTest extends CommonMocks {
         partiesModel.setOrgCode("Test");
         partiesModel.setAddressCode("Test");
         partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        partiesModel.setOrgId("1");
         Map<String, Object> orgData = new HashMap<>();
         orgData.put(FULL_NAME, "123");
         orgData.put(CONTACT_PERSON, "123");
@@ -290,6 +299,36 @@ class TransportOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
         shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
+    }
+
+    @Test
+    void populateDictionary2() {
+        TransportOrderModel transportOrderModel = new TransportOrderModel();
+        populateModel(transportOrderModel);
+        mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        shipmentModel.setPickupDetails(null);
+        shipmentModel.setDeliveryDetails(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
+    }
+
+    @Test
+    void populateDictionary3() {
+        TransportOrderModel transportOrderModel = new TransportOrderModel();
+        populateModel(transportOrderModel);
+        mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        shipmentModel.getPickupDetails().setSourceDetail(null);
+        shipmentModel.getDeliveryDetails().setDestinationDetail(null);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));

@@ -23,8 +23,8 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendIn
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SyncBookingToService;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNum
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -77,7 +76,6 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.Location;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.LocationDate;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.Reference;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -127,6 +125,7 @@ import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingC
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.ERROR_MESSAGES;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.ERR_INTTRA_MISSING_KEY;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INTTRA_REFERENCE;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.INVALID_CARRIER_BOOKING_ID;
@@ -177,6 +176,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
+
+        // Set Internal and External Emails
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
+
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -210,6 +213,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, true), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
+        setInternalExternalEmails(carrierBookingResponse, carrierBookingEntity);
         log.info("CarrierBookingService.create() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
     }
@@ -224,10 +228,28 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setCarrierComment(carrierBookingUtil.truncate(carrierBooking.getCarrierComment(), 10000));
         // consolidation fetch container, common container properties diff
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class);
+        setInternalExternalEmails(carrierBookingResponse, carrierBooking);
+        setVgmAndSiId(carrierBooking, carrierBookingResponse);
         mismatchDetection(carrierBooking, carrierBookingResponse);
         log.info("CarrierBookingService.getById() successful with RequestId: {} and response: {}",
                 LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
+    }
+
+    /**
+     * Populates the carrier booking response with IDs of Vgm and Si entities.
+     * @param carrierBooking Entity carrier booking data
+     * @param carrierBookingResponse updated response
+     */
+    private void setVgmAndSiId(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
+
+        Optional.ofNullable(carrierBooking.getVerifiedGrossMass())
+                .map(VerifiedGrossMass::getId)
+                .ifPresent(carrierBookingResponse::setVgmId);
+
+        Optional.ofNullable(carrierBooking.getShippingInstruction())
+                .map(ShippingInstruction::getId)
+                .ifPresent(carrierBookingResponse::setSiId);
     }
 
     @Override
@@ -260,6 +282,11 @@ public class CarrierBookingService implements ICarrierBookingService {
 
         for (CarrierBooking carrierBooking : carrierBookingList) {
             CarrierBookingListResponse carrierBookingListResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingListResponse.class);
+            carrierBookingListResponse.setInternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+            carrierBookingListResponse.setExternalEmailsList(
+                    carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+
             if (carrierBooking.getShippingInstruction() != null) {
                 carrierBookingListResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
             }
@@ -289,6 +316,10 @@ public class CarrierBookingService implements ICarrierBookingService {
         Object entity = carrierBookingValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         CarrierBooking carrierBookingEntity = jsonHelper.convertValue(request, CarrierBooking.class);
         carrierBookingEntity.setCreateByUserEmail(UserContext.getUser().getEmail());
+
+        //Set Internal And External Emails
+        setInternalExternalEmailsInDB(carrierBookingEntity, request);
+
         if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             ConsolidationDetails consolidationDetails = (ConsolidationDetails) entity;
             carrierBookingEntity.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -323,8 +354,20 @@ public class CarrierBookingService implements ICarrierBookingService {
             partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(request.getAdditionalParties(), Parties.class, false), savedEntity.getId(), CARRIER_BOOKING_ADDITIONAL_PARTIES);
         }
         CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(savedEntity, CarrierBookingResponse.class);
+
+        setInternalExternalEmails(carrierBookingResponse, savedEntity);
         log.info("CarrierBookingService.update() successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(carrierBookingResponse));
         return carrierBookingResponse;
+    }
+
+    private void setInternalExternalEmails(CarrierBookingResponse carrierBookingResponse, CarrierBooking carrierBooking) {
+        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+    }
+
+    private void setInternalExternalEmailsInDB(CarrierBooking carrierBookingEntity, CarrierBookingRequest carrierBookingRequest) {
+        carrierBookingEntity.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getInternalEmailsList()));
+        carrierBookingEntity.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(carrierBookingRequest.getExternalEmailsList()));
     }
 
     @Override
@@ -519,6 +562,8 @@ public class CarrierBookingService implements ICarrierBookingService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(CarrierBooking.class, null), createFieldClassDto(SailingInformation.class, "sailingInformation.")));
             includeColumns.addAll(CarrierBookingConstants.LIST_INCLUDE_COLUMNS);
             CarrierBookingResponse carrierBookingResponse = (CarrierBookingResponse) commonUtils.setIncludedFieldsToResponse(carrierBooking, new HashSet<>(includeColumns), new CarrierBookingResponse());
+
+            setInternalExternalEmails(carrierBookingResponse, carrierBooking);
             log.info("Total time taken in setting carrier booking details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(carrierBookingResponse);
             return ResponseHelper.buildSuccessResponse(response);
@@ -648,7 +693,6 @@ public class CarrierBookingService implements ICarrierBookingService {
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
-
         carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
 
@@ -674,6 +718,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
         CarrierBookingCloneResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class);
         carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
+        carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
+        carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
         return carrierBookingResponse;
     }
 
@@ -760,10 +806,18 @@ public class CarrierBookingService implements ICarrierBookingService {
             concatenatedErrors = StreamSupport.stream(responseNode.spliterator(), false)
                     .map(errorNode -> errorNode.path(MESSAGE).asText())
                     .collect(Collectors.joining(" | "));
-        } else if (responseNode.has(MESSAGE)) {
-            concatenatedErrors = responseNode.path(MESSAGE).asText();
+        } else if (responseNode.has(ERROR_MESSAGES)) {
+            JsonNode errorMessagesNode = responseNode.path(ERROR_MESSAGES);
+            // Check if errorMessages is an array
+            if (errorMessagesNode.isArray()) {
+                concatenatedErrors = StreamSupport.stream(errorMessagesNode.spliterator(), false)
+                        .map(JsonNode::asText)
+                        .collect(Collectors.joining(" | "));
+            } else {
+                concatenatedErrors = errorMessagesNode.asText();
+            }
         } else {
-            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, MESSAGE));
+            throw new InttraFailureException(String.format(ERR_INTTRA_MISSING_KEY, ERROR_MESSAGES));
         }
 
         log.error("INTTRA booking failed - Carrier Booking ID: {}, Errors: {}",
@@ -1041,8 +1095,8 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .findFirst()
                     .orElse(null);
             if (carrierBookingTemplate != null) {
-                SendEmailBaseRequest request = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking, carrierBookingTemplate);
-                notificationService.sendEmail(request);
+                List<String> toEmails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
+                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails ,new ArrayList<>());
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {

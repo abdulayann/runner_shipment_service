@@ -20,13 +20,11 @@ import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -68,13 +66,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
@@ -198,13 +190,14 @@ class PackingV3ServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
         volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
         testShipment.setDirection("EXP");
+        testShipment.setId(1L);
+        testShipment.setTransportMode(TRANSPORT_MODE_SEA);
 
         when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
-        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        when(packingValidationV3Util.validateModule(any(), any())).thenReturn(testShipment);
         when(packingDao.save(packing)).thenReturn(packing);
         when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
-        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
@@ -1633,5 +1626,331 @@ class PackingV3ServiceTest extends CommonMocks {
         boolean result = packingV3Service.isSkipWeightInCalculation(packings, cargoDetailsResponse, true);
 
         assertTrue(result, "Should keep initial flag when mode/type not in condition");
+    }
+
+    @Test
+    void testOrderLineCreateUpdateDeleteBulk_noRequest_throws() {
+        OrderLineCreateUpdateDeleteRequest orderLineRequest = OrderLineCreateUpdateDeleteRequest.builder().build();
+        assertThrows(RunnerException.class, () -> {
+            packingV3Service.orderLineCreateUpdateDeleteBulk(orderLineRequest, "shipment", false);
+        });
+    }
+
+    @Test
+    void testOrderLineCreateUpdateDeleteBulk_updateRequest_packingNotFound_throws() {
+        String orderLineGuid = "test-guid";
+        OrderLineV3Response orderLineResponse = new OrderLineV3Response();
+        orderLineResponse.setId(123L);
+        orderLineResponse.setGuid(UUID.randomUUID());
+        orderLineResponse.setCommodityGroup("COM-GRP");
+        orderLineResponse.setContainerId(999L);
+        orderLineResponse.setGoodsDescription("Good desc");
+        orderLineResponse.setHSCode("HS-001");
+        orderLineResponse.setLength(new BigDecimal("12.5"));
+        orderLineResponse.setLengthUnit("cm");
+        orderLineResponse.setWidth(new BigDecimal("1.5"));
+        orderLineResponse.setWidthUnit("cm");
+        orderLineResponse.setHeight(new BigDecimal("2.0"));
+        orderLineResponse.setHeightUnit("cm");
+        orderLineResponse.setWeight(new BigDecimal("5.5"));
+        orderLineResponse.setWeightUnit("kg");
+        orderLineResponse.setVolume(new BigDecimal("0.25"));
+        orderLineResponse.setVolumeUnit("m3");
+        orderLineResponse.setNetWeight(new BigDecimal("5.0"));
+        orderLineResponse.setNetWeightUnit("kg");
+        orderLineResponse.setPacks("10");
+        orderLineResponse.setPacksType("BOX");
+        orderLineResponse.setLineNo(new BigDecimal("1"));
+        orderLineResponse.setSubLineNo(new BigDecimal("0"));
+        orderLineResponse.setProductCode("PROD-1");
+        orderLineResponse.setShipmentOrderId(555L);
+        orderLineResponse.setShipmentOrderId(12432L);
+        orderLineResponse.setOrderLineId(555L);
+        orderLineResponse.setOrderLineGuid(orderLineGuid);
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .commodityGroup(orderLineResponse.getCommodityGroup())
+                .containerNumber(orderLineResponse.getContainerNumber())
+                .containerId(orderLineResponse.getContainerId())
+                .goodsDescription(orderLineResponse.getGoodsDescription())
+                .HSCode(orderLineResponse.getHSCode())
+                .commodity(orderLineResponse.getHSCode())
+                .length(orderLineResponse.getLength())
+                .lengthUnit(orderLineResponse.getLengthUnit())
+                .width(orderLineResponse.getWidth())
+                .widthUnit(orderLineResponse.getWidthUnit())
+                .height(orderLineResponse.getHeight())
+                .heightUnit(orderLineResponse.getHeightUnit())
+                .weight(orderLineResponse.getWeight())
+                .weightUnit(orderLineResponse.getWeightUnit())
+                .volume(orderLineResponse.getVolume())
+                .volumeUnit(orderLineResponse.getVolumeUnit())
+                .netWeight(orderLineResponse.getNetWeight())
+                .netWeightUnit(orderLineResponse.getNetWeightUnit())
+                .packs(orderLineResponse.getPacks())
+                .packsType(orderLineResponse.getPacksType())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .lineNo(orderLineResponse.getLineNo())
+                .subLineNo(orderLineResponse.getSubLineNo())
+                .productCode(orderLineResponse.getProductCode())
+                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .orderLineGuid(orderLineResponse.getOrderLineGuid())
+                .shipmentId(orderLineResponse.getShipmentId())
+                .build();
+
+        OrderLineCreateUpdateDeleteRequest orderLineRequest = OrderLineCreateUpdateDeleteRequest.builder()
+                .updateOrderLines(List.of(orderLineResponse))
+                .build();
+
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(anyList())).thenReturn(List.of(packingReq));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(null)).thenReturn(List.of());
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of());
+
+        assertThrows(RunnerException.class, () -> {
+            packingV3Service.orderLineCreateUpdateDeleteBulk(orderLineRequest, "shipment", false);
+        });
+    }
+
+    @Test
+    void testOrderLineCreateUpdateDeleteBulk_createUpdateRequest() throws RunnerException {
+        String orderLineGuid = "test-guid";
+        OrderLineV3Response orderLineResponse = new OrderLineV3Response();
+        orderLineResponse.setId(123L);
+        orderLineResponse.setGuid(UUID.randomUUID());
+        orderLineResponse.setCommodityGroup("COM-GRP");
+        orderLineResponse.setContainerId(999L);
+        orderLineResponse.setGoodsDescription("Good desc");
+        orderLineResponse.setHSCode("HS-001");
+        orderLineResponse.setLength(new BigDecimal("12.5"));
+        orderLineResponse.setLengthUnit("cm");
+        orderLineResponse.setWidth(new BigDecimal("1.5"));
+        orderLineResponse.setWidthUnit("cm");
+        orderLineResponse.setHeight(new BigDecimal("2.0"));
+        orderLineResponse.setHeightUnit("cm");
+        orderLineResponse.setWeight(new BigDecimal("5.5"));
+        orderLineResponse.setWeightUnit("kg");
+        orderLineResponse.setVolume(new BigDecimal("0.25"));
+        orderLineResponse.setVolumeUnit("m3");
+        orderLineResponse.setNetWeight(new BigDecimal("5.0"));
+        orderLineResponse.setNetWeightUnit("kg");
+        orderLineResponse.setPacks("10");
+        orderLineResponse.setPacksType("BOX");
+        orderLineResponse.setLineNo(new BigDecimal("1"));
+        orderLineResponse.setSubLineNo(new BigDecimal("0"));
+        orderLineResponse.setProductCode("PROD-1");
+        orderLineResponse.setShipmentOrderId(555L);
+        orderLineResponse.setShipmentOrderId(12432L);
+        orderLineResponse.setOrderLineId(555L);
+        orderLineResponse.setOrderLineGuid(orderLineGuid);
+
+        OrderLineCreateUpdateDeleteRequest orderLineRequest = OrderLineCreateUpdateDeleteRequest.builder()
+                .updateOrderLines(List.of(orderLineResponse))
+                .build();
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .commodityGroup(orderLineResponse.getCommodityGroup())
+                .containerNumber(orderLineResponse.getContainerNumber())
+                .containerId(orderLineResponse.getContainerId())
+                .goodsDescription(orderLineResponse.getGoodsDescription())
+                .HSCode(orderLineResponse.getHSCode())
+                .commodity(orderLineResponse.getHSCode())
+                .length(orderLineResponse.getLength())
+                .lengthUnit(orderLineResponse.getLengthUnit())
+                .width(orderLineResponse.getWidth())
+                .widthUnit(orderLineResponse.getWidthUnit())
+                .height(orderLineResponse.getHeight())
+                .heightUnit(orderLineResponse.getHeightUnit())
+                .weight(orderLineResponse.getWeight())
+                .weightUnit(orderLineResponse.getWeightUnit())
+                .volume(orderLineResponse.getVolume())
+                .volumeUnit(orderLineResponse.getVolumeUnit())
+                .netWeight(orderLineResponse.getNetWeight())
+                .netWeightUnit(orderLineResponse.getNetWeightUnit())
+                .packs(orderLineResponse.getPacks())
+                .packsType(orderLineResponse.getPacksType())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .lineNo(orderLineResponse.getLineNo())
+                .subLineNo(orderLineResponse.getSubLineNo())
+                .productCode(orderLineResponse.getProductCode())
+                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .orderLineGuid(orderLineResponse.getOrderLineGuid())
+                .shipmentId(orderLineResponse.getShipmentId())
+                .build();
+
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(anyList())).thenReturn(List.of(packingReq));
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(null)).thenReturn(List.of());
+
+        Packing packingDaoResponse = new Packing();
+        packingDaoResponse.setId(1L);
+        packingDaoResponse.setGuid(UUID.randomUUID());
+        packingDaoResponse.setShipmentId(100L);
+        packingDaoResponse.setOrderLineGuid(orderLineGuid);
+
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of(packingDaoResponse));
+        testShipment.setDirection(null);
+        testShipment.setShipmentId("12432");
+
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+        when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(List.of(packingDaoResponse));
+        when(packingDao.saveAll(anyList())).thenReturn(List.of(packingDaoResponse));
+
+        PackingResponse packingResponse = new PackingResponse();
+        packingResponse.setId(1L);
+        packingResponse.setShipmentId(100L);
+        when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(packingResponse));
+
+        BulkPackingResponse result = packingV3Service.orderLineCreateUpdateDeleteBulk(orderLineRequest, SHIPMENT, false);
+        assertNotNull(result);
+        assertNotNull(result.getPackingResponseList());
+        assertFalse(result.getPackingResponseList().isEmpty());
+
+        verify(packingDao, times(1)).findByOrderLineGuidIn(List.of(orderLineGuid));
+    }
+
+    @Test
+    void testOrderLineCreateUpdateDeleteBulk_deleteRequest() throws RunnerException {
+        String orderLineGuid = "test-guid";
+        OrderLineV3Response orderLineResponse = new OrderLineV3Response();
+        orderLineResponse.setId(123L);
+        orderLineResponse.setGuid(UUID.randomUUID());
+        orderLineResponse.setCommodityGroup("COM-GRP");
+        orderLineResponse.setContainerId(999L);
+        orderLineResponse.setGoodsDescription("Good desc");
+        orderLineResponse.setHSCode("HS-001");
+        orderLineResponse.setLength(new BigDecimal("12.5"));
+        orderLineResponse.setLengthUnit("cm");
+        orderLineResponse.setWidth(new BigDecimal("1.5"));
+        orderLineResponse.setWidthUnit("cm");
+        orderLineResponse.setHeight(new BigDecimal("2.0"));
+        orderLineResponse.setHeightUnit("cm");
+        orderLineResponse.setWeight(new BigDecimal("5.5"));
+        orderLineResponse.setWeightUnit("kg");
+        orderLineResponse.setVolume(new BigDecimal("0.25"));
+        orderLineResponse.setVolumeUnit("m3");
+        orderLineResponse.setNetWeight(new BigDecimal("5.0"));
+        orderLineResponse.setNetWeightUnit("kg");
+        orderLineResponse.setPacks("10");
+        orderLineResponse.setPacksType("BOX");
+        orderLineResponse.setLineNo(new BigDecimal("1"));
+        orderLineResponse.setSubLineNo(new BigDecimal("0"));
+        orderLineResponse.setProductCode("PROD-1");
+        orderLineResponse.setShipmentOrderId(555L);
+        orderLineResponse.setShipmentOrderId(12432L);
+        orderLineResponse.setOrderLineId(555L);
+        orderLineResponse.setOrderLineGuid(orderLineGuid);
+
+        OrderLineCreateUpdateDeleteRequest orderLineRequest = OrderLineCreateUpdateDeleteRequest.builder()
+                .deleteOrderLines(List.of(orderLineResponse))
+                .build();
+
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .commodityGroup(orderLineResponse.getCommodityGroup())
+                .containerNumber(orderLineResponse.getContainerNumber())
+                .containerId(orderLineResponse.getContainerId())
+                .goodsDescription(orderLineResponse.getGoodsDescription())
+                .HSCode(orderLineResponse.getHSCode())
+                .commodity(orderLineResponse.getHSCode())
+                .length(orderLineResponse.getLength())
+                .lengthUnit(orderLineResponse.getLengthUnit())
+                .width(orderLineResponse.getWidth())
+                .widthUnit(orderLineResponse.getWidthUnit())
+                .height(orderLineResponse.getHeight())
+                .heightUnit(orderLineResponse.getHeightUnit())
+                .weight(orderLineResponse.getWeight())
+                .weightUnit(orderLineResponse.getWeightUnit())
+                .volume(orderLineResponse.getVolume())
+                .volumeUnit(orderLineResponse.getVolumeUnit())
+                .netWeight(orderLineResponse.getNetWeight())
+                .netWeightUnit(orderLineResponse.getNetWeightUnit())
+                .packs(orderLineResponse.getPacks())
+                .packsType(orderLineResponse.getPacksType())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .lineNo(orderLineResponse.getLineNo())
+                .subLineNo(orderLineResponse.getSubLineNo())
+                .productCode(orderLineResponse.getProductCode())
+                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .orderLineId(orderLineResponse.getOrderLineId())
+                .orderLineGuid(orderLineResponse.getOrderLineGuid())
+                .shipmentId(orderLineResponse.getShipmentId())
+                .build();
+
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(anyList())).thenReturn(List.of(packingReq));
+
+        Packing packingDaoResponse = new Packing();
+        packingDaoResponse.setId(1L);
+        packingDaoResponse.setGuid(UUID.randomUUID());
+        packingDaoResponse.setShipmentId(100L);
+        packingDaoResponse.setOrderLineGuid(orderLineGuid);
+
+        when(packingDao.findByOrderLineGuidIn(anyList())).thenReturn(List.of(packingDaoResponse));
+        testShipment.setDirection(null);
+        testShipment.setShipmentId("12432");
+
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        mockShipmentSettings();
+
+        PackingResponse packingResponse = new PackingResponse();
+        packingResponse.setId(1L);
+        packingResponse.setShipmentId(100L);
+
+        BulkPackingResponse result = packingV3Service.orderLineCreateUpdateDeleteBulk(orderLineRequest, SHIPMENT, false);
+        assertNotNull(result);
+        assertNull(result.getPackingResponseList());
+
+        verify(packingDao, times(1)).findByOrderLineGuidIn(List.of(orderLineGuid));
+    }
+
+    @Test
+    void testCreatePacking_entiryInstanceOfShipmentDetails_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
+        testShipment.setDirection("EXP");
+
+        when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
+        when(packingDao.save(packing)).thenReturn(packing);
+        when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
+        when(packingDao.findByShipmentId(null)).thenReturn(List.of(packing));
+        doNothing().when(auditLogService).addAuditLog(any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
+        mockShipmentSettings();
+
+        ShipmentDetails fakeSd = ShipmentDetails.builder().build();
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(fakeSd);
+
+        PackingResponse actual = packingV3Service.create(request, SHIPMENT_ORDER);
+
+        assertEquals(response.getId(), actual.getId());
+        verify(packingDao).save(packing);
+    }
+
+    @Test
+    void testCreatePacking_entiryInstanceOfShipmentOrders_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.valueOf(100));
+        testShipment.setDirection("EXP");
+
+        when(jsonHelper.convertValue(request, Packing.class)).thenReturn(packing);
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        when(packingDao.save(packing)).thenReturn(packing);
+        when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
+        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
+        when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(consolidationV3Service.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
+        mockShipmentSettings();
+        ShipmentOrder fakeSo = ShipmentOrder.builder().build();
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(fakeSo);
+
+        PackingResponse actual = packingV3Service.create(request, "SHIPMENT");
+
+        assertEquals(response.getId(), actual.getId());
+        verify(packingDao).save(packing);
     }
 }

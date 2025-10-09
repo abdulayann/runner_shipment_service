@@ -188,10 +188,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         Map<Integer, Boolean> v2V3Map = getV2V3TenantMap(shipment, null);
         Map<Integer, EntityTransferV3ShipmentDetails> v2V3TaskPayloadMap = getV3V2TaskPayloadMap(v2V3Map, shipment, tenantMap, additionalDocs);
 
-        var entityTransferPayload = prepareShipmentPayload(shipment);
-        entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
-        entityTransferPayload.setAdditionalDocs(additionalDocs);
-
         for (Integer tenant : destinationTenantList) {
             var taskPayload = v2V3TaskPayloadMap.get(tenant);
             setDirectionInTaskPayload(tenant, shipment, taskPayload);
@@ -961,10 +957,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         ConsolidationDetailsResponse consolidationDetailsResponse;
         consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
         removeFlightNumberInRoutings(entityTransferConsolidationDetails.getRoutingsList());
+
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+            if(consolidationDetailsRequest.getParentGuid() == null)
+                consolidationDetailsRequest.setParentGuid(entityTransferConsolidationDetails.getGuid());
 
             consolidationDetailsResponse = consolidationService.createConsolidationFromEntityTransfer(consolidationDetailsRequest);
             isCreateConsole.setTrue();
@@ -979,6 +978,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             consolidationDetailsRequest.setGuid(guid);
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+            if(consolidationDetailsRequest.getParentGuid() == null)
+                consolidationDetailsRequest.setParentGuid(entityTransferConsolidationDetails.getGuid());
 
             consolidationDetailsResponse = consolidationService.completeUpdateConsolidationFromEntityTransfer(consolidationDetailsRequest);
             oldConsolidationDetailsList.get(0).setContainersList(jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class));
@@ -1068,12 +1069,15 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             shipmentRequest.setGuid(null);
             shipmentRequest.setShipmentCreatedOn(LocalDateTime.now());
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
+            if(shipmentRequest.getParentGuid() == null)
+                shipmentRequest.setParentGuid(entityTransferShipmentDetails.getGuid());
 
             shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest, true);
             isCreateShip.setTrue();
         } else {
             shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentEtV3Request.class);
-
+            if(shipmentRequest.getParentGuid() == null)
+                shipmentRequest.setParentGuid(entityTransferShipmentDetails.getGuid());
             Long id = shipmentRequest.getId();
             UUID guid = shipmentRequest.getGuid();
             this.cleanAllListEntitiesForShipment(shipmentRequest);
@@ -1333,6 +1337,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         setAdditionalParametersInPayload(consolidationDetails, payload);
 
+        if(consolidationDetails.getTenantId() != null)
+            payload.setSourceTenantId(Long.valueOf(consolidationDetails.getTenantId()));
+
         // Map container guid vs List<shipmentGuid>
         Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
         List<EntityTransferV3ShipmentDetails> transferShipmentDetails = new ArrayList<>();
@@ -1432,6 +1439,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         EntityTransferV3ShipmentDetails payload = jsonHelper.convertValue(shipmentDetails, EntityTransferV3ShipmentDetails.class);
         setFlightNumberInRoutings(payload.getRoutingsList());
         // populate master data and other fields
+        if(shipmentDetails.getTenantId() != null)
+            payload.setSourceTenantId(Long.valueOf(shipmentDetails.getTenantId()));
         payload.setMasterData(getShipmentMasterData(shipmentDetails));
         payload.setPackingSummary(packingV3Service.getPackSummaryV3Response(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), SHIPMENT, null, shipmentDetails.getId()));
         if(shipmentDetails.getContainersList()!=null && !shipmentDetails.getContainersList().isEmpty()) {

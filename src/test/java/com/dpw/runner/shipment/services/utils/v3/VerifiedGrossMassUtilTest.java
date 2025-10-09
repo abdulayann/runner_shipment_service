@@ -2,17 +2,15 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VGMContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.NotificationContactResponse;
-
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +33,11 @@ import java.util.UUID;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.GROSS_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.NET_WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.TARE_WEIGHT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -65,7 +67,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_AllFieldsPresent() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails(" test1@example.com ; test2@example.com ");
+        vgm.setExternalEmails(" test1@example.com , test2@example.com ");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -137,7 +139,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_ExternalEmailsHasEmptyItems() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails("test1@example.com;; ; test2@example.com;");
+        vgm.setExternalEmails("test1@example.com,, , test2@example.com,");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -149,7 +151,7 @@ class VerifiedGrossMassUtilTest {
     @Test
     void testPopulateRequestorEmails_withExternalAndInternalEmails() {
         VerifiedGrossMass vgm = new VerifiedGrossMass();
-        vgm.setExternalEmails("test1@example.com; test2@example.com;");
+        vgm.setExternalEmails("test1@example.com, test2@example.com,");
         vgm.setCreateByUserEmail("creator@example.com");
         vgm.setSubmitByUserEmail("submitter@example.com");
 
@@ -284,7 +286,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(null, response, "");
+        util.populateCarrierDetails(null, response, "", "");
 
         // Step 2: Assertions
         verify(response, never()).setCarrierScacCode(any());
@@ -298,7 +300,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(carrierDatav1Map, response, "abc@ext.com");
+        util.populateCarrierDetails(carrierDatav1Map, response, "abc@ext.com", "abc@ext.com");
 
         // Step 2: Assertions
         // No setter methods should be called as the map is empty
@@ -320,7 +322,7 @@ class VerifiedGrossMassUtilTest {
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
         // Step 1: Call the method under test
-        util.populateCarrierDetails(carrierDatav1Map, response, " ");
+        util.populateCarrierDetails(carrierDatav1Map, response, " ", " ");
 
         // Step 2: Assertions
         verify(response).setCarrierScacCode("CARRIER_SCAC");
@@ -352,7 +354,7 @@ class VerifiedGrossMassUtilTest {
 
         VerifiedGrossMassInttraResponse response = mock(VerifiedGrossMassInttraResponse.class);
 
-        util.populateCarrierDetails(carrierDatav1Map, response, " ");
+        util.populateCarrierDetails(carrierDatav1Map, response, " ", " ");
         verify(response).setCarrierScacCode("CARRIER_SCAC2");
         verify(response).setCarrierDescription("Carrier 2 Description");
     }
@@ -797,177 +799,67 @@ class VerifiedGrossMassUtilTest {
     }
 
     @Test
-    void testGetSendEmailBaseRequest_AllFieldsPresent() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com,internal2@example.com");
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("internal1@example.com,internal2@example.com,creator@example.com,submitter@example.com", request.getTo());
-        assertEquals("Subject", request.getSubject());
-        assertEquals("TemplateName", request.getTemplateName());
-        assertEquals("Body", request.getHtmlBody());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_InternalEmailsNull() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn(null);
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("creator@example.com,submitter@example.com", request.getTo());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_CreateAndSubmitEmailsSame() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("creator@example.com");
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("internal1@example.com,creator@example.com", request.getTo());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_CreateByUserEmailBlank() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn(" ");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("internal1@example.com,submitter@example.com", request.getTo());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_SubmitByUserEmailBlank() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn(" ");
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("internal1@example.com,creator@example.com", request.getTo());
-    }
-
-    @Test
     void testGetSendEmailBaseRequest_NoInternalEmails() {
-        // Mock the VerifiedGrossMass object
         when(verifiedGrossMass.getInternalEmails()).thenReturn("");
         when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
         when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
 
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+        List<String> emails = util.getSendEmailBaseRequest(verifiedGrossMass);
 
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify the values
-        assertEquals("creator@example.com,submitter@example.com", request.getTo());
+        assertEquals(2, emails.size());
+        assertTrue(emails.contains("creator@example.com"));
+        assertTrue(emails.contains("submitter@example.com"));
     }
 
     @Test
-    void testGetSendEmailBaseRequest_SubmitByUserEmailNull() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn(null);
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn(null);
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn(null);
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify that submitByUserEmail is not included
-        assertEquals("", request.getTo());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_SubmitByUserEmailEmpty() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
-        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
-        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("");  // submitByUserEmail is empty string
-
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
-
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify that submitByUserEmail is not included
-        assertEquals("internal1@example.com,creator@example.com", request.getTo());
-    }
-
-    @Test
-    void testGetSendEmailBaseRequest_SubmitByUserEmailValid() {
-        // Mock the VerifiedGrossMass object
-        when(verifiedGrossMass.getInternalEmails()).thenReturn("internal1@example.com");
+    void testGetSendEmailBaseRequest_InternalEmailsPresent() {
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("ops@example.com,support@example.com");
         when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
         when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
 
-        // Mock the EmailTemplatesRequest object
-        when(verifiedGrossMassTemplate.getSubject()).thenReturn("Subject");
-        when(verifiedGrossMassTemplate.getName()).thenReturn("TemplateName");
-        when(verifiedGrossMassTemplate.getBody()).thenReturn("Body");
+        List<String> emails = util.getSendEmailBaseRequest(verifiedGrossMass);
 
-        // Call the method under test
-        SendEmailBaseRequest request = util.getSendEmailBaseRequest(verifiedGrossMass, verifiedGrossMassTemplate);
-
-        // Verify that submitByUserEmail is included
-        assertEquals("internal1@example.com,creator@example.com,submitter@example.com", request.getTo());
+        assertEquals(4, emails.size());
+        assertTrue(emails.contains("ops@example.com"));
+        assertTrue(emails.contains("support@example.com"));
+        assertTrue(emails.contains("creator@example.com"));
+        assertTrue(emails.contains("submitter@example.com"));
     }
 
+    @Test
+    void testGetSendEmailBaseRequest_SubmitterSameAsCreator() {
+        when(verifiedGrossMass.getInternalEmails()).thenReturn(null);
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("creator@example.com");
+
+        List<String> emails = util.getSendEmailBaseRequest(verifiedGrossMass);
+
+        assertEquals(1, emails.size());
+        assertEquals("creator@example.com", emails.get(0));
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_BlankEmailsIgnored() {
+        when(verifiedGrossMass.getInternalEmails()).thenReturn(" , , ");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("   "); // blank
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("submitter@example.com");
+
+        List<String> emails = util.getSendEmailBaseRequest(verifiedGrossMass);
+
+        assertEquals(1, emails.size());
+        assertEquals("submitter@example.com", emails.get(0));
+    }
+
+    @Test
+    void testGetSendEmailBaseRequest_DuplicateEmailsRemoved() {
+        when(verifiedGrossMass.getInternalEmails()).thenReturn("creator@example.com,ops@example.com");
+        when(verifiedGrossMass.getCreateByUserEmail()).thenReturn("creator@example.com");
+        when(verifiedGrossMass.getSubmitByUserEmail()).thenReturn("creator@example.com");
+
+        List<String> emails = util.getSendEmailBaseRequest(verifiedGrossMass);
+
+        assertEquals(2, emails.size());
+        assertTrue(emails.contains("creator@example.com"));
+        assertTrue(emails.contains("ops@example.com"));
+    }
 }

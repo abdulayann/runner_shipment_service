@@ -117,4 +117,6 @@ public interface IShipmentServiceV3 {
     QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId);
 
     ShipmentDetailsV3Response partialUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
+
+    ResponseEntity<IRunnerResponse> attachDetachOrder(ShipmentOrderAttachDetachRequest shipmentRequest);
 }

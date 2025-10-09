@@ -16,6 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ShippingInstructionInttraRequest implements IRunnerResponse {
     private String messageStatus;
+    private String crBookingId;
     private LocalDateTime dateTime; //202508180550 format
     private List<FreightDetailResponse> freightDetailList;
     private BigDecimal shipperDeclaredValue;
@@ -37,6 +38,7 @@ public class ShippingInstructionInttraRequest implements IRunnerResponse {
     private PartiesResponse consignee;
     private PartiesResponse requestor;
     private PartiesResponse forwardingAgent;
+    private PartiesResponse notifyParty;
     List<CommonContainerResponse> commonContainersList;
     List<CommonPackageResponse> commonPackagesList;
     private String carrierScacCode;

@@ -24,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,14 +52,10 @@ public class VerifiedGrossMassUtil {
 
         List<String> requestorEmailsList = new ArrayList<>();
         // Add existing external emails if any
-        if (Objects.nonNull(verifiedGrossMass.getExternalEmails()) && !verifiedGrossMass.getExternalEmails().isBlank()) {
-            String[] externalEmails = verifiedGrossMass.getExternalEmails().split(";");
-            for (String email : externalEmails) {
-                if (!email.isBlank()) {
-                    requestorEmailsList.add(email.trim());
-                }
-            }
-        }
+        populateRequestorEmails(verifiedGrossMass.getExternalEmails(), requestorEmailsList, ",");
+
+        // Add existing other external emails if any
+        populateRequestorEmails(verifiedGrossMass.getOtherExternalEmails(), requestorEmailsList, ",");
 
         // Add createdBy and submitBy emails if present
         if (Objects.nonNull(verifiedGrossMass.getCreateByUserEmail()) && !verifiedGrossMass.getCreateByUserEmail().isBlank()) {
@@ -70,6 +67,18 @@ public class VerifiedGrossMassUtil {
         }
 
         return String.join(";", requestorEmailsList);
+    }
+
+    private void populateRequestorEmails(String externalEmails, List<String> requestorEmailsList, String delimiter) {
+
+        if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+            String[] externalEmailsList = externalEmails.split(delimiter);
+            for (String email : externalEmailsList) {
+                if (!email.isBlank()) {
+                    requestorEmailsList.add(email.trim());
+                }
+            }
+        }
     }
 
     public CommonContainerResponse buildContainerResponse(CommonContainers container) {
@@ -156,7 +165,8 @@ public class VerifiedGrossMassUtil {
     }
 
     public void populateCarrierDetails(Map<String, EntityTransferCarrier> carrierDatav1Map,
-                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse, String externalEmails) {
+                                       VerifiedGrossMassInttraResponse verifiedGrossMassInttraResponse,
+                                       String externalEmails, String otherExternalEmails) {
 
         if (Objects.isNull(carrierDatav1Map)) return;
 
@@ -176,16 +186,23 @@ public class VerifiedGrossMassUtil {
             notificationContactResponse.setUsername(carrierContactPerson);
 
             // Adding Inttra emails (VGM external emails) to carrierNotificationContact with comma separation
-            if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
-                if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
-                    carrierNotificationContact += "," + externalEmails;
-                } else {
-                    carrierNotificationContact = externalEmails;
-                }
-            }
+            carrierNotificationContact = populateCarrierNotificationContract(externalEmails, carrierNotificationContact);
+            carrierNotificationContact = populateCarrierNotificationContract(otherExternalEmails, carrierNotificationContact);
+
             notificationContactResponse.setEmails(carrierNotificationContact);
             verifiedGrossMassInttraResponse.setCarrierNotificationContact(notificationContactResponse);
         }
+    }
+
+    private String populateCarrierNotificationContract(String externalEmails, String carrierNotificationContact) {
+        if (Objects.nonNull(externalEmails) && !externalEmails.isBlank()) {
+            if (Objects.nonNull(carrierNotificationContact) && !carrierNotificationContact.isBlank()) {
+                carrierNotificationContact += "," + externalEmails;
+            } else {
+                carrierNotificationContact = externalEmails;
+            }
+        }
+        return carrierNotificationContact;
     }
 
 
@@ -333,32 +350,39 @@ public class VerifiedGrossMassUtil {
         return !StringUtils.equals(currentValue, previousValue);
     }
 
-    public SendEmailBaseRequest getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass, EmailTemplatesRequest verifiedGrossMassTemplate) {
-        String toEmails = verifiedGrossMass.getInternalEmails() == null ? "" : verifiedGrossMass.getInternalEmails();
+    public List<String> getSendEmailBaseRequest(VerifiedGrossMass verifiedGrossMass) {
+        StringBuilder toEmails = new StringBuilder();
+
+        // Add internal emails if present
+        if (Objects.nonNull(verifiedGrossMass.getInternalEmails()) && !verifiedGrossMass.getInternalEmails().trim().isEmpty()) {
+            toEmails.append(verifiedGrossMass.getInternalEmails());
+        }
 
         // Add the 'createByUserEmail' only if it's not blank
         String createByUserEmail = verifiedGrossMass.getCreateByUserEmail();
         if (Objects.nonNull(createByUserEmail) && !createByUserEmail.trim().isEmpty()) {
             if (!toEmails.isEmpty()) {
-                toEmails += ",";
+                toEmails.append(",");
             }
-            toEmails += createByUserEmail;
+            toEmails.append(createByUserEmail);
         }
 
         // Add the 'submitByUserEmail' only if it's not blank and different from 'createByUserEmail'
         String submitByUserEmail = verifiedGrossMass.getSubmitByUserEmail();
-        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty() && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
+        if (Objects.nonNull(submitByUserEmail) && !submitByUserEmail.trim().isEmpty()
+                && !submitByUserEmail.equalsIgnoreCase(createByUserEmail)) {
             if (!toEmails.isEmpty()) {
-                toEmails += ",";
+                toEmails.append(",");
             }
-            toEmails += submitByUserEmail;
+            toEmails.append(submitByUserEmail);
         }
 
-        SendEmailBaseRequest request = new SendEmailBaseRequest();
-        request.setTo(toEmails);
-        request.setSubject(verifiedGrossMassTemplate.getSubject());
-        request.setTemplateName(verifiedGrossMassTemplate.getName());
-        request.setHtmlBody(verifiedGrossMassTemplate.getBody());
-        return request;
+        // Convert to list, trimming spaces and removing blanks
+        return Arrays.stream(toEmails.toString().split(","))
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .distinct() // remove duplicates if any
+                .toList();
     }
+
 }

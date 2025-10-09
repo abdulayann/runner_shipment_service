@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.CarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.impl.TransactionHistoryDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
@@ -20,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
 import java.util.List;
@@ -85,14 +82,13 @@ class TransactionHistoryServiceTest {
             when(jsonHelper.convertValue(history, TransactionHistoryResponse.class)).thenReturn(response);
 
             // Act
-            ResponseEntity<IRunnerResponse> result = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
-            RunnerListResponse body = (RunnerListResponse) result.getBody();
+            List<TransactionHistoryResponse> result = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
 
             // Assert
             assertNotNull(result);
-            assertNotNull(body);
-            assertEquals(1, body.getData().size());
-            assertEquals("desc", ((TransactionHistoryResponse) body.getData().get(0)).getDescription());
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertEquals("desc", result.get(0).getDescription());
         }
     }
 
@@ -110,11 +106,10 @@ class TransactionHistoryServiceTest {
             when(transactionHistoryDao.findAllByEntityIdAndEntityType(1L, "VGM", 1)).thenReturn(Collections.emptyList());
 
             // Call the service
-            ResponseEntity<IRunnerResponse> result = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
-            RunnerListResponse body = (RunnerListResponse) result.getBody();
+            List<TransactionHistoryResponse> result = transactionHistoryService.retrieveById(1L, EntityTypeTransactionHistory.VGM);
 
-            assertNotNull(body);
-            assertTrue(body.getData().isEmpty());
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
         }
     }
 
@@ -156,12 +151,11 @@ class TransactionHistoryServiceTest {
             when(jsonHelper.convertValue(history, TransactionHistoryResponse.class)).thenReturn(response);
 
             // Call the service
-            ResponseEntity<IRunnerResponse> result = transactionHistoryService.retrieveById(2L, EntityTypeTransactionHistory.CARRIER_BOOKING);
-            RunnerListResponse body = (RunnerListResponse) result.getBody();
+            List<TransactionHistoryResponse> result = transactionHistoryService.retrieveById(2L, EntityTypeTransactionHistory.CARRIER_BOOKING);
 
             // Assertions
-            assertEquals(1, body.getData().size());
-            assertEquals("CB Desc", ((TransactionHistoryResponse) body.getData().get(0)).getDescription());
+            assertEquals(1, result.size());
+            assertEquals("CB Desc", result.get(0).getDescription());
         }
     }
 

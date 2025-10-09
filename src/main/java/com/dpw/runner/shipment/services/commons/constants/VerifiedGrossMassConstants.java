@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,9 +98,8 @@ public class VerifiedGrossMassConstants {
 
             Map.entry("entityType", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS_TABLE)
-                    .dataType(String.class)
+                    .dataType(EntityType.class)
                     .fieldName("entityType")
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("entityId", RunnerEntityMapping.builder()
@@ -109,9 +110,8 @@ public class VerifiedGrossMassConstants {
 
             Map.entry("status", RunnerEntityMapping.builder()
                     .tableName(VERIFIED_GROSS_MASS_TABLE)
-                    .dataType(String.class)
+                    .dataType(VerifiedGrossMassStatus.class)
                     .fieldName("status")
-                    .isContainsText(true)
                     .build()),
 
             Map.entry("createByUserEmail", RunnerEntityMapping.builder()

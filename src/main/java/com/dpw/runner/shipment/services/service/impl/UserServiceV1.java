@@ -1,13 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -21,6 +20,7 @@ import java.util.Objects;
 @EnableCaching
 public class UserServiceV1 implements IUserService {
 
+    @Qualifier("restTemplateForV1")
     @Autowired
     private RestTemplate restTemplate;
 

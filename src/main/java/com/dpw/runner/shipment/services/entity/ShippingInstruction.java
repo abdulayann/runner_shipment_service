@@ -96,6 +96,24 @@ public class ShippingInstruction extends MultiTenancy {
     @Column(name = "non_nego_un_freight_copies")
     private Integer nonNegoUnFreightCopies;
 
+    @Column(name = "internal_emails", columnDefinition = "TEXT")
+    private String internalEmails;
+
+    @Column(name = "external_emails", columnDefinition = "TEXT")
+    private String externalEmails;
+
+    @Column(name = "other_internal_emails", columnDefinition = "TEXT")
+    private String otherInternalEmails;
+
+    @Column(name = "other_external_emails", columnDefinition = "TEXT")
+    private String otherExternalEmails;
+
+    @Column(name = "created_by_user_email")
+    private String createByUserEmail;
+
+    @Column(name = "submit_by_user_email")
+    private String submitByUserEmail;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contract_id", referencedColumnName = "id")
     @OrganizationData
@@ -121,11 +139,15 @@ public class ShippingInstruction extends MultiTenancy {
     @OrganizationData
     private Parties requestor;
 
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties notifyParty;
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES'")
     @BatchSize(size = 50)
     private List<Parties> additionalParties;
-
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "shipping_instruction_id")
@@ -149,4 +171,7 @@ public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "si_payload")
     private String payloadJson;
+
+    @Column(name = "si_comments")
+    private String comments;
 }

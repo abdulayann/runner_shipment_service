@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IVerifiedGrossMassRepository;
 import org.springframework.data.domain.Page;
@@ -57,5 +58,10 @@ public class VerifiedGrossMassDao implements IVerifiedGrossMassDao {
     @Override
     public VerifiedGrossMass findByCarrierBookingNo(String carrierBookingNo) {
         return verifiedGrossMassRepository.findByCarrierBookingNo(carrierBookingNo);
+    }
+
+    @Override
+    public VerifiedGrossMass findByEntityIdType(EntityType type, Long id) {
+        return verifiedGrossMassRepository.findByEntityTypeAndEntityId(type, id);
     }
 }

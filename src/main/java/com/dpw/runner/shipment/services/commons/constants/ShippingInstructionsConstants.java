@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionType;
+import com.dpw.runner.shipment.services.utils.Generated;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Generated
 public class ShippingInstructionsConstants {
 
     private ShippingInstructionsConstants() {
@@ -28,12 +33,26 @@ public class ShippingInstructionsConstants {
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
     public static final String SI_TABLE = "ShippingInstruction";
     public static final String SAILING_INFORMATION = "sailingInformation";
+    public static final String VERIFIED_GROSS_MASS = "verifiedGrossMass";
+    public static final String STATUS = "status";
+    public static final String CANCELLED = "cancelled";
+    public static final String SI_LIST_RESPONSE_SUCCESS = "SI list from db retrieved successfully for Request Id : {}";
+    public static final String SI_LIST_REQUEST_EMPTY_ERROR = "Request is empty for SI list with Request Id {}";
+    public static final String SI_LIST_REQUEST_NULL_ERROR = "SI List Request is Null";
+    public static final String SHIPPING_INSTRUCTION = "SHIPPING_INSTRUCTION";
+    public static final String APERAK_PREFIX = "APERAK_";
+    public static final String CONTRLX_PREFIX = "CONTRLX_";
+    public static final String XML_SUFFIX = ".xml";
+    public static final String ACCEPTED = "Accepted";
+    public static final String REJECTED = "Rejected";
+    public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
+    public static final String PROCESSED = "Processed";
+    public static final String SHIPPING_INSTRUCTION_EMAIL_TEMPLATE = "SHIPPING_INSTRUCTION";
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("status", RunnerEntityMapping.builder()
+            Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
-                    .dataType(String.class)   // CarrierBookingStatus is an enum stored as string
-                    .fieldName("status")
-                    .isContainsText(true)
+                    .dataType(ShippingInstructionStatus.class)   // CarrierBookingStatus is an enum stored as string
+                    .fieldName(STATUS)
                     .build()),
 
             Map.entry("carrierBookingNo", RunnerEntityMapping.builder()
@@ -49,14 +68,16 @@ public class ShippingInstructionsConstants {
                     .fieldName("carrierBlNo")
                     .isContainsText(true)
                     .build()),
-
+            Map.entry("shippingInstructionType", RunnerEntityMapping.builder()
+                    .tableName(SI_TABLE)
+                    .dataType(ShippingInstructionType.class)
+                    .fieldName("shippingInstructionType")
+                    .build()),
             Map.entry("entityType", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
-                    .dataType(String.class)
+                    .dataType(EntityType.class)
                     .fieldName("entityType")
-                    .isContainsText(true)
                     .build()),
-
             Map.entry("entityId", RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
                     .dataType(Long.class)
@@ -95,12 +116,6 @@ public class ShippingInstructionsConstants {
                     .fieldName("createdBy")
                     .isContainsText(false)
                     .build()),
-            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder()
-                    .tableName(SAILING_INFORMATION)
-                    .dataType(String.class)
-                    .fieldName("verifiedGrossMassCutoff")
-                    .isContainsText(true)
-                    .build()),
             Map.entry("carrier", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
                     .dataType(String.class)
@@ -118,6 +133,18 @@ public class ShippingInstructionsConstants {
                     .dataType(String.class)
                     .fieldName("pod")
                     .isContainsText(true)
+                    .build()),
+            Map.entry("siCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("shipInstructionCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("vgmCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("verifiedGrossMassCutoff")
+                    .isContainsText(false)
                     .build()),
             Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.SHIPPER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.SHIPPER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build())

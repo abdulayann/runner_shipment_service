@@ -58,6 +58,7 @@ public class Constants {
     public static final String CONSOLIDATION_CAMELCASE = "Consolidation";
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String BOOKING = "BOOKING";
+    public static final String SHIPMENT_ORDER = "SHIPMENT_ORDER";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
@@ -708,6 +709,8 @@ public class Constants {
     public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
+    public static final String CUSTOMER_BOOKING_TO_OMS_SYNC = "CUSTOMER_BOOKING_TO_OMS_SYNC";
+    public static final String CUSTOMER_BOOKING_TO_PLATFORM_SYNC = "CUSTOMER_BOOKING_TO_PLATFORM_SYNC";
     public static final String TRANSPORT_INSTRUCTION = "TRANSPORT_INSTRUCTION";
     public static final String CLIENT_PARTY = "CLIENT";
     public static final String CONSIGNEE_PARTY = "CONSIGNEE";
@@ -750,6 +753,11 @@ public class Constants {
     public static final String CONSOLIDATION_ROOT_KEY_NAME = "consolidationDetails";
     public static final String DOT = ".";
 
+    public static final String ATTACH = "ATTACH";
+    public static final String DETACH = "DETACH";
+    public static final String DETACH_AND_ATTACH = "DETACH_AND_ATTACH";
+
+
     public static final String CARRIER_BOOKING_EMAIL_TEMPLATE = "CARRIER_BOOKING";
     public static final String BEARER = "Bearer ";
 
@@ -768,6 +776,7 @@ public class Constants {
     public static final String JSON_PARSING_EXCEPTION = "Exception thrown while parsing json: {}";
     public static final String REGEX_S_COMMA_S = "%s, %s";
 
+    public static final String KAFKA_CONSUME = "[InternalKafkaConsume] Consolidation: ";
     private Constants() {
     }
 
