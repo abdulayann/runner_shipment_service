@@ -1,0 +1,2 @@
+update shipment_details set status = 0, updated_at = now() where  id = 104409;
+ 

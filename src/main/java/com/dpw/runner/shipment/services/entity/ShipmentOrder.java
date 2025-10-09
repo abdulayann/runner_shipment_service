@@ -1,13 +1,21 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import lombok.*;
-import lombok.experimental.Accessors;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Setter
@@ -26,4 +34,12 @@ public class ShipmentOrder extends BaseEntity {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
+
+    @Column(name = "order_date")
+    private LocalDateTime orderDate;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentOrderId")
+    @BatchSize(size = 50)
+    private List<Packing> orderPackings;
+
 }

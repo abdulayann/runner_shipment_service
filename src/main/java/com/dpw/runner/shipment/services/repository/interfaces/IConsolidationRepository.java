@@ -204,4 +204,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Transactional
     @Query(value = "DELETE FROM triangulation_partner_consolidation WHERE consolidation_id = ?1", nativeQuery = true)
     void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
+
+    @Query(value = "SELECT * FROM consolidation_details WHERE parent_guid = ?1", nativeQuery = true)
+    List<ConsolidationDetails> findByParentGuid(UUID parentGuid);
 }

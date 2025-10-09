@@ -49,6 +49,8 @@ public class CarrierBookingRequest implements Serializable {
     private String carrierComment;
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     @NotNull(message = "Requester can not be null")
     private PartiesRequest requester;
     @NotNull(message = "Shipper can not be null")

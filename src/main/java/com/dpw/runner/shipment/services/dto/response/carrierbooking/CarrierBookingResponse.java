@@ -43,6 +43,8 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private String carrierComment;
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
     private String createByUserEmail;
     private String submitByUserEmail;
     private Map<String, Object> loadedContainerDropOffDetails;
@@ -65,4 +67,6 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     private String updatedBy;
     private LocalDateTime updatedAt;
+    private Long vgmId;
+    private Long siId;
 }

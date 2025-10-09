@@ -2,9 +2,14 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import io.swagger.annotations.ApiModel;
-import lombok.*;
-
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -18,4 +23,6 @@ public class ShipmentOrderResponse implements IRunnerResponse {
     private UUID orderGuid;
     private Long shipmentId;
     private String orderNumber;
+    private LocalDateTime orderDate;
+    private List<PackingResponse> orderPackings;
 }

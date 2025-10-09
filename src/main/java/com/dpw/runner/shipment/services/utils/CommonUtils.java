@@ -1,5 +1,146 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMM;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_CONTAINER_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LIST_ALL_DOCUMENTS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.STATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SUMMARY_DOCUMENTS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SECURITY_PERMISSION_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_VOLUME_UNIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_WEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.APPROVED_TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.APPROVER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BRANCH_TIME_ZONE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.COMMERCIAL_OCEAN_DG_ROLE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CROSS_TENANT_SOURCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DATE_TIME_FORMAT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_APPROVER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_APPROVER_TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_PACKAGES_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EMPTY_STRING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HTML_HREF_TAG_PREFIX;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HTML_HREF_TAG_SUFFIX;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HUB_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HUB_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_CONSOLIDATION_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.LAT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_ROLE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_TASKTYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POD_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POL_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REGIONAL_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REGIONAL_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REMARKS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTED_USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUEST_DATE_TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER_WITH_SLASH;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_BRANCH_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_CREATE_USER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_WITHDRAW_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_WITHDRAW_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_VOLUME_UNIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_WEIGHT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_WEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_CONSOLIDATION_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.STATUS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TOTAL_PACKAGES_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.UAE_TWO_DIGIT_IATA_CODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_BRANCH;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_COUNTRY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAGE;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
+import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
+import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -156,42 +297,6 @@ import com.itextpdf.text.pdf.PdfImportedPage;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfWriter;
-import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.barbecue.Barcode;
-import net.sourceforge.barbecue.BarcodeException;
-import net.sourceforge.barbecue.BarcodeFactory;
-import net.sourceforge.barbecue.BarcodeImageHandler;
-import net.sourceforge.barbecue.output.OutputException;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.jetbrains.annotations.Nullable;
-import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
-import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
-import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionSystemException;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.imageio.ImageIO;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -227,145 +332,41 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMM;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_CONTAINER_COUNT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.STATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SECURITY_PERMISSION_MSG;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_VOLUME_UNIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_WEIGHT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ALLOCATED_WEIGHT_UNIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.APPROVED_TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.APPROVER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BRANCH_TIME_ZONE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.COMMERCIAL_OCEAN_DG_ROLE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CROSS_TENANT_SOURCE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DATE_TIME_FORMAT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_APPROVER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_APPROVER_TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_PACKAGES_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.EMPTY_STRING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HTML_HREF_TAG_PREFIX;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HTML_HREF_TAG_SUFFIX;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HUB_BRANCH_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HUB_BRANCH_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_CONSOLIDATION_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.LAT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_ROLE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_TASKTYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.POD_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.POL_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REGIONAL_BRANCH_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REGIONAL_BRANCH_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REMARKS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTED_USER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUEST_DATE_TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ASSIGNED_USER_WITH_SLASH;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_BRANCH_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_BRANCH_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_CREATE_USER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETAILS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_WITHDRAW_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_WITHDRAW_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_VOLUME_UNIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_WEIGHT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_WEIGHT_UNIT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_CONSOLIDATION_NUMBER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.STATUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TOTAL_PACKAGES_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.UAE_TWO_DIGIT_IATA_CODE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_BRANCH;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_COUNTRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_NAME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAGE;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_WITHDRAW;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
-import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
-import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import javax.imageio.ImageIO;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.barbecue.Barcode;
+import net.sourceforge.barbecue.BarcodeException;
+import net.sourceforge.barbecue.BarcodeFactory;
+import net.sourceforge.barbecue.BarcodeImageHandler;
+import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.jetbrains.annotations.Nullable;
+import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
+import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Component
 @Slf4j
@@ -1724,6 +1725,21 @@ public class CommonUtils {
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
     }
+    @SuppressWarnings("java:S5857")
+    public String replaceDefaultTagsFromData(Map<String, Object> map, String val) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (Objects.nonNull(entry.getValue()) && Objects.nonNull(entry.getKey())) {
+                boolean isEmptyDocument = (entry.getKey().equalsIgnoreCase(SUMMARY_DOCUMENTS) && entry.getValue().toString().isEmpty())
+                        || (entry.getKey().equalsIgnoreCase(LIST_ALL_DOCUMENTS) && entry.getValue().toString().isEmpty());
+
+                if (!isEmptyDocument) {
+                    val = val.replace("{" + entry.getKey() + "}", entry.getKey() + ":" + entry.getValue().toString());
+                }
+            }
+        }
+        val = val.replaceAll("\\{.*?\\}", "");
+        return val;
+    }
 
     public void getEmailTemplate(Map<ShipmentRequestedType, EmailTemplatesRequest> response) {
         List<String> requests = new ArrayList<>(List.of(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE, SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE, SHIPMENT_PUSH_REJECTED_EMAIL_TYPE, SHIPMENT_PULL_REJECTED_EMAIL_TYPE,
@@ -2661,6 +2677,9 @@ public class CommonUtils {
             ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
             sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
 
+            // Add tenant data from all shipments sharing the same parent GUID
+            addTenantDataFromParentGuid(shipmentDetails.getParentGuid(), tenantIds, Constants.SHIPMENT);
+
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = shipmentDetails.getReceivingBranch();
                 triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
@@ -2674,6 +2693,9 @@ public class CommonUtils {
             }
             ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
             sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
+
+            // Add tenant IDs from all consolidation entities sharing the same parent GUID along with interbranch cases
+            addTenantDataFromParentGuid(consolidationDetails.getParentGuid(), tenantIds, Constants.CONSOLIDATION);
 
             if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = consolidationDetails.getReceivingBranch();
@@ -2690,6 +2712,67 @@ public class CommonUtils {
         addAllIfNotEmpty(tenantIds, triangulationPartners);
         addAllIfNotEmpty(tenantIds, otherIds);
         return tenantIds.stream().filter(Objects::nonNull).toList();
+    }
+
+    public void addTenantDataFromParentGuid(UUID parentGuid, Set<Long> tenantIds, String entity) {
+        if (parentGuid == null) {
+            return;
+        }
+        if (Objects.equals(entity, Constants.CONSOLIDATION)) {
+
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid);
+            if(optionalConsolidationDetails.isEmpty())
+                return;
+
+            ConsolidationDetails parentConsolidationDetails = optionalConsolidationDetails.get(); // parentConsolidation
+            handleParentEntity(tenantIds, parentConsolidationDetails.getTenantId(), parentConsolidationDetails.getSourceTenantId(), parentConsolidationDetails.getReceivingBranch(), parentConsolidationDetails.getTriangulationPartnerList());
+            handleInterbranchConsolidation(tenantIds, parentConsolidationDetails);
+
+            List<ConsolidationDetails> relatedConsolidations = consolidationDetailsDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedConsolidations)) {
+                relatedConsolidations.forEach(c -> addTenantIdAndTriangulationData(tenantIds, c.getTenantId(), c.getTriangulationPartnerList()));
+            }
+
+        } else if (Objects.equals(entity, Constants.SHIPMENT)) {
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(parentGuid);
+            if(optionalShipmentDetails.isEmpty())
+                return;
+
+            ShipmentDetails parentShipmentDetails = optionalShipmentDetails.get(); // parent Shipment
+            handleParentEntity(tenantIds, parentShipmentDetails.getTenantId(), parentShipmentDetails.getSourceTenantId(), parentShipmentDetails.getReceivingBranch(), parentShipmentDetails.getTriangulationPartnerList());
+
+            List<ShipmentDetails> relatedShipments = shipmentDao.findByParentGuid(parentGuid);
+            if (!CollectionUtils.isEmpty(relatedShipments)) {
+                relatedShipments.forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+            }
+        }
+    }
+
+    public void addTenantIdAndTriangulationData(Set<Long> tenantIds, Integer tenantId, List<TriangulationPartner> triangulationPartnerList) {
+        if (tenantId != null) {
+            tenantIds.add(Long.valueOf(tenantId));
+        }
+        if (!CollectionUtils.isEmpty(triangulationPartnerList)) {
+            List<Long> triangulationPartners = extractTriangulationPartners(triangulationPartnerList);
+            addAllIfNotEmpty(tenantIds, triangulationPartners);
+        }
+    }
+
+    public void handleInterbranchConsolidation(Set<Long> tenantIds, ConsolidationDetails parentConsolidationDetails) {
+        if(Boolean.TRUE.equals(parentConsolidationDetails.getInterBranchConsole())) {
+            parentConsolidationDetails.getShipmentsList().forEach(s -> addTenantIdAndTriangulationData(tenantIds, s.getTenantId(), s.getTriangulationPartnerList()));
+        }
+    }
+
+    public void handleParentEntity(Set<Long> tenantIds, Integer tenantId, Long receivingBranch, Long originBranch, List<TriangulationPartner> triangulationPartnerList) {
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch);
+        }
+        if (originBranch != null) {
+            tenantIds.add(originBranch);
+        }
+        addTenantIdAndTriangulationData(tenantIds, tenantId, triangulationPartnerList);
     }
 
     private Optional<ShipmentDetails> getShipmentDetails(ListCousinBranchesForEtRequest request) {
@@ -4589,6 +4672,7 @@ public class CommonUtils {
             throw new ValidationException("Invalid Type");
         }
     }
+
     public LocalDateTime convertToLocalDateTimeFromInttra(String dateValue, String dateFormat) {
         if (dateValue == null || dateValue.trim().isEmpty()) {
             return null;

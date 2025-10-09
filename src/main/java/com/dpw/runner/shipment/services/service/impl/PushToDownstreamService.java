@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto.Meta;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto.Triggers;
@@ -83,6 +84,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     private String containerKafkaQueue;
     @Value("${consolidationsKafka.queue}")
     private String consolidationKafkaQueue;
+    @Value("${booking.event.kafka.queue}")
+    private String bookingEventKafkaQueue;
     @Autowired
     private IConsolidationV3Service consolidationV3Service;
     @Autowired
@@ -107,7 +110,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(message.getParentEntityName())) {
             pushConsolidationDataToService(message, transactionId);
         } else if (Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
-            this.pushCustomerBookingDataToPlatform(message, transactionId);
+            pushCustomerBookingDataToService(message, transactionId);
         } else if (Objects.equals(message.getParentEntityName(), Constants.TRANSPORT_INSTRUCTION)) {
             pushTransportInstructionDataToTIQueue(message, transactionId);
         }
@@ -232,6 +235,14 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         }
         if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
             this.pushConsolidationDataToTracking(message, transactionId);
+        }
+    }
+
+    private void pushCustomerBookingDataToService(PushToDownstreamEventDto message, String transactionId) {
+        if (Constants.CUSTOMER_BOOKING_TO_OMS_SYNC.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+            this.pushCustomerBookingDataToOMS(message, transactionId);
+        } else if (Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+            this.pushCustomerBookingDataToPlatform(message, transactionId);
         }
     }
 
@@ -388,6 +399,29 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking.get());
 
         log.info("[InternalKafkaConsume] Customer booking creation done at platform | transactionId={}", transactionId);
+    }
+
+    private void pushCustomerBookingDataToOMS(PushToDownstreamEventDto downstreamEventDto, String transactionId) {
+        Integer tenantId = downstreamEventDto.getMeta().getTenantId();
+        TenantContext.setCurrentTenant(tenantId);
+        Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
+        if (customerBookingOptional.isEmpty()) {
+            String errMsg = "[InternalKafkaConsume] Customer Booking: " + downstreamEventDto.getParentEntityId() + TRANSACTIONAL_ID_CONSTANT + transactionId + NOT_FOUND_CONSTANT;
+            log.info(errMsg);
+            throw new ValidationException(errMsg);
+        }
+        CustomerBooking customerBooking = customerBookingOptional.get();
+        OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder()
+                .orderManagementId(customerBooking.getOrderManagementId())
+                .orderManagementNumber(customerBooking.getOrderManagementNumber())
+                .moduleStatus(customerBooking.getBookingStatus())
+                .moduleId(customerBooking.getBookingNumber())
+                .moduleGuid(customerBooking.getGuid().toString())
+                .tenantId(TenantContext.getCurrentTenant())
+                .build();
+
+        producer.produceToKafka(jsonHelper.convertToJson(orderManagement), bookingEventKafkaQueue, StringUtility.convertToString(customerBooking.getGuid()));
+        log.info("[InternalKafkaConsume] Customer booking data sent at OMS | transactionId={}", transactionId);
     }
 
     private void pushShipmentData(Long entityId, boolean isCreate, boolean isAutoSellRequired) {

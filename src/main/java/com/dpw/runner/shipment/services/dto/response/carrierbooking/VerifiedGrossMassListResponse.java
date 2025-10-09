@@ -32,6 +32,8 @@ public class VerifiedGrossMassListResponse implements IRunnerResponse {
 
     private List<String> internalEmailsList;
     private List<String> externalEmailsList;
+    private String otherInternalEmails;
+    private String otherExternalEmails;
 
     private SailingInformationResponse sailingInformation;
 
