@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.interfaces;
 
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
@@ -18,6 +19,8 @@ public interface IOrderManagementAdapter {
     OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException;
 
     Map<String, OrderManagementDTO> fetchOrdersWithOrderLineAsMap(List<String> orderIds) throws RunnerException;
+
+    void callAttachDetachApi(AttachDetachOrderRequest attachDetachRequest) throws RunnerException;
 
     List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException;
 

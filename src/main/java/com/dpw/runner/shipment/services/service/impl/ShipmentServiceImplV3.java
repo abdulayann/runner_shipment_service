@@ -146,6 +146,7 @@ import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRe
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -5442,6 +5443,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
             log.info("Successfully completed attach/detach operation for shipment: {}", shipmentEntity.getId());
 
+            triggerOrderAttachDetachToOMS(request);
+
             return ResponseHelper.buildSuccessResponse();
 
         } catch (Exception ex) {
@@ -5449,6 +5452,51 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     request != null ? request.getShipmentGuid() : null, ex.getMessage(), ex);
             throw new ValidationException("Failed to process attach/detach order: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public void triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest request) {
+        if (request == null) {
+            log.warn("Cannot trigger OMS API because request is null");
+            return;
+        }
+
+        try {
+            // Map your existing ShipmentOrderAttachDetachRequest to the new AttachDetachOrderRequest DTO
+            AttachDetachOrderRequest omsRequest = AttachDetachOrderRequest.builder()
+                    .shipmentGuid(request.getShipmentGuid())
+                    .shipmentId(request.getShipmentId())
+                    .attachOrderInfo(
+                            request.getOrderDetailsForAttach() != null
+                                    ? request.getOrderDetailsForAttach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .detachOrderInfo(
+                            request.getOrderDetailsForDetach() != null
+                                    ? request.getOrderDetailsForDetach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .build();
+
+            log.info("Triggering OMS attach/detach API for shipment {} with payload: {}",
+                    request.getShipmentGuid(), omsRequest);
+
+            // Call the OMS API
+            orderManagementAdapter.callAttachDetachApi(omsRequest);
+
+        } catch (Exception ex) {
+            log.error("Failed to trigger OMS attach/detach API for shipment {}: {}",
+                    request.getShipmentGuid(), ex.getMessage(), ex);
+        }
+    }
+
+    /** Helper to map OrderDetails to OrderInfo for OMS request */
+    private AttachDetachOrderRequest.OrderInfo mapToOrderInfo(OrderDetails orderDetails) {
+        return AttachDetachOrderRequest.OrderInfo.builder()
+                .orderGuid(orderDetails.getOrderGuid())
+                .orderId(orderDetails.getOrderId())
+                .orderNumber(orderDetails.getOrderNumber())
+                .build();
     }
 
     /**

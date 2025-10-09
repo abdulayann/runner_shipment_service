@@ -121,6 +121,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -9402,5 +9403,67 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         verify(shipmentOrderDao, times(1)).save(any());
         verify(packingV3Service, times(1)).create(any(), anyString());
     }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest.OrderDetails attachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        attachOrder.setOrderGuid(UUID.randomUUID());
+        attachOrder.setOrderId("123");
+        attachOrder.setOrderNumber("ORD-ATTACH");
+
+        ShipmentOrderAttachDetachRequest.OrderDetails detachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        detachOrder.setOrderGuid(UUID.randomUUID());
+        detachOrder.setOrderId("456");
+        detachOrder.setOrderNumber("ORD-DETACH");
+
+        ShipmentOrderAttachDetachRequest request = new ShipmentOrderAttachDetachRequest();
+        request.setShipmentGuid(shipmentGuid);
+        request.setShipmentId(100L);
+        request.setOrderDetailsForAttach(List.of(attachOrder));
+        request.setOrderDetailsForDetach(List.of(detachOrder));
+
+        // Call the method
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(request);
+
+        // Capture argument passed to adapter
+        ArgumentCaptor<AttachDetachOrderRequest> captor = ArgumentCaptor.forClass(AttachDetachOrderRequest.class);
+        verify(orderManagementAdapter, times(1)).callAttachDetachApi(captor.capture());
+
+        AttachDetachOrderRequest omsRequest = captor.getValue();
+
+        // Assertions
+        assertEquals(request.getShipmentGuid(), omsRequest.getShipmentGuid());
+        assertEquals(request.getShipmentId(), omsRequest.getShipmentId());
+        assertEquals(1, omsRequest.getAttachOrderInfo().size());
+        assertEquals(1, omsRequest.getDetachOrderInfo().size());
+        assertEquals("123", omsRequest.getAttachOrderInfo().get(0).getOrderId());
+        assertEquals("456", omsRequest.getDetachOrderInfo().get(0).getOrderId());
+    }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_nullRequest_logsWarning() throws RunnerException {
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(null);
+
+        // Verify that adapter is never called
+        verify(orderManagementAdapter, never()).callAttachDetachApi(any());
+    }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_adapterThrows_logsError() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest request = new ShipmentOrderAttachDetachRequest();
+        request.setShipmentGuid(shipmentGuid);
+
+        doThrow(new RuntimeException("API error")).when(orderManagementAdapter).callAttachDetachApi(any());
+
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(request);
+
+        // Adapter was called but exception handled
+        verify(orderManagementAdapter, times(1)).callAttachDetachApi(any());
+    }
+
 
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -27,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.OrderPartiesPartyType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -70,6 +72,9 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderbyCriteria;
     @Value("${order.management.fetchWithOrderLine}")
     private String fetchWithOrderLine;
+    @Value("${order.management.orderAttachDetach}")
+    private String orderAttachDetach;
+
 
     @Autowired
     private V2AuthHelper v2AuthHelper;
@@ -197,6 +202,34 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         } catch (Exception e) {
             log.error("Error while calling fetch-with-orderline API: {}", e.getMessage(), e);
             throw new RunnerException("Failed to fetch orders with orderline: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void callAttachDetachApi(AttachDetachOrderRequest attachDetachRequest) throws RunnerException {
+        try {
+            String url = baseUrl + orderAttachDetach;
+            log.info("Calling Order Service attachdetach API with URL: {}", url);
+
+            if (attachDetachRequest == null) {
+                throw new ValidationException("attachDetachRequest cannot be null");
+            }
+
+            // Prepare HttpEntity with headers and body
+            HttpEntity<AttachDetachOrderRequest> httpEntity =
+                    new HttpEntity<>(attachDetachRequest, v2AuthHelper.getOrderManagementServiceSourceHeader());
+
+            // Log request body for debug
+            log.info("Request payload sent to attachdetach API: {}", attachDetachRequest);
+
+            // Execute POST call (response ignored)
+            restTemplate.exchange(url, HttpMethod.POST, httpEntity, Void.class);
+
+            log.info("Successfully sent attachdetach request for shipmentGuid: {}", attachDetachRequest.getShipmentGuid());
+
+        } catch (Exception ex) {
+            log.error("Error while calling attachdetach API: {}", ex.getMessage(), ex);
+            throw new RunnerException("Failed to call attachdetach API: " + ex.getMessage(), ex);
         }
     }
 
