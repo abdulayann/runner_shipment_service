@@ -128,8 +128,8 @@ public class JsonHelper {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed Parsed Object: {}", LoggerHelper.sanitizeForLogs(object.toString()));
-            log.error("Failed to Parse given Json: " + e.getMessage());
-            log.info(Constants.JSON_PARSING_EXCEPTION, e.toString());
+            log.error("Failed to Parse given Json: " + LoggerHelper.sanitizeForLogs(e.getMessage()));
+            log.info(Constants.JSON_PARSING_EXCEPTION, LoggerHelper.sanitizeForLogs(e.toString()));
             throw new JsonParseException(e);
         }
     }
