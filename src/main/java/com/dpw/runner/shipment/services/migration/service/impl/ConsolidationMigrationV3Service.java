@@ -315,15 +315,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if(consolidationDetails.getCarrierBookingRef()!=null){
             consolidationDetails.setBookingNumber(consolidationDetails.getCarrierBookingRef());
         }
+        String sendingAgentCountry = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
+        consolidationDetails.setSendingAgentCountry(sendingAgentCountry);
         if(consolidationDetails.getSendingAgent() != null) {
-            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getSendingAgentCountry());
-            consolidationDetails.getSendingAgent().setCountryCode(country);
-            consolidationDetails.setSendingAgentCountry(country);
+            consolidationDetails.getSendingAgent().setCountryCode(sendingAgentCountry);
         }
+        String receivingAgentCountry = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getReceivingAgentCountry());
+        consolidationDetails.setReceivingAgentCountry(receivingAgentCountry);
         if(consolidationDetails.getReceivingAgent() != null) {
-            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(consolidationDetails.getReceivingAgentCountry());
-            consolidationDetails.getReceivingAgent().setCountryCode(country);
-            consolidationDetails.setReceivingAgentCountry(country);
+            consolidationDetails.getReceivingAgent().setCountryCode(receivingAgentCountry);
         }
         if(consolidationDetails.getConsolidationAddresses()!=null && !consolidationDetails.getConsolidationAddresses().isEmpty()){
             for(Parties consolidationAddress: consolidationDetails.getConsolidationAddresses()){
