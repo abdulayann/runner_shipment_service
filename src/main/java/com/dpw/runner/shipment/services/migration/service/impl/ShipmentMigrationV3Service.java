@@ -263,15 +263,16 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getNotifyPartyCountry());
             shipmentDetails.getAdditionalDetails().getNotifyParty().setCountryCode(country);
         }
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getImportBroker() != null) {
+        if(shipmentDetails.getAdditionalDetails() != null) {
             String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getImportBrokerCountry());
-            shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
             shipmentDetails.getAdditionalDetails().setImportBrokerCountry(country);
-        }
-        if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
-            String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
-            shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(country);
-            shipmentDetails.getAdditionalDetails().setExportBrokerCountry(country);
+            if(shipmentDetails.getAdditionalDetails().getImportBroker() != null)
+                shipmentDetails.getAdditionalDetails().getImportBroker().setCountryCode(country);
+            String exportBrokerCountry = CountryListHelper.ISO3166.getAlpha2FromAlpha3(shipmentDetails.getAdditionalDetails().getExportBrokerCountry());
+            shipmentDetails.getAdditionalDetails().setExportBrokerCountry(exportBrokerCountry);
+            if(shipmentDetails.getAdditionalDetails().getExportBroker() != null) {
+                shipmentDetails.getAdditionalDetails().getExportBroker().setCountryCode(exportBrokerCountry);
+            }
         }
         if(shipmentDetails.getShipmentAddresses()!=null && !shipmentDetails.getShipmentAddresses().isEmpty()){
             for(Parties shipmentAddress: shipmentDetails.getShipmentAddresses()){
