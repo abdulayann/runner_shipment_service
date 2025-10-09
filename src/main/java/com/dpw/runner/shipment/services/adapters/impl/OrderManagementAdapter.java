@@ -168,22 +168,25 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             // Prepare result map
             Map<String, OrderManagementDTO> resultMap = new HashMap<>();
 
-            // Iterate and build map safely
+            // Iterate over response data and build result map
             for (OrderDataWrapper dataWrapper : responseBody.getData()) {
-                if (dataWrapper == null || dataWrapper.getOrder() == null) {
+
+                // Proceed only if wrapper and order are not null
+                if (dataWrapper != null && dataWrapper.getOrder() != null) {
+                    OrderManagementDTO order = dataWrapper.getOrder();
+                    String orderId = String.valueOf(order.getOrderId());
+
+                    // Only add orders with valid orderId
+                    if (orderId != null && !orderId.isBlank()) {
+                        resultMap.put(orderId, order);
+                        log.info("Added order {} to result map", orderId);
+                    } else {
+                        log.info("Skipping order with invalid or missing orderId: {}", order);
+                    }
+
+                } else {
                     log.info("Skipping null order entry in response for request: {}", requestBody);
-                    continue;
                 }
-
-                OrderManagementDTO order = dataWrapper.getOrder();
-                String orderId = String.valueOf(order.getOrderId());
-
-                if (orderId == null || orderId.isBlank()) {
-                    log.info("Order found without valid orderId: {}", order);
-                    continue;
-                }
-
-                resultMap.put(orderId, order);
             }
 
             // Log final summary

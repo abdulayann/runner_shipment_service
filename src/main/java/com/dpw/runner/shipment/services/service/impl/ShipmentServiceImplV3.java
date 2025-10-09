@@ -5374,6 +5374,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
      * <p>If the {@code orderDetailsList} field in the request is provided with minimal information
      * (just order IDs), this method will internally enrich the details using {@link #prepareRequestForOrderAttachDetach(ShipmentOrderAttachDetachRequest)}.</p>
      *
+     * <p>After performing the database operations, this method also triggers a call to the Order Management System
+     * (OMS) via {@link #triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest)} to synchronize the changes externally.</p>
+     *
      * <p><b>Mandatory fields in {@link ShipmentOrderAttachDetachRequest}:</b>
      * <ul>
      *     <li>{@code shipmentGuid} - UUID of the shipment. Must not be null.</li>
@@ -5443,7 +5446,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
             log.info("Successfully completed attach/detach operation for shipment: {}", shipmentEntity.getId());
 
+            // Step 7: Trigger OMS API to synchronize attach/detach changes externally
             triggerOrderAttachDetachToOMS(request);
+            log.info("OMS attach/detach API triggered successfully for shipment {}.", request.getShipmentGuid());
 
             return ResponseHelper.buildSuccessResponse();
 
