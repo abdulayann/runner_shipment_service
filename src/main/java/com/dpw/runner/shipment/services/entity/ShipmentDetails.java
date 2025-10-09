@@ -40,7 +40,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @SQLDelete(sql = "UPDATE shipment_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 @SuppressWarnings("java:S6539")

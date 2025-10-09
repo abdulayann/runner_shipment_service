@@ -5,13 +5,12 @@ import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-
+import org.hibernate.annotations.JdbcTypeCode;
 import jakarta.persistence.*;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,7 +22,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Awb extends MultiTenancy {
     @Column(name = "shipment_id")
@@ -32,58 +30,58 @@ public class Awb extends MultiTenancy {
     @Column(name = "awb_number")
     private String awbNumber;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_shipment_info", columnDefinition = "jsonb")
     private AwbShipmentInfo awbShipmentInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_notify_party_info", columnDefinition = "jsonb")
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_routing_info", columnDefinition = "jsonb")
     private List<AwbRoutingInfo> awbRoutingInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_cargo_info", columnDefinition = "jsonb")
     private AwbCargoInfo awbCargoInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "air_messaging_additional_fields", columnDefinition = "jsonb")
     private AirMessagingAdditionalFields airMessagingAdditionalFields;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_payment_info", columnDefinition = "jsonb")
     private AwbPaymentInfo awbPaymentInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_other_charges_info", columnDefinition = "jsonb")
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_other_info", columnDefinition = "jsonb")
     private AwbOtherInfo awbOtherInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_oci_info", columnDefinition = "jsonb")
     private List<AwbOCIInfo> awbOciInfo;
 
     @Column(name = "acas_enabled")
     private Boolean acasEnabled;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "oci_info", columnDefinition = "jsonb")
     private OCIInfo ociInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_goods_description_info", columnDefinition = "jsonb")
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_packing_info", columnDefinition = "jsonb")
     private List<AwbPackingInfo> awbPackingInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "awb_special_handling_codes_Mappings", columnDefinition = "jsonb")
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
 
