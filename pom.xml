@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.0</version>
+        <version>3.3.9</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dpw.runner.shipment</groupId>
@@ -15,8 +15,9 @@
     <description>Shipment service</description>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+<!--        <maven.compiler.source>11</maven.compiler.source>-->
+<!--        <maven.compiler.target>11</maven.compiler.target>-->
+        <java.version>17</java.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
         <org.projectlombok.version>1.18.30</org.projectlombok.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
@@ -28,6 +29,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>10.1.41</version> <!-- latest stable non-vulnerable -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-websocket</artifactId>
+            <version>10.1.41</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-el</artifactId>
+            <version>10.1.41</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -35,12 +51,18 @@
             <version>4.5.13</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.sun.mail/javax.mail -->
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.6.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.sun.mail</groupId>-->
+<!--            <artifactId>jakarta.mail</artifactId>-->
+<!--            <version>2.1.1</version> &lt;!&ndash; use Jakarta version &ndash;&gt;-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.sun.mail/javax.mail &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.sun.mail</groupId>-->
+<!--            <artifactId>javax.mail</artifactId>-->
+<!--            <version>1.6.2</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -70,15 +92,20 @@
             <version>1.16.1</version>
         </dependency>
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>2.9.2</version>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
         </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>2.9.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.springfox</groupId>-->
+<!--            <artifactId>springfox-swagger2</artifactId>-->
+<!--            <version>2.9.2</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>io.springfox</groupId>-->
+<!--            <artifactId>springfox-swagger-ui</artifactId>-->
+<!--            <version>2.9.2</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
@@ -116,8 +143,8 @@
         </dependency>
         <dependency>
             <groupId>com.vladmihalcea</groupId>
-            <artifactId>hibernate-types-52</artifactId>
-            <version>2.16.3</version>
+            <artifactId>hibernate-types-60</artifactId>
+            <version>2.21.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -133,16 +160,21 @@
             <artifactId>nimbus-jose-jwt</artifactId>
             <version>9.21</version>
         </dependency>
+        <!-- JSON‑API & Jakarta JSON -->
         <dependency>
-            <groupId>javax.json</groupId>
-            <artifactId>javax.json-api</artifactId>
-            <version>1.1.4</version>
+<!--            <groupId>javax.json</groupId>-->
+<!--            <artifactId>javax.json-api</artifactId>-->
+<!--            <version>1.1.4</version>-->
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+            <version>2.1.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-            <version>1.0.4</version>
-        </dependency>
+        <!-- Barcode / PDF / miscellaneous -->
+<!--        <dependency>-->
+<!--            <groupId>org.glassfish</groupId>-->
+<!--            <artifactId>javax.json</artifactId>-->
+<!--            <version>1.0.4</version>-->
+<!--        </dependency>-->
 
 
         <dependency>
@@ -154,7 +186,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>1.1</version>
+            <version>1.10.0</version>
         </dependency>
 
         <dependency>
@@ -171,7 +203,7 @@
 
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>5.5.2</version> <!-- Use the latest version available -->
+            <version>5.9</version>
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>
@@ -190,11 +222,17 @@
         <dependency>
             <groupId>com.dpw.runner</groupId>
             <artifactId>runner-timezone-utils</artifactId>
-            <version>0.0.2</version>
+            <version>0.0.2</version>  <!-- 0.0.4-->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!-- Explicit override of spring-security-web -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>6.2.8</version> <!-- or 6.2.7 -->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -232,7 +270,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>LATEST</version>
+<!--            <version>LATEST</version> &lt;!&ndash; <version>1.12.25</version>  or the version managed by Spring &ndash;&gt;-->
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -255,11 +293,47 @@
             <artifactId>dpw-messaging-quartz</artifactId>
             <version>1.2.1.PRE-RELEASE</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.quartz-scheduler</groupId>-->
+<!--            <artifactId>quartz</artifactId>-->
+<!--            <version>2.2.3</version>-->
+<!--        </dependency>-->
+        <!-- Quartz upgraded to 2.5.0, exclude old c3p0 -->
+
+<!--        <dependency>-->
+<!--            <groupId>org.quartz-scheduler</groupId>-->
+<!--            <artifactId>quartz</artifactId>-->
+<!--            <version>2.5.0</version>-->
+<!--&lt;!&ndash;            <exclusions>&ndash;&gt;-->
+<!--&lt;!&ndash;                <exclusion>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <groupId>c3p0</groupId>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <artifactId>c3p0</artifactId>&ndash;&gt;-->
+
+<!--&lt;!&ndash;                </exclusion>&ndash;&gt;-->
+
+<!--&lt;!&ndash;            </exclusions>&ndash;&gt;-->
+
+<!--        </dependency>-->
+
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
-            <artifactId>quartz</artifactId>
-            <version>2.2.3</version>
+            <artifactId>quartz-jobs</artifactId>
+            <version>2.5.0</version>
         </dependency>
+
+
+
+        <!-- Provide a modern c3p0 version (or switch to HikariCP) -->
+
+<!--        <dependency>-->
+
+<!--            <groupId>com.mchange</groupId>-->
+
+<!--            <artifactId>c3p0</artifactId>-->
+
+<!--            <version>0.9.5.5</version>-->
+
+<!--        </dependency>-->
     </dependencies>
 
     <repositories>
@@ -366,8 +440,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>16</source>
-                    <target>16</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -378,7 +452,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>0.2.0</version>
+                            <version>${lombok-mapstruct-binding.version}</version>
                         </path>
                         <!-- Mapstruct should follow the lombok path(s) -->
                         <path>
@@ -392,7 +466,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.0.0-M8</version>
                 <configuration>
                     <parallel>methods</parallel>
                     <useUnlimitedThreads>true</useUnlimitedThreads>

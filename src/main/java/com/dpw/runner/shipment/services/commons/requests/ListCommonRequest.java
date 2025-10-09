@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.requests;
 
 import lombok.*;
 
-import javax.validation.constraints.Pattern;
+import jakarta.validation.constraints.Pattern;
 import java.util.List;
 
 @Getter
