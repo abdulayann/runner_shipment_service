@@ -12,39 +12,8 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RoleIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -63,15 +32,6 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -84,12 +44,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -98,6 +53,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
 
 
 @Service
@@ -2226,21 +2183,26 @@ public class V1ServiceImpl implements IV1Service {
                 headers = v1AuthHelper.getHeadersForDataSync();
             String requestPayload = jsonHelper.convertToJson(request);
             String headersString = headers.toString();
-//            log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}",
-//                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-//                    LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
-//                    LoggerHelper.sanitizeForLogs(requestPayload),
-//                    LoggerHelper.sanitizeForLogs(headersString));
+            if (log.isInfoEnabled()) {
+                log.info("Request: {} || Payload sent for event: {} with request payload: {} and headers provided are: {}",
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                        LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
+                        LoggerHelper.sanitizeForLogs(requestPayload),
+                        LoggerHelper.sanitizeForLogs(headersString));
+            }
             HttpEntity<Object> entity = new HttpEntity<>(request, headers);
             tiDataResponse = this.restTemplate.postForEntity(this.DATA_SYNC_URL, entity, V1DataSyncResponse.class, new Object[0]);
             String responsePayload = jsonHelper.convertToJson(tiDataResponse.getBody());
-            log.info("Request: {} || Response for event: {} with response{}",
-                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
-                    LoggerHelper.sanitizeForLogs(responsePayload));
-            log.info("Request: {} || Total time taken in v1DataSync() function: {}",
-                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs((System.currentTimeMillis() - time)));
+            if (log.isInfoEnabled()) {
+                log.info("Request: {} || Response for event: {} with response{}",
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                        LoggerHelper.sanitizeForLogs(IntegrationType.V1_DATA_SYNC),
+                        LoggerHelper.sanitizeForLogs(responsePayload));
+
+                log.info("Request: {} || Total time taken in v1DataSync() function: {}",
+                        LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                        LoggerHelper.sanitizeForLogs((System.currentTimeMillis() - time)));
+            }
             return tiDataResponse.getBody();
         } catch (Exception var7) {
             return V1DataSyncResponse.builder().error(var7.getMessage()).isSuccess(false).build();
