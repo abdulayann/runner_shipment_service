@@ -193,32 +193,60 @@ public class ReportService implements IReportService {
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @Override
-    @Transactional
     public ReportResponse getDocumentData(CommonRequestModel request)
             throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
+        // Phase 1: Pre-PDF Database Operations (Transactional)
+        ReportPreparationData prepData = self.prepareReportGeneration(reportRequest);
+
+        // Phase 2: PDF Generation (Non-Transactional, I/O heavy)
+        byte[] pdfByteContent = generatePdfDocument(prepData);
+
+        // Phase 3: Post-PDF Database Operations (Transactional)
+        self.finalizeReportGeneration(reportRequest, pdfByteContent, prepData);
+
+        // Phase 4: Document Upload (Async, can be fire-and-forget)
+        // FIX: Change the type to Map<String, Object> to match the return type
+        CompletableFuture<Map<String, Object>> uploadFuture =
+                CompletableFuture.supplyAsync(() ->
+                                pushFileToDocumentMaster(reportRequest, pdfByteContent, prepData.getDataRetrieved()),
+                        executorService
+                );
+
+        // Wait for upload to complete
+        var documentMasterResponse = uploadFuture.get();
+
+        return ReportResponse.builder()
+                .content(pdfByteContent)
+                .documentServiceMap(documentMasterResponse)
+                .build();
+    }
+
+    @Transactional
+    public ReportPreparationData prepareReportGeneration(ReportRequest reportRequest)
+            throws RunnerException, DocumentException, IOException, ExecutionException, InterruptedException {
+
         // set fromConsole or fromShipment flag true from entity Name
         setFromConsoleOrShipment(reportRequest);
 
-        // Generate combined shipment report via consolidation
+        // Handle combined reports early
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
         if (dataForCombinedReport != null) {
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataForCombinedReport, new HashMap<>());
-            return ReportResponse.builder().content(dataForCombinedReport).documentServiceMap(documentMasterResponse).build();
+            return ReportPreparationData.forCombinedReport(dataForCombinedReport);
         }
 
-        // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
+        // Validate AWB
         validateOriginalAwbPrintForLinkedShipment(reportRequest);
 
         byte[] dataByteList = getCombinedDataForCargoManifestAir(reportRequest);
-
         if (dataByteList != null) {
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>());
-            return ReportResponse.builder().content(dataByteList).documentServiceMap(documentMasterResponse).build();
+            return ReportPreparationData.forCombinedReport(dataByteList);
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao
+                .findByTenantId(TenantContext.getCurrentTenant())
+                .orElse(ShipmentSettingsDetails.builder().build());
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
@@ -231,81 +259,164 @@ public class ReportService implements IReportService {
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         validateForInvalidReport(report);
-
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
-        Map<String, Object> dataRetrived;
         setReportParametersFromRequest(report, reportRequest);
-        // Update Original Printed Date in AWB
+
+        // DB WRITE: Update AWB print type (BEFORE PDF)
         Awb awb = this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
-        //LATER - Need to handle for new flow
-        dataRetrived = getDocumentDataForReports(report, reportRequest);
 
-        String hbltype = (String) dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
-        String objectType = getObjectType(reportRequest, dataRetrived);
+        // Fetch all data needed for PDF generation
+        Map<String, Object> dataRetrieved = getDocumentDataForReports(report, reportRequest);
 
+        // DB WRITE: Update date and status for HAWB/MAWB (BEFORE PDF)
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            updateDateAndStatusForHawbPrint(reportRequest, dataRetrieved, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
+        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+            if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null
+                    && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID)) {
+                shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()),
+                        LocalDate.now().atStartOfDay(), null);
+            }
+        }
+
+        String hbltype = (String) dataRetrieved.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
+        String objectType = getObjectType(reportRequest, dataRetrieved);
+
+        return ReportPreparationData.builder()
+                .reportRequest(reportRequest)
+                .tenantSettingsRow(tenantSettingsRow)
+                .isOriginalPrint(isOriginalPrint)
+                .isSurrenderPrint(isSurrenderPrint)
+                .isNeutralPrint(isNeutralPrint)
+                .report(report)
+                .awb(awb)
+                .dataRetrieved(dataRetrieved)
+                .hbltype(hbltype)
+                .objectType(objectType)
+                .build();
+    }
+
+    private byte[] generatePdfDocument(ReportPreparationData prepData)
+            throws DocumentException, IOException, ExecutionException, InterruptedException {
+
+        // Handle early returns for combined reports
+        if (prepData.isCombinedReport()) {
+            return prepData.getCombinedReportBytes();
+        }
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        updateDocumentPrintType(reportRequest, dataRetrieved);
+
+        // Handle AWB Labels
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)) {
             List<byte[]> pdfBytes = new ArrayList<>();
-            DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), null, false);
-            generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-            var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
-            return ReportResponse.builder().content(byteContent).documentServiceMap(documentMasterResponse).build() ;
-        } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
-            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
-            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
-            return getBytesForBookingOrderReport(dataRetrived, reportRequest);
+            DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null,
+                    reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                    reportRequest.getBackTemplateCode(), null, false);
+            generatePdfBytes(reportRequest, pages, dataRetrieved, pdfBytes);
+            return CommonUtils.concatAndAddContent(pdfBytes);
         }
 
-        updateDocumentPrintType(reportRequest, dataRetrived);
+        // Handle MAWB
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+            return generatePdfForMawb(prepData);
+        }
 
-        if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)) {
-            objectType = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
+        // Handle HAWB
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            return generatePdfForHawb(prepData);
         }
-        var transportInstructionsResponse = getBytesForTransportInstructions(reportRequest, tenantSettingsRow, dataRetrived, objectType);
-        if (transportInstructionsResponse != null) {
-            return transportInstructionsResponse;
-        }
-        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(), StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
-        if (pages == null) {
-            return null;
-        }
-        Map<String, Object> retrived = dataRetrived;
-        var mainDocFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getMainPageId()), executorService);
-        var firstPageFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getFirstPageId()), executorService);
-        var backPrintFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getBackPrintId()), executorService);
-        CompletableFuture.allOf(mainDocFuture, firstPageFuture, backPrintFuture).join();
 
-        byte[] mainDoc = mainDocFuture.get();
-        byte[] firstpage = firstPageFuture.get();
-        byte[] backprint = backPrintFuture.get();
-        byte[] pdfByteContent;
-        if (mainDoc == null) {
+        // Handle Booking Order
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
+            return generatePdfForBookingOrder(prepData);
+        }
+
+        // Handle Transport Instructions
+        String objectType = prepData.getObjectType();
+        if (dataRetrieved.containsKey(ReportConstants.TRANSPORT_MODE)) {
+            objectType = dataRetrieved.get(ReportConstants.TRANSPORT_MODE).toString();
+        }
+
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
+            return generatePdfForTransportInstruction(prepData, objectType);
+        }
+
+        // Default PDF generation flow
+        return generateStandardPdfDocument(prepData, objectType);
+    }
+
+    /**
+     * Generate PDF for Booking Order
+     */
+    private byte[] generatePdfForBookingOrder(ReportPreparationData prepData) {
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+        ReportRequest reportRequest = prepData.getReportRequest();
+
+        String consolidationType = dataRetrieved.get(ReportConstants.SHIPMENT_TYPE) != null ?
+                dataRetrieved.get(ReportConstants.SHIPMENT_TYPE).toString() : null;
+        String transportMode = ReportConstants.SEA;
+
+        if (dataRetrieved.containsKey(ReportConstants.TRANSPORT_MODE)) {
+            transportMode = dataRetrieved.get(ReportConstants.TRANSPORT_MODE).toString();
+        }
+
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), consolidationType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), transportMode, false);
+
+        byte[] pdfByteContent = getFromDocumentService(dataRetrieved, pages.getMainPageId());
+        if (pdfByteContent == null) {
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         }
 
-        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
-        boolean waterMarkRequired = getWaterMarkRequired(reportRequest);
+        return pdfByteContent;
+    }
 
-        pdfByteContent = CommonUtils.concatAndAddContent(pdfBytes);
-        BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
+    /**
+     * Generate PDF for Transport Instruction
+     */
+    private byte[] generatePdfForTransportInstruction(ReportPreparationData prepData, String objectType)
+            throws DocumentException, IOException {
 
-        pdfByteContent = getPdfBytesForHouseBill(reportRequest, dataRetrived, waterMarkRequired, pdfByteContent, font, isOriginalPrint, isSurrenderPrint, isNeutralPrint, tenantSettingsRow);
-        pdfByteContent = addWaterMarkForDraftSeawayBill(reportRequest, pdfByteContent, font);
-        addHBLToRepoForSeawayBill(reportRequest, pdfByteContent, tenantSettingsRow);
-        createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrived, tenantSettingsRow);
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
-            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        validateReportRequest(reportRequest);
+
+        List<TiLegs> tiLegsList;
+        if (!CommonUtils.setIsNullOrEmpty(reportRequest.getTiLegs())) {
+            tiLegsList = transportInstructionLegsService.retrieveByIdIn(reportRequest.getTiLegs());
+            if (CommonUtils.listIsNullOrEmpty(tiLegsList) || reportRequest.getTiLegs().size() != tiLegsList.size()) {
+                throw new ValidationException("Please provides the valid ti legs id");
+            }
+            Optional<TiLegs> optionalTiLegs = tiLegsList.stream()
+                    .filter(tiLegs -> !Objects.equals(tiLegs.getPickupDeliveryDetailsId(),
+                            Long.valueOf(reportRequest.getTransportInstructionId())))
+                    .findAny();
+            if (optionalTiLegs.isPresent()) {
+                throw new ValidationException("Please provide the valid ti legs id respective to transport instruction");
+            }
+        } else {
+            tiLegsList = transportInstructionLegsService.findByTransportInstructionId(
+                    Long.valueOf(reportRequest.getTransportInstructionId()));
         }
 
-        processPreAlert(reportRequest, pdfByteContent, dataRetrived);
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(),
+                StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
 
-        triggerAutomaticTransfer(report, reportRequest);
-        // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
-        return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
+        if (pages == null) {
+            return new byte[0];
+        }
+
+        return printTransportInstructionLegsData(tiLegsList, reportRequest, dataRetrieved, pages);
     }
 
     // Add Watermark for draft Seaway Bill
@@ -3545,5 +3656,267 @@ public class ReportService implements IReportService {
         }
     }
 
+    /**
+     * Phase 3: Post-PDF Database Operations
+     * All DB writes that happen AFTER PDF generation
+     */
+    @Transactional
+    public void finalizeReportGeneration(ReportRequest reportRequest, byte[] pdfByteContent,
+                                         ReportPreparationData prepData) {
+
+        if (prepData.isCombinedReport()) {
+            return; // No finalization needed for combined reports
+        }
+
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+        ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
+
+        // DB WRITE: Update shipment for House Bill
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
+            finalizeHouseBillGeneration(reportRequest, pdfByteContent, dataRetrieved,
+                    prepData.getIsOriginalPrint(), prepData.getIsSurrenderPrint(),
+                    prepData.getIsNeutralPrint(), tenantSettingsRow);
+        }
+
+        // DB WRITE: Update shipment for Seaway Bill
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL)) {
+            finalizeSeawayBillGeneration(reportRequest, pdfByteContent, tenantSettingsRow);
+        }
+
+        // DB WRITE: Create events
+        createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrieved, tenantSettingsRow);
+
+        // DB WRITE: Update FCR number
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
+            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
+        }
+
+        // DB WRITE: Process AWB events for MAWB/HAWB
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            processPushAwbEventForMawb(reportRequest, prepData.getIsOriginalPrint(), prepData.getAwb());
+        }
+
+        // Trigger automatic transfer (may involve external API calls)
+        triggerAutomaticTransfer(prepData.getReport(), reportRequest);
+    }
+
+    /**
+     * Helper method: Finalize House Bill generation
+     * Extracted to keep finalization method clean
+     */
+    @Transactional
+    private void finalizeHouseBillGeneration(ReportRequest reportRequest, byte[] pdfByteContent,
+                                             Map<String, Object> dataRetrieved, Boolean isOriginalPrint,
+                                             Boolean isSurrenderPrint, Boolean isNeutralPrint,
+                                             ShipmentSettingsDetails tenantSettingsRow) {
+
+        Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+        if (!shipmentsRow.isPresent()) {
+            return;
+        }
+
+        ShipmentDetails shipmentDetails = shipmentsRow.get();
+
+        // Update shipment details for print
+        if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name())) {
+            shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
+            shipmentDetails.getAdditionalDetails().setDateOfIssue(
+                    LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
+        }
+
+        updateShipmentDetailsForPrint(dataRetrieved, isOriginalPrint, isSurrenderPrint,
+                isNeutralPrint, shipmentDetails);
+
+        // DB WRITE: Update shipment
+        shipmentDetails = shipmentDao.update(shipmentDetails, false);
+
+        // External service call
+        dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false,
+                Optional.ofNullable(shipmentDetails).map(ShipmentDetails::getContainersList).orElse(null));
+
+        // DB WRITE: Sync shipment
+        try {
+            shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
+        } catch (Exception e) {
+            log.error("Error performing sync on shipment entity", e);
+        }
+    }
+
+    /**
+     * Helper method: Finalize Seaway Bill generation
+     */
+    @Transactional
+    private void finalizeSeawayBillGeneration(ReportRequest reportRequest, byte[] pdfByteContent,
+                                              ShipmentSettingsDetails tenantSettingsRow) {
+
+        if (pdfByteContent == null) {
+            return;
+        }
+
+        Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+        if (!shipmentsRow.isPresent()) {
+            return;
+        }
+
+        ShipmentDetails shipmentDetails = shipmentsRow.get();
+        shipmentDetails.getAdditionalDetails().setDateOfIssue(
+                LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
+
+        // DB WRITE: Update shipment
+        shipmentDao.update(shipmentDetails, false);
+    }
+
+    /**
+     * Helper method: Generate PDF for MAWB (no DB operations)
+     */
+    private byte[] generatePdfForMawb(ReportPreparationData prepData)
+            throws DocumentException, IOException {
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        updateCustomDataInDataRetrivedForMawb(reportRequest, dataRetrieved);
+
+        if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
+            return getBytesForNeutralAWB(dataRetrieved);
+        }
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+        byte[] pdfByteContentForMawb = getPdfByteContentForMawb(reportRequest, dataRetrieved, pdfBytes);
+
+        // Add watermarks
+        var shc = dataRetrieved.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
+        boolean addWaterMarkForEaw = false;
+        if (shc != null) {
+            List<String> items = CommonUtils.splitAndTrimStrings(shc.toString());
+            if (!items.isEmpty() && items.contains(Constants.EAW)) {
+                addWaterMarkForEaw = true;
+            }
+        }
+
+        BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
+
+        if (addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, font,
+                    ReportConstants.DRAFT_EAW_WATERMARK);
+        } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, font,
+                    ReportConstants.DRAFT_WATERMARK);
+        } else if (addWaterMarkForEaw && Boolean.TRUE.equals(prepData.getIsOriginalPrint())) {
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, font,
+                    ReportConstants.ORIGINAL_EAW_WATERMARK);
+        }
+
+        return pdfByteContentForMawb;
+    }
+
+    /**
+     * Helper method: Generate PDF for HAWB (no DB operations)
+     */
+    private byte[] generatePdfForHawb(ReportPreparationData prepData)
+            throws DocumentException, IOException, InterruptedException, ExecutionException {
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        updateCustomDataInDataRetrivedForHawb(reportRequest, dataRetrieved);
+
+        if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
+            return getBytesForNeutralAWB(dataRetrieved);
+        }
+
+        DocPages docPages = getFromTenantSettings(reportRequest.getReportInfo(), prepData.getObjectType(),
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(), false);
+
+        // Generate PDF pages asynchronously
+        byte[] mainDocHawb;
+        if (reportRequest.isPrintForParties()) {
+            List<byte[]> pdfBytes = new ArrayList<>();
+            mainDocHawb = printForPartiesAndBarcode(reportRequest, pdfBytes,
+                    dataRetrieved.get(ReportConstants.HAWB_NO) == null ? "" :
+                            dataRetrieved.get(ReportConstants.HAWB_NO).toString(), dataRetrieved, docPages);
+        } else {
+            var mainDocFuture = CompletableFuture.supplyAsync(
+                    () -> getFromDocumentService(dataRetrieved, docPages.getMainPageId()), executorService);
+            var firstPageFuture = CompletableFuture.supplyAsync(
+                    () -> getFromDocumentService(dataRetrieved, docPages.getFirstPageId()), executorService);
+            var backPageFuture = CompletableFuture.supplyAsync(
+                    () -> getFromDocumentService(dataRetrieved, docPages.getBackPrintId()), executorService);
+
+            CompletableFuture.allOf(mainDocFuture, firstPageFuture, backPageFuture).join();
+
+            mainDocHawb = mainDocFuture.get();
+            byte[] firstPageHawb = firstPageFuture.get();
+            byte[] backPrintHawb = backPageFuture.get();
+
+            if (mainDocHawb == null) {
+                throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+            }
+
+            List<byte[]> pdfBytesHawb = getOriginalandCopies(docPages, reportRequest.getReportInfo(),
+                    mainDocHawb, firstPageHawb, backPrintHawb, dataRetrieved, prepData.getHbltype(),
+                    prepData.getTenantSettingsRow(), reportRequest.getNoOfCopies(), reportRequest);
+
+            mainDocHawb = CommonUtils.concatAndAddContent(pdfBytesHawb);
+        }
+
+        // Add watermarks
+        return getPdfByteContentForHawb(reportRequest, dataRetrieved, prepData.getIsOriginalPrint(),
+                Collections.singletonList(mainDocHawb));
+    }
+
+    /**
+     * Helper method: Generate PDF for standard documents (no DB operations)
+     */
+    private byte[] generateStandardPdfDocument(ReportPreparationData prepData, String objectType)
+            throws DocumentException, IOException, InterruptedException, ExecutionException {
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(),
+                StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
+
+        if (pages == null) {
+            return null;
+        }
+
+        // Generate PDF pages asynchronously
+        var mainDocFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getMainPageId()), executorService);
+        var firstPageFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getFirstPageId()), executorService);
+        var backPrintFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getBackPrintId()), executorService);
+
+        CompletableFuture.allOf(mainDocFuture, firstPageFuture, backPrintFuture).join();
+
+        byte[] mainDoc = mainDocFuture.get();
+        byte[] firstpage = firstPageFuture.get();
+        byte[] backprint = backPrintFuture.get();
+
+        if (mainDoc == null) {
+            throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+        }
+
+        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc,
+                firstpage, backprint, dataRetrieved, prepData.getHbltype(), prepData.getTenantSettingsRow(),
+                reportRequest.getNoOfCopies(), reportRequest);
+
+        boolean waterMarkRequired = getWaterMarkRequired(reportRequest);
+        byte[] pdfByteContent = CommonUtils.concatAndAddContent(pdfBytes);
+        BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
+
+        // Add watermarks for various document types
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL)) {
+            pdfByteContent = addWaterMarkForDraftSeawayBill(reportRequest, pdfByteContent, font);
+        }
+
+        return pdfByteContent;
+    }
 
 }
