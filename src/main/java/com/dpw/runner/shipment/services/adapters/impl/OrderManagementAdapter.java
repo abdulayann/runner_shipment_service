@@ -82,6 +82,8 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderbyIdUrlV3;
     @Value("${order.management.getOrderbyGuidV3}")
     private String getOrderbyGuidUrlV3;
+    @Value("${order.management.getOrderbyCriteriaV3}")
+    private String getOrderbyCriteriaUrlV3;
 
     @Autowired
     private V2AuthHelper v2AuthHelper;
@@ -260,17 +262,27 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         }
     }
 
+    private Map<String, Object> buildAdvancedFilterRequestBodyForShipment(String shipmentId) {
+        Map<String, Object> filter = new HashMap<>();
+        filter.put("field", "shipmentId");
+        filter.put("operator", "exact");
+        filter.put("value", shipmentId);
+
+        List<Map<String, Object>> advancedFilters = new ArrayList<>();
+        advancedFilters.add(filter);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("advancedFilters", advancedFilters);
+        requestBody.put("pageNumber", 1);
+        requestBody.put("pageSize", 10000);
+
+        return requestBody;
+    }
+
     @Override
     public List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException {
-            String url = baseUrl + getOrderbyCriteria;
-            // Create the request body
-            Map<String, Object> requestBody = new HashMap<>();
-            Map<String, Object> criteria = new HashMap<>();
-            criteria.put("shipmentId", shipmentId);
-            requestBody.put("criteria", criteria);
-            requestBody.put("pageNumber", 1);
-            requestBody.put("pageSize", 10000);
-            requestBody.put("orderQtyNeeded", true);
+            String url = baseUrl + getOrderbyCriteriaUrlV3;
+            Map<String, Object> requestBody = buildAdvancedFilterRequestBodyForShipment(shipmentId);
 
             try {
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, v2AuthHelper.getOrderManagementServiceSourceHeader());
