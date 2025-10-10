@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.commons.responses;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;

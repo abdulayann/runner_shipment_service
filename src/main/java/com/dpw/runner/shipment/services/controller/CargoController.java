@@ -9,8 +9,11 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.validation.Valid;
 
 import static com.dpw.runner.shipment.services.commons.constants.CargoConstants.CARGO_API_HANDLE_V3;
 
@@ -38,7 +39,7 @@ public class CargoController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = CargoDetailsResponse.class, message = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = CargoDetailsResponse.class)), description = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
     })
     @PostMapping(ApiConstants.GET_CARGO_DETAILS)
     public ResponseEntity<IRunnerResponse> getCargoDetails(@RequestBody @NonNull @Valid CargoDetailsRequest cargoDetailsRequest) throws RunnerException {

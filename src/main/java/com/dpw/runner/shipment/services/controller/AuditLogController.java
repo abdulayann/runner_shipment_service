@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -10,8 +9,12 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -19,8 +22,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -37,8 +38,7 @@ public class AuditLogController {
 
     private class MyListResponseClass extends RunnerListResponse<AllocationsResponse>{}
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL,
-            response = MyListResponseClass.class, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))))})
     @PostMapping("/list")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                 @RequestHeader(value = "x-source", required = false) String xSource) {
@@ -46,7 +46,7 @@ public class AuditLogController {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL)})
     @PostMapping(value = "/download-excel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadExcel(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         Resource resource = auditLogService.downloadExcel(CommonRequestModel.buildRequest(listCommonRequest));

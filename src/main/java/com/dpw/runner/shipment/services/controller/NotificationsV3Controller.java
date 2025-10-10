@@ -8,9 +8,12 @@ import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INotificationV3Service;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,16 +35,16 @@ public class NotificationsV3Controller {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsV3Controller.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsV3Controller.MyResponseClass.class, description = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)))})
     @PostMapping(NotificationConstants.NOTIFICATION_ACCEPT)
-    public ResponseEntity<IRunnerResponse> acceptNotification(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> acceptNotification(@Parameter(description = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
         notificationService.acceptNotification(id);
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsV3Controller.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_CONFIRMATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsV3Controller.MyResponseClass.class, description = NotificationConstants.NOTIFICATION_CONFIRMATION_SUCCESSFUL)))})
     @GetMapping(NotificationConstants.NOTIFICATION_CONFIRMATION_MSG_API)
-    public ResponseEntity<IRunnerResponse> confirmationMessage(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) throws AuthenticationException, RunnerException {
+    public ResponseEntity<IRunnerResponse> confirmationMessage(@Parameter(description = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) throws AuthenticationException, RunnerException {
         NotificationConfirmationMsgResponse notificationConfirmationMsgResponse = notificationService.confirmationMessage(id);
         return ResponseHelper.buildSuccessResponse(notificationConfirmationMsgResponse);
 

@@ -1,19 +1,21 @@
 package com.dpw.runner.shipment.services.exception.response;
 
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.annotations.SchemaProperty;
+import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import org.springframework.http.HttpStatus;
 
 @SuppressWarnings("unused")
 @Schema(description = "Api Error Model")
+@JsonPropertyOrder({"status", "message"})
 @Generated
 public class ApiError {
 
-    @SchemaProperty(position = 1, name = "status")
+    @SchemaProperty(name = "status")
     private HttpStatus status;
 
-    @SchemaProperty(position = 2, name = "message")
+    @SchemaProperty(name = "message")
     private String message;
 
     public ApiError(HttpStatus status, String message) {

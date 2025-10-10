@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Data
 @Builder
-@Schema(value = "Routing response model")
+@Schema(description = "Routing response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RoutingListResponse implements IRunnerResponse {
     List<RoutingsResponse> routings = new ArrayList<>();
