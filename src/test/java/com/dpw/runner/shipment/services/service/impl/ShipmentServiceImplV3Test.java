@@ -1,5 +1,53 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -73,6 +121,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -195,6 +244,35 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
@@ -223,84 +301,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.same;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 @SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
@@ -9204,24 +9204,266 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void test_attachDetachOrder_invalidAttach_throws() {
+    void test_attachDetachOrder_invalidEvent_throws() {
+        // Prepare shipment GUID and minimal order details
         UUID shipmentGuid = UUID.randomUUID();
-        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
-        orderDetails.setOrderGuid(UUID.randomUUID());
-        orderDetails.setOrderNumber("ORD-1");
-        orderDetails.setOrderPackings(List.of());
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = ShipmentOrderAttachDetachRequest.OrderDetails.builder()
+                .orderGuid(UUID.randomUUID())
+                .orderNumber("ORD-1")
+                .orderId("1001")
+                .orderPackings(List.of())
+                .build();
 
+        ShipmentOrderAttachDetachRequest request = ShipmentOrderAttachDetachRequest.builder()
+                .shipmentGuid(shipmentGuid)
+                .shipmentId(100L) // Mandatory field
+                .event("INVALID-EVENT") // Invalid event triggers validation exception
+                .orderDetailsList(List.of(orderDetails)) // Use orderDetailsList so prepareRequestForOrderAttachDetach is called
+                .build();
+
+        // No need to stub DAOs because the validation fails before reaching them
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> shipmentServiceImplV3.attachDetachOrder(request));
+
+        assertTrue(ex.getMessage().contains("Invalid event type") || ex.getMessage().contains("Event must be ATTACH"));
+    }
+
+    @Test
+    void test_attachDetachOrder_prepareRequestForAttach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+        String orderId = "ORD-1001";
+        UUID orderGuid = UUID.randomUUID();
+
+        // Mock request with minimal data
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderId(orderId); // only minimal required field
         ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
         req.setShipmentGuid(shipmentGuid);
-        req.setEvent("INVALID-CASE");
-        req.setOrderDetailsForAttach(List.of(orderDetails));
+        req.setEvent(Constants.ATTACH);
+        req.setOrderDetailsList(List.of(orderDetails));
+        req.setShipmentId(100L);
 
+        // Mock shipment
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setId(100L);
-
         when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
         when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of());
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
 
-        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.attachDetachOrder(req));
+        // Mock order management service enrichment
+        OrderManagementDTO orderDTO = new OrderManagementDTO();
+        orderDTO.setOrderId(orderId);
+        orderDTO.setGuid(orderGuid);
+        orderDTO.setOrderNumber("ORD-1001-NUM");
+        orderDTO.setOrderLines(List.of());
+        when(orderManagementAdapter.fetchOrdersWithOrderLineAsMap(List.of(orderId)))
+                .thenReturn(Map.of(orderId, orderDTO));
+
+        // Mock packing mapping
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of());
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        // Verify save was called for enriched order
+        verify(shipmentOrderDao, times(1)).save(any());
     }
+
+    @Test
+    void test_attachDetachOrder_prepareRequestForDetach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+        String orderId = "ORD-2001";
+        UUID orderGuid = UUID.randomUUID();
+
+        // Mock request with minimal data
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetails = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        orderDetails.setOrderId(orderId); // only minimal required field
+        ShipmentOrderAttachDetachRequest req = new ShipmentOrderAttachDetachRequest();
+        req.setShipmentGuid(shipmentGuid);
+        req.setEvent(Constants.DETACH);
+        req.setOrderDetailsList(List.of(orderDetails));
+        req.setShipmentId(100L);
+
+        // Mock shipment
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+
+        // Mock existing shipment order with same GUID as enriched order
+        ShipmentOrder existingOrder = ShipmentOrder.builder()
+                .shipmentId(100L)
+                .orderGuid(orderGuid)
+                .build();
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(existingOrder));
+
+        // Mock order management service enrichment
+        OrderManagementDTO orderDTO = new OrderManagementDTO();
+        orderDTO.setOrderId(orderId);
+        orderDTO.setGuid(orderGuid);
+        orderDTO.setOrderNumber("ORD-2001-NUM");
+        orderDTO.setOrderLines(List.of());
+        when(orderManagementAdapter.fetchOrdersWithOrderLineAsMap(List.of(orderId)))
+                .thenReturn(Map.of(orderId, orderDTO));
+
+        // Mock packing mapping
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+
+        ResponseEntity<IRunnerResponse> resp = shipmentServiceImplV3.attachDetachOrder(req);
+
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        // Verify packing delete and shipmentOrder deletion
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+    }
+
+    @Test
+    void test_attachDetachOrder_prepareRequestForDetachAndAttach_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+        String detachOrderId = "ORD-3001";
+        UUID detachOrderGuid = UUID.randomUUID();
+        String attachOrderId = "ORD-3002";
+        UUID attachOrderGuid = UUID.randomUUID();
+
+        // Detach order (minimal)
+        ShipmentOrderAttachDetachRequest.OrderDetails detachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        detachOrder.setOrderId(detachOrderId);
+
+        // Attach order (minimal)
+        ShipmentOrderAttachDetachRequest.OrderDetails attachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        attachOrder.setOrderId(attachOrderId);
+
+        // We need to split into two separate requests: DETACH then ATTACH
+        // First: DETACH request
+        ShipmentOrderAttachDetachRequest detachReq = new ShipmentOrderAttachDetachRequest();
+        detachReq.setShipmentGuid(shipmentGuid);
+        detachReq.setEvent(Constants.DETACH);
+        detachReq.setOrderDetailsList(List.of(detachOrder));
+        detachReq.setShipmentId(100L);
+
+        // Second: ATTACH request
+        ShipmentOrderAttachDetachRequest attachReq = new ShipmentOrderAttachDetachRequest();
+        attachReq.setShipmentGuid(shipmentGuid);
+        attachReq.setEvent(Constants.ATTACH);
+        attachReq.setOrderDetailsList(List.of(attachOrder));
+        attachReq.setShipmentId(100L);
+
+        // Mock shipment
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(100L);
+        when(shipmentDao.findByGuid(shipmentGuid)).thenReturn(Optional.of(shipment));
+
+        // Existing shipment order for detach
+        ShipmentOrder existingOrder = ShipmentOrder.builder()
+                .shipmentId(100L)
+                .orderGuid(detachOrderGuid)
+                .build();
+        when(shipmentOrderDao.findByShipmentId(100L)).thenReturn(List.of(existingOrder));
+
+        // Mock enrichment from OrderManagementAdapter
+        OrderManagementDTO detachDTO = new OrderManagementDTO();
+        detachDTO.setOrderId(detachOrderId);
+        detachDTO.setGuid(detachOrderGuid);
+        detachDTO.setOrderNumber("DETACH-NUM");
+        detachDTO.setOrderLines(List.of());
+
+        OrderManagementDTO attachDTO = new OrderManagementDTO();
+        attachDTO.setOrderId(attachOrderId);
+        attachDTO.setGuid(attachOrderGuid);
+        attachDTO.setOrderNumber("ATTACH-NUM");
+        attachDTO.setOrderLines(List.of());
+
+        when(orderManagementAdapter.fetchOrdersWithOrderLineAsMap(List.of(detachOrderId)))
+                .thenReturn(Map.of(detachOrderId, detachDTO));
+        when(orderManagementAdapter.fetchOrdersWithOrderLineAsMap(List.of(attachOrderId)))
+                .thenReturn(Map.of(attachOrderId, attachDTO));
+
+        // Mock packing mapping
+        PackingV3Request packingReq = PackingV3Request.builder()
+                .packs("1")
+                .HSCode("commodity")
+                .commodityGroup("commd_grp")
+                .build();
+        when(packingV3Util.mapOrderLineListToPackingV3RequestList(any())).thenReturn(List.of(packingReq));
+        when(shipmentOrderDao.save(any())).thenReturn(ShipmentOrder.builder().shipmentId(200L).build());
+
+        // Execute DETACH
+        ResponseEntity<IRunnerResponse> detachResp = shipmentServiceImplV3.attachDetachOrder(detachReq);
+        assertEquals(HttpStatus.OK, detachResp.getStatusCode());
+        verify(packingV3Service, times(1)).deleteBulk(any(), anyString());
+        verify(shipmentOrderDao, times(1)).delete(any());
+
+        // Execute ATTACH
+        ResponseEntity<IRunnerResponse> attachResp = shipmentServiceImplV3.attachDetachOrder(attachReq);
+        assertEquals(HttpStatus.OK, attachResp.getStatusCode());
+        verify(shipmentOrderDao, times(1)).save(any());
+        verify(packingV3Service, times(1)).create(any(), anyString());
+    }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_success() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest.OrderDetails attachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        attachOrder.setOrderGuid(UUID.randomUUID());
+        attachOrder.setOrderId("123");
+        attachOrder.setOrderNumber("ORD-ATTACH");
+
+        ShipmentOrderAttachDetachRequest.OrderDetails detachOrder = new ShipmentOrderAttachDetachRequest.OrderDetails();
+        detachOrder.setOrderGuid(UUID.randomUUID());
+        detachOrder.setOrderId("456");
+        detachOrder.setOrderNumber("ORD-DETACH");
+
+        ShipmentOrderAttachDetachRequest request = new ShipmentOrderAttachDetachRequest();
+        request.setShipmentGuid(shipmentGuid);
+        request.setShipmentId(100L);
+        request.setOrderDetailsForAttach(List.of(attachOrder));
+        request.setOrderDetailsForDetach(List.of(detachOrder));
+
+        // Call the method
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(request);
+
+        // Capture argument passed to adapter
+        ArgumentCaptor<AttachDetachOrderRequest> captor = ArgumentCaptor.forClass(AttachDetachOrderRequest.class);
+        verify(orderManagementAdapter, times(1)).callAttachDetachApi(captor.capture());
+
+        AttachDetachOrderRequest omsRequest = captor.getValue();
+
+        // Assertions
+        assertEquals(request.getShipmentGuid(), omsRequest.getShipmentGuid());
+        assertEquals(request.getShipmentId(), omsRequest.getShipmentId());
+        assertEquals(1, omsRequest.getAttachOrderInfo().size());
+        assertEquals(1, omsRequest.getDetachOrderInfo().size());
+        assertEquals("123", omsRequest.getAttachOrderInfo().get(0).getOrderId());
+        assertEquals("456", omsRequest.getDetachOrderInfo().get(0).getOrderId());
+    }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_nullRequest_logsWarning() throws RunnerException {
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(null);
+
+        // Verify that adapter is never called
+        verify(orderManagementAdapter, never()).callAttachDetachApi(any());
+    }
+
+    @Test
+    void test_triggerOrderAttachDetachToOMS_adapterThrows_logsError() throws RunnerException {
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentOrderAttachDetachRequest request = new ShipmentOrderAttachDetachRequest();
+        request.setShipmentGuid(shipmentGuid);
+
+        doThrow(new RuntimeException("API error")).when(orderManagementAdapter).callAttachDetachApi(any());
+
+        shipmentServiceImplV3.triggerOrderAttachDetachToOMS(request);
+
+        // Adapter was called but exception handled
+        verify(orderManagementAdapter, times(1)).callAttachDetachApi(any());
+    }
+
+
 }
