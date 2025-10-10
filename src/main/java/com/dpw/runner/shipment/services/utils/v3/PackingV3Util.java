@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
@@ -62,16 +63,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
@@ -95,6 +87,9 @@ public class PackingV3Util {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IShipmentOrderService shipmentOrderService;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -655,21 +650,41 @@ public class PackingV3Util {
                 .build();
     }
 
+    private Map<UUID, Long> fetchOrderGuidWithShipmentOrderIdMappings(List<OrderLineV3Response> orderLinesList) {
+        log.info("Create orderGuid to shipmentOrder table's id mappings for request list with size {} with Request Id {}", orderLinesList.size(), LoggerHelper.getRequestIdFromMDC());
+        List<UUID> orderGuidList = orderLinesList.stream()
+                .filter(Objects::nonNull)
+                .map(OrderLineV3Response::getOrderGuid)
+                .toList();
+        log.info("Fetch shipmentOrders from DB for orderGuid list with size {} with Request Id {}", orderGuidList.size(), LoggerHelper.getRequestIdFromMDC());
+        List<ShipmentOrder> shipmentOrderList = shipmentOrderService.findByOrderGuidIn(orderGuidList);
+        return shipmentOrderList.stream()
+                .filter(shipmentOrder -> shipmentOrder.getOrderGuid() != null && shipmentOrder.getId() != null)
+                .collect(Collectors.toMap(
+                        ShipmentOrder::getOrderGuid,
+                        ShipmentOrder::getId
+                ));
+    }
+
     public List<PackingV3Request> mapOrderLineListToPackingV3RequestList(List<OrderLineV3Response> orderLinesList) {
         if (orderLinesList == null || orderLinesList.isEmpty()) {
+            log.info("Empty list order lines to map into packings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             return Collections.emptyList();
         }
+        log.info("Map order lines into packings for request list with size {} with Request Id {}", orderLinesList.size(), LoggerHelper.getRequestIdFromMDC());
+        Map<UUID, Long> mappings = fetchOrderGuidWithShipmentOrderIdMappings(orderLinesList);
         return orderLinesList.stream()
                 .filter(Objects::nonNull)
-                .map(this::mapOrderLineToPackingV3Request)
+                .map(orderLine -> mapOrderLineToPackingV3Request(orderLine, mappings))
                 .toList();
     }
 
-    public PackingV3Request mapOrderLineToPackingV3Request(OrderLineV3Response orderLineResponse) {
+    public PackingV3Request mapOrderLineToPackingV3Request(OrderLineV3Response orderLineResponse, Map<UUID, Long> orderGuidWithShipmentOrderIdMapping) {
         if (orderLineResponse == null) {
             return null;
         }
-
+        log.info("Map order line with guid {} into packing with Request Id {}", orderLineResponse.getOrderLineGuid(), LoggerHelper.getRequestIdFromMDC());
+        Long shipmentOrderId = orderGuidWithShipmentOrderIdMapping.get(orderLineResponse.getOrderGuid());
         return PackingV3Request.builder()
                 .commodityGroup(orderLineResponse.getCommodityGroup())
                 .containerNumber(orderLineResponse.getContainerNumber())
@@ -695,7 +710,7 @@ public class PackingV3Util {
                 .lineNo(orderLineResponse.getLineNo())
                 .subLineNo(orderLineResponse.getSubLineNo())
                 .productCode(orderLineResponse.getProductCode())
-                .shipmentOrderId(orderLineResponse.getShipmentOrderId())
+                .shipmentOrderId(shipmentOrderId)
                 .orderLineId(orderLineResponse.getOrderLineId())
                 .orderLineGuid(orderLineResponse.getOrderLineGuid())
                 .shipmentId(orderLineResponse.getShipmentId())

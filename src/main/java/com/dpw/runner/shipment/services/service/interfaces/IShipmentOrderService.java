@@ -20,6 +20,8 @@ public interface IShipmentOrderService {
 
     List<ShipmentOrder> findByShipmentId(Long shipmentId);
 
+    List<ShipmentOrder> findByOrderGuidIn(List<UUID> orderGuidList);
+
     Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid);
 
     List<ShipmentOrder> updateEntityFromShipment(List<ShipmentOrder> shipmentOrders, Long shipmentId);

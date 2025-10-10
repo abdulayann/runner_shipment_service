@@ -3028,7 +3028,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         if (customerBookingRequest.getOrderManagementId() != null) {
             ShipmentDetails shipmentDetails = null;
-            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
+            shipmentDetails = orderManagementAdapter.getOrderByGuidV3(customerBookingRequest.getOrderManagementId());
 
             if (shipmentDetails != null) {
                 processShipmentRequestFromDetails(shipmentRequest, shipmentDetails);

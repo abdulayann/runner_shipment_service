@@ -16,6 +16,8 @@ public interface IOrderManagementAdapter {
 
     ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException;
 
+    ShipmentDetails getOrderByGuidV3(String orderGuid) throws RunnerException;
+
     OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException;
 
     Map<String, OrderManagementDTO> fetchOrdersWithOrderLineAsMap(List<String> orderIds) throws RunnerException;
