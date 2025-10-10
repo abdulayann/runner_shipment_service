@@ -11,19 +11,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneRequest;
-import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
@@ -37,10 +29,12 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.util.Optional;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -48,16 +42,9 @@ import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 
 @RestController
@@ -83,7 +70,7 @@ public class ShipmentControllerV3 {
 
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.PENDING_NOTIFICATION_COUNT_SUCCESSFUL)})
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = RunnerResponse.class)), description = ShipmentConstants.PENDING_NOTIFICATION_COUNT_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.COUNT_PENDING_NOTIFICATION_API)
     public ResponseEntity<IRunnerResponse> getPendingNotificationCount() {
         log.info("Received shipment notification pending count request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
@@ -100,8 +87,8 @@ public class ShipmentControllerV3 {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = ShipmentControllerV3.MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ShipmentControllerV3.MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ShipmentV3Request request) {
@@ -110,8 +97,8 @@ public class ShipmentControllerV3 {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = ShipmentControllerV3.MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ShipmentControllerV3.MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentV3Request request) throws RunnerException {
@@ -119,7 +106,7 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentService.completeUpdate(CommonRequestModel.buildRequest(request)));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -127,10 +114,10 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = RunnerResponse.class)), description = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id,
-                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid,
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id,
+                                                        @Parameter(description = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid,
                                                         @RequestParam(required = false, defaultValue = "false") boolean getMasterData,
                                                         @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().build();
@@ -141,29 +128,29 @@ public class ShipmentControllerV3 {
     }
 
     @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
-    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@Parameter(description = ShipmentConstants.SHIPMENT_ID) @RequestParam Long id) {
         log.info("Received pending notification shipment data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = shipmentService.getPendingNotificationData(request);
         return ResponseHelper.buildSuccessResponse(shipmentPendingNotificationResponse);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shipmentId,
                                               @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getAllMasterData(shipmentId, xSource));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentAssignContainerTrayList.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ShipmentAssignContainerTrayList.class)))})
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
-    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId) {
+    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@Parameter Long containerId, @Parameter Long consolidationId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentUnAssignContainerTrayList.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ShipmentUnAssignContainerTrayList.class)))})
     @GetMapping(ApiConstants.API_GET_SHIPMENT_UN_ASSIGN_CONTAINER_TRAY)
-    public ResponseEntity<IRunnerResponse> getShipmentUnAssignContainerTray(@ApiParam Long containerId) {
+    public ResponseEntity<IRunnerResponse> getShipmentUnAssignContainerTray(@Parameter Long containerId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationUnAssignContainerTray(containerId));
     }
 
@@ -174,7 +161,7 @@ public class ShipmentControllerV3 {
      * @return Standard runner response
      */
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.ATTACH_CONSOLIDATION_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = RunnerResponse.class)), description = ShipmentConstants.ATTACH_CONSOLIDATION_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.ATTACH_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> attachConsolidation(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
@@ -185,7 +172,7 @@ public class ShipmentControllerV3 {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.UPDATE_SAILING_SCHEDULE_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = RunnerResponse.class)), description = ShipmentConstants.UPDATE_SAILING_SCHEDULE_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.UPDATE_SAILING_SCHEDULE)
     public ResponseEntity<IRunnerResponse> updateSailingScheduleDataToShipment(@RequestBody @Valid ShipmentSailingScheduleRequest request) throws RunnerException {
@@ -193,20 +180,20 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentService.updateSailingScheduleDataToShipment(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @GetMapping(ApiConstants.MATCHING_RULES_BY_GUID)
-    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String shipmentGuid) {
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@Parameter(description = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String shipmentGuid) {
         return dpsEventService.getShipmentMatchingRulesByGuid(shipmentGuid);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE)
     public ResponseEntity<IRunnerResponse> getMatchingRulesByGuidAndExecutionState(@RequestBody @Valid GetMatchingRulesRequest getMatchingRulesRequest) {
         return dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = RunnerListResponse.class))), description = ShipmentConstants.LIST_SUCCESSFUL )})
     @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
     public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Long consoleId,
             @RequestParam(required = false) String consoleGuid, @RequestParam(required = true) boolean isAttached,
@@ -219,7 +206,7 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.AIB_ACTION, response = UpstreamDateUpdateResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.AIB_ACTION, content = @Content(schema = @Schema(implementation = UpstreamDateUpdateResponse.class)))})
     @PutMapping(ApiConstants.AIB_ACTION)
     public ResponseEntity<IRunnerResponse> aibAction(@RequestBody AibActionShipment request) {
         log.info("{} | Request received for :/aib/action on shipments with body: {}", LoggerHelper.getRequestIdFromMDC(),  jsonHelper.convertToJson(request));
@@ -230,7 +217,7 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @GetMapping(ShipmentConstants.AIB_PUSH_REQUEST)
     public ResponseEntity<IRunnerResponse> aibPushRequest(@RequestParam() Long shipId,
                                                           @RequestParam() Long consoleId,
@@ -243,7 +230,7 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = RunnerListResponse.class))), description = "Successful Shipment Details Data List Retrieval")})
     @PostMapping(value = "/attach-list-shipment")
     public ResponseEntity<IRunnerResponse> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         try {
@@ -253,7 +240,7 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, content = @Content(schema = @Schema(implementation = PendingNotificationResponse.class)))})
     @PostMapping(ApiConstants.AIB_NOTIFICATIONS)
     public ResponseEntity<IRunnerResponse> aibPendingNotifications(@RequestBody AibNotificationRequest request) {
         log.info("{} Request received for aibPendingNotifications for shipment {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -264,7 +251,7 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
     public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody OceanDGApprovalRequest request) throws RunnerException {
         log.info("Received for oceanDGSendForApproval with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -272,7 +259,7 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
     public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request)
         throws RunnerException {
@@ -282,9 +269,9 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CANCELLED, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.CANCELLED, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @GetMapping(ApiConstants.CANCEL)
-    public ResponseEntity<IRunnerResponse> cancelShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> cancelShipment(@Parameter(description = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
         String responseMsg;
         try {
             shipmentService.cancel(id);
@@ -297,20 +284,20 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
     public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         ShipmentDetailsResponse defaultShipment = shipmentService.getDefaultShipment();
         return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentRetrieveLiteResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ShipmentRetrieveLiteResponse.class)))})
     @PostMapping(ApiConstants.API_CLONE_SHIPMENT)
     public ResponseEntity<IRunnerResponse> cloneShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipment(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = IRunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = IRunnerResponse.class)))})
     @GetMapping(ApiConstants.API_CLONE_CONFIG)
     public ResponseEntity<IRunnerResponse> getCloneConfig(@RequestParam() String type) {
         log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), type);
@@ -322,13 +309,13 @@ public class ShipmentControllerV3 {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = QuoteResetRulesResponse.class)))})
     @PostMapping(ApiConstants.API_RESET_QUOTE_FIELDS)
     public ResponseEntity<IRunnerResponse> resetShipmentQuoteRules(@RequestParam Long shipmentId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.resetShipmentQuoteRules(shipmentId));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request) throws RunnerException{
         ShipmentPatchV3Request patchRequest = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
@@ -336,7 +323,7 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentService.partialUpdate(CommonRequestModel.buildRequest(patchRequest)));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ATTACH_DETACH_ORDER_RESPONSE, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.ATTACH_DETACH_ORDER_RESPONSE, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.ATTACH_DETACH_ORDER)
     public ResponseEntity<IRunnerResponse> attachDetachOrder(@RequestBody @Valid ShipmentOrderAttachDetachRequest attachDetachRequest) {
         try {

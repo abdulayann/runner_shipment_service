@@ -20,7 +20,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@Schema(value = "Packing V3 request model")
+@Schema(description = "Packing V3 request model")
 @ToString
 @Builder
 @AllArgsConstructor

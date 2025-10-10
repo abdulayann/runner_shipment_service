@@ -13,15 +13,17 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @SuppressWarnings("ALL")
@@ -37,7 +39,7 @@ public class HblController {
         this.hblService = hblService;
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_GENERATION_SUCCESS, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBL_GENERATION_SUCCESS, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PostMapping(HblConstants.API_GENERATE_HBL)
     public ResponseEntity<IRunnerResponse> generateHBL(@RequestBody @Valid HblGenerateRequest request) {
         String responseMsg;
@@ -51,7 +53,7 @@ public class HblController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Seal validation completed successfully")
+            @ApiResponse(responseCode = "200", description = "Seal validation completed successfully")
     })
     @GetMapping("/validate-seals/{shipmentId}")
     public ResponseEntity<IRunnerResponse> validateSealNumbers(
@@ -64,7 +66,7 @@ public class HblController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_UPDATE_SUCCESS, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBL_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid HblRequest request) {
         String responseMsg;
@@ -78,7 +80,7 @@ public class HblController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_DELETE_SUCCESS, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBL_DELETE_SUCCESS, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -86,17 +88,17 @@ public class HblController {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = HblConstants.HBL_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = HblConstants.HBL_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return hblService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(HblConstants.API_RETRIEVE_BY_SHIPMENT_ID)
-    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(@ApiParam(value = HblConstants.HBL_SHIPMENT_ID, required = true) @RequestParam Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(@Parameter(description = HblConstants.HBL_SHIPMENT_ID, required = true) @RequestParam Long shipmentId) {
         String responseMsg;
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(shipmentId).build();
@@ -109,7 +111,7 @@ public class HblController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_RESET_SUCCESSFULL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBL_RESET_SUCCESSFULL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PostMapping(HblConstants.API_RESET_HBL)
     public ResponseEntity<IRunnerResponse> resetHbl(@RequestBody @Valid HblResetRequest request) {
         String responseMsg;
@@ -124,8 +126,8 @@ public class HblController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_SAVE_FROM_V1)
     @ExcludeTimeZone
@@ -141,7 +143,7 @@ public class HblController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_GENERATION_SUCCESS, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = HblConstants.HBL_GENERATION_SUCCESS, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PostMapping(HblConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdateHBL(@RequestBody @Valid HblGenerateRequest request) {
         String responseMsg;

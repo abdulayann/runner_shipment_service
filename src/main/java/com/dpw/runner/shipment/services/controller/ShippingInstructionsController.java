@@ -11,19 +11,19 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstr
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(ShippingInstructionsConstants.SI_API_HANDLE)
@@ -43,8 +43,8 @@ public class ShippingInstructionsController {
 
     @PostMapping
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShippingInstructionsConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody ShippingInstructionRequest info) {
         try {
@@ -58,7 +58,7 @@ public class ShippingInstructionsController {
     }
 
     @GetMapping("/{id}")
-    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShippingInstructionsConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = ShippingInstructionsConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     public ResponseEntity<IRunnerResponse> getById(@PathVariable Long id) {
         try {
             ShippingInstructionResponse response = service.getShippingInstructionsById(id);
@@ -72,8 +72,8 @@ public class ShippingInstructionsController {
 
     @PutMapping
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShippingInstructionsConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> update(@RequestBody ShippingInstructionRequest info) {
         try {
@@ -87,7 +87,7 @@ public class ShippingInstructionsController {
     }
 
     @DeleteMapping("/{id}")
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.DELETE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     public ResponseEntity<IRunnerResponse> delete(@PathVariable Long id) {
         try {
             service.deleteShippingInstructions(id);
@@ -99,7 +99,7 @@ public class ShippingInstructionsController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shippingInstructionId) {
         String responseMsg = "failure executing";
@@ -119,7 +119,7 @@ public class ShippingInstructionsController {
     }
 
     @GetMapping
-    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ShippingInstructionsConstants.RETRIEVE_DEFAULT_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = ShippingInstructionsConstants.RETRIEVE_DEFAULT_SUCCESS)})
     public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
         try {
             ShippingInstructionResponse response = service.getDefaultShippingInstructionValues(type, entityId);
@@ -133,8 +133,8 @@ public class ShippingInstructionsController {
 
     @PostMapping("/submit/{id}")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShippingInstructionsConstants.SUBMIT_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.ERROR_MESSAGE, response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.SUBMIT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.ERROR_MESSAGE, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> submitSI(@PathVariable("id") Long id) {
         try {
@@ -149,8 +149,8 @@ public class ShippingInstructionsController {
 
     @PostMapping("/amend/{id}")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShippingInstructionsConstants.AMEND_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.ERROR_MESSAGE, response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.AMEND_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.ERROR_MESSAGE, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> amendSI(@PathVariable("id") Long id) {
         try {
@@ -164,8 +164,8 @@ public class ShippingInstructionsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShippingInstructionsConstants.CANCELLED),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShippingInstructionsConstants.CANCELLED),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.CANCEL)
     // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")

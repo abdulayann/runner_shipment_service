@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @Data
 @Setter
-@Schema("Container Response Model")
+@Schema(description = "Container Response Model")
 public class ContainerBaseResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

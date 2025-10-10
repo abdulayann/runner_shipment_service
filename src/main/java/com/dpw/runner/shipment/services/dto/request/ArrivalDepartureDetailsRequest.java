@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Arrival Departure Request Model")
+@Schema(description = "Arrival Departure Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

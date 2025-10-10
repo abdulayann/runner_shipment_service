@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Customer Booking V3 Request Model")
+@Schema(description = "Customer Booking V3 Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

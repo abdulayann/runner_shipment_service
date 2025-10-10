@@ -17,15 +17,18 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
 import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @SuppressWarnings("ALL")
@@ -45,8 +48,8 @@ public class MawbStocksController {
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull MawbStocksRequest request) {
         try {
@@ -59,7 +62,7 @@ public class MawbStocksController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_UPDATE_SUCCESSFUL, response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull MawbStocksRequest request) {
@@ -75,7 +78,7 @@ public class MawbStocksController {
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -83,7 +86,7 @@ public class MawbStocksController {
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
@@ -91,14 +94,14 @@ public class MawbStocksController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_LIST_SUCCESSFUL, responseContainer = MawbStocksConstants.MAWB_STOCKS_LIST_SUCCESSFUL, response = MyListResponseClass.class)
+            @ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_LIST_SUCCESSFUL, content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))))
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return mawbStocksService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL, response = MyNextMawbCarrierResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNextMawbCarrierResponseClass.class)))})
     @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
     public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix, @RequestParam(required = false) String borrowedFrom,
         @RequestParam(required = false, defaultValue = "false") boolean borrowed) {
@@ -106,8 +109,8 @@ public class MawbStocksController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_SYNC_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = MawbStocksConstants.MAWB_STOCKS_SYNC_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/createV1MawbStocks")
     @ExcludeTimeZone

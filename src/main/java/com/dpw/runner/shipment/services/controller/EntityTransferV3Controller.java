@@ -19,8 +19,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +54,7 @@ public class EntityTransferV3Controller {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = SendShipmentResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) throws RunnerException {
         log.info("Received Send Shipment Request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -66,7 +68,7 @@ public class EntityTransferV3Controller {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = SendConsolidationResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) throws RunnerException {
         log.info("Received Send Consolidation Request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -79,7 +81,7 @@ public class EntityTransferV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponse.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ImportShipmentResponse.class)))
     })
     @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
     public ResponseEntity<IRunnerResponse> importShipment(@RequestBody ImportV3ShipmentRequest request) throws RunnerException, JsonMappingException {
@@ -95,7 +97,7 @@ public class EntityTransferV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, response = ImportConsolidationResponse.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ImportConsolidationResponse.class)))
     })
     @PostMapping(EntityTransferConstants.IMPORT_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> importConsolidation(@RequestBody ImportV3ConsolidationRequest request) {

@@ -15,14 +15,18 @@ import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFro
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -38,8 +42,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.RETRIEVE_CONTRACT_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> fetchContractFromShipment(@RequestBody @Valid ListContractRequest request) {
@@ -56,8 +60,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.LIST_CONTRACT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> fetchContracts(@RequestBody @Valid ListContractsWithFilterRequest request) {
@@ -74,8 +78,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.RETRIEVE_CONTRACT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> fetchContract(@RequestBody @Valid ListContractRequest request) {
@@ -92,8 +96,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.GET_OFFERS)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
@@ -110,8 +114,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.GET_OFFERS_V8)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {

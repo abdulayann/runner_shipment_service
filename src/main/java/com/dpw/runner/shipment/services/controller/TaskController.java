@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.TaskConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -8,15 +11,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(TaskConstants.TASK_API_HANDLE)
@@ -31,8 +35,8 @@ public class TaskController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = TaskConstants.TASK_CREATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(TaskConstants.TASK_CREATION)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid Object request) {
@@ -48,11 +52,11 @@ public class TaskController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = TaskConstants.TASK_CREATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieve(@ApiParam(value = TaskConstants.ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> retrieve(@Parameter(description = TaskConstants.ID, required = true) @RequestParam Long id) {
         String responseMsg;
         try {
             return tasksService.retrieveTask(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
@@ -65,14 +69,14 @@ public class TaskController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TaskConstants.TASK_CREATION_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = TaskConstants.TASK_CREATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_UUID)
-    public ResponseEntity<IRunnerResponse> retrieveMDMTask( @ApiParam(value = TaskConstants.UUID, required = false)
+    public ResponseEntity<IRunnerResponse> retrieveMDMTask( @Parameter(description = TaskConstants.UUID, required = false)
                                                                 @RequestParam(name = "uuid", required = false) String uuid,
 
-                                                            @ApiParam(value = TaskConstants.ID_SMALL, required = false)
+                                                            @Parameter(description = TaskConstants.ID_SMALL, required = false)
                                                                 @RequestParam(name = "id", required = false) Long id) {
         String responseMsg;
         try {

@@ -93,7 +93,7 @@ import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import jakarta.annotation.Nullable;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
