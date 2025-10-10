@@ -318,12 +318,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return modelMapper.map(billingEntityResponse.getData(), BillBaseResponse.class);
     }
 
-    @Autowired
-    private BillingServiceUrlConfig billingServiceUrlConfig;
-
     @Override
     public List<RevenueChargeDto> getRevenueChargesForShipment(RevenueChargesRequest request) {
-        String url = billingServiceUrlConfig.getBaseUrl() + "/invoice/api/v3/external-bill-charge/revenue/list";
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingRevenueChargesList(); //  /invoice/api/v3/external-bill-charge/revenue/list"
         HttpEntity<RevenueChargesRequest> httpEntity = new HttpEntity<>(request, getHeaders());
 
         ParameterizedTypeReference<RevenueChargesResponse> responseType = new ParameterizedTypeReference<>() {};
