@@ -100,11 +100,11 @@ public class ShippingInstructionMasterDataHelper {
             if (Objects.nonNull(response.getSailingInformation())) {
                 listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(response.getSailingInformation(), SailingInformation.class, fieldNameKeyMap, SailingInformation.class.getSimpleName(), cacheMap));
             }
-            if (CollectionUtils.isEmpty(response.getCommonContainersList())) {
-                response.getCommonContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName() + r.getId(), cacheMap)));
+            if (CollectionUtils.isEmpty(response.getContainersList())) {
+                response.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName() + r.getId(), cacheMap)));
             }
-            if (CollectionUtils.isEmpty(response.getReferenceNumbers())) {
-                response.getReferenceNumbers().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
+            if (CollectionUtils.isEmpty(response.getReferenceNumbersList())) {
+                response.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
             }
             if (CollectionUtils.isEmpty(response.getCommonPackagesList())) {
                 response.getCommonPackagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, CommonPackages.class, fieldNameKeyMap, CommonPackages.class.getSimpleName() + r.getId(), cacheMap)));
@@ -198,8 +198,8 @@ public class ShippingInstructionMasterDataHelper {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> commodityTypes = new HashSet<>();
-            if (Objects.nonNull(shippingInstructionResponse.getCommonContainersList())) {
-                shippingInstructionResponse.getCommonContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
+            if (Objects.nonNull(shippingInstructionResponse.getContainersList())) {
+                shippingInstructionResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
             }
             if (Objects.nonNull(shippingInstructionResponse.getCommonPackagesList())) {
                 shippingInstructionResponse.getCommonPackagesList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, CommonPackages.class, fieldNameKeyMap, CommonPackages.class.getSimpleName(), cacheMap)));
@@ -221,8 +221,8 @@ public class ShippingInstructionMasterDataHelper {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
-            if (!Objects.isNull(shippingInstructionResponse.getCommonContainersList())) {
-                shippingInstructionResponse.getCommonContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
+            if (!Objects.isNull(shippingInstructionResponse.getContainersList())) {
+                shippingInstructionResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, CommonContainers.class, fieldNameKeyMap, CommonContainers.class.getSimpleName(), cacheMap)));
             }
             if (org.springframework.util.CollectionUtils.isEmpty(containerTypes)) {
                 return;

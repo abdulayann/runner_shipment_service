@@ -784,7 +784,7 @@ class ShippingInstructionsServiceImplTest {
         ReferenceNumbers existingRef = new ReferenceNumbers();
         existingRef.setType("EXISTING");
         existingRef.setReferenceNumber("REF-001");
-        si.setReferenceNumbers(List.of(existingRef));
+        si.setReferenceNumbersList(List.of(existingRef));
 
         CarrierBooking cb = new CarrierBooking();
         ReferenceNumbers newRef = new ReferenceNumbers();
@@ -798,7 +798,7 @@ class ShippingInstructionsServiceImplTest {
             method.invoke(service, si, cb);
         });
 
-        assertThat(si.getReferenceNumbers()).hasSize(1);
+        assertThat(si.getReferenceNumbersList()).hasSize(1);
     }
 
 // ========== MISSING PARTIES SETUP TESTS ==========
@@ -1177,7 +1177,7 @@ class ShippingInstructionsServiceImplTest {
         });
 
         // Reference numbers should remain null/empty
-        assertTrue(si.getReferenceNumbers() == null || si.getReferenceNumbers().isEmpty());
+        assertTrue(si.getReferenceNumbersList() == null || si.getReferenceNumbersList().isEmpty());
     }
 
     @Test

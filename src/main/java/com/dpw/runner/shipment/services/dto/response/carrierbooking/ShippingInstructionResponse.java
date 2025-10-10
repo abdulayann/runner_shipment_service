@@ -50,8 +50,8 @@ public class ShippingInstructionResponse implements IRunnerResponse {
     private String otherExternalEmails;
     private List<FreightDetailResponse> freightDetailList;
     private List<CommonPackageResponse> commonPackagesList;
-    private List<CommonContainerResponse> commonContainersList;
-    private List<ReferenceNumberResponse> referenceNumbers;
+    private List<CommonContainerResponse> containersList;
+    private List<ReferenceNumberResponse> referenceNumbersList;
     private SailingInformationResponse sailingInformation;
     private List<ShippingInstructionContainerWarningResponse> containerDiff;
     private List<ShippingInstructionContainerWarningResponse> packageDiff;

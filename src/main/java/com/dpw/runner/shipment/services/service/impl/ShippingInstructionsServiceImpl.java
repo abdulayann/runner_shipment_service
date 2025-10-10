@@ -3,19 +3,11 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -24,20 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.CarrierBooking;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.CommonContainers;
-import com.dpw.runner.shipment.services.entity.CommonPackages;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.FreightDetail;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.SailingInformation;
-import com.dpw.runner.shipment.services.entity.ShippingInstruction;
-import com.dpw.runner.shipment.services.entity.ShippingInstructionResponseMapper;
-import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
@@ -97,16 +76,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.INVALID_ENTITY_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_REQUEST_EMPTY_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_RESPONSE_SUCCESS;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.tableNames;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -169,6 +142,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private INotificationService notificationService;
 
 
+
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         shippingInstruction = validateFetchAndSetSI(shippingInstruction, true);
@@ -221,7 +195,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         } else if (EntityType.CONSOLIDATION == type) {
             consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(entityId);
             response.setBookingStatus(consolidationDetails.getBookingStatus());
-            shippingInstruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
+            shippingInstruction.setReferenceNumbersList(getReferenceNumberResponses(consolidationDetails));
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
@@ -240,15 +214,15 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             log.debug("Reference list empty for booking {}", carrierBooking.getId());
             return;
         }
-        Set<ReferenceNumbers> referenceNumbersList = shippingInstruction.getReferenceNumbers()
-                != null ? new HashSet<>(shippingInstruction.getReferenceNumbers()) : new HashSet<>();
+        Set<ReferenceNumbers> referenceNumbersList = shippingInstruction.getReferenceNumbersList()
+                != null ? new HashSet<>(shippingInstruction.getReferenceNumbersList()) : new HashSet<>();
         for (ReferenceNumbers referenceNumbers : carrierBooking.getReferenceNumbersList()) {
             referenceNumbers.setId(null);
             referenceNumbers.setGuid(null);
             referenceNumbersList.add(referenceNumbers);
         }
 
-        shippingInstruction.setReferenceNumbers(new ArrayList<>(referenceNumbersList));
+        shippingInstruction.setReferenceNumbersList(new ArrayList<>(referenceNumbersList));
     }
 
     private void setPartiesNumber(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
@@ -311,7 +285,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                     ));
         }
         shippingInstruction.setCommonPackagesList(setCommonPackages(packingList, containersMap));
-        shippingInstruction.setCommonContainersList(setCommonContainers(containersList));
+        shippingInstruction.setContainersList(setCommonContainers(containersList));
     }
 
     private List<CommonContainers> setCommonContainers(List<Containers> containersList) {
@@ -404,7 +378,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             ConsolidationDetails consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(instruction.getEntityId());
             shippingInstruction.get().setEntityNumber(consolidationDetails.getConsolidationNumber());
             populateFreightDetails(instruction, consolidationDetails);
-            instruction.setReferenceNumbers(getReferenceNumberResponses(consolidationDetails));
+            instruction.setReferenceNumbersList(getReferenceNumberResponses(consolidationDetails));
         }
         ShippingInstructionResponse response = jsonHelper.convertValue(instruction, ShippingInstructionResponse.class);
         response.setVgmStatus(getVgmStatus(instruction));
@@ -412,7 +386,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         if (Objects.nonNull(instruction.getPayloadJson())) {
             ContainerPackageSiPayload siPayload = jsonHelper.readFromJson(instruction.getPayloadJson(), ContainerPackageSiPayload.class);
             List<ShippingInstructionContainerWarningResponse> containerWarningResponses
-                    = shippingInstructionUtil.compareContainerDetails(instruction.getCommonContainersList(), siPayload.getContainerDetail());
+                    = shippingInstructionUtil.compareContainerDetails(instruction.getContainersList(), siPayload.getContainerDetail());
             List<ShippingInstructionContainerWarningResponse> packageWarningResponses
                     = shippingInstructionUtil.comparePackageDetails(instruction.getCommonPackagesList(), siPayload.getPackageDetail());
             response.setContainerDiff(containerWarningResponses);
@@ -427,10 +401,10 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private String getVgmStatus(ShippingInstruction instruction) {
         VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getEntityId());
-        if (Objects.nonNull(vgmEntity)) {
+        if (Objects.nonNull(vgmEntity)){
             return vgmEntity.getStatus().name();
         }
-        return null;
+       return null;
     }
 
     public ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest shippingInstructionRequest) {
@@ -443,7 +417,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         validateSIRequest(shippingInstruction);
         shippingInstruction.setCreateByUserEmail(shippingInstructionEntity.get().getCreateByUserEmail());
         shippingInstruction.setSubmitByUserEmail(shippingInstructionEntity.get().getSubmitByUserEmail());
-        shippingInstruction.setCommonContainersList(shippingInstructionEntity.get().getCommonContainersList());
+        shippingInstruction.setContainersList(shippingInstructionEntity.get().getContainersList());
         shippingInstruction.setCommonPackagesList(shippingInstructionEntity.get().getCommonPackagesList());
         shippingInstruction.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getInternalEmailsList()));
         shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getExternalEmailsList()));
@@ -493,7 +467,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
 
-        Page<ShippingInstruction> shippingInstructionPage = getShippingInstructions(listCommonRequest);
+        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
+        Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
         log.info(SI_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
         List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
@@ -502,12 +477,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 filteredList,
                 shippingInstructionPage.getTotalPages(),
                 shippingInstructionPage.getTotalElements());
-    }
-
-    @Override
-    public Page<ShippingInstruction> getShippingInstructions(ListCommonRequest listCommonRequest) {
-        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
-        return repository.findAll(tuple.getLeft(), tuple.getRight());
     }
 
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
@@ -603,8 +572,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         for (ShippingInstruction shippingInstruction : shippingInstructionList) {
             ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
-            if (!CollectionUtils.isEmpty(shippingInstruction.getReferenceNumbers())) {
-                Optional<ReferenceNumbers> contractReferenceNumber = shippingInstruction.getReferenceNumbers()
+            if (!CollectionUtils.isEmpty(shippingInstruction.getReferenceNumbersList())) {
+                Optional<ReferenceNumbers> contractReferenceNumber = shippingInstruction.getReferenceNumbersList()
                         .stream()
                         .filter(ref -> CarrierBookingConstants.CON.equals(ref.getType()))
                         .findFirst();
@@ -932,9 +901,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             packageSiPayload.setPackageDetail(shippingInstruction.getCommonPackagesList());
         }
 
-        if (shippingInstruction.getCommonContainersList() != null &&
-                !shippingInstruction.getCommonContainersList().isEmpty()) {
-            packageSiPayload.setContainerDetail(shippingInstruction.getCommonContainersList());
+        if (shippingInstruction.getContainersList() != null &&
+                !shippingInstruction.getContainersList().isEmpty()) {
+            packageSiPayload.setContainerDetail(shippingInstruction.getContainersList());
         }
 
         if ((packageSiPayload.getPackageDetail() == null || packageSiPayload.getPackageDetail().isEmpty()) &&
@@ -969,7 +938,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         };
 
     }
-
     protected void sendNotification(ShippingInstruction shippingInstruction) {
         try {
             List<String> requests = new ArrayList<>(List.of(ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE));
