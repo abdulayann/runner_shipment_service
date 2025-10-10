@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentDetailsQuoteDateType;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -126,6 +127,8 @@ public class ShipmentPatchV3Request extends CommonRequest implements IRunnerRequ
     private JsonNullable<String> orderManagementId;
     private JsonNullable<String> orderManagementNumber;
     private JsonNullable<String> destinationParentContractId;
+    private JsonNullable<LocalDateTime> quoteDate;
+    private JsonNullable<ShipmentDetailsQuoteDateType> quoteDateType;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
     private JsonNullable<Boolean> isTransferredToReceivingBranch;

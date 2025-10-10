@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentDetailsQuoteDateType;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -78,6 +79,7 @@ public class ShipmentDetailsV3Response extends BaseShipmentResponse {
     private Map<String, String> currenciesMasterData;
     private Map<String, String> tenantIdsData;
     private String entryRefNo;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private List<PartiesResponse> shipmentAddresses;
     private String flightStatus;
     private String fmcTlcId;
@@ -121,6 +123,11 @@ public class ShipmentDetailsV3Response extends BaseShipmentResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
+
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
     private LocalDateTime carrierDocCutOff;
