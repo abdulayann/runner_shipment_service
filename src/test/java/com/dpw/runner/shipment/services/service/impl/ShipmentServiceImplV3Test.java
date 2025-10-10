@@ -735,7 +735,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(orderManagementAdapter.getOrderByGuidV3(any())).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -801,7 +801,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(orderManagementAdapter.getOrderByGuidV3(any())).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -869,7 +869,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsEntityTransferPrerequisiteEnabled(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(orderManagementAdapter.getOrderByGuidV3(any())).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -937,7 +937,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.checkIfPartyExists((Parties) any())).thenReturn(true);
 
-        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(orderManagementAdapter.getOrderByGuidV3(any())).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }
@@ -9262,7 +9262,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(orderManagementAdapter.getOrderByGuidV3(any())).thenReturn(shipmentDetails1);
 
         OrderLineV3Response orderLine = OrderLineV3Response.builder()
                 .packs("1")

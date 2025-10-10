@@ -35,6 +35,8 @@ import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.OMS_SELECTIVE_INCLUDE_ALL;
+
 @Slf4j
 @Service
 public class OrderManagementAdapter implements IOrderManagementAdapter {
@@ -51,6 +53,11 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderbyGuidUrl;
     @Value("${order.management.getOrderbyCriteria}")
     private String getOrderbyCriteria;
+
+    @Value("${order.management.getOrderbyIdV3}")
+    private String getOrderbyIdUrlV3;
+    @Value("${order.management.getOrderbyGuidV3}")
+    private String getOrderbyGuidUrlV3;
 
     @Autowired
     private V2AuthHelper v2AuthHelper;
@@ -93,9 +100,26 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     }
 
     @Override
+    public ShipmentDetails getOrderByGuidV3(String orderGuid) throws RunnerException {
+        try {
+            String omsUrl = baseUrl + getOrderbyGuidUrlV3 +
+                            orderGuid + OMS_SELECTIVE_INCLUDE_ALL;
+            HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
+            log.info("Request to Order Service V3: {}", omsUrl);
+            var response = restTemplate.exchange(omsUrl, HttpMethod.GET,
+                    httpEntity, OrderManagementResponse.class);
+            log.info("Response from Order Service V3: {}", response.getBody());
+            return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
     public OrderManagementDTO getOrderManagementDTOByGuid(String orderGuid) throws RunnerException {
         try {
-            String url = baseUrl + getOrderbyGuidUrl + orderGuid;
+            String url = baseUrl + getOrderbyGuidUrlV3 + orderGuid + OMS_SELECTIVE_INCLUDE_ALL;
             log.info("Request to Order Service with url: {}", url);
             HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
             var response = restTemplate.exchange(url,
@@ -151,7 +175,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     @Override
     public CustomerBookingV3Response getOrderForBookingV3(String orderId) throws RunnerException {
         try {
-            String url = baseUrl + getOrderUrl + orderId;
+            String url = baseUrl + getOrderbyIdUrlV3 + orderId + OMS_SELECTIVE_INCLUDE_ALL;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
             return mapOrderToBookingV3(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
