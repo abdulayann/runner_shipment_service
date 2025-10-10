@@ -691,11 +691,11 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
 
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
+        setInternalExternalEmails(carrierBookingBridgeRequest, carrierBooking);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
         carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
-
         BridgeServiceResponse bridgeResponse = carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
         processInttraResponse(bridgeResponse,  carrierBooking);
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
