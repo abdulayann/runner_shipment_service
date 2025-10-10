@@ -766,6 +766,7 @@ public class Constants {
     public static final String CARRIER_BOOKING_INTTRA_CREATE = "CARRIER_BOOKING_INTTRA_CREATE";
     public static final String JSON_PARSING_EXCEPTION = "Exception thrown while parsing json: {}";
     public static final String KAFKA_CONSUME = "[InternalKafkaConsume] Consolidation: ";
+    public static final String IS_RAIL_TRANSFER_ENABLED = "IS_RAIL_TRANSFER_ENABLED";
     public static final String OMS_SELECTIVE_INCLUDE_ALL = "/selective?include=all";
     private Constants() {
     }

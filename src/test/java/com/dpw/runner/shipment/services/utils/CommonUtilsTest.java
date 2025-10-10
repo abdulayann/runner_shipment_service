@@ -148,16 +148,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
-import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -7694,5 +7685,39 @@ class CommonUtilsTest {
         verify(consolidationDetailsDao).findConsolidationByGuidWithQuery(parentGuid);
         verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
     }
+
+    @Test
+    void getTenantNameMap_shouldReturnMapOfTenantIdToName() {
+        // Arrange
+        List<Integer> tenantIds = List.of(1, 2);
+
+        // Mocked V1 response
+        V1DataResponse v1DataResponse = V1DataResponse.builder()
+                .entities(List.of()) // the actual entities are not deserialized directly here
+                .build();
+
+        // Mocked deserialized response
+        List<V1TenantResponse> tenantResponses = List.of(
+                V1TenantResponse.builder().TenantId(1L).TenantName("Tenant One").build(),
+                V1TenantResponse.builder().TenantId(2L).TenantName("Tenant Two").build()
+        );
+
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, V1TenantResponse.class))
+                .thenReturn(tenantResponses);
+
+        // Act
+        Map<Long, String> result = commonUtils.getTenantNameMap(tenantIds);
+
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals("Tenant One", result.get(1L));
+        assertEquals("Tenant Two", result.get(2L));
+
+        // Verify interactions
+        verify(v1Service).tenantNameByTenantId(any());
+        verify(jsonHelper).convertValueToList(v1DataResponse.entities, V1TenantResponse.class);
+    }
+
 
 }
