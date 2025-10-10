@@ -5372,7 +5372,6 @@ public abstract class IReport {
         populate cutoff dates in dictionary.
      */
     private void addConsolidationCutoffFields(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
-
         dict.put(C_TERMINAL, convertToDPWDateFormat(consolidationDetails.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_VGM, convertToDPWDateFormat(consolidationDetails.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_SI, convertToDPWDateFormat(consolidationDetails.getShipInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
