@@ -420,6 +420,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getPreAlertEmailAndLogs() == null) {
                 request.setPreAlertEmailAndLogs(oldEntity.get().getPreAlertEmailAndLogs());
             }
+            if(request.getIsAllowPackageEditInConsole() == null) {
+                request.setIsAllowPackageEditInConsole(oldEntity.get().getIsAllowPackageEditInConsole());
+            }
             if(request.getHideManifest() == null) {
                 request.setHideManifest(oldEntity.get().getHideManifest());
             }

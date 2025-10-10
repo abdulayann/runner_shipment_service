@@ -1696,11 +1696,12 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void updateConsolidationAttachmentFlag_shouldUpdateFlag_whenFlagIsNotNull() {
     Long consolidationId = 123L;
+    Long shipmentId = 123L;
     Boolean enableFlag = true;
 
     doNothing().when(consolidationDetailsDao).updateConsolidationAttachmentFlag(enableFlag, consolidationId);
 
-    consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+    consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId, shipmentId);
 
     verify(consolidationDetailsDao, times(1)).updateConsolidationAttachmentFlag(enableFlag, consolidationId);
   }
@@ -1708,9 +1709,9 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void updateConsolidationAttachmentFlag_shouldThrowException_whenFlagIsNull() {
     Long consolidationId = 123L;
-
+    Long shipmentId = 123L;
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-        consolidationV3Service.updateConsolidationAttachmentFlag(null, consolidationId)
+        consolidationV3Service.updateConsolidationAttachmentFlag(null, consolidationId, shipmentId)
     );
 
     assertEquals("enableFlag cannot be null", exception.getMessage());
@@ -1720,13 +1721,14 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void updateConsolidationAttachmentFlag_shouldWrapException_whenDaoThrows() {
     Long consolidationId = 123L;
+    Long shipmentId = 123L;
     Boolean enableFlag = false;
 
     doThrow(new RuntimeException("DB error")).when(consolidationDetailsDao)
         .updateConsolidationAttachmentFlag(enableFlag, consolidationId);
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId)
+        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId, shipmentId)
     );
 
     assertEquals("DB error", exception.getMessage());
@@ -7197,4 +7199,97 @@ if (unitConversionUtilityMockedStatic != null) {
     );
     assertEquals("save failed", ex.getMessage());
   }
+
+  @Test
+  void testEnableFlagNull_shouldThrowException() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            consolidationV3Service.updateConsolidationAttachmentFlag(null, 1L, 1L)
+    );
+    assertEquals("enableFlag cannot be null", ex.getMessage());
+    verifyNoInteractions(shipmentDao, consolidationDetailsDao);
+  }
+
+  @Test
+  void testBothConsolIdAndShipmentIdNull_shouldThrowException() {
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            consolidationV3Service.updateConsolidationAttachmentFlag(true, null, null)
+    );
+    assertEquals("consolidationId or shipmentId is mandatory", ex.getMessage());
+    verifyNoInteractions(shipmentDao, consolidationDetailsDao);
+  }
+
+  @Test
+  void testConsolIdProvided_shouldCallDaoUpdate() {
+    doNothing().when(consolidationDetailsDao).updateConsolidationAttachmentFlag(true, 10L);
+
+    consolidationV3Service.updateConsolidationAttachmentFlag(true, 10L, null);
+
+    verify(consolidationDetailsDao).updateConsolidationAttachmentFlag(true, 10L);
+    verifyNoInteractions(shipmentDao);
+  }
+
+  @Test
+  void testDaoThrowsException_shouldWrapIntoIllegalArgumentException() {
+    doThrow(new RuntimeException("DB error")).when(consolidationDetailsDao)
+            .updateConsolidationAttachmentFlag(true, 10L);
+
+    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            consolidationV3Service.updateConsolidationAttachmentFlag(true, 10L, null)
+    );
+    assertEquals("DB error", ex.getMessage());
+  }
+
+    @Test
+    void testUpdateConsolidationAttachmentFlag_shouldThrowWhenEnableFlagIsNull() {
+      IllegalArgumentException ex = assertThrows(
+              IllegalArgumentException.class,
+              () -> consolidationV3Service.updateConsolidationAttachmentFlag(null, 1L, null)
+      );
+      assertEquals("enableFlag cannot be null", ex.getMessage());
+      verifyNoInteractions(consolidationDetailsDao);
+    }
+
+    @Test
+    void testUpdateConsolidationAttachmentFlag_withValidConsolidationId() {
+      consolidationV3Service.updateConsolidationAttachmentFlag(true, 100L, null);
+      verify(consolidationDetailsDao, times(1))
+              .updateConsolidationAttachmentFlag(true, 100L);
+      verifyNoInteractions(shipmentDao);
+    }
+
+    @Test
+    void testUpdateConsolidationAttachmentFlag_withShipmentIdResolvesConsolidation() {
+      Long shipmentId = 55L;
+      Long resolvedConsolId = 999L;
+      ConsolidationDetails consolidation = new ConsolidationDetails();
+      consolidation.setId(resolvedConsolId);
+      ShipmentDetails shipment = new ShipmentDetails();
+      shipment.setConsolidationList(Set.of(consolidation));
+      when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+      consolidationV3Service.updateConsolidationAttachmentFlag(false, null, shipmentId);
+      verify(consolidationDetailsDao, times(1))
+              .updateConsolidationAttachmentFlag(false, resolvedConsolId);
+    }
+
+    @Test
+    void testUpdateConsolidationAttachmentFlag_withShipmentIdButNoConsolidations() {
+      Long shipmentId = 77L;
+      ShipmentDetails shipment = new ShipmentDetails();
+      shipment.setConsolidationList(Set.of());
+      when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+      consolidationV3Service.updateConsolidationAttachmentFlag(true, null, shipmentId);
+      verify(consolidationDetailsDao, never()).updateConsolidationAttachmentFlag(anyBoolean(), anyLong());
+    }
+
+    @Test
+    void testUpdateConsolidationAttachmentFlag_whenDaoThrowsException() {
+      doThrow(new RuntimeException("DB error"))
+              .when(consolidationDetailsDao)
+              .updateConsolidationAttachmentFlag(true, 123L);
+      IllegalArgumentException ex = assertThrows(
+              IllegalArgumentException.class,
+              () -> consolidationV3Service.updateConsolidationAttachmentFlag(true, 123L, null)
+      );
+      assertEquals("DB error", ex.getMessage());
+    }
 }

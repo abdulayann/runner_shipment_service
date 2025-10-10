@@ -625,7 +625,7 @@ public class PackingV3Service implements IPackingV3Service {
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
         log.info("Starting bulk packing update for module={} isFromQuote={} requestSize={}", module, isFromQuote, packingRequestList.size());
         log.debug("PackingRequestList: {}", packingRequestList);
-
+        module = validateEligibilityForConsoleAndUpdateModule(module, packingRequestList);
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
@@ -691,6 +691,20 @@ public class PackingV3Service implements IPackingV3Service {
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private String validateEligibilityForConsoleAndUpdateModule(String module, List<PackingV3Request> packingRequest) {
+        if (module.equalsIgnoreCase(Constants.CONSOLIDATION) && !CollectionUtils.isEmpty(packingRequest)) {
+            ConsolidationDetails consolidationDetails = packingValidationV3Util.validateConsolidation(packingRequest.get(0));
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            if (null == consolidationDetails || null == consolidationDetails.getTransportMode() || !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())
+                    || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAllowPackageEditInConsole())) {
+                log.info("Bulk packing update is restricted for module={} isRunnerV3Enabled = {} isAllowPackageEditInConsole={}", module, shipmentSettingsDetails.getIsRunnerV3Enabled(), shipmentSettingsDetails.getIsAllowPackageEditInConsole());
+                throw new ValidationException("User is not allowed to perform this action");
+            }
+            return SHIPMENT;
+        }
+        return module;
     }
 
     private static class RequestSplit {
@@ -857,6 +871,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse deleteBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+        module = validateEligibilityForConsoleAndUpdateModule(module, packingRequestList);
         packingValidationV3Util.validateDeleteBulkRequest(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Extract unique packing IDs from the request
