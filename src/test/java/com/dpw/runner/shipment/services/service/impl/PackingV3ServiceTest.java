@@ -62,6 +62,7 @@ import org.springframework.data.jpa.domain.Specification;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -72,6 +73,7 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("java:S5778")
 @ExtendWith({MockitoExtension.class})
 @Execution(CONCURRENT)
 class PackingV3ServiceTest extends CommonMocks {
@@ -1956,4 +1958,95 @@ class PackingV3ServiceTest extends CommonMocks {
         assertEquals(response.getId(), actual.getId());
         verify(packingDao).save(packing);
     }
+
+    private String invokeValidate(String module, List<PackingV3Request> requestList) throws Exception {
+        Method method = PackingV3Service.class
+                .getDeclaredMethod("validateEligibilityForConsoleAndUpdateModule", String.class, List.class);
+        method.setAccessible(true);
+        return (String) method.invoke(packingV3Service, module, requestList);
+    }
+
+    @Test
+    void testReturnModule_whenNotConsolidation() throws Exception {
+        String result = invokeValidate("SHIPMENT", Collections.emptyList());
+        assertEquals("SHIPMENT", result);
+    }
+
+    @Test
+    void testReturnModule_whenEmptyPackingList() throws Exception {
+        String result = invokeValidate(Constants.CONSOLIDATION, Collections.emptyList());
+        assertEquals(Constants.CONSOLIDATION, result);
+    }
+
+    @Test
+    void testReturnShipment_whenValidData() throws Exception {
+        request = new PackingV3Request();
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(packingValidationV3Util.validateConsolidation(request)).thenReturn(consolidationDetails);
+        when(consolidationDetails.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_AIR);
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(settings.getIsAllowPackageEditInConsole()).thenReturn(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        String result = invokeValidate(Constants.CONSOLIDATION, List.of(request));
+        assertEquals("SHIPMENT", result);
+    }
+
+    @Test
+    void testThrowValidationException_whenTransportModeNull() {
+        request = new PackingV3Request();
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getTransportMode()).thenReturn(null);
+        when(packingValidationV3Util.validateConsolidation(request)).thenReturn(consolidationDetails);
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                invokeValidated(List.of(request))
+        );
+        assertEquals("User is not allowed to perform this action", ex.getMessage());
+    }
+
+    @Test
+    void testThrowValidationException_whenTransportModeNotAir() {
+        request = new PackingV3Request();
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getTransportMode()).thenReturn("SEA");
+        when(packingValidationV3Util.validateConsolidation(request)).thenReturn(consolidationDetails);
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(settings.getIsAllowPackageEditInConsole()).thenReturn(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                invokeValidated(List.of(request))
+        );
+        assertEquals("User is not allowed to perform this action", ex.getMessage());
+    }
+
+    @Test
+    void testThrowValidationException_whenIsAllowPackageEditFalse() {
+        request = new PackingV3Request();
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getTransportMode()).thenReturn(Constants.TRANSPORT_MODE_AIR);
+        when(packingValidationV3Util.validateConsolidation(request)).thenReturn(consolidationDetails);
+        ShipmentSettingsDetails settings = mock(ShipmentSettingsDetails.class);
+        when(settings.getIsAllowPackageEditInConsole()).thenReturn(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                invokeValidated(List.of(request))
+        );
+        assertEquals("User is not allowed to perform this action", ex.getMessage());
+    }
+
+    private void invokeValidated(List<PackingV3Request> requestList) throws Exception {
+        Method method = PackingV3Service.class
+                .getDeclaredMethod("validateEligibilityForConsoleAndUpdateModule", String.class, List.class);
+        method.setAccessible(true);
+        try {
+            method.invoke(packingV3Service, Constants.CONSOLIDATION, requestList);
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof Exception) {
+                throw (Exception) e.getCause();
+            }
+            throw e;
+        }
+    }
+
 }
