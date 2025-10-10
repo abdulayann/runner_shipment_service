@@ -7,6 +7,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -26,9 +27,12 @@ import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.RevenueChargeDto;
+import com.dpw.runner.shipment.services.dto.request.billing.RevenueChargesRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -165,6 +169,7 @@ public class HblService implements IHblService {
         old.setHblCargo(hbl.getHblCargo());
         old.setHblContainer(hbl.getHblContainer());
         old.setHblNotifyParty(hbl.getHblNotifyParty());
+        old.setHblRevenueCharges(hbl.getHblRevenueCharges());
         try {
             hbl = hblDao.save(old);
             hblSync(hbl);
@@ -462,12 +467,20 @@ public class HblService implements IHblService {
                 hbl.setHblNotifyParty(mapShipmentPartiesToHBL(shipmentDetails.get().getAdditionalDetails() != null ? shipmentDetails.get().getAdditionalDetails().getNotifyParty() : null));
                 break;
 
+            case HBL_REVENUE_CHARGES:
+                // Reset revenue charges by fetching fresh data from billing
+                List<HblRevenueChargeDto> freshCharges = fetchRevenueChargesFromBilling(shipmentDetails.get().getId());
+                hbl.setHblRevenueCharges(freshCharges);
+                log.info("Reset revenue charges for HBL {}, fetched {} charges", request.getId(), freshCharges.size());
+                break;
+
             case ALL:
                 Hbl newHbl = getDefaultHblFromShipment(shipmentDetails.get());
                 hbl.setHblData(newHbl.getHblData());
                 hbl.setHblCargo(newHbl.getHblCargo());
                 hbl.setHblContainer(newHbl.getHblContainer());
                 hbl.setHblNotifyParty(newHbl.getHblNotifyParty());
+                hbl.setHblRevenueCharges(newHbl.getHblRevenueCharges());
                 break;
 
         }
@@ -475,15 +488,69 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
 
+    private HblRevenueChargeDto convertBillingChargeToHblCharge(RevenueChargeDto billingCharge) {
+        // Combine charge code and description: "EIR - EIR Charges"
+        String combinedCharges = billingCharge.getChargeTypeCode() + " - " + billingCharge.getChargeTypeDescription();
+
+        return HblRevenueChargeDto.builder()
+                .guid(UUID.randomUUID())
+                .charges(combinedCharges)
+                .currency(billingCharge.getOverseasCurrency())
+                .value(billingCharge.getOverseasAmount())
+                .selected(false) // Default not selected
+                .chargeCode(billingCharge.getChargeTypeCode())
+                .build();
+    }
+
+IBillingServiceAdapter billingServiceAdapter;
+    private List<HblRevenueChargeDto> fetchRevenueChargesFromBilling(Long shipmentId) {
+        try {
+            Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
+            if (shipment.isEmpty()) {
+                log.warn("Shipment not found for ID: {}", shipmentId);
+                return new ArrayList<>();
+            }
+
+            String shipmentGuid = shipment.get().getGuid().toString();
+            log.info("Fetching revenue charges for shipment GUID: {}", shipmentGuid);
+
+            RevenueChargesRequest request = RevenueChargesRequest.builder()
+                    .shipmentGuid(Long.valueOf(shipmentGuid))
+                    .build();
+
+            List<RevenueChargeDto> billingCharges = billingServiceAdapter.getRevenueChargesForShipment(request);
+
+            log.info("Fetched {} revenue charges for shipment {} (GUID: {})",
+                    billingCharges != null ? billingCharges.size() : 0, shipmentId, shipmentGuid);
+
+            if (billingCharges != null && !billingCharges.isEmpty()) {
+                return billingCharges.stream()
+                        .map(this::convertBillingChargeToHblCharge)
+                        .collect(Collectors.toList());
+            }
+
+        } catch (Exception e) {
+            log.error("Error fetching revenue charges for shipment {}: {}", shipmentId, e.getMessage(), e);
+        }
+
+        return new ArrayList<>();
+    }
+
     private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
         List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
         List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null);
+        List<HblRevenueChargeDto> revenueCharges = new ArrayList<>();
+        if (shipmentDetails.getAdditionalDetails() != null &&
+                Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsRatedBL())) {
+            revenueCharges = fetchRevenueChargesFromBilling(shipmentDetails.getId());
+        }
 
         return Hbl.builder().shipmentId(shipmentDetails.getId())
                 .hblData(hblData).hblCargo(hblCargos)
                 .hblContainer(hblContainers).hblNotifyParty(hblParties)
+                .hblRevenueCharges(revenueCharges)
                 .build();
     }
 
@@ -496,6 +563,7 @@ public class HblService implements IHblService {
                 .hblContainer(request.getContainers())
                 .hblNotifyParty(request.getNotifyParties())
                 .hblFreightsAndCharges(request.getFreightsAndCharges())
+                .hblRevenueCharges(request.getRevenueCharges())
                 .build();
     }
 
@@ -505,6 +573,7 @@ public class HblService implements IHblService {
         response.setContainers(hbl.getHblContainer());
         response.setNotifyParties(hbl.getHblNotifyParty());
         response.setFreightsAndCharges(hbl.getHblFreightsAndCharges());
+        response.setRevenueCharges(hbl.getHblRevenueCharges());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
         return response;

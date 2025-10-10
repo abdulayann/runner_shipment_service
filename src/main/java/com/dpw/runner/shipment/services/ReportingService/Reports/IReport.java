@@ -59,6 +59,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequ
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -1844,6 +1845,55 @@ public abstract class IReport {
         }
 
         dictionary.put(BL_CHARGES, freightChargesList);
+    }
+
+    public void populateFreightsAndCharges1(Map<String, Object> dictionary, Hbl hbl) {
+
+        if (Objects.nonNull(hbl) && Objects.nonNull(hbl.getShipmentId())) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
+
+            if (!shipmentDetails.isPresent() || Objects.isNull(shipmentDetails.get().getAdditionalDetails()))
+                return;
+
+            if (Boolean.TRUE.equals(shipmentDetails.get().getAdditionalDetails().getIsRatedBL())) {
+                List<HblRevenueChargeDto> revenueCharges = hbl.getHblRevenueCharges();
+
+                // ✅ PROCESS ONLY SELECTED CHARGES
+                processSelectedRevenueCharges(revenueCharges, dictionary);
+
+            } else {
+                dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
+            }
+        }
+    }
+
+    /**
+     * Process only selected revenue charges for printing
+     */
+    private void processSelectedRevenueCharges(List<HblRevenueChargeDto> revenueCharges, Map<String, Object> dictionary) {
+        try {
+            if (revenueCharges != null) {
+                // ✅ FILTER ONLY SELECTED CHARGES
+                List<Map<String, Object>> selectedCharges = revenueCharges.stream()
+                        .filter(charge -> Boolean.TRUE.equals(charge.getSelected()))
+                        .map(charge -> {
+                            Map<String, Object> chargeData = new HashMap<>();
+                            chargeData.put("Charges", charge.getCharges());
+                            chargeData.put("Currency", charge.getCurrency());
+                            chargeData.put("Value", charge.getValue() != null ?
+                                    charge.getValue().toPlainString() : "0.00");
+                            return chargeData;
+                        })
+                        .collect(Collectors.toList());
+
+                // ✅ ADD TO DICTIONARY FOR TEMPLATE
+                dictionary.put("BLCharges", selectedCharges);
+
+                log.info("Added {} selected revenue charges to BL template", selectedCharges.size());
+            }
+        } catch (Exception e) {
+            log.error("Error processing selected revenue charges: {}", e.getMessage());
+        }
     }
 
 

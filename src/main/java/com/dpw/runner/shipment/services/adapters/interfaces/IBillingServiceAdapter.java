@@ -1,13 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
@@ -48,4 +42,6 @@ public interface IBillingServiceAdapter {
     ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
 
     LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request);
+    List<RevenueChargeDto> getRevenueChargesForShipment(RevenueChargesRequest request);
+
 }

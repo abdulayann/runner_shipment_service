@@ -351,7 +351,7 @@ public class HblReport extends IReport {
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
-        populateFreightsAndCharges(dictionary, hblModel.blObject, hblModel.shipment);
+        populateFreightsAndCharges1(dictionary, hblModel.blObject);
 
         addIssueDateField(dictionary, hblModel);
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);

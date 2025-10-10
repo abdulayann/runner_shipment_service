@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -562,6 +563,64 @@ public class ReportService implements IReportService {
         }
     }
 
+    /**
+     * Validate revenue charges for rated BL before report generation
+     */
+    private void validateRevenueChargesForRatedBL(ReportRequest reportRequest) {
+        String reportInfo = reportRequest.getReportInfo();
+
+        if (!List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo)) {
+            return;
+        }
+
+        try {
+            Long requestId = Long.parseLong(reportRequest.getReportId());
+
+            // Find HBL by ID or by shipment ID
+            Optional<Hbl> hblOpt = hblDao.findById(requestId);
+            if (hblOpt.isEmpty()) {
+                List<Hbl> hbls = hblDao.findByShipmentId(requestId);
+                if (!hbls.isEmpty()) {
+                    hblOpt = Optional.of(hbls.get(0));
+                }
+            }
+
+            if (hblOpt.isEmpty()) {
+                throw new ValidationException("HBL not found");
+            }
+
+            Hbl hbl = hblOpt.get();
+            Optional<ShipmentDetails> shipmentOpt = shipmentDao.findById(hbl.getShipmentId());
+            if (shipmentOpt.isEmpty()) return;
+
+            ShipmentDetails shipment = shipmentOpt.get();
+
+            // Validate for rated BL
+            if (shipment.getAdditionalDetails() != null &&
+                    Boolean.TRUE.equals(shipment.getAdditionalDetails().getIsRatedBL())) {
+
+                List<HblRevenueChargeDto> revenueCharges = hbl.getHblRevenueCharges();
+
+                if (revenueCharges == null || revenueCharges.isEmpty()) {
+                    throw new ValidationException("Since it is a rated BL, please choose at least 1 Bill Charge");
+                }
+
+                long selectedCount = revenueCharges.stream()
+                        .filter(charge -> Boolean.TRUE.equals(charge.getSelected()))
+                        .count();
+
+                if (selectedCount == 0) {
+                    throw new ValidationException("Since it is a rated BL, please choose at least 1 Bill Charge");
+                }
+            }
+
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Revenue charges validation skipped: {}", e.getMessage());
+        }
+    }
+
     private void setPrintWithoutTranslation(IReport report, ReportRequest reportRequest) {
         if (report instanceof ArrivalNoticeReport) {
             ((ArrivalNoticeReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
@@ -897,6 +956,7 @@ public class ReportService implements IReportService {
     private Map<String, Object> getDataRetrivedForHblReport(IReport report, ReportRequest reportRequest, HblReport vHblReport) throws RunnerException {
         Map<String, Object> dataRetrived;
         validateReleaseTypeForReport(reportRequest);
+        validateRevenueChargesForRatedBL(reportRequest);
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
 
             // Verify if the specified implication (HBLPR) exists for the report's ID.

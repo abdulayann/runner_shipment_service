@@ -22,4 +22,5 @@ public class BillingServiceUrlConfig {
     private Boolean enableBillingIntegration;
     private String getBillByEntity;
     private String billChargesFilter;
+
 }
