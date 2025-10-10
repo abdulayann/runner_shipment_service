@@ -5366,13 +5366,13 @@ public abstract class IReport {
         addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
         addConsolidationCutoffFields(dict, consolidationDetails);
+        dict.forEach((a,b) -> System.out.println(" key : " + a + " value : " + b));
     }
 
     /*
         populate cutoff dates in dictionary.
      */
     private void addConsolidationCutoffFields(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
-
         dict.put(C_TERMINAL, convertToDPWDateFormat(consolidationDetails.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_VGM, convertToDPWDateFormat(consolidationDetails.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_SI, convertToDPWDateFormat(consolidationDetails.getShipInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
