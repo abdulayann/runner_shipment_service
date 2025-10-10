@@ -623,6 +623,7 @@ public class PackingV3Util {
                 .subLineNo(packingRequest.getSubLineNo())
                 .productCode(packingRequest.getProductCode())
                 .shipmentOrderId(packingRequest.getShipmentOrderId())
+                .orderGuid(packingRequest.getOrderGuid())
                 .build();
     }
 
@@ -711,6 +712,7 @@ public class PackingV3Util {
                 .subLineNo(orderLineResponse.getSubLineNo())
                 .productCode(orderLineResponse.getProductCode())
                 .shipmentOrderId(shipmentOrderId)
+                .orderGuid(orderLineResponse.getOrderGuid())
                 .orderLineId(orderLineResponse.getOrderLineId())
                 .orderLineGuid(orderLineResponse.getOrderLineGuid())
                 .shipmentId(orderLineResponse.getShipmentId())
