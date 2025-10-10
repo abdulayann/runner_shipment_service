@@ -487,7 +487,13 @@ public class ReportConstants {
     public static final String CONSOL_AIRCRAFT_TYPE = "ConsolAircraftType";
     public static final String CONSOL_FLIGHT_CARRIER = "ConsolFlightCarrier";
     public static final String CONSOL_NOTIFY_ADDRESS = "ConsolNotifyAddress";
-
+    public static final String C_TERMINAL = "C_Terminal";
+    public static final String C_VGM = "C_VGM";
+    public static final String C_SI = "C_SI";
+    public static final String C_EMP_PICK = "C_EmpPick";
+    public static final String C_REEFER = "C_Reefer";
+    public static final String C_LAT = "C_LAT";
+    public static final String C_DG = "C_DG";
 
         /*
             Tenant fields

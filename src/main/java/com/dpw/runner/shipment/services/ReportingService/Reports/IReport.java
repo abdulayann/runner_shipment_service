@@ -102,7 +102,14 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DESTINATION_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DG;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_EMP_PICK;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_LAT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_ORIGIN_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_REEFER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_SI;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_TERMINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_VGM;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DANGEROUS_GOODS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_INSTRUCTIONS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TO_ADDRESS_LL;
@@ -5358,6 +5365,21 @@ public abstract class IReport {
         addAgentDetails(dict, C_ORIGIN_AGENT, consolidationDetails.getSendingAgent());
         addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
+        addConsolidationCutoffFields(dict, consolidationDetails);
+    }
+
+    /*
+        populate cutoff dates in dictionary.
+     */
+    private void addConsolidationCutoffFields(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+
+        dict.put(C_TERMINAL, convertToDPWDateFormat(consolidationDetails.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_VGM, convertToDPWDateFormat(consolidationDetails.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_SI, convertToDPWDateFormat(consolidationDetails.getShipInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_EMP_PICK, convertToDPWDateFormat(consolidationDetails.getEarliestEmptyEquPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_REEFER, convertToDPWDateFormat(consolidationDetails.getReeferCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_LAT, convertToDPWDateFormat(consolidationDetails.getLatDate(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_DG, convertToDPWDateFormat(consolidationDetails.getHazardousBookingCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
     }
 
     // Adds simple scalar fields and nested allocation/quantity-related values
@@ -5655,13 +5677,13 @@ public abstract class IReport {
     }
 
     private void addCutoffFields(Map<String, Object> dictionary, ShipmentDetails details) {
-        dictionary.put(S_TERMINAL, convertToDPWDateFormat(details.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
-        dictionary.put(S_VGM, convertToDPWDateFormat(details.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
-        dictionary.put(S_SI, convertToDPWDateFormat(details.getShippingInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
-        dictionary.put(S_EAR_EPY_EQ_PICK, convertToDPWDateFormat(details.getEarliestEmptyEquipmentPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
+        dictionary.put(S_TERMINAL, convertToDPWDateFormat(details.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dictionary.put(S_VGM, convertToDPWDateFormat(details.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dictionary.put(S_SI, convertToDPWDateFormat(details.getShippingInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dictionary.put(S_EAR_EPY_EQ_PICK, convertToDPWDateFormat(details.getEarliestEmptyEquipmentPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
-        dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
+        dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dictionary.put(S_DG, convertToDPWDateFormat(details.getDgCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
     }
