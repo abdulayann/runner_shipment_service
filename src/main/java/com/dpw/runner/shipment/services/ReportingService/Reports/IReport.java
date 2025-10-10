@@ -5366,7 +5366,6 @@ public abstract class IReport {
         addAgentDetails(dict, C_DESTINATION_AGENT, consolidationDetails.getReceivingAgent());
         addBranchAndTriangulationDetails(dict, consolidationDetails);
         addConsolidationCutoffFields(dict, consolidationDetails);
-        dict.forEach((a,b) -> System.out.println(" key : " + a + " value : " + b));
     }
 
     /*
