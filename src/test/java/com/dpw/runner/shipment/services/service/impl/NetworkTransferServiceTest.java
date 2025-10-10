@@ -17,10 +17,10 @@ import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferV3Service;
@@ -88,9 +88,9 @@ class NetworkTransferServiceTest extends CommonMocks{
     @Mock
     private V1ServiceUtil v1ServiceUtil;
     @Mock
-    private ConsolidationV3Service consolidationV3Service;
+    private ConsolidationService consolidationService;
     @Mock
-    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    private ShipmentService shipmentService;
     @Mock
     private EntityTransferV3Service entityTransferV3Service;
 
@@ -726,8 +726,8 @@ class NetworkTransferServiceTest extends CommonMocks{
                 ))
                 .build();
 
-        ConsolidationDetailsV3Response consolidationDetailsV3Response =
-                new ConsolidationDetailsV3Response();
+        ConsolidationDetailsResponse consolidationDetailsResponse =
+                new ConsolidationDetailsResponse();
 
         ShipmentDetailsResponse shipmentDetailsResponse1 = new ShipmentDetailsResponse();
         ShipmentDetailsResponse shipmentDetailsResponse2 = new ShipmentDetailsResponse();
@@ -741,17 +741,17 @@ class NetworkTransferServiceTest extends CommonMocks{
 
 //        when(networkTransferService.getAllMasterDataForNT(anyMap())).thenReturn(ResponseHelper.buildSuccessResponse());
 
-        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsV3Response.class)))
-                .thenReturn(consolidationDetailsV3Response);
+        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsResponse.class)))
+                .thenReturn(consolidationDetailsResponse);
 
-        when(consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response))
+        when(consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse))
                 .thenReturn(consolMasterData);
 
         when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails.getShipmentsList().iterator().next()), anySet(), any(ShipmentDetailsResponse.class)))
                 .thenReturn(shipmentDetailsResponse1)
                 .thenReturn(shipmentDetailsResponse2);
 
-        when(shipmentServiceImplV3.fetchAllMasterDataByKey(any(), any()))
+        when(shipmentService.fetchAllMasterDataByKey(any(), any()))
                 .thenReturn(shipmentMasterData1)
                 .thenReturn(shipmentMasterData2);
 
@@ -764,8 +764,8 @@ class NetworkTransferServiceTest extends CommonMocks{
 
         // Verify interactions
         verify(jsonHelper).convertValue(requestPayload, ConsolidationDetails.class);
-        verify(consolidationV3Service).fetchAllMasterDataByKey(consolidationDetailsV3Response);
-        verify(shipmentServiceImplV3, times(1)).fetchAllMasterDataByKey(any(), any());
+        verify(consolidationService).fetchAllMasterDataByKey(consolidationDetailsResponse);
+        verify(shipmentService, times(1)).fetchAllMasterDataByKey(any(), any());
     }
 
     @Test
@@ -778,15 +778,15 @@ class NetworkTransferServiceTest extends CommonMocks{
                 .shipmentsList(Collections.emptySet())
                 .build();
 
-        ConsolidationDetailsV3Response consolidationDetailsV3Response =
-                new ConsolidationDetailsV3Response();
+        ConsolidationDetailsResponse consolidationDetailsResponse =
+                new ConsolidationDetailsResponse();
         Map<String, Object> consolMasterData = Map.of("keyX", "valueX");
 
         when(jsonHelper.convertValue(requestPayload, ConsolidationDetails.class))
                 .thenReturn(consolidationDetails);
-        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsV3Response.class)))
-                .thenReturn(consolidationDetailsV3Response);
-        when(consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response))
+        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsResponse.class)))
+                .thenReturn(consolidationDetailsResponse);
+        when(consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse))
                 .thenReturn(consolMasterData);
 
         // Act
@@ -796,7 +796,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
-        verify(shipmentServiceImplV3, never()).fetchAllMasterDataByKey(any(), any());
+        verify(shipmentService, never()).fetchAllMasterDataByKey(any(), any());
     }
 
 

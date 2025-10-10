@@ -85,10 +85,10 @@ public class NetworkTransferService implements INetworkTransferService {
     private EntityTransferV3Service entityTransferV3Service;
 
     @Autowired @Lazy
-    private ConsolidationV3Service consolidationV3Service;
+    private ConsolidationService consolidationService;
 
     @Autowired @Lazy
-    private  ShipmentServiceImplV3 shipmentServiceImplV3;
+    private  ShipmentService shipmentService;
 
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
@@ -785,10 +785,10 @@ public class NetworkTransferService implements INetworkTransferService {
         long start = System.currentTimeMillis();
         List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null), createFieldClassDto(ArrivalDepartureDetails.class, "arrivalDetails."), createFieldClassDto(ArrivalDepartureDetails.class, "departureDetails.")));
         includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null))));
-        includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS_V3);
-        ConsolidationDetailsV3Response consolidationDetailsV3Response = (ConsolidationDetailsV3Response) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsV3Response());
+        includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS);
+        ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsResponse());
 
-        Map<String, Object> consolMasterDataMap = consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response);
+        Map<String, Object> consolMasterDataMap = consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse);
         masterDataMap.put(consolidationDetails.getConsolidationNumber(), consolMasterDataMap);
 
 
@@ -809,7 +809,7 @@ public class NetworkTransferService implements INetworkTransferService {
                             createFieldClassDto(AdditionalDetails.class, "additionalDetails.")
                     )
             ));
-            includeColumnsShipment.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS_V3);
+            includeColumnsShipment.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS);
 
             // Create response object with included fields
             ShipmentDetailsResponse shipmentDetailsResponse =
@@ -826,7 +826,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
             // Fetch Master Data for this shipment
             Map<String, Object> shipmentMasterDataMap =
-                    shipmentServiceImplV3.fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+                    shipmentService.fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
 
             // Add shipment-wise master data to the global consolMasterDataMap
             masterDataMap.put(shipmentDetails.getShipmentId(), shipmentMasterDataMap);
