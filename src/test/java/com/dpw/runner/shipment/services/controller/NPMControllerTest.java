@@ -98,6 +98,36 @@ class NPMControllerTest {
     }
 
     @Test
+    void fetchContractsWithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchContracts2WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchContracts3WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void fetchContract() throws RunnerException {
         // Mock
         when(npmService.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse());
