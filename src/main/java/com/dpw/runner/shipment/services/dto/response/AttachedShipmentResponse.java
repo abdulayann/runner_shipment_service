@@ -15,7 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Builder
-@Schema("Attached Shipment Response Model")
+@Schema(description = "Attached Shipment Response Model")
 public class AttachedShipmentResponse implements IRunnerResponse {
 
     private Long attachedShipmentId;

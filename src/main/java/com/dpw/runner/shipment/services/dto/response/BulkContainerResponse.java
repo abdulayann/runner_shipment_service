@@ -11,7 +11,7 @@ import lombok.ToString;
 
 @Data
 @Builder
-@Schema("Bulk Container Response Model")
+@Schema(description = "Bulk Container Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

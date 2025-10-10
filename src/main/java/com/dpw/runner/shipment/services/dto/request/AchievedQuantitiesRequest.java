@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Achieved Quantities Request Model")
+@Schema(description = "Achieved Quantities Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

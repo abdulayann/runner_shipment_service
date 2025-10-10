@@ -13,7 +13,7 @@ import lombok.Setter;
 
 @Data
 @Setter
-@Schema("Container Response Model")
+@Schema(description = "Container Response Model")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

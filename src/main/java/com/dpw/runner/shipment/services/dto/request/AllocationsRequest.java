@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Allocations Request Model")
+@Schema(description = "Allocations Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
