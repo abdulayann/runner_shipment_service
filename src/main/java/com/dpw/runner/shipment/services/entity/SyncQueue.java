@@ -1,15 +1,14 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.JdbcTypeCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.type.SqlTypes;
 
 
 @Entity
@@ -20,7 +19,6 @@ import jakarta.persistence.Table;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 public class SyncQueue extends MultiTenancy {
 
     @Column(name = "module_type")
@@ -32,7 +30,7 @@ public class SyncQueue extends MultiTenancy {
     @Column(name = "sync_tenant_id")
     private Integer syncTenantId;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "sync_data")
     private String data;
 

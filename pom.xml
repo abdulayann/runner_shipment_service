@@ -51,11 +51,11 @@
             <version>4.5.13</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.sun.mail</groupId>-->
-<!--            <artifactId>jakarta.mail</artifactId>-->
-<!--            <version>2.1.2</version> &lt;!&ndash; use Jakarta version &ndash;&gt;-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.1</version>
+        </dependency>
 
 <!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.sun.mail/javax.mail &ndash;&gt;-->
 <!--        <dependency>-->
@@ -290,17 +290,17 @@
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-commons</artifactId>
-            <version>1.2.1.PRE-RELEASE</version>
+            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-quartz</artifactId>
-            <version>1.2.1.PRE-RELEASE</version>
+            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-messaging-quartz</artifactId>
-            <version>1.2.1.PRE-RELEASE</version>
+            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.quartz-scheduler</groupId>-->
@@ -349,6 +349,12 @@
         <repository>
             <id>dpw.base</id>
             <url>https://dpwhotfsonline.pkgs.visualstudio.com/DTLP/_packaging/dpw.base/maven/v1</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--            </snapshots>-->
         </repository>
         <repository>
             <id>repository.spring.release</id>
@@ -370,16 +376,6 @@
             <id>spring-milestone</id>
             <name>Spring Maven MILESTONE Repository</name>
             <url>https://repo.spring.io/milestone</url>
-        </repository>
-        <repository>
-            <id>runner-artifactory</id>
-            <url>https://dpwhotfsonline.pkgs.visualstudio.com/DTLP/_packaging/runner-artifactory/maven/v1</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
         </repository>
     </repositories>
     <pluginRepositories>

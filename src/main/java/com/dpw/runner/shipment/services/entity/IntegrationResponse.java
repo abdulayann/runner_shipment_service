@@ -6,12 +6,13 @@ import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
 import jakarta.persistence.*;
+import org.hibernate.type.SqlTypes;
 
 
 @Entity
@@ -23,7 +24,6 @@ import jakarta.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE integration_responses SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class IntegrationResponse extends MultiTenancy {
@@ -42,7 +42,7 @@ public class IntegrationResponse extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "response_message", columnDefinition = "jsonb")
     private String response_message;
 

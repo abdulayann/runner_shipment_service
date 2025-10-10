@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -34,11 +33,12 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -48,7 +48,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 @Table(name = "dps_event")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @NoArgsConstructor
 @AllArgsConstructor
 @SQLDelete(sql = "UPDATE dps_event SET is_deleted = true WHERE id=?")
@@ -109,7 +108,7 @@ public class DpsEvent {
     @BatchSize(size = 50)
     private List<String> ruleMatchedFieldList;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "dpsFieldData", columnDefinition = "jsonb")
     private List<DpsFieldData> dpsFieldData;
 
@@ -132,11 +131,11 @@ public class DpsEvent {
     @Column(name = "transaction_id", nullable = false)
     private String transactionId;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "username_list", columnDefinition = "jsonb")
     private List<String> usernameList;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tasks", columnDefinition = "jsonb")
     private List<Object> tasks;
 

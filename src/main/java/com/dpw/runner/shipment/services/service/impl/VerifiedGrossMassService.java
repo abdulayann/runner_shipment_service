@@ -61,7 +61,7 @@ import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassUtil;
 import com.dpw.runner.shipment.services.utils.v3.VerifiedGrossMassValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
