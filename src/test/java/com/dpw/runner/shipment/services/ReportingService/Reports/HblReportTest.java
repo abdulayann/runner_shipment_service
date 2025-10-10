@@ -850,8 +850,12 @@ class HblReportTest extends CommonMocks {
         assertEquals(expectedLocCode, mockUnlocationsResponse.getLocCode());
     }
 
-    @Test
-    void populateDictionaryWithIsHblTrue() throws JsonProcessingException {
+    @ParameterizedTest
+    @CsvSource(value = {
+            "10, 10, 3",
+            "null, null, null"
+    }, nullValues = "null")
+    void populateDictionaryWithIsHblTrue(BigDecimal weight, BigDecimal volume, BigDecimal packs) throws JsonProcessingException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
         HblModel hblModel = new HblModel();
         hblModel.setIsHbl(true);
@@ -956,11 +960,11 @@ class HblReportTest extends CommonMocks {
         packingModel.setCommodity("123");
         packingModel.setHazardous(true);
         packingModel.setIsTemperatureControlled(true);
-        packingModel.setWeight(BigDecimal.TEN);
-        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setWeight(weight);
+        packingModel.setVolume(volume);
         packingModel.setWeightUnit("KG");
         packingModel.setVolumeUnit("M3");
-        packingModel.setPacks("2");
+        packingModel.setPacks(packs == null ? null: packs.toString());
         packingModel.setPacksType("Bag");
         packingModel.setContainerId(22L);
         shipmentModel.setPackingList(Arrays.asList(packingModel));
@@ -970,8 +974,10 @@ class HblReportTest extends CommonMocks {
         containerModel.setContainerCode("20GP");
         containerModel.setContainerNumber("CONT3233323");
         containerModel.setContainerCount(1L);
-        containerModel.setGrossWeight(BigDecimal.TEN);
-        containerModel.setGrossVolume(BigDecimal.TEN);
+        containerModel.setGrossWeight(weight);
+        containerModel.setGrossVolume(volume);
+        containerModel.setPacks(packs == null ? null: packs.toString());
+        containerModel.setPacksType("Bag");
         containerModel.setGrossWeightUnit("KG");
         containerModel.setGrossVolumeUnit("M3");
         containerModel.setDescriptionOfGoods("DESC");
