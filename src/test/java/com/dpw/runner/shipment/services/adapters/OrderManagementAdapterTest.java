@@ -574,13 +574,18 @@ class OrderManagementAdapterTest {
         OrderManagementDTO orderManagementDTO1 = OrderManagementDTO.builder().orderId("abc").orderNumber("ord1").build();
         response.setData(List.of(orderManagementDTO1));
         HttpHeaders headers = new HttpHeaders();
-        Map<String, Object> criteria = new HashMap<>();
-        criteria.put("shipmentId", "SHP000125865");
+        Map<String, Object> filter = new HashMap<>();
+        filter.put("field", "shipmentId");
+        filter.put("operator", "exact");
+        filter.put("value", "SHP000125865");
+
+        List<Map<String, Object>> advancedFilters = new ArrayList<>();
+        advancedFilters.add(filter);
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("criteria", criteria);
+        requestBody.put("advancedFilters", advancedFilters);
         requestBody.put("pageNumber", 1);
         requestBody.put("pageSize", 10000);
-        requestBody.put("orderQtyNeeded", true);
         when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
         HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
@@ -597,13 +602,18 @@ class OrderManagementAdapterTest {
         OrderManagementDTO orderManagementDTO1 = OrderManagementDTO.builder().orderId("abc").orderNumber("ord1").build();
         response.setData(List.of(orderManagementDTO1));
         HttpHeaders headers = new HttpHeaders();
-        Map<String, Object> criteria = new HashMap<>();
-        criteria.put("shipmentId", "SHP000125865");
+        Map<String, Object> filter = new HashMap<>();
+        filter.put("field", "shipmentId");
+        filter.put("operator", "exact");
+        filter.put("value", "SHP000125865");
+
+        List<Map<String, Object>> advancedFilters = new ArrayList<>();
+        advancedFilters.add(filter);
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("criteria", criteria);
+        requestBody.put("advancedFilters", advancedFilters);
         requestBody.put("pageNumber", 1);
         requestBody.put("pageSize", 10000);
-        requestBody.put("orderQtyNeeded", true);
         when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
 
         doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull", HttpMethod.POST, null, OrderListResponse.class);
