@@ -37,11 +37,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.*;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
@@ -1084,8 +1080,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         quoteResetFields.add(QuoteResetField.builder().label("Transport Mode").fieldName("transportMode").editable(false).selected(false).build());
         quoteResetFields.add(QuoteResetField.builder().label("Cargo Type").fieldName("shipmentType").editable(false).selected(false).build());
         quoteResetFields.add(QuoteResetField.builder().label("Service Type").fieldName("serviceType").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName("orgin").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName("destination").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName(ORIGIN).editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName(DESTINATION).editable(true).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build());
