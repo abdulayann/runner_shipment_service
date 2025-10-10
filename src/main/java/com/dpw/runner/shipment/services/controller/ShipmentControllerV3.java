@@ -323,7 +323,7 @@ public class ShipmentControllerV3 {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
-    @PostMapping(ApiConstants.API_RESET_QUOTE_FIELDS)
+    @GetMapping(ApiConstants.API_RESET_QUOTE_FIELDS)
     public ResponseEntity<IRunnerResponse> resetShipmentQuoteRules(@RequestParam(value = "shipmentId", required = false) Long shipmentId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.resetShipmentQuoteRules(shipmentId));
     }
