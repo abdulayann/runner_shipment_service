@@ -752,6 +752,11 @@ public class EventService implements IEventService {
             return true;
         }
 
+        if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
+            return true;
+        }
+
         if (EventConstants.VSDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
             log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
@@ -778,7 +783,7 @@ public class EventService implements IEventService {
         }
 
         if (EventConstants.CACO.contains(eventCode)
-                || EventConstants.FCGI.contains(eventCode)
+                || EventConstants.CAAW.contains(eventCode)
                 || EventConstants.INTR.contains(eventCode)
                 || EventConstants.CAFS.contains(eventCode)
                 || EventConstants.PRDE.contains(eventCode)) {
