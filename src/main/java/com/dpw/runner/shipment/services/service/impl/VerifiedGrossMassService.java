@@ -202,8 +202,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             throw new ValidationException(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_REQUEST_NULL_ERROR);
         }
 
-        Pair<Specification<VerifiedGrossMass>, Pageable> tuple = fetchData(listCommonRequest, VerifiedGrossMass.class, VerifiedGrossMassConstants.tableNames);
-        Page<VerifiedGrossMass> verifiedGrossMassPage = verifiedGrossMassDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<VerifiedGrossMass> verifiedGrossMassPage = getVerifiedGrossMasses(listCommonRequest);
         log.info(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
 
@@ -213,6 +212,12 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 filteredList,
                 verifiedGrossMassPage.getTotalPages(),
                 verifiedGrossMassPage.getTotalElements());
+    }
+
+    @Override
+    public Page<VerifiedGrossMass> getVerifiedGrossMasses(ListCommonRequest listCommonRequest) {
+        Pair<Specification<VerifiedGrossMass>, Pageable> tuple = fetchData(listCommonRequest, VerifiedGrossMass.class, VerifiedGrossMassConstants.tableNames);
+       return verifiedGrossMassDao.findAll(tuple.getLeft(), tuple.getRight());
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList, boolean getMasterData) {
