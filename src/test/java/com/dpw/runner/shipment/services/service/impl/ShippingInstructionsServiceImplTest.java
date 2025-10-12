@@ -176,6 +176,14 @@ class ShippingInstructionsServiceImplTest {
         return si;
     }
 
+    private Parties createPartyCopy(Parties original) {
+        Parties copy = new Parties();
+        copy.setId(original.getId());
+        copy.setGuid(original.getGuid());
+        // Copy other fields as needed
+        return copy;
+    }
+
     private ShippingInstruction buildEntityWithInttraParty(ShippingInstructionStatus status, EntityType entityType, Long entityId) {
         ShippingInstruction si = new ShippingInstruction();
         si.setStatus(status);
@@ -520,10 +528,29 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void deleteShippingInstructions_ShouldInvokeDao() {
-        service.deleteShippingInstructions(55L);
-        verify(repository).delete(55L);
+        Long shippingInstructionId = 11L;
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(shippingInstructionId);
+
+        when(repository.findById(shippingInstructionId)).thenReturn(Optional.of(shippingInstruction));
+        service.deleteShippingInstructions(shippingInstructionId);
+        verify(repository).findById(shippingInstructionId);
+        verify(repository).delete(shippingInstruction);
     }
 
+    @Test
+    void deleteShippingInstructions_ShouldThrowValidationException_WhenSINotFound() {
+        Long shippingInstructionId = 11L;
+
+        when(repository.findById(shippingInstructionId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            service.deleteShippingInstructions(shippingInstructionId);
+        });
+
+        assertEquals("SI not found with Id: 11", exception.getMessage());
+        verify(repository).findById(shippingInstructionId);
+        verify(repository, never()).delete(any(ShippingInstruction.class));
+    }
     // ========== FREIGHT DETAILS TESTS ==========
 
     @Test
@@ -804,23 +831,27 @@ class ShippingInstructionsServiceImplTest {
 // ========== MISSING PARTIES SETUP TESTS ==========
 
     @Test
-    void setPartiesNumber_copiesAllPartiesFromCarrierBooking() {
+    void setPartiesNumber_copiesAllPartiesFromCarrierBooking() throws Exception {
+        // Arrange
         ShippingInstruction si = new ShippingInstruction();
         CarrierBooking cb = new CarrierBooking();
 
-        // Setup all possible parties
         Parties consignee = new Parties();
         consignee.setId(1L);
         consignee.setGuid(UUID.randomUUID());
+
         Parties shipper = new Parties();
         shipper.setId(2L);
         shipper.setGuid(UUID.randomUUID());
+
         Parties forwardingAgent = new Parties();
         forwardingAgent.setId(3L);
         forwardingAgent.setGuid(UUID.randomUUID());
+
         Parties contract = new Parties();
         contract.setId(4L);
         contract.setGuid(UUID.randomUUID());
+
         Parties requester = new Parties();
         requester.setId(5L);
         requester.setGuid(UUID.randomUUID());
@@ -831,13 +862,16 @@ class ShippingInstructionsServiceImplTest {
         cb.setContract(contract);
         cb.setRequester(requester);
 
-        assertDoesNotThrow(() -> {
-            Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setPartiesNumber", ShippingInstruction.class, CarrierBooking.class);
-            method.setAccessible(true);
-            method.invoke(service, si, cb);
-        });
+        when(jsonHelper.convertValue(any(Parties.class), eq(Parties.class)))
+                .thenAnswer(invocation -> {
+                    Parties original = invocation.getArgument(0);
+                    return createPartyCopy(original);
+                });
 
-        // Verify all parties are copied and IDs are nullified
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setPartiesNumber", ShippingInstruction.class, CarrierBooking.class);
+        method.setAccessible(true);
+        method.invoke(service, si, cb);
+
         assertNotNull(si.getConsignee());
         assertNotNull(si.getShipper());
         assertNotNull(si.getForwardingAgent());
@@ -849,6 +883,8 @@ class ShippingInstructionsServiceImplTest {
         assertNull(si.getForwardingAgent().getId());
         assertNull(si.getContract().getId());
         assertNull(si.getRequestor().getId());
+
+        verify(jsonHelper, times(5)).convertValue(any(Parties.class), eq(Parties.class));
     }
 
 // ========== MISSING GET BY ID TESTS ==========
