@@ -60,7 +60,7 @@ import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -643,7 +643,7 @@ class HblReportTest extends CommonMocks {
         hblModel.setShipment(shipmentDetails);
 
         Map<String, Object> dict = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dict, hbl, hblModel.shipment);
+        hblReport.populateRevenueCharges(dict, hbl, hblModel.shipment);
         assertFalse(dict.isEmpty());
     }
 
@@ -656,7 +656,7 @@ class HblReportTest extends CommonMocks {
         hblModel.setBlObject(hbl);
 
         Map<String, Object> dict = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dict, hbl, hblModel.shipment);
+        hblReport.populateRevenueCharges(dict, hbl, hblModel.shipment);
         assertFalse(dict.isEmpty());
     }
 
@@ -664,7 +664,7 @@ class HblReportTest extends CommonMocks {
     void testPopulateFreightsAndCharges_nullHbl() {
 
         Map<String, Object> dict = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dict, null, null);
+        hblReport.populateRevenueCharges(dict, null, null);
         assertTrue(dict.isEmpty());
     }
 
@@ -678,18 +678,17 @@ class HblReportTest extends CommonMocks {
         additionalDetails.setIsRatedBL(true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
 
-        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        HblRevenueChargeDto hblFreightsAndCharges = new HblRevenueChargeDto();
         hblFreightsAndCharges.setCharges("100");
-        hblFreightsAndCharges.setChargeType("PREPAID");
-        hblFreightsAndCharges.setValue(11.00);
+        hblFreightsAndCharges.setValue(BigDecimal.valueOf(11.00));
         hblFreightsAndCharges.setCurrency("INR");
-        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+        hbl.setHblRevenueCharges(List.of(hblFreightsAndCharges));
         HblModel hblModel = new HblModel();
         hblModel.setBlObject(hbl);
 
         Map<String, Object> dictionary = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dictionary, hbl, hblModel.shipment);
-        assertTrue(dictionary.containsKey("freightsAndCharges")
+        hblReport.populateRevenueCharges(dictionary, hbl, hblModel.shipment);
+        assertTrue(dictionary.containsKey("revenueCharges")
                 || !dictionary.isEmpty(), "Should populate dictionary with charges");
     }
 
@@ -706,15 +705,14 @@ class HblReportTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(additionalDetails);
         hblModel.setShipment(shipmentDetails);
 
-        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
+        HblRevenueChargeDto hblFreightsAndCharges = new HblRevenueChargeDto();
         hblFreightsAndCharges.setCharges("100");
-        hblFreightsAndCharges.setChargeType("COLLECT");
-        hblFreightsAndCharges.setValue(11.00);
-        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+        hblFreightsAndCharges.setValue(BigDecimal.valueOf(11.00));
+        hbl.setHblRevenueCharges(List.of(hblFreightsAndCharges));
 
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
@@ -729,15 +727,16 @@ class HblReportTest extends CommonMocks {
         additionalDetails.setIsRatedBL(true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
 
-        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
-        hblFreightsAndCharges.setCharges("100");
-        hblFreightsAndCharges.setChargeType("COLLECT");
+        HblRevenueChargeDto hblFreightsAndCharges = new HblRevenueChargeDto();
+        hblFreightsAndCharges.setCharges("100 - Description");
         hblFreightsAndCharges.setCurrency("USD");
-        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+        hblFreightsAndCharges.setValue(BigDecimal.valueOf(100.00));
+        hblFreightsAndCharges.setChargeCode("VNM");
+        hbl.setHblRevenueCharges(List.of(hblFreightsAndCharges));
 
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
@@ -752,14 +751,13 @@ class HblReportTest extends CommonMocks {
         additionalDetails.setIsRatedBL(true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
 
-        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
-        hblFreightsAndCharges.setChargeType("COLLECT");
+        HblRevenueChargeDto hblFreightsAndCharges = new HblRevenueChargeDto();
         hblFreightsAndCharges.setCurrency("USD");
-        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+        hbl.setHblRevenueCharges(List.of(hblFreightsAndCharges));
 
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
@@ -774,22 +772,22 @@ class HblReportTest extends CommonMocks {
         additionalDetails.setIsRatedBL(true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
 
-        HblFreightsAndCharges hblFreightsAndCharges = new HblFreightsAndCharges();
-        hblFreightsAndCharges.setCharges("1001");
-        hblFreightsAndCharges.setCurrency("USD");
-        hblFreightsAndCharges.setValue(100.00);
-        hbl.setHblFreightsAndCharges(List.of(hblFreightsAndCharges));
+        HblRevenueChargeDto hblRevenueChargeDto = new HblRevenueChargeDto();
+        hblRevenueChargeDto.setCharges("1001");
+        hblRevenueChargeDto.setCurrency("USD");
+        hblRevenueChargeDto.setValue(BigDecimal.valueOf(100.00));
+        hbl.setHblRevenueCharges(List.of(hblRevenueChargeDto));
 
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
     void populateFreightsAndCharges_whenFreightsAndChargesIsNull_11() {
         Hbl hbl = new Hbl();
         hbl.setShipmentId(1L);
-        hbl.setHblFreightsAndCharges(null);
+        hbl.setHblRevenueCharges(null);
         HblModel hblModel = new HblModel();
         hblModel.setBlObject(hbl);
 
@@ -800,39 +798,39 @@ class HblReportTest extends CommonMocks {
 
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
     void whenFreightsAndChargesIsNull_thenSkipProcessing() {
         Hbl hbl = new Hbl();
         hbl.setShipmentId(1L);
-        hbl.setHblFreightsAndCharges(null);
+        hbl.setHblRevenueCharges(null);
         HblModel hblModel = new HblModel();
         hblModel.setBlObject(hbl);
 
         Map<String, Object> dictionary = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dictionary, hbl, new ShipmentModel());
+        hblReport.populateRevenueCharges(dictionary, hbl, new ShipmentModel());
 
         assertFalse(dictionary.isEmpty());
     }
 
     @Test
-    void whenFreightsAndChargesIsEmpty_thenSkipProcessing() {
+    void whenRevenueChargesIsEmpty_thenSkipProcessing() {
         Hbl hbl = new Hbl();
         hbl.setShipmentId(1L);
-        hbl.setHblFreightsAndCharges(Collections.emptyList());
+        hbl.setHblRevenueCharges(Collections.emptyList());
         HblModel hblModel = new HblModel();
         hblModel.setBlObject(hbl);
 
         Map<String, Object> dictionary = new HashMap<>();
-        hblReport.populateFreightsAndCharges(dictionary, hbl, hblModel.shipment);
+        hblReport.populateRevenueCharges(dictionary, hbl, hblModel.shipment);
 
         assertFalse(dictionary.isEmpty());
     }
 
     @Test
-    void populateFreightsAndCharges_whenRatedBLThrowsValidationError() {
+    void populateRevenueCharges_whenRatedBLThrowsValidationError() {
         Hbl hbl = new Hbl();
         hbl.setShipmentId(4L);
         HblModel hblModel = new HblModel();
@@ -842,16 +840,14 @@ class HblReportTest extends CommonMocks {
         AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
         additionalDetails.setIsRatedBL(true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
-
-        hbl.setHblFreightsAndCharges(new ArrayList<>());
-
+        hbl.setHblRevenueCharges(new ArrayList<>());
         Map<String, Object> dictionary = new HashMap<>();
         assertThrows(ValidationException.class,
-                () -> hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails));
+                () -> hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails));
     }
 
     @Test
-    void populateFreightsAndCharges_whenIsRatedBLFalse() {
+    void populateRevenueCharges_whenIsRatedBLFalse() {
 
         Hbl hbl = new Hbl();
         hbl.setShipmentId(2L);
@@ -864,7 +860,7 @@ class HblReportTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(additionalDetails);
         Map<String, Object> dictionary = new HashMap<>();
 
-        hblReport.populateFreightsAndCharges(dictionary, hbl, shipmentDetails);
+        hblReport.populateRevenueCharges(dictionary, hbl, shipmentDetails);
         assertFalse(dictionary.isEmpty());
     }
 

@@ -233,7 +233,7 @@ public class SeawayBillReport extends IReport {
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
         dict.put(BL_TOTAL_PACKS_COUNT, model.blObject.getHblData().getTotalUnitsReceivedByCarrier());
         populateBlTransportSectionDetails(model.blObject.getHblData(), dict);
-        populateFreightsAndCharges(dict, model.blObject, model.shipment);
+        populateRevenueCharges(dict, model.blObject, model.shipment);
     }
 
     private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {

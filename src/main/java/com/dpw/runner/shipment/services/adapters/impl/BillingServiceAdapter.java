@@ -9,12 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity.BillCharge;
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.*;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargeCostDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargeRevenueDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.BillChargesRequest;
@@ -22,17 +17,8 @@ import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadR
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillChargeRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillConfiguration;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest.ExternalBillRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDateRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
-import com.dpw.runner.shipment.services.dto.response.billing.BillingSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
@@ -82,6 +68,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import static com.dpw.runner.shipment.services.utils.V1AuthHelper.getHeaders;
 
 @Service
 @Slf4j
@@ -146,7 +134,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         String url = billingBaseUrl + getInvoiceData;
         double start = System.currentTimeMillis();
-        HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
+        HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, getHeaders());
         var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
         log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
         BillingSummary billingSummary = new BillingSummary();
@@ -203,7 +191,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Override
     public List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummary();
-        HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, getHeaders());
         return fetchBillingSummary(url, httpEntity);
     }
 
@@ -300,7 +288,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Override
     public List<BillChargesBaseResponse> fetchBillCharges(BillChargesFilterRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillChargesFilter();
-        HttpEntity<BillChargesFilterRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<BillChargesFilterRequest> httpEntity = new HttpEntity<>(request, getHeaders());
         ParameterizedTypeReference<BillingListResponse<BillChargesBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<BillChargesBaseResponse> billingListResponse = executePostRequest(url, httpEntity, responseType);
@@ -319,7 +307,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Override
     public BillBaseResponse fetchBill(BillRetrieveRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getGetBillByEntity();
-        HttpEntity<BillRetrieveRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<BillRetrieveRequest> httpEntity = new HttpEntity<>(request, getHeaders());
         ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
         };
         BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);
@@ -331,9 +319,42 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     @Override
+    public List<RevenueChargeDto> getRevenueChargesForShipment(RevenueChargesRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingRevenueChargesList(); //  /invoice/api/v3/external-bill-charge/revenue/list"
+        HttpEntity<RevenueChargesRequest> httpEntity = new HttpEntity<>(request, getHeaders());
+
+        ParameterizedTypeReference<RevenueChargesResponse> responseType = new ParameterizedTypeReference<>() {};
+
+        try {
+            ResponseEntity<RevenueChargesResponse> responseEntity = restTemplate.exchange(
+                    url, HttpMethod.POST, httpEntity, responseType);
+            RevenueChargesResponse response = responseEntity.getBody();
+            if (response != null && Boolean.TRUE.equals(response.getSuccess()) && response.getData() != null) {
+                log.info("Successfully fetched {} revenue charges", response.getData().size());
+                // Limit to max 150 charges as per requirement
+                List<RevenueChargeDto> charges = response.getData();
+                if (charges.size() > 150) {
+                    log.warn("Revenue charges exceeded 150 limit. Truncating to 150.");
+                    charges = charges.subList(0, 150);
+                }
+                return charges;
+            } else {
+                log.warn("No revenue charges found or API call failed. Success: {}, Message: {}",
+                        response != null ? response.getSuccess() : "null",
+                        response != null ? response.getMessage() : "null");
+                return Collections.emptyList();
+            }
+
+        } catch (Exception e) {
+            log.error("Error fetching revenue charges: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public List<ChargeTypeBaseResponse> fetchChargeTypes(ChargeTypeFilterRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getChargeTypeFilter();
-        HttpEntity<ChargeTypeFilterRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<ChargeTypeFilterRequest> httpEntity = new HttpEntity<>(request, getHeaders());
         ParameterizedTypeReference<BillingListResponse<ChargeTypeBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<ChargeTypeBaseResponse> listResponse = executePostRequest(url, httpEntity, responseType);
@@ -349,7 +370,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Override
     public LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getLastPostedInvoiceDate();
-        HttpEntity<LastPostedInvoiceDateRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        HttpEntity<LastPostedInvoiceDateRequest> httpEntity = new HttpEntity<>(request, getHeaders());
         ParameterizedTypeReference<BillingEntityResponse> responseType = new ParameterizedTypeReference<>() {
         };
         BillingEntityResponse billingEntityResponse = executePostRequest(url, httpEntity, responseType);

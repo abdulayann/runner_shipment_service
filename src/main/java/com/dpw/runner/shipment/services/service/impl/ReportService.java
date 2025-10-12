@@ -896,7 +896,7 @@ public class ReportService implements IReportService {
 
     private Map<String, Object> getDataRetrivedForHblReport(IReport report, ReportRequest reportRequest, HblReport vHblReport) throws RunnerException {
         Map<String, Object> dataRetrived;
-        validateReleaseTypeForReport(reportRequest);
+         validateReleaseTypeForReport(reportRequest);
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
 
             // Verify if the specified implication (HBLPR) exists for the report's ID.

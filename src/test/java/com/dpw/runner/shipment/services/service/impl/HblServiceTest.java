@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -18,9 +19,12 @@ import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.billing.RevenueChargeDto;
+import com.dpw.runner.shipment.services.dto.request.billing.RevenueChargesRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -60,6 +64,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -102,6 +107,10 @@ class HblServiceTest extends CommonMocks {
     private ConsolidationService consolidationService;
     @Mock
     private HblService self;
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
+
+    private RevenueChargeDto sampleBillingCharge;
     private ShipmentDetails shipmentDetail;
     private HblDataDto hblData;
     private AdditionalDetails additionalDetails;
@@ -816,6 +825,7 @@ class HblServiceTest extends CommonMocks {
         response.setCargoes(hbl.getHblCargo());
         response.setContainers(hbl.getHblContainer());
         response.setNotifyParties(hbl.getHblNotifyParty());
+        response.setRevenueCharges(hbl.getHblRevenueCharges());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
         return response;
@@ -2385,6 +2395,131 @@ class HblServiceTest extends CommonMocks {
         assertNotNull(resultParty.getState());
         assertNotNull(resultParty.getZipCode());
         assertNotNull(resultParty.getCountry());
+    }
+
+    // Tests for convertBillingChargeToHblCharge method
+    @Test
+    void testConvertBillingChargeToHblCharge_WithValidData() {
+        // Given
+        RevenueChargeDto billingCharge = new RevenueChargeDto();
+        billingCharge.setId("RBCH12345");
+        billingCharge.setChargeTypeCode("ACF1");
+        billingCharge.setChargeTypeDescription("ACI1 Filing");
+        billingCharge.setOverseasCurrency("USD");
+        billingCharge.setOverseasAmount(new BigDecimal("1000.00"));
+
+        // When
+        HblRevenueChargeDto result = ReflectionTestUtils.invokeMethod(hblService, "convertBillingChargeToHblCharge", billingCharge);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("RBCH12345", result.getId());
+        assertEquals("ACF1 - ACI1 Filing", result.getCharges());
+        assertEquals("1000.00 USD", result.getCurrencyValue());
+        assertEquals(new BigDecimal("1000.00"), result.getValue());
+        assertEquals("USD", result.getCurrency());
+        assertFalse(result.getSelected());
+        assertEquals("ACF1", result.getChargeCode());
+    }
+    @Test
+    void testFetchRevenueChargesFromBilling_WithNullAmount() {
+        // Given
+        Long shipmentId = 32221L;
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(shipmentId);
+        shipment.setGuid(shipmentGuid);
+
+        RevenueChargeDto billingCharge = new RevenueChargeDto();
+        billingCharge.setId("RBCH12345");
+        billingCharge.setChargeTypeCode("ACF1");
+        billingCharge.setChargeTypeDescription("ACI1 Filing");
+        billingCharge.setOverseasCurrency("USD");
+        billingCharge.setOverseasAmount(null); // Null amount
+
+        List<RevenueChargeDto> billingCharges = List.of(billingCharge);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+        when(billingServiceAdapter.getRevenueChargesForShipment(any(RevenueChargesRequest.class)))
+                .thenReturn(billingCharges);
+
+        // When
+        List<HblRevenueChargeDto> result = ReflectionTestUtils.invokeMethod(hblService,"fetchRevenueChargesFromBilling",shipmentId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("0 USD", result.get(0).getCurrencyValue());
+    }
+
+    @Test
+    void testFetchRevenueChargesFromBilling_WithMultipleCharges() {
+        // Given
+        Long shipmentId = 32221L;
+        UUID shipmentGuid = UUID.randomUUID();
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(shipmentId);
+        shipment.setGuid(shipmentGuid);
+
+        RevenueChargeDto charge1 = new RevenueChargeDto();
+        charge1.setId("RBCH12345");
+        charge1.setChargeTypeCode("ACF1");
+        charge1.setChargeTypeDescription("ACI1 Filing");
+        charge1.setOverseasCurrency("USD");
+        charge1.setOverseasAmount(new BigDecimal("1000.00"));
+
+        RevenueChargeDto charge2 = new RevenueChargeDto();
+        charge2.setId("RBCH67890");
+        charge2.setChargeTypeCode("AFC");
+        charge2.setChargeTypeDescription("AES Filing");
+        charge2.setOverseasCurrency("EUR");
+        charge2.setOverseasAmount(new BigDecimal("500.50"));
+
+        List<RevenueChargeDto> billingCharges = List.of(charge1, charge2);
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+        when(billingServiceAdapter.getRevenueChargesForShipment(any(RevenueChargesRequest.class)))
+                .thenReturn(billingCharges);
+
+        // When
+        List<HblRevenueChargeDto> result = ReflectionTestUtils.invokeMethod(hblService,"fetchRevenueChargesFromBilling",shipmentId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // Verify first charge
+        assertEquals("ACF1 - ACI1 Filing", result.get(0).getCharges());
+        assertEquals("1000.00 USD", result.get(0).getCurrencyValue());
+
+        // Verify second charge
+        assertEquals("AFC - AES Filing", result.get(1).getCharges());
+        assertEquals("500.50 EUR", result.get(1).getCurrencyValue());
+    }
+
+    @Test
+    void resetHblRevenueChargesSuccess() throws RunnerException {
+        Long hblId = 1L;
+        HblResetRequest resetRequest = new HblResetRequest();
+        resetRequest.setId(hblId);
+        resetRequest.setResetType(HblReset.HBL_REVENUE_CHARGES);
+        completeShipment.setHouseBill("houseBill");
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetRequest);
+
+        // Mock
+        mockShipmentSettings();
+        when(hblDao.findById(hblId)).thenReturn(Optional.of(mockHbl));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(completeShipment));
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.resetHbl(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
     }
 
 }

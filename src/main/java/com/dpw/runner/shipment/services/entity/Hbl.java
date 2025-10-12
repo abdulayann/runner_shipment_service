@@ -1,11 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.*;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -51,7 +48,7 @@ public class Hbl extends MultiTenancy {
     private List<HblPartyDto> hblNotifyParty;
 
     @Type(type = "jsonb")
-    @Column(name = "hbl_freights_and_charges", columnDefinition = "jsonb")
-    private List<HblFreightsAndCharges> hblFreightsAndCharges;
+    @Column(name = "hbl_revenue_charges", columnDefinition = "jsonb")
+    private List<HblRevenueChargeDto> hblRevenueCharges;
 
 }
