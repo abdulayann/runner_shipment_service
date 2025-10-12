@@ -287,21 +287,21 @@
             <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.dpw.api</groupId>
-            <artifactId>dpw-api-commons</artifactId>
-            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
-        </dependency>
-        <dependency>
-            <groupId>com.dpw.api</groupId>
-            <artifactId>dpw-api-quartz</artifactId>
-            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
-        </dependency>
-        <dependency>
-            <groupId>com.dpw.api</groupId>
-            <artifactId>dpw-messaging-quartz</artifactId>
-            <version>1.2.1.PRE-RELEASE</version> <!-- 1.1.0.RELEASE-->
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.dpw.api</groupId>-->
+<!--            <artifactId>dpw-api-commons</artifactId>-->
+<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.dpw.api</groupId>-->
+<!--            <artifactId>dpw-api-quartz</artifactId>-->
+<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.dpw.api</groupId>-->
+<!--            <artifactId>dpw-messaging-quartz</artifactId>-->
+<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>org.quartz-scheduler</groupId>-->
 <!--            <artifactId>quartz</artifactId>-->
@@ -352,9 +352,9 @@
             <releases>
                 <enabled>true</enabled>
             </releases>
-<!--            <snapshots>-->
-<!--                <enabled>true</enabled>-->
-<!--            </snapshots>-->
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
         <repository>
             <id>repository.spring.release</id>
