@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
@@ -39,6 +41,10 @@ public class ShipmentRetrieveExternalResponse extends BaseShipmentResponse {
     private Map<String, String> textData;
     private UUID sourceGuid;
     private List<String> implicationList;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private OceanDGStatus oceanDGStatus;
     private Long bookingId;
     private Boolean isPacksAvailable = Boolean.FALSE;

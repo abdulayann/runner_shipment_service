@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -291,6 +292,9 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "shipment_order_id")
     private Long shipmentOrderId;
+
+    @Column(name = "order_guid")
+    private UUID orderGuid;
 
     @Column(name = "order_line_guid")
     private String orderLineGuid;

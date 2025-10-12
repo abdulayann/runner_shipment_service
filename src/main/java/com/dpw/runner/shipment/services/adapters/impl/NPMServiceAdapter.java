@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -59,6 +60,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
@@ -210,6 +212,31 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG),
                     LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchContractsWithFilters(CommonRequestModel commonRequestModel) {
+        try {
+            ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
+            populateAdditionalFiltersInListContractRequest(listContractsWithFilterRequest);
+            ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
+            String url = npmBaseUrl + npmContracts;
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
+            NPMContractsResponse npmContractsResponse = response.getBody();
+            List<NPMContractsResponse.NPMContractResponse> sortedContracts;
+            if(!Objects.isNull(npmContractsResponse) && !Objects.isNull(npmContractsResponse.getContracts()) && !Objects.isNull(listContractsWithFilterRequest.getSortRequest()) ) {
+                sortedContracts = sortNpmContracts(npmContractsResponse.getContracts(), listContractsWithFilterRequest.getSortRequest());
+                npmContractsResponse.setContracts(sortedContracts);
+            }
+
+            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
+            return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -1097,8 +1124,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return response.getContracts().stream().filter(c -> isValidContract(c, filterRequest)).toList();
     }
 
-    private boolean isValidContract(NPMContractsResponse.NPMContractResponse contract,
-                                    ListContractsWithFilterRequest filter) {
+    private boolean isValidContract(NPMContractsResponse.NPMContractResponse contract, ListContractsWithFilterRequest filter) {
         if (contract.getValidTill() == null || LocalDateTime.now().isAfter(contract.getValidTill())) {
             return false;
         }
@@ -1116,5 +1142,87 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return dgClass != null && !dgClass.isEmpty() && dgClass.get(0) != null;
         }
         return true;
+    }
+
+    private void populateAdditionalFiltersInListContractRequest(ListContractsWithFilterRequest filterRequest) {
+        ListContractRequest listContractRequest = filterRequest.getListContractRequest();
+
+        Map<String, Object> additionalFilters = new HashMap<>();
+        if(!Objects.isNull(filterRequest.getOrigin())) {
+            additionalFilters.put(NPMConstants.ORIGIN, filterRequest.getOrigin());
+        }
+        if(!Objects.isNull(filterRequest.getDestination())) {
+            additionalFilters.put(NPMConstants.DESTINATION, filterRequest.getDestination());
+        }
+        if(!Objects.isNull(filterRequest.getCargoType())) {
+            additionalFilters.put(NPMConstants.LOAD_TYPE, filterRequest.getCargoType());
+        }
+        if (Boolean.TRUE.equals(filterRequest.getIsDgEnabled())) {
+            additionalFilters.put(NPMConstants.COMMODITY_CLASSIFICATION, NPMConstants.HAZARDOUS);
+        }
+        if(!Objects.isNull(filterRequest.getParentContractId())) {
+            additionalFilters.put(NPMConstants.PARENT_CONTRACT_ID, filterRequest.getParentContractId());
+        }
+        if(!Objects.isNull(filterRequest.getMinTransitDays())) {
+            additionalFilters.put(NPMConstants.MIN_TRANSIT_HOURS, filterRequest.getMinTransitDays() * 24);
+        }
+        if(!Objects.isNull(filterRequest.getMaxTransitDays())) {
+            additionalFilters.put(NPMConstants.MAX_TRANSIT_HOURS, filterRequest.getMaxTransitDays() * 24);
+        }
+        listContractRequest.setAdditional_filters(additionalFilters);
+    }
+
+    private List<NPMContractsResponse.NPMContractResponse> sortNpmContracts(List<NPMContractsResponse.NPMContractResponse> contracts, SortRequest sortRequest) {
+        if (sortRequest == null || sortRequest.getFieldName() == null) {
+            return contracts;
+        }
+
+        String field = sortRequest.getFieldName();
+        boolean asc = !"desc".equalsIgnoreCase(sortRequest.getOrder());
+
+        Comparator<NPMContractsResponse.NPMContractResponse> comparator = switch (field) {
+            case "validTill" -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getValidTill,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case NPMConstants.ORIGIN -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getOrigin,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case NPMConstants.DESTINATION -> Comparator.comparing(
+                    NPMContractsResponse.NPMContractResponse::getDestination,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case CARGO_TYPE -> Comparator.comparing(
+                    c -> (c.getLoadTypes() != null && !c.getLoadTypes().isEmpty())
+                            ? c.getLoadTypes().get(0)
+                            : null,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+            case NPMConstants.MIN_TRANSIT_DAYS -> Comparator.comparing(
+                    c -> parseDoubleSafe(c.getMeta() != null ? c.getMeta().getMinTransitHours() : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case NPMConstants.MAX_TRANSIT_DAYS -> Comparator.comparing(
+                    c -> parseDoubleSafe(c.getMeta() != null ? c.getMeta().getMaxTransitHours() : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            default -> throw new IllegalArgumentException("Unsupported sort field: " + field);
+        };
+
+        if (!asc) {
+            comparator = comparator.reversed();
+        }
+        return contracts.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
+    }
+
+    private static Double parseDoubleSafe(String value) {
+        try {
+            return value != null ? Double.parseDouble(value) : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

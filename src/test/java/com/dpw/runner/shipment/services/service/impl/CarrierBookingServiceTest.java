@@ -64,6 +64,8 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.TransportLeg;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
+import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
@@ -178,6 +180,10 @@ class CarrierBookingServiceTest extends CommonMocks {
     private VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     @Mock
     private ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+    @Mock
+    private IShippingInstructionsService shippingInstructionsService;
+    @Mock
+    private IVerifiedGrossMassService verifiedGrossMassService;
 
     @Spy
     @InjectMocks
@@ -1321,10 +1327,22 @@ class CarrierBookingServiceTest extends CommonMocks {
         carrierBooking1.setId(1L);
         carrierBooking1.setCarrierBlNo("CX");
 
+        ShippingInstruction shippingInstruction1 = new ShippingInstruction();
+        shippingInstruction1.setId(1L);
+        shippingInstruction1.setEntityType(EntityType.CONSOLIDATION);
+
+        VerifiedGrossMass verifiedGrossMass1 = new VerifiedGrossMass();
+        verifiedGrossMass1.setId(1L);
+        verifiedGrossMass1.setEntityType(EntityType.CONSOLIDATION);
+
         Page<CarrierBooking> resultPage = new PageImpl<>(List.of(carrierBooking1));
+        Page<ShippingInstruction> shippingInstructionPage = new PageImpl<>(List.of(shippingInstruction1));
+        Page<VerifiedGrossMass> verifiedGrossMassPage = new PageImpl<>(List.of(verifiedGrossMass1));
 
         // Mock repository behavior
         when(carrierBookingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(resultPage);
+        when(shippingInstructionsService.getShippingInstructions(any())).thenReturn(shippingInstructionPage);
+        when(verifiedGrossMassService.getVerifiedGrossMasses(any())).thenReturn(verifiedGrossMassPage);
 
         // Mock convertEntityListToDtoList behavior
         CarrierBookingListResponse mockResponse = new CarrierBookingListResponse();

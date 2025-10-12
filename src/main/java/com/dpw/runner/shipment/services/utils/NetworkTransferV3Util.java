@@ -10,7 +10,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +46,9 @@ public class NetworkTransferV3Util {
     @Autowired
     private CommonUtils commonUtils;
 
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
+
 
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
@@ -58,17 +61,18 @@ public class NetworkTransferV3Util {
                 processInterBranchEntityCase(consolidationDetails, oldEntity);
             if(!isInterBranchConsole && oldIsInterBranchConsole)
                 processOldEntityInterBranch(consolidationDetails);
-
-            if (consolidationDetails.getTransportMode()!=null && !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) {
-                if(Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP))
-                    processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
-                            oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
-                            reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
-
-                processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
+            boolean isRaiTransferEnabled = Boolean.parseBoolean(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED));
+            if (consolidationDetails.getTransportMode() != null && (!isRaiTransferEnabled && Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))) {
+                return; // if transport mode is RAI and RAIL transfer flag is disabled, skip processing else process
             }
+            if(Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP))
+                processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                        oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                        reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
+
+            processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), ex.getMessage());
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
 
     }
@@ -191,7 +195,7 @@ public class NetworkTransferV3Util {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
                     consolidationDetails, jobType, null, isInterBranchConsole);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", LoggerHelper.sanitizeForLogs(consolidationDetails.getConsolidationNumber()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
+            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
 
     }
@@ -574,7 +578,7 @@ public class NetworkTransferV3Util {
                 processNonEligibleNTE(oldEntity);
             }
         } catch (Exception ex) {
-            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
+            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
     }
 
@@ -664,7 +668,7 @@ public class NetworkTransferV3Util {
                 triggerConsoleTransfer(shipmentDetails);
             }
         } catch (Exception e) {
-            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(e.getMessage()));
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
         }
     }
 
@@ -1001,7 +1005,7 @@ public class NetworkTransferV3Util {
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
                     null, jobType, null, false);
         } catch (Exception ex) {
-            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", LoggerHelper.sanitizeForLogs(shipmentDetails.getShipmentId()), LoggerHelper.sanitizeForLogs(ex.getMessage()));
+            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
     }
 

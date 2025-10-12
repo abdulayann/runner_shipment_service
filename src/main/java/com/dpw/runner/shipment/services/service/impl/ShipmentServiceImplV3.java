@@ -1,5 +1,69 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CLIENT_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNEE_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EQ;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_MESSAGE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ORDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.*;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -52,32 +116,13 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CloneRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -208,7 +253,40 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -234,107 +312,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CLIENT_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNEE_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.EQ;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_MESSAGE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ORDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings({"ALL", "java:S1172"})
 @Service
@@ -1085,26 +1062,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId) {
-        if(Objects.isNull(shipmentId)) {
-            log.error("ShipmentId is null with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Shipment Id Is Mandatory");
+        boolean hasMainCarriage = false;
+        if(!Objects.isNull(shipmentId)) {
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+            if(optionalShipmentDetails.isPresent()) {
+                hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
+                        .map(Routings::getCarriage)
+                        .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
+            } else {
+                log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
+            }
         }
-        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
-        if(optionalShipmentDetails.isEmpty()) {
-            log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
-        }
-        boolean hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
-                .map(Routings::getCarriage)
-                .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
 
         List<QuoteResetField> quoteResetFields = new ArrayList<>();
         quoteResetFields.add(QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Transport Mode").fieldName("transportMode").editable(false).selected(false).build());
         quoteResetFields.add(QuoteResetField.builder().label("Cargo Type").fieldName("shipmentType").editable(false).selected(false).build());
         quoteResetFields.add(QuoteResetField.builder().label("Service Type").fieldName("serviceType").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName("orgin").editable(true).selected(true).build());
-        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName("destination").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName(ORIGIN).editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName(DESTINATION).editable(true).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build());
         quoteResetFields.add(QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build());
@@ -3027,7 +3004,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         if (customerBookingRequest.getOrderManagementId() != null) {
             ShipmentDetails shipmentDetails = null;
-            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
+            shipmentDetails = orderManagementAdapter.getOrderByGuidV3(customerBookingRequest.getOrderManagementId());
 
             if (shipmentDetails != null) {
                 processShipmentRequestFromDetails(shipmentRequest, shipmentDetails);
@@ -5359,41 +5336,242 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    /**
+     * Handles attaching and detaching orders to/from a shipment.
+     *
+     * <p>This method supports three types of operations based on the {@code event} field in the request:
+     * <ul>
+     *     <li>{@link Constants#ATTACH} - Attaches the provided orders to the shipment.</li>
+     *     <li>{@link Constants#DETACH} - Detaches the provided orders from the shipment.</li>
+     *     <li>{@link Constants#DETACH_AND_ATTACH} - Detaches specified orders and attaches new orders in a single operation.</li>
+     * </ul>
+     * </p>
+     *
+     * <p>If the {@code orderDetailsList} field in the request is provided with minimal information
+     * (just order IDs), this method will internally enrich the details using {@link #prepareRequestForOrderAttachDetach(ShipmentOrderAttachDetachRequest)}.</p>
+     *
+     * <p>After performing the database operations, this method also triggers a call to the Order Management System
+     * (OMS) via {@link #triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest)} to synchronize the changes externally.</p>
+     *
+     * <p><b>Mandatory fields in {@link ShipmentOrderAttachDetachRequest}:</b>
+     * <ul>
+     *     <li>{@code shipmentGuid} - UUID of the shipment. Must not be null.</li>
+     *     <li>{@code shipmentId} - Database ID of the shipment. Required when enriching order details.</li>
+     *     <li>{@code event} - The type of operation. Must be one of ATTACH, DETACH, or DETACH_AND_ATTACH.</li>
+     *     <li>{@code orderDetailsList} or pre-populated {@code orderDetailsForAttach} / {@code orderDetailsForDetach} - List of orders to process. Must contain valid order IDs if using {@code orderDetailsList} for enrichment.</li>
+     * </ul>
+     * </p>
+     *
+     * @param attachDetachRequest the request containing shipment and order details for attach/detach operation
+     * @return {@link ResponseEntity} wrapping a {@link IRunnerResponse} indicating success
+     * @throws ValidationException if mandatory fields are missing or the event type is invalid
+     * @throws RunnerException if order enrichment fails due to missing order data in the external service
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResponseEntity<IRunnerResponse> attachDetachOrder(ShipmentOrderAttachDetachRequest attachDetachRequest) {
+    public ResponseEntity<IRunnerResponse> attachDetachOrder(ShipmentOrderAttachDetachRequest request) {
         try {
-            validateRequest(attachDetachRequest);
+            log.info("Starting attach/detach operation for shipment: {}", request.getShipmentGuid());
 
-            UUID shipmentGuid = attachDetachRequest.getShipmentGuid();
-            List<OrderDetails> orderDetailsForAttach = attachDetachRequest.getOrderDetailsForAttach();
-            List<OrderDetails> orderDetailsForDetach = attachDetachRequest.getOrderDetailsForDetach();
+            // Step 1: Validate mandatory fields
+            validateRequest(request);
 
-            if (CollectionUtils.isEmpty(orderDetailsForAttach) && CollectionUtils.isEmpty(orderDetailsForDetach)) {
-                return ResponseHelper.buildSuccessResponse(); // nothing to process
+            // Step 2: Prepare request payload if minimal order details are provided
+            prepareRequestForOrderAttachDetach(request);
+
+            // Extract prepared lists
+            List<OrderDetails> ordersToAttach = request.getOrderDetailsForAttach();
+            List<OrderDetails> ordersToDetach = request.getOrderDetailsForDetach();
+
+            // Nothing to process
+            if (CollectionUtils.isEmpty(ordersToAttach) && CollectionUtils.isEmpty(ordersToDetach)) {
+                log.info("No attach/detach operations found for shipment: {}", request.getShipmentGuid());
+                return ResponseHelper.buildSuccessResponse();
             }
 
-            var shipmentEntity = shipmentDao.findByGuid(shipmentGuid)
-                    .orElseThrow(() -> new ValidationException("Shipment doesn't exist"));
+            // Step 3: Fetch shipment entity
+            var shipmentEntity = shipmentDao.findByGuid(request.getShipmentGuid())
+                    .orElseThrow(() -> new ValidationException("Shipment not found for GUID: " + request.getShipmentGuid()));
 
+            // Step 4: Fetch existing shipment orders mapped by order GUID
             Map<UUID, ShipmentOrder> existingShipmentOrders = getShipmentOrdersByGuid(
                     shipmentOrderDao.findByShipmentId(shipmentEntity.getId())
             );
 
-            switch (attachDetachRequest.getEvent()) {
-                case Constants.ATTACH -> attachOrders(orderDetailsForAttach, existingShipmentOrders, shipmentEntity.getId());
-                case Constants.DETACH -> detachOrders(orderDetailsForDetach, existingShipmentOrders);
-                case Constants.DETACH_AND_ATTACH -> detachAndAttachOrders(orderDetailsForAttach, orderDetailsForDetach, existingShipmentOrders, shipmentEntity.getId());
-                default -> throw new ValidationException("Event must be either ATTACH or DETACH or DETACH_AND_ATTACH");
+            // Step 5: Execute the requested event operation
+            switch (request.getEvent().toUpperCase()) {
+                case Constants.ATTACH -> {
+                    log.info("Attaching orders for shipment {}: {}", shipmentEntity.getId(), ordersToAttach);
+                    attachOrders(ordersToAttach, existingShipmentOrders, shipmentEntity.getId());
+                }
+                case Constants.DETACH -> {
+                    log.info("Detaching orders for shipment {}: {}", shipmentEntity.getId(), ordersToDetach);
+                    detachOrders(ordersToDetach, existingShipmentOrders);
+                }
+                case Constants.DETACH_AND_ATTACH -> {
+                    log.info("Detaching orders {} and attaching orders {} for shipment {}",
+                            ordersToDetach, ordersToAttach, shipmentEntity.getId());
+                    detachAndAttachOrders(ordersToAttach, ordersToDetach, existingShipmentOrders, shipmentEntity.getId());
+                }
+                default -> throw new ValidationException(
+                        "Invalid event type: " + request.getEvent() + ". Must be ATTACH, DETACH, or DETACH_AND_ATTACH"
+                );
             }
 
+            // Step 6: Push shipment data to downstream services
             triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
+            log.info("Successfully completed attach/detach operation for shipment: {}", shipmentEntity.getId());
+
+            // Step 7: Trigger OMS API to synchronize attach/detach changes externally
+            triggerOrderAttachDetachToOMS(request);
+            log.info("OMS attach/detach API triggered successfully for shipment {}.", request.getShipmentGuid());
 
             return ResponseHelper.buildSuccessResponse();
 
         } catch (Exception ex) {
+            log.error("Failed to process attach/detach order for shipment {}: {}",
+                    request != null ? request.getShipmentGuid() : null, ex.getMessage(), ex);
             throw new ValidationException("Failed to process attach/detach order: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public void triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest request) {
+        if (request == null) {
+            log.warn("Cannot trigger OMS API because request is null");
+            return;
+        }
+
+        try {
+            // Map your existing ShipmentOrderAttachDetachRequest to the new AttachDetachOrderRequest DTO
+            AttachDetachOrderRequest omsRequest = AttachDetachOrderRequest.builder()
+                    .shipmentGuid(request.getShipmentGuid())
+                    .shipmentId(request.getShipmentId())
+                    .attachOrderInfo(
+                            request.getOrderDetailsForAttach() != null
+                                    ? request.getOrderDetailsForAttach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .detachOrderInfo(
+                            request.getOrderDetailsForDetach() != null
+                                    ? request.getOrderDetailsForDetach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .build();
+
+            log.info("Triggering OMS attach/detach API for shipment {} with payload: {}",
+                    request.getShipmentGuid(), omsRequest);
+
+            // Call the OMS API
+            orderManagementAdapter.callAttachDetachApi(omsRequest);
+
+        } catch (Exception ex) {
+            log.error("Failed to trigger OMS attach/detach API for shipment {}: {}",
+                    request.getShipmentGuid(), ex.getMessage(), ex);
+        }
+    }
+
+    /** Helper to map OrderDetails to OrderInfo for OMS request */
+    private AttachDetachOrderRequest.OrderInfo mapToOrderInfo(OrderDetails orderDetails) {
+        return AttachDetachOrderRequest.OrderInfo.builder()
+                .orderGuid(orderDetails.getOrderGuid())
+                .orderId(orderDetails.getOrderId())
+                .orderNumber(orderDetails.getOrderNumber())
+                .build();
+    }
+
+    /**
+     * Prepares the attach/detach request by enriching minimal order details with full order data
+     * fetched from the Order Management Service.
+     * <p>
+     * This method allows users to provide only basic identifiers (like orderId, event, and shipmentId),
+     * and automatically constructs the full payload required for further attach/detach processing.
+     *
+     * @param attachDetachRequest the input request containing minimal or partial order details
+     * @throws RunnerException if data enrichment fails or external service returns incomplete data
+     */
+    private void prepareRequestForOrderAttachDetach(ShipmentOrderAttachDetachRequest attachDetachRequest) throws RunnerException {
+        if (attachDetachRequest == null) {
+            throw new ValidationException("ShipmentOrderAttachDetachRequest cannot be null.");
+        }
+
+        List<OrderDetails> rawOrderDetailsList = attachDetachRequest.getOrderDetailsList();
+        if (ObjectUtils.isEmpty(rawOrderDetailsList)) {
+            log.info("No order details provided in the request — skipping data preparation.");
+            return;
+        }
+
+        // Extract valid orderIds for data enrichment
+        List<String> orderIds = rawOrderDetailsList.stream()
+                .map(OrderDetails::getOrderId)
+                .filter(StringUtils::isNotBlank)
+                .toList();
+
+        if (orderIds.isEmpty()) {
+            throw new ValidationException("OrderDetails must contain valid non-blank orderIds for enrichment.");
+        }
+
+        log.info("Preparing order details for enrichment. OrderIds: {}", orderIds);
+
+        // Fetch order details with order lines from external service
+        Map<String, OrderManagementDTO> orderDataById = orderManagementAdapter.fetchOrdersWithOrderLineAsMap(orderIds);
+
+        if (MapUtils.isEmpty(orderDataById)) {
+            throw new RunnerException("No order data returned from Order Management Service for orderIds: " + orderIds);
+        }
+
+        log.info("Fetched orders from Order Management Service: {}", orderDataById.keySet());
+
+        // Build enriched OrderDetails list
+        List<OrderDetails> enrichedOrderDetailsList = new ArrayList<>();
+
+        for (OrderDetails inputOrder : rawOrderDetailsList) {
+            String orderId = inputOrder.getOrderId();
+            OrderManagementDTO orderData = orderDataById.get(orderId);
+
+            if (orderData == null) {
+                log.warn("OrderId {} not found in Order Management response. Skipping.", orderId);
+                continue;
+            }
+
+            OrderDetails enrichedOrder = OrderDetails.builder()
+                    .orderNumber(orderData.getOrderNumber())
+                    .orderGuid(orderData.getGuid())
+                    .orderId(orderData.getOrderId())
+                    .orderPackings(orderData.getOrderLines())
+                    .shipmentId(attachDetachRequest.getShipmentId())
+                    .build();
+
+            enrichedOrderDetailsList.add(enrichedOrder);
+
+            // Log detailed data for debugging
+            log.info("Prepared Order: orderId={}, orderNumber={}, orderGuid={}, shipmentId={}, orderPackings={}",
+                    enrichedOrder.getOrderId(),
+                    enrichedOrder.getOrderNumber(),
+                    enrichedOrder.getOrderGuid(),
+                    enrichedOrder.getShipmentId(),
+                    Optional.ofNullable(enrichedOrder.getOrderPackings())
+                            .map(p -> p.stream().map(o -> o.getId() + ":" + o.getCommodityGroup()).toList())
+                            .orElse(Collections.emptyList()));
+        }
+
+        if (enrichedOrderDetailsList.isEmpty()) {
+            throw new RunnerException("No valid order details could be prepared — check provided orderIds: " + orderIds);
+        }
+
+        String event = attachDetachRequest.getEvent();
+        if (Constants.ATTACH.equalsIgnoreCase(event)) {
+            attachDetachRequest.setOrderDetailsForAttach(enrichedOrderDetailsList);
+        } else if (Constants.DETACH.equalsIgnoreCase(event)) {
+            attachDetachRequest.setOrderDetailsForDetach(enrichedOrderDetailsList);
+        } else {
+            throw new ValidationException("Event must be either ATTACH or DETACH.");
+        }
+
+        log.info("Order preparation completed for event '{}'. Prepared orders: {}", event,
+                enrichedOrderDetailsList.stream()
+                        .map(o -> o.getOrderId() + ":" + o.getOrderNumber())
+                        .toList());
     }
 
     private void detachAndAttachOrders(List<OrderDetails> requestedOrderDetailsForAttach,
@@ -5414,12 +5592,40 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    /**
+     * Validates the {@link ShipmentOrderAttachDetachRequest} for mandatory fields and correctness.
+     *
+     * <p>This method ensures the request has all required fields to perform attach/detach operations:
+     * <ul>
+     *     <li>{@code shipmentGuid} - UUID of the shipment. Must not be null.</li>
+     *     <li>{@code event} - Type of operation. Must be one of {@link Constants#ATTACH},
+     *     {@link Constants#DETACH}, or {@link Constants#DETACH_AND_ATTACH} (case-insensitive).</li>
+     * </ul>
+     * </p>
+     *
+     * <p>If any validation fails, a {@link ValidationException} is thrown with a descriptive message.</p>
+     *
+     * @param request the {@link ShipmentOrderAttachDetachRequest} to validate
+     * @throws ValidationException if the request is null, missing shipment GUID, or has an invalid event type
+     */
     private void validateRequest(ShipmentOrderAttachDetachRequest request) {
-        if (request == null || request.getShipmentGuid() == null) {
+        if (request == null) {
+            throw new ValidationException("Request cannot be null");
+        }
+
+        if (request.getShipmentGuid() == null) {
             throw new ValidationException("Shipment GUID cannot be null");
         }
-        if (request.getEvent() == null) {
-            throw new ValidationException("Event must be either ATTACH / DETACH / DETACH_AND_ATTACH");
+
+        String event = request.getEvent();
+        if (StringUtils.isBlank(event)) {
+            throw new ValidationException("Event must be ATTACH, DETACH, or DETACH_AND_ATTACH");
+        }
+
+        if (!Constants.ATTACH.equalsIgnoreCase(event) &&
+                !Constants.DETACH.equalsIgnoreCase(event) &&
+                !Constants.DETACH_AND_ATTACH.equalsIgnoreCase(event)) {
+            throw new ValidationException("Invalid event type: " + event);
         }
     }
 

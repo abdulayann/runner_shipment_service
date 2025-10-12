@@ -8,13 +8,7 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -172,12 +166,12 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long notifyPartyDpsAddressId;
     private List<String> implicationList;
     private Long shipmentCount;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
 
-    private String currentPartyForQuote;
     private Boolean entityTransfer;
     private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
@@ -187,6 +181,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String destinationParentContractId;
     private String destinationContractType;
     private String updatedBy;
+    private String currentPartyForQuote;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentGateInDate;
@@ -230,6 +225,9 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;

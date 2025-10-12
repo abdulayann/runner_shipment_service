@@ -102,6 +102,7 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
@@ -195,13 +196,14 @@ public class EntityTransferService implements IEntityTransferService {
     private IConsolidationMigrationV3Service consolidationMigrationV3Service;
     private IShipmentMigrationV3Service shipmentMigrationV3Service;
     private NotesUtil notesUtil;
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao,
                                  DependentServiceHelper dependentServiceHelper, IBridgeServiceAdapter bridgeServiceAdapter,
                                  IConsolidationMigrationV3Service consolidationMigrationV3Service,
-                                 IShipmentMigrationV3Service shipmentMigrationV3Service, NotesUtil notesUtil) {
+                                 IShipmentMigrationV3Service shipmentMigrationV3Service, NotesUtil notesUtil, IApplicationConfigService applicationConfigService) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -238,6 +240,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.consolidationMigrationV3Service = consolidationMigrationV3Service;
         this.shipmentMigrationV3Service = shipmentMigrationV3Service;
         this.notesUtil = notesUtil;
+        this.applicationConfigService = applicationConfigService;
     }
 
     @Transactional
@@ -1624,7 +1627,8 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void validateTransportMode(ConsolidationDetails consolidationDetails) {
-        if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_RAI)) {
+        boolean isRailTransferEnabled = Boolean.parseBoolean(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED));
+        if (!isRailTransferEnabled && Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_RAI)) {
             throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
         }
     }

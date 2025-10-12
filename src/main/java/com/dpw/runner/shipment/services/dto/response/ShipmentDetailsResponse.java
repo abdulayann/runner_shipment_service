@@ -4,11 +4,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -103,6 +99,7 @@ public class ShipmentDetailsResponse extends BaseShipmentResponse {
     private Map<String, Long> containerData;
     private Map<String, String> organizationsMasterData;
     private CustomerCategoryRates customerCategory;
+    private ShipmentDetailsQuoteDateType quoteDateType;
     private UUID sourceGuid;
     private UUID clonedGuid;
     private Long parentTenantId;
@@ -137,6 +134,10 @@ public class ShipmentDetailsResponse extends BaseShipmentResponse {
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
 
     public void addTextData(Map<String, String> dataMap) {
         if (textData == null) {
