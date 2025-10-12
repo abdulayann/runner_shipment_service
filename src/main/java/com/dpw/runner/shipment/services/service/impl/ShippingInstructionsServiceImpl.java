@@ -408,7 +408,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private String getVgmStatus(ShippingInstruction instruction) {
         VerifiedGrossMass vgmEntity = vgmDao.findByEntityIdType(instruction.getEntityType(), instruction.getEntityId());
-        if (Objects.nonNull(vgmEntity)){
+        if (Objects.nonNull(vgmEntity)) {
             return vgmEntity.getStatus().name();
         }
        return null;
