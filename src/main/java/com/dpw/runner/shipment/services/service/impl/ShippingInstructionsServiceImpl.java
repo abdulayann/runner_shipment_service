@@ -76,10 +76,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_EMPTY_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_RESPONSE_SUCCESS;
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;

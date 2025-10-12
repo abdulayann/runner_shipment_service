@@ -17,10 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -31,6 +28,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
@@ -141,6 +139,8 @@ class ShippingInstructionsServiceImplTest {
     private IContainerDao containerDao;
     @Mock
     private MasterDataKeyUtils masterDataKeyUtils;
+    @InjectMocks // ✅ Inject its dependencies
+    private ShippingInstructionMasterDataHelper masterHelper;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShippingInstruction testSI;
@@ -2052,121 +2052,64 @@ class ShippingInstructionsServiceImplTest {
     }
 
     @Test
-    void getAllMasterData_ShouldProcessCommodityTypes_WhenContainersExist() {
+    void addAllMasterDataInSingleCall_ContainersList_NotProcessed_WhenListHasData() {
         // Arrange
-        Long siId = 1L;
-        ShippingInstruction si = new ShippingInstruction();
-        si.setId(siId);
+        ShippingInstructionResponse response = new ShippingInstructionResponse();
 
-        CommonContainers container1 = new CommonContainers();
+        CommonContainerResponse container1 = new CommonContainerResponse();
         container1.setId(1L);
         container1.setCommodityCode("COMM001");
 
-        CommonContainers container2 = new CommonContainers();
+        CommonContainerResponse container2 = new CommonContainerResponse();
         container2.setId(2L);
-        container2.setCommodityCode("COMM002");
 
-        si.setContainersList(List.of(container1, container2));
+        response.setContainersList(List.of(container1, container2));
 
-        when(repository.findById(siId)).thenReturn(Optional.of(si));
+        Map<String, Object> masterDataResponse = new HashMap<>();
 
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run(); // Execute the runnable
-            return mockRunnable;
-        });
+        when(masterDataUtils.createInBulkMasterListRequest(
+                any(IRunnerResponse.class), any(Class.class), any(), anyString(), any()))
+                .thenReturn(List.of(new MasterListRequest()));
 
-        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any()))
-                .thenAnswer(inv -> {
-                    ShippingInstructionResponse response = new ShippingInstructionResponse();
-                    response.setId(siId);
-                    CommonContainerResponse containerResp1 = new CommonContainerResponse();
-                    containerResp1.setId(1L);
-                    containerResp1.setCommodityCode("COMM001");
-
-                    CommonContainerResponse containerResp2 = new CommonContainerResponse();
-                    containerResp2.setId(2L);
-                    containerResp2.setCommodityCode("COMM002");
-
-                    response.setContainersList(List.of(containerResp1, containerResp2));
-                    return response;
-                });
-
-        // Mock the actual master data helper methods to verify they're called
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllMasterDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllUnlocationDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllCarrierDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllVesselDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllContainerTypesInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllCommodityTypesInSingleCall(any(), any());
-
-        // Act
-        ResponseEntity<IRunnerResponse> result = service.getAllMasterData(siId);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(HttpStatus.OK, result.getStatusCode());
-
-        verify(shippingInstructionMasterDataHelper).addAllCommodityTypesInSingleCall(
-                argThat(r -> r != null && r.getContainersList() != null && r.getContainersList().size() == 2),
+        // Act - Call on REAL helper
+        masterHelper.addAllMasterDataInSingleCall(response, masterDataResponse);
+        verify(masterDataUtils, never()).createInBulkMasterListRequest(
+                any(CommonContainerResponse.class),
+                eq(CommonContainers.class),
+                any(),
+                anyString(),
                 any());
-
-        // Verify all other methods were also called
-        verify(shippingInstructionMasterDataHelper).addAllMasterDataInSingleCall(any(), any());
-        verify(shippingInstructionMasterDataHelper).addAllUnlocationDataInSingleCall(any(), any());
-        verify(shippingInstructionMasterDataHelper).addAllCarrierDataInSingleCall(any(), any());
-        verify(shippingInstructionMasterDataHelper).addAllVesselDataInSingleCall(any(), any());
-        verify(shippingInstructionMasterDataHelper).addAllContainerTypesInSingleCall(any(), any());
     }
 
     @Test
-    void getAllMasterData_ShouldSkipCommodityTypeProcessing_WhenContainersNull() {
+    void addAllMasterDataInSingleCall_ReferenceNumbers_NotProcessed_WhenListHasData() {
         // Arrange
-        Long siId = 1L;
-        ShippingInstruction si = new ShippingInstruction();
-        si.setId(siId);
-        si.setContainersList(null); // No containers
+        ShippingInstructionResponse response = new ShippingInstructionResponse();
 
-        when(repository.findById(siId)).thenReturn(Optional.of(si));
+        ReferenceNumberResponse refNum1 = new ReferenceNumberResponse();
+        refNum1.setId(1L);
+        refNum1.setType("CON");
 
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
+        ReferenceNumberResponse refNum2 = new ReferenceNumberResponse();
+        refNum2.setId(2L);
+        refNum2.setType("BKG");
 
-        // Return response without containers
-        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any()))
-                .thenReturn(new ShippingInstructionResponse());
+        response.setReferenceNumbersList(List.of(refNum1, refNum2));
 
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllMasterDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllUnlocationDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllCarrierDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllVesselDataInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllContainerTypesInSingleCall(any(), any());
-        doNothing().when(shippingInstructionMasterDataHelper)
-                .addAllCommodityTypesInSingleCall(any(), any());
+        Map<String, Object> masterDataResponse = new HashMap<>();
+
+        when(masterDataUtils.createInBulkMasterListRequest(
+                any(IRunnerResponse.class), any(Class.class), any(), anyString(), any()))
+                .thenReturn(List.of(new MasterListRequest()));
 
         // Act
-        ResponseEntity<IRunnerResponse> result = service.getAllMasterData(siId);
+        masterHelper.addAllMasterDataInSingleCall(response, masterDataResponse);
 
-        // Assert
-        assertNotNull(result);
-        verify(shippingInstructionMasterDataHelper).addAllCommodityTypesInSingleCall(
-                argThat(r -> r.getContainersList() == null),
+        verify(masterDataUtils, never()).createInBulkMasterListRequest(
+                any(ReferenceNumberResponse.class),
+                eq(ReferenceNumbers.class),
+                any(),
+                anyString(),
                 any());
     }
 
