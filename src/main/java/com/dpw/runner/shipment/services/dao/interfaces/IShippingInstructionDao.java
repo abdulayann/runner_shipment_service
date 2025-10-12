@@ -22,7 +22,7 @@ public interface IShippingInstructionDao {
 
     ShippingInstruction update(Long id, ShippingInstruction request);
 
-    void delete(Long id);
+    void delete(ShippingInstruction shippingInstruction);
 
     ShippingInstruction save(ShippingInstruction shippingInstruction);
 

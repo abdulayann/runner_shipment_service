@@ -53,7 +53,8 @@ public class ShippingInstructionRequest implements Serializable {
     private PartiesRequest shipper;
     private PartiesRequest consignee;
     private PartiesRequest forwardingAgent;
-
+    private PartiesRequest notifyParty;
+    private PartiesRequest requestor;
     private List<PartiesRequest> additionalParties;
     private List<FreightDetailRequest> freightDetailList;
     private List<CommonPackageRequest> commonPackagesList;

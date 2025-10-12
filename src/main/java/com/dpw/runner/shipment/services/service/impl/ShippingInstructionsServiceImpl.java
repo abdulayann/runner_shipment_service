@@ -59,6 +59,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -142,7 +143,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private INotificationService notificationService;
 
 
-
+    @Override
+    @Transactional
     public ShippingInstructionResponse createShippingInstruction(ShippingInstructionRequest info) {
         ShippingInstruction shippingInstruction = jsonHelper.convertValue(info, ShippingInstruction.class);
         shippingInstruction = validateFetchAndSetSI(shippingInstruction, true);
@@ -151,13 +153,14 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(info.getExternalEmailsList()));
         shippingInstruction.setCreateByUserEmail(UserContext.getUser().getEmail());
         shippingInstruction.setSubmitByUserEmail(UserContext.getUser().getEmail());
-        ShippingInstruction savedInfo = repository.save(shippingInstruction);
         List<Parties> additionalPartiesList = shippingInstruction.getAdditionalParties();
+        ShippingInstruction savedInfo = repository.save(shippingInstruction);
         if (additionalPartiesList != null) {
             List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(additionalPartiesList,
                     Parties.class, false), shippingInstruction.getId(), SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES);
-            savedInfo.setAdditionalParties(updatedParties);
+            shippingInstruction.setAdditionalParties(updatedParties);
         }
+
         return jsonHelper.convertValue(savedInfo, ShippingInstructionResponse.class);
     }
 
@@ -227,31 +230,31 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     private void setPartiesNumber(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
         if (Objects.nonNull(carrierBooking.getConsignee())) {
-            Parties partiesResponse = carrierBooking.getConsignee();
+            Parties partiesResponse = jsonHelper.convertValue(carrierBooking.getConsignee(), Parties.class);
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setConsignee(partiesResponse);
         }
         if (Objects.nonNull(carrierBooking.getShipper())) {
-            Parties partiesResponse = carrierBooking.getShipper();
+            Parties partiesResponse = jsonHelper.convertValue(carrierBooking.getShipper(), Parties.class);
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setShipper(partiesResponse);
         }
         if (Objects.nonNull(carrierBooking.getForwardingAgent())) {
-            Parties partiesResponse = carrierBooking.getForwardingAgent();
+            Parties partiesResponse = jsonHelper.convertValue(carrierBooking.getForwardingAgent(), Parties.class);
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setForwardingAgent(partiesResponse);
         }
         if (Objects.nonNull(carrierBooking.getContract())) {
-            Parties partiesResponse = carrierBooking.getContract();
+            Parties partiesResponse = jsonHelper.convertValue(carrierBooking.getContract(), Parties.class);
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setContract(partiesResponse);
         }
         if (Objects.nonNull(carrierBooking.getRequester())) {
-            Parties partiesResponse = carrierBooking.getRequester();
+            Parties partiesResponse = jsonHelper.convertValue(carrierBooking.getRequester(), Parties.class);
             partiesResponse.setId(null);
             partiesResponse.setGuid(null);
             shippingInstruction.setRequestor(partiesResponse);
@@ -273,19 +276,23 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void setPackingAndContainerDetails(ConsolidationDetails consolidationDetails, ShippingInstruction shippingInstruction) {
-        List<Packing> packingList = packingV3Service.getPackingsByConsolidationId(consolidationDetails.getId());
-        List<Containers> containersList = consolidationDetails.getContainersList();
-        Map<Long, Containers> containersMap = new HashMap<>();
-        if (!CollectionUtils.isEmpty(containersList)) {
-            containersMap = containersList.stream()
-                    .collect(Collectors.toMap(
-                            Containers::getId,
-                            Function.identity(),
-                            (existing, replacement) -> existing
-                    ));
+        try {
+            List<Packing> packingList = packingV3Service.getPackingsByConsolidationId(consolidationDetails.getId());
+            List<Containers> containersList = consolidationDetails.getContainersList();
+            Map<Long, Containers> containersMap = new HashMap<>();
+            if (!CollectionUtils.isEmpty(containersList)) {
+                containersMap = containersList.stream()
+                        .collect(Collectors.toMap(
+                                Containers::getId,
+                                Function.identity(),
+                                (existing, replacement) -> existing
+                        ));
+            }
+            shippingInstruction.setCommonPackagesList(setCommonPackages(packingList, containersMap));
+            shippingInstruction.setContainersList(setCommonContainers(containersList));
+        } catch (Exception e) {
+            log.error("Error in pulling container data from consolidation");
         }
-        shippingInstruction.setCommonPackagesList(setCommonPackages(packingList, containersMap));
-        shippingInstruction.setContainersList(setCommonContainers(containersList));
     }
 
     private List<CommonContainers> setCommonContainers(List<Containers> containersList) {
@@ -432,7 +439,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     public void deleteShippingInstructions(Long id) {
-        repository.delete(id);
+        log.info("ShippingInstructionService.delete() called with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        ShippingInstruction shippingInstruction = repository.findById(id)
+                .orElseThrow(() -> new ValidationException("SI not found with Id: " + id));
+        repository.delete(shippingInstruction);
+        log.info("ShippingInstructionService.delete() successful with RequestId: {} and id: {}",
+                LoggerHelper.getRequestIdFromMDC(), id);
     }
 
     public ResponseEntity<IRunnerResponse> getAllMasterData(Long shippingInstId) {
@@ -528,7 +540,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     }
 
     private void setEntityNumber(ShippingInstruction shippingInstruction) {
-        shippingInstruction.setEntityNumber(String.valueOf(shippingInstruction.getEntityId()));
+        shippingInstruction.setEntityNumber(String.valueOf(shippingInstruction.getEntityNumber()));
     }
 
     private void validateSIRequest(ShippingInstruction shippingInstruction) {
