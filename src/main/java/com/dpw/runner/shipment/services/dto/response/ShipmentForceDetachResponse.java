@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 @Data
 @Builder
-@Schema("Shipment Detach Response")
+@Schema(description = "Shipment Detach Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

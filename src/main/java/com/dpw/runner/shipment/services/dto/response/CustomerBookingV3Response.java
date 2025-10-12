@@ -23,7 +23,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Customer Booking V3 Response Model")
+@Schema(description = "Customer Booking V3 Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

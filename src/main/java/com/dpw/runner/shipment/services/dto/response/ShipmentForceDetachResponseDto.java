@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Shipment Force Detach Response")
+@Schema(description = "Shipment Force Detach Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

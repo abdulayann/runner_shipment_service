@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@Schema("Tenant Products Request Model")
+@Schema(description = "Tenant Products Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

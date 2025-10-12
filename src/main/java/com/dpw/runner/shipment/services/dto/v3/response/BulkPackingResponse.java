@@ -12,7 +12,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Bulk Packing Response Model")
+@Schema(description = "Bulk Packing Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

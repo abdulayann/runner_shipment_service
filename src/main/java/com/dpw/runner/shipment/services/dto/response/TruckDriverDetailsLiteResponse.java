@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Truck Driver Details Response Model")
+@Schema(description = "Truck Driver Details Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("MAWB Stocks Request Model")
+@Schema(description = "MAWB Stocks Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

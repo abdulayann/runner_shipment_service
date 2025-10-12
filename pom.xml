@@ -46,9 +46,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
         </dependency>
 
         <dependency>
@@ -231,7 +230,7 @@
         <dependency>
             <groupId>com.dpw.runner</groupId>
             <artifactId>runner-timezone-utils</artifactId>
-            <version>0.0.2</version>  <!-- 0.0.4-->
+            <version>0.0.4</version>  <!-- 0.0.4-->
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -287,21 +286,21 @@
             <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.dpw.api</groupId>-->
-<!--            <artifactId>dpw-api-commons</artifactId>-->
-<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.dpw.api</groupId>-->
-<!--            <artifactId>dpw-api-quartz</artifactId>-->
-<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.dpw.api</groupId>-->
-<!--            <artifactId>dpw-messaging-quartz</artifactId>-->
-<!--            <version>1.1.0.RELEASE</version> &lt;!&ndash; 1.1.0.RELEASE&ndash;&gt;-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.dpw.api</groupId>
+            <artifactId>dpw-api-commons</artifactId>
+            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+        </dependency>
+        <dependency>
+            <groupId>com.dpw.api</groupId>
+            <artifactId>dpw-api-quartz</artifactId>
+            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+        </dependency>
+        <dependency>
+            <groupId>com.dpw.api</groupId>
+            <artifactId>dpw-messaging-quartz</artifactId>
+            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.quartz-scheduler</groupId>-->
 <!--            <artifactId>quartz</artifactId>-->

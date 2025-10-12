@@ -32,7 +32,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.http.auth.AuthenticationException;
+
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

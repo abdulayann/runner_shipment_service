@@ -8,7 +8,7 @@ import lombok.*;
 import java.util.List;
 
 @Data
-@Schema("Complete Shipment Request Model")
+@Schema(description = "Complete Shipment Request Model")
 @ToString
 @Builder
 @NoArgsConstructor

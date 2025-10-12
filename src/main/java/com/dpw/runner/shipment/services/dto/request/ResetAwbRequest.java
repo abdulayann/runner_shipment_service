@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Data
-@Schema("Reset Awb Model")
+@Schema(description = "Reset Awb Model")
 @ToString
 @Builder
 @NoArgsConstructor

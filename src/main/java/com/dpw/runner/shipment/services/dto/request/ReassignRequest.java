@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-@Schema("Request for Reassign Model")
+@Schema(description = "Request for Reassign Model")
 @ToString
 @Builder
 @AllArgsConstructor

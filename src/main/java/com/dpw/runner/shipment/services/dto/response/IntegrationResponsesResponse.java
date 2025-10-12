@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Integration Responses Response Model")
+@Schema(description = "Integration Responses Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

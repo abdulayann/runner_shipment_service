@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 @Data
 @Builder
-@Schema("Routings update transport status Request Model")
+@Schema(description = "Routings update transport status Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

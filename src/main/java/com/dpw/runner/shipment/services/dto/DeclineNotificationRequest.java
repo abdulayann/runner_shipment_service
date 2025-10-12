@@ -6,7 +6,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Schema("Decline Notification Request Model")
+@Schema(description = "Decline Notification Request Model")
 @ToString
 @Builder
 @AllArgsConstructor

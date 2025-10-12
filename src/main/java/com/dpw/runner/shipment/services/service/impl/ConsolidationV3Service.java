@@ -102,7 +102,7 @@ import jakarta.persistence.criteria.Selection;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.annotation.Nullable;
 import org.modelmapper.ModelMapper;

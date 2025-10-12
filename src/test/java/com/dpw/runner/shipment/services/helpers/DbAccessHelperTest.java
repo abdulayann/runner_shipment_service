@@ -15,8 +15,12 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
-import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
-import org.hibernate.query.criteria.internal.CriteriaQueryImpl;
+//import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
+//import org.hibernate.query.criteria.internal.CriteriaQueryImpl;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Path;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +36,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.persistence.criteria.*;
+import jakarta.persistence.criteria.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -72,13 +76,13 @@ class DbAccessHelperTest {
     private CriteriaQuery<?> query;
 
     @Mock
-    private CriteriaQueryImpl criteriaQuery;
+    private CriteriaQuery<ShipmentDetails>  criteriaQuery;
 
     @Mock
     private CriteriaBuilder criteriaBuilder;
 
-    @Mock
-    private CriteriaBuilderImpl criteriaBuilderImpl;
+//    @Mock
+//    private CriteriaBuilderImpl criteriaBuilderImpl;
 
     @Mock
     private Path<?> path;
@@ -109,8 +113,8 @@ class DbAccessHelperTest {
         listCommonRequest1 = jsonTestUtility.getListRequest1();
         listCommonRequest2 = jsonTestUtility.getListRequest2();
         listCommonRequestIsEnum = jsonTestUtility.getListRequestIsEnum();
-        query = new CriteriaQueryImpl<Object>(criteriaBuilderImpl, Object.class);
-        criteriaQuery = new CriteriaQueryImpl<Object>(criteriaBuilderImpl, Object.class);
+        // Use Mockito to create mock CriteriaQuery instead of internal classes
+        query = mock(CriteriaQuery.class);
     }
 
     @Test
@@ -366,7 +370,7 @@ class DbAccessHelperTest {
     void fetchDataTableNamesNotNullPredicateLongClass() {
 
         Root<ShipmentDetails> root1 = mock(Root.class);
-        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        CriteriaQuery<ShipmentDetails> criteriaQuery = mock(CriteriaQuery.class);
         ListCommonRequest listCommonRequest4 = jsonTestUtility.getListRequest4();
         listCommonRequest4.setIncludeTbls(Arrays.asList("status"));
 
@@ -385,7 +389,7 @@ class DbAccessHelperTest {
     void fetchDataTableNamesNotNullPredicateLongClassDesc() {
 
         Root<ShipmentDetails> root1 = mock(Root.class);
-        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        CriteriaQuery<ShipmentDetails> criteriaQuery = mock(CriteriaQuery.class);
         ListCommonRequest listCommonRequest8 = jsonTestUtility.getListRequest8();
         listCommonRequest8.setIncludeTbls(Arrays.asList("status"));
 

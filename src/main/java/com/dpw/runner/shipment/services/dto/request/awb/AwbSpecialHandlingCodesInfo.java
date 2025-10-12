@@ -5,7 +5,7 @@ import lombok.*;
 
 @Data
 @Builder
-@Schema("AWB Special handling Codes Info Model")
+@Schema(description = "AWB Special handling Codes Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

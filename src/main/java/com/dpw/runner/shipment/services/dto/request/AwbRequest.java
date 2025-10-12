@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-@Schema("Awb Request Model")
+@Schema(description = "Awb Request Model")
 @ToString
 @Builder
 @NoArgsConstructor

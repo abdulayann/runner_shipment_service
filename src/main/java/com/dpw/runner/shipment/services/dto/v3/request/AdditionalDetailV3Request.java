@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@Schema("Shipment Additional Details Request Model")
+@Schema(description = "Shipment Additional Details Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Booking Charges Response Model")
+@Schema(description = "Booking Charges Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

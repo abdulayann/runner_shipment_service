@@ -7,7 +7,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Schema("Cache Request Model")
+@Schema(description = "Cache Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

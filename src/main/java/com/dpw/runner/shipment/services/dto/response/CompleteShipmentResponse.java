@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Complete Shipment Response Model")
+@Schema(description = "Complete Shipment Response Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

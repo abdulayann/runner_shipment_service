@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Data
-@Schema("Create Awb Request Model")
+@Schema(description = "Create Awb Request Model")
 @ToString
 @Builder
 @NoArgsConstructor

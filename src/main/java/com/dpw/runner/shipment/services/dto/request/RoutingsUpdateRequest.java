@@ -15,7 +15,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @Builder
-@Schema("Routings Bulk Update Request Model")
+@Schema(description = "Routings Bulk Update Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Schema(value = "Service Details List response model")
+@Schema(description = "Service Details List response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServiceDetailsListResponse implements IRunnerResponse {
     private List<ServiceDetailsResponse> serviceDetailsResponses = new ArrayList<>();

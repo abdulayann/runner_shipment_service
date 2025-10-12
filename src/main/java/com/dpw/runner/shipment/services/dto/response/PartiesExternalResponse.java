@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Parties External Response Model")
+@Schema(description = "Parties External Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

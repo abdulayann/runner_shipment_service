@@ -11,7 +11,7 @@ import lombok.ToString;
 import java.io.Serializable;
 
 @Data
-@Schema("Hbl Freights and Charges Data Model")
+@Schema(description = "Hbl Freights and Charges Data Model")
 @ToString
 @Builder
 @NoArgsConstructor

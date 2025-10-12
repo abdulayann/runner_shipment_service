@@ -10,7 +10,7 @@ import java.util.Map;
 import lombok.Data;
 
 @Data
-@Schema(value = "Packing response model")
+@Schema(description = "Packing response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PackingListResponse implements IRunnerResponse {
     private List<PackingResponse> packings = new ArrayList<>();

@@ -7,7 +7,7 @@ import lombok.*;
 
 @Data
 @Builder
-@Schema("Hbl Generate Request Model")
+@Schema(description = "Hbl Generate Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

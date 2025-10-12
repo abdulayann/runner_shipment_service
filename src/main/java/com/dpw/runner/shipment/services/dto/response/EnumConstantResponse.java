@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Enum Constant Response Model")
+@Schema(description = "Enum Constant Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

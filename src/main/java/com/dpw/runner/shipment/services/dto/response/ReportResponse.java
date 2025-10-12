@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Data
 @Builder
-@Schema("Report Response Model")
+@Schema(description = "Report Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

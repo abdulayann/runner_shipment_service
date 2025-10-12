@@ -8,7 +8,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Schema("Hbl Terms Condition Template Request Model")
+@Schema(description = "Hbl Terms Condition Template Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

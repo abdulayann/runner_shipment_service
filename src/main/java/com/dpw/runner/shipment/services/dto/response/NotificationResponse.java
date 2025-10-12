@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Notification Response")
+@Schema(description = "Notification Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

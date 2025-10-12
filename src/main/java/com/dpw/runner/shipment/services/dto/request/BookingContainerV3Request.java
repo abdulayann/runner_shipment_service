@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Schema("Booking Container Request Model")
+@Schema(description = "Booking Container Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

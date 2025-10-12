@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
-@Schema("Order Number Request Model")
+@Schema(description = "Order Number Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

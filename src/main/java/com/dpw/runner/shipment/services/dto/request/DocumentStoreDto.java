@@ -8,7 +8,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Data
-@Schema("External Document Request Model")
+@Schema(description = "External Document Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

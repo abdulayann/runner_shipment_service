@@ -27,7 +27,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.NonNull;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 

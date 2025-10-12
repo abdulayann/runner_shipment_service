@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@Schema("Booking Carriage Request Model")
+@Schema(description = "Booking Carriage Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

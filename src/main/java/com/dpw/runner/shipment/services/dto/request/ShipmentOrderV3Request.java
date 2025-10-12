@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-@Schema("Order Number Request Model V3")
+@Schema(description = "Order Number Request Model V3")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

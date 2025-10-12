@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -31,14 +32,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.LockTimeoutException;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,7 +180,7 @@ class ProductSequenceConfigDaoTest {
         ProductSequenceConfigDao spyService = spy(productSequenceConfigDao);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
         Mockito.when(productSequenceConfigRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl(productSequenceConfigList));
-        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(any());
+        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(Mockito.any(ProductSequenceConfig.class));
         List<ProductSequenceConfig> productSequenceConfigs = spyService.updateEntityFromSettings(null, 3L);
         assertEquals(new ArrayList<>(), productSequenceConfigs);
     }
@@ -189,7 +190,7 @@ class ProductSequenceConfigDaoTest {
         ProductSequenceConfigDao spyService = spy(productSequenceConfigDao);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
         Mockito.when(productSequenceConfigRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl(productSequenceConfigList));
-        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(any());
+        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(Mockito.any(ProductSequenceConfig.class));
         List<ProductSequenceConfig> productSequenceConfigs = spyService.updateEntityFromSettings(new ArrayList<>(), 3L);
         assertEquals(new ArrayList<>(), productSequenceConfigs);
     }
@@ -217,7 +218,7 @@ class ProductSequenceConfigDaoTest {
     void updateEntityFromV1Settings_ProdSeqNull() throws RunnerException {
         ProductSequenceConfigDao spyService = spy(productSequenceConfigDao);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
-        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(any());
+        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(Mockito.any(ProductSequenceConfig.class));
         List<ProductSequenceConfig> productSequenceConfigs = spyService.updateEntityFromV1Settings(null, 3L, productSequenceConfigList);
         assertEquals(new ArrayList<>(), productSequenceConfigs);
     }
@@ -226,7 +227,7 @@ class ProductSequenceConfigDaoTest {
     void updateEntityFromV1Settings_ProdSeqEmpty() throws RunnerException {
         ProductSequenceConfigDao spyService = spy(productSequenceConfigDao);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
-        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(any());
+        doThrow(new RuntimeException()).when(productSequenceConfigRepository).delete(Mockito.any(ProductSequenceConfig.class));
         List<ProductSequenceConfig> productSequenceConfigs = spyService.updateEntityFromV1Settings(new ArrayList<>(), 3L, productSequenceConfigList);
         assertEquals(new ArrayList<>(), productSequenceConfigs);
     }

@@ -8,14 +8,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -105,7 +107,7 @@ public class SailingInformation extends MultiTenancy {
     @Column(name = "last_updated_sailing_info")
     private LocalDateTime lastUpdatedSailingInfo;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "sailing_schedule_data", columnDefinition = "jsonb")
     private Map<String, Object> sailingScheduleData; // set the value first value at the time of send/amend booking, second value on confirmation from carrier
 }

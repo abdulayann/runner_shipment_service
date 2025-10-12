@@ -6,7 +6,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Schema("Request for transfer Model")
+@Schema(description = "Request for transfer Model")
 @ToString
 @Builder
 @AllArgsConstructor

@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 //@Builder
-@Schema("Hbl Response Model")
+@Schema(description = "Hbl Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

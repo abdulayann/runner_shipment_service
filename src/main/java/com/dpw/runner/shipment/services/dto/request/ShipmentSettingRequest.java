@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@Schema("Shipment Settings Request Model")
+@Schema(description = "Shipment Settings Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

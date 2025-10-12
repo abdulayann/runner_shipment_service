@@ -112,35 +112,35 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @Override
-    protected ResponseEntity<Object> handleNoHandlerFoundException(
-            NoHandlerFoundException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+//    @Override
+//    protected ResponseEntity<Object> handleNoHandlerFoundException(
+//            NoHandlerFoundException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+//
+//        return handleExceptionInternal(ex, "Path URL does not exist, Please check the URL", headers, status, request);
+//    }
 
-        return handleExceptionInternal(ex, "Path URL does not exist, Please check the URL", headers, status, request);
-    }
-
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers,
-                                                                  HttpStatus status, WebRequest request) {
-        List<String> errors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(x-> x.getField() + ": " + x.getDefaultMessage())
-                .toList();
-        String errorMessages = errors.size() > 1
-                ? String.join(" | ", errors)
-                : errors.get(0);
-        log.error("Return Response with data {}", errors);
-        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errorMessages);
-        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
-    }
-
-    @Override
-    public final ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
-                                                                     HttpStatus status, WebRequest request) {
-        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
-        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
-    }
+//    @Override
+//    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers,
+//                                                                  HttpStatus status, WebRequest request) {
+//        List<String> errors = ex.getBindingResult()
+//                .getFieldErrors()
+//                .stream()
+//                .map(x-> x.getField() + ": " + x.getDefaultMessage())
+//                .toList();
+//        String errorMessages = errors.size() > 1
+//                ? String.join(" | ", errors)
+//                : errors.get(0);
+//        log.error("Return Response with data {}", errors);
+//        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errorMessages);
+//        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
+//    }
+//
+//    @Override
+//    public final ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
+//                                                                     HttpStatus status, WebRequest request) {
+//        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
+//        return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
+//    }
     @ExceptionHandler({SectionVisibilityException.class})
     private ResponseEntity<IRunnerResponse> handleSectionVisibilityException(final SectionVisibilityException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);

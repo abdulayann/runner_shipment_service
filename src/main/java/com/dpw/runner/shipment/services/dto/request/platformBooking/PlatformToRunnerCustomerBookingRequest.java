@@ -17,7 +17,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Customer Booking Request Model for platform")
+@Schema(description = "Customer Booking Request Model for platform")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

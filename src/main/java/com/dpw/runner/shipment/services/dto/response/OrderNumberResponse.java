@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Order Number Response")
+@Schema(description = "Order Number Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

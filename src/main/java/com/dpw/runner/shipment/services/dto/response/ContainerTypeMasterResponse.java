@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Data
 @Setter
-@Schema("Container Type Master Response Model")
+@Schema(description = "Container Type Master Response Model")
 public class ContainerTypeMasterResponse {
 
     @JsonProperty("Id")

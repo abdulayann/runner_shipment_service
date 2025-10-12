@@ -10,7 +10,7 @@ import java.util.Map;
 
 @Data
 @Builder
-@Schema("Enum Response Model")
+@Schema(description = "Enum Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Bulk Reference Number Response Model")
+@Schema(description = "Bulk Reference Number Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

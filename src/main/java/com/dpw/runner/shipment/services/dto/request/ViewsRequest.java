@@ -10,7 +10,7 @@ import lombok.ToString;
 import java.util.Map;
 
 @Getter
-@Schema("Views Request Model")
+@Schema(description = "Views Request Model")
 @ToString
 @Data
 @SuppressWarnings("java:S1948")

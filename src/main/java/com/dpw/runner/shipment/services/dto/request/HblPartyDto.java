@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Hbl Parties Model")
+@Schema(description = "Hbl Parties Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

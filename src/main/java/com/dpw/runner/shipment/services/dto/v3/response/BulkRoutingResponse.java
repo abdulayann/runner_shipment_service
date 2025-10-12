@@ -15,7 +15,7 @@ import java.util.Map;
 
 @Data
 @Builder
-@Schema("Bulk Routing Response Model")
+@Schema(description = "Bulk Routing Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

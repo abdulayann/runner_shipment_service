@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.entity.LogsHistory;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -77,13 +78,13 @@ class NetworkTransferDaoTest {
     @Test
     void testDelete(){
         networkTransferDao.delete(any());
-        verify(networkTransferRepository, times(1)).delete(any());
+        verify(networkTransferRepository, times(1)).delete(Mockito.any(NetworkTransfer.class));
     }
 
     @Test
     void testDeleteAndLog(){
         networkTransferDao.deleteAndLog(networkTransfer, Constants.SHIPMENT);
-        verify(networkTransferRepository, times(1)).delete(any());
+        verify(networkTransferRepository, times(1)).delete(Mockito.any(NetworkTransfer.class));
     }
 
     @Test

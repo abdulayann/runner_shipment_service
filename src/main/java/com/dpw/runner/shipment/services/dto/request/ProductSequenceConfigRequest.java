@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@Schema("Product Sequence Config Request Model")
+@Schema(description = "Product Sequence Config Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

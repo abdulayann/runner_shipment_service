@@ -18,10 +18,10 @@ import jakarta.persistence.MappedSuperclass;
 @Data
 @MappedSuperclass
 @FilterDef(name = MultiTenancy.TENANT_FILTER_NAME,
-        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = "long"),
+        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = Long.class),
         defaultCondition = MultiTenancy.TENANT_COLUMN + " = :" + "tenant_id")
 @FilterDef(name = MultiTenancy.MULTI_BRANCH_FILTER_NAME,
-        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = "long"),
+        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = Long.class),
         defaultCondition = MultiTenancy.TENANT_COLUMN + " IN (:" + MultiTenancy.TENANT_PARAMETER_NAME + ")")
 @Filters({@Filter(name = MultiTenancy.TENANT_FILTER_NAME),@Filter(name = MultiTenancy.MULTI_BRANCH_FILTER_NAME)})
 @EntityListeners(TenantEntityListener.class)

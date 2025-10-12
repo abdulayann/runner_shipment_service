@@ -12,7 +12,7 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema("Clone Flags Request")
+@Schema(description = "Clone Flags Request")
 public class CloneFlagsRequest extends CommonRequest implements IRunnerRequest {
 
     // Header

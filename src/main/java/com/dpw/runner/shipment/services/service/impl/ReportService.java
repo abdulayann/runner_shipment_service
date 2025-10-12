@@ -61,7 +61,7 @@ import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import jakarta.annotation.Nullable;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;

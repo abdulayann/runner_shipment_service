@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Network Transfer Response")
+@Schema(description = "Network Transfer Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

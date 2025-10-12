@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@Schema("Customer Booking Response Model")
+@Schema(description = "Customer Booking Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

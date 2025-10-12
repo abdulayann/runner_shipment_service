@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema("Cargo Details Response Model")
+@Schema(description = "Cargo Details Response Model")
 public class CargoDetailsResponse {
     private String transportMode;
     private String shipmentType;

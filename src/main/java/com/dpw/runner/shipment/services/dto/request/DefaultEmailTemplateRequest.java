@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@Schema("Default Email Templates Request Model")
+@Schema(description = "Default Email Templates Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

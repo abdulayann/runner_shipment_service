@@ -5,7 +5,7 @@ import lombok.*;
 
 @Setter
 @Getter
-@Schema("Cargo Details Request Model")
+@Schema(description = "Cargo Details Request Model")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

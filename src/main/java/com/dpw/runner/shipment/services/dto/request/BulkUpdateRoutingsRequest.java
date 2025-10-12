@@ -15,7 +15,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Routings Request Model")
+@Schema(description = "Routings Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

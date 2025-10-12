@@ -7,7 +7,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@Schema("Hawb Lock Settings Request Model")
+@Schema(description = "Hawb Lock Settings Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

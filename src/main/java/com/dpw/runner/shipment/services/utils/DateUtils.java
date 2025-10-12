@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.timeZone.utility.RunnerTimeZoneConvertor;
+//import com.dpw.runner.timeZone.utility.RunnerTimeZoneConvertor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,15 +20,15 @@ public class DateUtils {
         if (date == null) return null;
 
         LocalDateTime convertedUserDate = null;
-        if (BooleanUtils.toBoolean(enableTimeZone)
-                && StringUtils.isNotBlank(tenantTZ)) {
-            convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, tenantTZ);
-        } else {
-            if(StringUtils.isNotBlank(browserTZ))
-                convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, browserTZ);
-            else
-                convertedUserDate = date;
-        }
+//        if (BooleanUtils.toBoolean(enableTimeZone)
+//                && StringUtils.isNotBlank(tenantTZ)) {
+//            convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, tenantTZ);
+//        } else {
+//            if(StringUtils.isNotBlank(browserTZ))
+//                convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, browserTZ);
+//            else
+//                convertedUserDate = date;
+//        }
         return convertedUserDate;
     }
 
@@ -36,15 +36,15 @@ public class DateUtils {
         if (date == null) return null;
 
         LocalDateTime convertedUserDate = null;
-        if (BooleanUtils.toBoolean(enableTimeZone)
-                && StringUtils.isNotBlank(tenantTZ)) {
-            convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, tenantTZ);
-        } else {
-            if(StringUtils.isNotBlank(browserTZ))
-                convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, browserTZ);
-            else
-                convertedUserDate = date;
-        }
+//        if (BooleanUtils.toBoolean(enableTimeZone)
+//                && StringUtils.isNotBlank(tenantTZ)) {
+//            convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, tenantTZ);
+//        } else {
+//            if(StringUtils.isNotBlank(browserTZ))
+//                convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, browserTZ);
+//            else
+//                convertedUserDate = date;
+//        }
         return convertedUserDate;
     }
 }

@@ -7,7 +7,7 @@ import lombok.*;
 @Data
 @Builder
 @Getter
-@Schema("HblReleaseTypeMappingListRequest Request Model")
+@Schema(description = "HblReleaseTypeMappingListRequest Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

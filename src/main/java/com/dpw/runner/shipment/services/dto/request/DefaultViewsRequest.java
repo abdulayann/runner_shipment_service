@@ -10,7 +10,7 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@Schema("Views Request Model")
+@Schema(description = "Views Request Model")
 @ToString
 public class DefaultViewsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;

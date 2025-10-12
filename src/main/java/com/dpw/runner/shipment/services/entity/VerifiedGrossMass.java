@@ -9,8 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 
 import jakarta.persistence.CascadeType;
@@ -23,6 +23,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.type.SqlTypes;
+
 import java.util.List;
 
 @Entity
@@ -107,7 +109,7 @@ public class VerifiedGrossMass extends MultiTenancy {
     @JoinColumn(name = "verified_gross_mass_id")
     private List<ReferenceNumbers> referenceNumbersList;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "submitted_containers_list", columnDefinition = "jsonb")
     private List<CommonContainers> submittedContainersList;
 }

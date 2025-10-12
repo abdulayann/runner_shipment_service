@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-@Schema(value = "Network request model")
+@Schema(description = "Network request model")
 @ToString
 @Builder
 @AllArgsConstructor

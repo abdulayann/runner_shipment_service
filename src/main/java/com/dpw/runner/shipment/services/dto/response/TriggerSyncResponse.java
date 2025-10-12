@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Schema("Trigger Sync Response Model")
+@Schema(description = "Trigger Sync Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Schema(value = "Order line V3 response model")
+@Schema(description = "Order line V3 response model")
 @ToString
 @Builder
 @AllArgsConstructor

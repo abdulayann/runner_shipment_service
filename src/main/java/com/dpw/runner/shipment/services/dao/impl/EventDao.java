@@ -54,8 +54,6 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.hibernate.jpa.TypedParameterValue;
-import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -487,11 +485,11 @@ public class EventDao implements IEventDao {
                 .setParameter(5, events.getDescription())
                 .setParameter(6, events.getSource())
                 .setParameter(7, events.getTenantId())
-                .setParameter(8, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getPieces()))
-                .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getTotalPieces()))
-                .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getWeight()))
-                .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getTotalWeight()))
-                .setParameter(12, new TypedParameterValue(StandardBasicTypes.BOOLEAN, events.getIsPartial()))
+                .setParameter(8, events.getPieces())
+                .setParameter(9, events.getTotalPieces())
+                .setParameter(10, events.getWeight())
+                .setParameter(11, events.getTotalWeight())
+                .setParameter(12, events.getIsPartial())
                 .setParameter(15, events.getCreatedAt())
                 .setParameter(16, events.getUpdatedAt())
                 .setParameter(19, events.getPlaceName())
@@ -502,29 +500,29 @@ public class EventDao implements IEventDao {
                 .setParameter(25, events.getStatus());
 
         if(events.getReceivedDate() != null) {
-            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getReceivedDate())));
+            query.setParameter(13, Timestamp.valueOf(events.getReceivedDate()));
         } else {
-            query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+            query.setParameter(13, null);
         }
         if(events.getScheduledDate() != null) {
-            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getScheduledDate())));
+            query.setParameter(14, Timestamp.valueOf(events.getScheduledDate()));
         } else {
-            query.setParameter(14, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+            query.setParameter(14, null);
         }
         if(events.getEstimated() != null) {
-            query.setParameter(17, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getEstimated())));
+            query.setParameter(17, Timestamp.valueOf(events.getEstimated()));
         } else {
-            query.setParameter(17, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+            query.setParameter(17, null);
         }
         if(events.getActual() != null) {
-            query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getActual())));
+            query.setParameter(18, Timestamp.valueOf(events.getActual()));
         } else {
-            query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+            query.setParameter(18, null);
         }
         if(events.getConsolidationId() != null) {
             query.setParameter(23, events.getConsolidationId());
         } else {
-            query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
+            query.setParameter(23, null);
         }
 
         log.info("Air-messaging : executing event save native query");

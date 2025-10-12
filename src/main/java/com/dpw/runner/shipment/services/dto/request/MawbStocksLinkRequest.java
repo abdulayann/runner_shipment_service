@@ -7,7 +7,7 @@ import lombok.*;
 
 @Data
 @Builder
-@Schema("MAWB Stocks Link Request Model")
+@Schema(description = "MAWB Stocks Link Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

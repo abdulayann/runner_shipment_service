@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@Schema(value = "OrderLine create update delete request model")
+@Schema(description = "OrderLine create update delete request model")
 @ToString
 @Builder
 @AllArgsConstructor
