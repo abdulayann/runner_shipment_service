@@ -58,7 +58,6 @@ import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblFreightsAndCharges;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblRevenueChargeDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
@@ -1809,84 +1808,41 @@ public abstract class IReport {
         }
     }
 
-    public void populateFreightsAndCharges(Map<String, Object> dictionary, Hbl hbl, ShipmentModel shipment) {
+    public void populateRevenueCharges(Map<String, Object> dictionary, Hbl hbl, ShipmentModel shipment) {
+        if (Objects.isNull(hbl)) {
+            return;
+        }
+        boolean isRatedBL = Objects.nonNull(shipment) &&
+                Objects.nonNull(shipment.getAdditionalDetails()) &&
+                Boolean.TRUE.equals(shipment.getAdditionalDetails().getIsRatedBL());
 
-        if (Objects.nonNull(hbl)) {
-            if (Objects.nonNull(shipment) && Objects.nonNull(shipment.getAdditionalDetails())
-                && Boolean.TRUE.equals(shipment.getAdditionalDetails().getIsRatedBL())) {
-                List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
-
-                // Validate First Row of freight and charges is mandate if Rated BL is true
-                populateFreightsAndChargesValidation(hblFreightsAndCharges);
-            } else {
-                dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
-            }
-
-            // Process Freight and Charges and add List into Dictionary
-            List<HblFreightsAndCharges> hblFreightsAndCharges = hbl.getHblFreightsAndCharges();
-            if (Objects.nonNull(hblFreightsAndCharges) && !hblFreightsAndCharges.isEmpty()) {
-                processFreightsAndCharges(hblFreightsAndCharges, dictionary);
-            }
+        if (isRatedBL) {
+            // For rated BL: validate and process selected charges
+            List<HblRevenueChargeDto> revenueCharges = hbl.getHblRevenueCharges();
+            populateRevenueChargesValidation(revenueCharges);
+            processSelectedRevenueCharges(revenueCharges, dictionary);
+        } else {
+            // For non-rated BL: print "AS AGREED"
+            dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
         }
     }
 
-    private void processFreightsAndCharges(List<HblFreightsAndCharges> hblFreightsAndCharges,
-                                           Map<String, Object> dictionary) {
-        List<Map<String, Object>> freightChargesList = new ArrayList<>();
-
-        for (HblFreightsAndCharges freightAndCharges : hblFreightsAndCharges) {
-            Map<String, Object> currFreightAndCharges = new HashMap<>();
-            currFreightAndCharges.put(CHARGES, freightAndCharges.getCharges());
-            currFreightAndCharges.put(VALUE, freightAndCharges.getValue());
-            currFreightAndCharges.put(CURRENCY, freightAndCharges.getCurrency());
-            currFreightAndCharges.put(CHARGE_TYPE, freightAndCharges.getChargeType());
-
-            freightChargesList.add(currFreightAndCharges);
-        }
-
-        dictionary.put(BL_CHARGES, freightChargesList);
-    }
-
-    public void populateFreightsAndCharges1(Map<String, Object> dictionary, Hbl hbl) {
-
-        if (Objects.nonNull(hbl) && Objects.nonNull(hbl.getShipmentId())) {
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
-
-            if (!shipmentDetails.isPresent() || Objects.isNull(shipmentDetails.get().getAdditionalDetails()))
-                return;
-
-            if (Boolean.TRUE.equals(shipmentDetails.get().getAdditionalDetails().getIsRatedBL())) {
-                List<HblRevenueChargeDto> revenueCharges = hbl.getHblRevenueCharges();
-
-                // ✅ PROCESS ONLY SELECTED CHARGES
-                processSelectedRevenueCharges(revenueCharges, dictionary);
-
-            } else {
-                dictionary.put(BL_IS_NOT_RATED, BL_IS_NOT_RATED_VALUE);
-            }
-        }
-    }
-
-    /**
-     * Process only selected revenue charges for printing
-     */
     private void processSelectedRevenueCharges(List<HblRevenueChargeDto> revenueCharges, Map<String, Object> dictionary) {
         try {
             if (revenueCharges != null) {
-                // ✅ FILTER ONLY SELECTED CHARGES
+                // FILTER ONLY SELECTED CHARGES
                 List<Map<String, Object>> selectedCharges = revenueCharges.stream()
                         .filter(charge -> Boolean.TRUE.equals(charge.getSelected()))
                         .map(charge -> {
                             Map<String, Object> chargeData = new HashMap<>();
-                            chargeData.put("Charges", charge.getCharges());
-                            chargeData.put("Currency", charge.getCurrency());
-                            chargeData.put("Value", charge.getValue() != null ?
-                                    charge.getValue().toPlainString() : "0.00");
+                            chargeData.put(CHARGES, charge.getCharges());
+                            chargeData.put(CURRENCY, charge.getCurrency());
+                            chargeData.put(VALUE, charge.getValue());
                             return chargeData;
                         })
                         .collect(Collectors.toList());
 
-                // ✅ ADD TO DICTIONARY FOR TEMPLATE
+                // ADD TO DICTIONARY FOR TEMPLATE
                 dictionary.put("BLCharges", selectedCharges);
 
                 log.info("Added {} selected revenue charges to BL template", selectedCharges.size());
@@ -1896,20 +1852,21 @@ public abstract class IReport {
         }
     }
 
+    private void populateRevenueChargesValidation(List<HblRevenueChargeDto> hblRevenueCharges) {
+        String errorMessage = "Since it is a rated BL, please choose at least 1 Bill Charge";
 
-    private void populateFreightsAndChargesValidation(List<HblFreightsAndCharges> hblFreightsAndCharges) {
-        if (Objects.isNull(hblFreightsAndCharges) || hblFreightsAndCharges.isEmpty()) {
-            throw new ValidationException("At least one Freight & Charges row is mandatory when Rated BL is true.");
+        if (Objects.isNull(hblRevenueCharges) || hblRevenueCharges.isEmpty() ||
+                hblRevenueCharges.stream().noneMatch(charge -> Boolean.TRUE.equals(charge.getSelected()))) {
+            throw new ValidationException(errorMessage);
         }
 
-        HblFreightsAndCharges firstFreightAndCharges = hblFreightsAndCharges.get(0);
+        boolean hasInvalidSelectedCharges = hblRevenueCharges.stream()
+                .filter(charge -> Boolean.TRUE.equals(charge.getSelected()))
+                .anyMatch(charge ->
+                        Objects.isNull(charge.getCharges()) || Objects.isNull(charge.getValue()) || Objects.isNull(charge.getCurrency()));
 
-        if (Objects.isNull(firstFreightAndCharges.getCharges()) ||
-                Objects.isNull(firstFreightAndCharges.getValue()) ||
-                Objects.isNull(firstFreightAndCharges.getCurrency()) ||
-                Objects.isNull(firstFreightAndCharges.getChargeType())) {
-
-            throw new ValidationException("The first Freight & Charges row must have Charges, Value, Currency, and Type filled.");
+        if (hasInvalidSelectedCharges) {
+            throw new ValidationException("All selected revenue charges must have Charges, Value, and Currency filled.");
         }
     }
 

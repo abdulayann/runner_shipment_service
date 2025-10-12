@@ -328,12 +328,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         try {
             ResponseEntity<RevenueChargesResponse> responseEntity = restTemplate.exchange(
                     url, HttpMethod.POST, httpEntity, responseType);
-
             RevenueChargesResponse response = responseEntity.getBody();
-
             if (response != null && Boolean.TRUE.equals(response.getSuccess()) && response.getData() != null) {
                 log.info("Successfully fetched {} revenue charges", response.getData().size());
-
                 // Limit to max 150 charges as per requirement
                 List<RevenueChargeDto> charges = response.getData();
                 if (charges.size() > 150) {

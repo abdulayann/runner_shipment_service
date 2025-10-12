@@ -20,7 +20,5 @@ public class HblResponse extends HblDataDto implements IRunnerResponse {
     private List<HblCargoDto> cargoes;
     private List<HblContainerDto> containers;
     private List<HblPartyDto> notifyParties;
-    private List<HblFreightsAndCharges> freightsAndCharges;
     private List<HblRevenueChargeDto> revenueCharges;
-    private Long selectedChargesCount;
 }

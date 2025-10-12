@@ -23,6 +23,5 @@ public class HblRequest extends HblDataDto implements IRunnerRequest {
     private List<HblCargoDto> cargoes;
     private List<HblContainerDto> containers;
     private List<HblPartyDto> notifyParties;
-    private List<HblFreightsAndCharges> freightsAndCharges;
     private List<HblRevenueChargeDto> revenueCharges;
 }

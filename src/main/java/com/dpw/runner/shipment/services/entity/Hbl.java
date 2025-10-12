@@ -48,11 +48,7 @@ public class Hbl extends MultiTenancy {
     private List<HblPartyDto> hblNotifyParty;
 
     @Type(type = "jsonb")
-    @Column(name = "hbl_freights_and_charges", columnDefinition = "jsonb")
-    private List<HblFreightsAndCharges> hblFreightsAndCharges;
-
-    @Type(type = "json")
-    @Column(name = "hbl_revenue_charges", columnDefinition = "json")
+    @Column(name = "hbl_revenue_charges", columnDefinition = "jsonb")
     private List<HblRevenueChargeDto> hblRevenueCharges;
 
 }

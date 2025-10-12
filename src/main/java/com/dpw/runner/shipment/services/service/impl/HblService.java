@@ -122,6 +122,9 @@ public class HblService implements IHblService {
     @Autowired
     private IHblSync hblSync;
 
+    @Autowired
+    IBillingServiceAdapter billingServiceAdapter;
+
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -491,18 +494,21 @@ public class HblService implements IHblService {
     private HblRevenueChargeDto convertBillingChargeToHblCharge(RevenueChargeDto billingCharge) {
         // Combine charge code and description: "EIR - EIR Charges"
         String combinedCharges = billingCharge.getChargeTypeCode() + " - " + billingCharge.getChargeTypeDescription();
-
+        // Combine currency and value into one line with space
+        BigDecimal amount = billingCharge.getOverseasAmount() != null ? billingCharge.getOverseasAmount() : BigDecimal.ZERO;
+        String currencyValue = amount.toPlainString() + " " +
+                (billingCharge.getOverseasCurrency() != null ? billingCharge.getOverseasCurrency() : "");
         return HblRevenueChargeDto.builder()
-                .guid(UUID.randomUUID())
+                .id(billingCharge.getId())
                 .charges(combinedCharges)
-                .currency(billingCharge.getOverseasCurrency())
+                .currencyValue(currencyValue)
                 .value(billingCharge.getOverseasAmount())
+                .currency(billingCharge.getOverseasCurrency())
                 .selected(false) // Default not selected
                 .chargeCode(billingCharge.getChargeTypeCode())
                 .build();
     }
 
-IBillingServiceAdapter billingServiceAdapter;
     private List<HblRevenueChargeDto> fetchRevenueChargesFromBilling(Long shipmentId) {
         try {
             Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
@@ -511,11 +517,11 @@ IBillingServiceAdapter billingServiceAdapter;
                 return new ArrayList<>();
             }
 
-            String shipmentGuid = shipment.get().getGuid().toString();
+            UUID shipmentGuid = shipment.get().getGuid();
             log.info("Fetching revenue charges for shipment GUID: {}", shipmentGuid);
 
             RevenueChargesRequest request = RevenueChargesRequest.builder()
-                    .shipmentGuid(Long.valueOf(shipmentGuid))
+                    .shipmentGuid(shipmentGuid)
                     .build();
 
             List<RevenueChargeDto> billingCharges = billingServiceAdapter.getRevenueChargesForShipment(request);
@@ -562,7 +568,6 @@ IBillingServiceAdapter billingServiceAdapter;
                 .hblData(hblData).hblCargo(request.getCargoes())
                 .hblContainer(request.getContainers())
                 .hblNotifyParty(request.getNotifyParties())
-                .hblFreightsAndCharges(request.getFreightsAndCharges())
                 .hblRevenueCharges(request.getRevenueCharges())
                 .build();
     }
@@ -572,7 +577,6 @@ IBillingServiceAdapter billingServiceAdapter;
         response.setCargoes(hbl.getHblCargo());
         response.setContainers(hbl.getHblContainer());
         response.setNotifyParties(hbl.getHblNotifyParty());
-        response.setFreightsAndCharges(hbl.getHblFreightsAndCharges());
         response.setRevenueCharges(hbl.getHblRevenueCharges());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
