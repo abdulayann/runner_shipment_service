@@ -479,8 +479,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
 
 
-        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
-        Page<ShippingInstruction> shippingInstructionPage = repository.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShippingInstruction> shippingInstructionPage = getShippingInstructions(listCommonRequest);
         log.info(SI_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
         List<IRunnerResponse> filteredList = convertEntityListToDtoList(shippingInstructionPage.getContent(), getMasterData);
@@ -489,6 +488,12 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 filteredList,
                 shippingInstructionPage.getTotalPages(),
                 shippingInstructionPage.getTotalElements());
+    }
+
+    @Override
+    public Page<ShippingInstruction> getShippingInstructions(ListCommonRequest listCommonRequest) {
+        Pair<Specification<ShippingInstruction>, Pageable> tuple = fetchData(listCommonRequest, ShippingInstruction.class, tableNames);
+        return repository.findAll(tuple.getLeft(), tuple.getRight());
     }
 
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
