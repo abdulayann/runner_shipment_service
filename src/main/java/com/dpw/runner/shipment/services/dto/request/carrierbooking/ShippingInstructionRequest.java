@@ -26,6 +26,7 @@ public class ShippingInstructionRequest implements Serializable {
     private String status;
     private String carrierBlNo;
     private String carrierBookingNo;
+    @NotNull(message = "Entity Type can not be null")
     private EntityType entityType;
     @NotNull(message = "Entity Id can not be null")
     @Min(value = 1, message = "Entity id can not be zero/negative")

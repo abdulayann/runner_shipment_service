@@ -174,7 +174,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
                 throw new ValidationException("SI creation not allowed. Consolidation linked with a Booking already!!");
             }
         }
-        setDefaultValues(shippingInstruction.getEntityType(), shippingInstruction.getEntityId(), mapper, isCreate);
+        populateReadOnlyFields(mapper, isCreate);
         return mapper.getShippingInstruction();
     }
 
@@ -414,6 +414,8 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
        return null;
     }
 
+    @Override
+    @Transactional
     public ShippingInstructionResponse updateShippingInstructions(ShippingInstructionRequest shippingInstructionRequest) {
         Optional<ShippingInstruction> shippingInstructionEntity = repository.findById(shippingInstructionRequest.getId());
         if (shippingInstructionEntity.isEmpty()) {
@@ -430,7 +432,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getExternalEmailsList()));
         ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
         responseMapper.setShippingInstruction(shippingInstruction);
-        populateReadOnlyFields(responseMapper);
+        populateReadOnlyFields(responseMapper, false);
         ShippingInstruction si = responseMapper.getShippingInstruction();
         ShippingInstruction saved = repository.save(si);
         ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
@@ -496,6 +498,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return repository.findAll(tuple.getLeft(), tuple.getRight());
     }
 
+    @Override
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
         ShippingInstruction instruction = new ShippingInstruction();
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
@@ -740,16 +743,22 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         }
     }
 
-    private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper) {
-        ConsolidationDetails consolidationDetails;
+    private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper, boolean isCreate) {
         ShippingInstruction shippingInstruction = mapper.getShippingInstruction();
+        populateReadOnlyFields(mapper, shippingInstruction, isCreate);
+    }
+
+    private void populateReadOnlyFields(ShippingInstructionResponseMapper mapper, ShippingInstruction shippingInstruction, boolean isCreate) {
+        ConsolidationDetails consolidationDetails;
         if (EntityType.CARRIER_BOOKING == shippingInstruction.getEntityType()) {
             Optional<CarrierBooking> carrierBooking = carrierBookingDao.findById(shippingInstruction.getEntityId());
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
             }
             populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
-            mapper.setBookingStatus(carrierBooking.get().getStatus().name());
+            if (!isCreate) {
+                mapper.setBookingStatus(carrierBooking.get().getStatus().name());
+            }
             shippingInstruction.setEntityNumber(carrierBooking.get().getBookingNo());
         } else if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
             consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(shippingInstruction.getEntityId());
