@@ -62,52 +62,35 @@ public class EntityLevelRollbackService {
         requireValid(schema, SCHEMA, "schema");
         requireValid(tenantId, TENANT, "tenantId");
 
-        // read SQL file
-        String sql;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")),
-                StandardCharsets.UTF_8))) {
-            sql = reader.lines().collect(Collectors.joining("\n"));
-        } catch (Exception e) {
-            log.error("❌ Failed to read SQL resource", e);
-            throw new RuntimeException(e);
-        }
-
         javax.sql.DataSource ds = jdbcTemplate.getDataSource();
         if (ds == null) throw new IllegalStateException("DataSource is null");
-
         Connection conn = DataSourceUtils.getConnection(ds);
-        try {
-            boolean schemaSet = false;
-            try {
-                conn.setSchema(schema); // preferred — avoids injecting schema into SQL text
-                schemaSet = true;
-                log.debug("Connection schema set to {}", LoggerHelper.sanitizeForLogs(schema));
-            } catch (AbstractMethodError | SQLException ex) {
-                // Driver/DB may not support setSchema(); we'll substitute placeholders safely below if needed
-                log.debug("conn.setSchema() not supported: {}", LoggerHelper.sanitizeForLogs(ex.getMessage()));
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/db/migration/entity_to_entity_migration.sql")))
+        )) {
+
+            String sql = reader.lines().collect(Collectors.joining("\n"));
+            for (String statement : sql.split(";")) {
+                if (!statement.trim().isEmpty()) {
+
+                    String parsed = statement.replace("__TENANT_ID__", tenantId).replace("__SCHEMA__", schema);
+
+                    log.info("Executing: {}", parsed);
+                    // Create an EncodedResource for the script
+                    EncodedResource resource = new EncodedResource(
+                            new ByteArrayResource(parsed.getBytes(StandardCharsets.UTF_8)),
+                            StandardCharsets.UTF_8.name()
+                    );
+                    // Execute the script on the connection (safer than executing ad-hoc strings via jdbcTemplate.execute)
+                    ScriptUtils.executeSqlScript(conn, resource);
+                }
             }
-
-            String processedSql = sql;
-            if (!schemaSet && (sql.contains("__TENANT_ID__") || sql.contains("__SCHEMA__"))) {
-
-                processedSql = sql.replace("__TENANT_ID__", tenantId).replace("__SCHEMA__", schema);
-            }
-
-            // Create an EncodedResource for the script (ScriptUtils will split statements and execute)
-            EncodedResource resource = new EncodedResource(
-                    new ByteArrayResource(processedSql.getBytes(StandardCharsets.UTF_8)),
-                    StandardCharsets.UTF_8.name()
-            );
-
-            // Execute the script on the connection (safer than executing ad-hoc strings via jdbcTemplate.execute)
-            ScriptUtils.executeSqlScript(conn, resource);
-
-            log.info("✅ SQL script executed for tenant {}", LoggerHelper.sanitizeForLogs(tenantId));
+            log.info("✅ SQL script executed successfully.");
         } catch (Exception e) {
             log.error("❌ Error executing SQL script", e);
             throw new RuntimeException(e);
-        } finally {
+        }finally {
             DataSourceUtils.releaseConnection(conn, ds);
         }
     }
