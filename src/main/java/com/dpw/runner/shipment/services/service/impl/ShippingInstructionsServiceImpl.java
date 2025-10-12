@@ -275,7 +275,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         return referenceNumbersList;
     }
 
-    private void setPackingAndContainerDetails(ConsolidationDetails consolidationDetails, ShippingInstruction shippingInstruction) {
+    public void setPackingAndContainerDetails(ConsolidationDetails consolidationDetails, ShippingInstruction shippingInstruction) {
         try {
             List<Packing> packingList = packingV3Service.getPackingsByConsolidationId(consolidationDetails.getId());
             List<Containers> containersList = consolidationDetails.getContainersList();

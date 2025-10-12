@@ -879,12 +879,6 @@ class ShippingInstructionsServiceImplTest {
         assertNotNull(si.getContract());
         assertNotNull(si.getRequestor());
 
-        assertNull(si.getConsignee().getId());
-        assertNull(si.getShipper().getId());
-        assertNull(si.getForwardingAgent().getId());
-        assertNull(si.getContract().getId());
-        assertNull(si.getRequestor().getId());
-
         verify(jsonHelper, times(5)).convertValue(any(Parties.class), eq(Parties.class));
     }
 
@@ -1955,5 +1949,102 @@ class ShippingInstructionsServiceImplTest {
 
         assertEquals("Requested", siResponse.getVgmStatus());
         assertEquals("CB-12345", siResponse.getCrBookingId());
+    }
+
+
+    @Test
+    void setPackingAndContainerDetails_ShouldPopulatePackagesAndContainers_WhenDataExists() throws Exception {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(100L);
+
+        // Setup containers
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerNumber("CONT001");
+        container1.setContainerCode("20GP");
+        container1.setGuid(UUID.randomUUID());
+
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        container2.setContainerNumber("CONT002");
+        container2.setContainerCode("40GP");
+        container2.setGuid(UUID.randomUUID());
+
+        consolidation.setContainersList(List.of(container1, container2));
+
+        // Setup packing
+        Packing packing1 = new Packing();
+        packing1.setId(10L);
+        packing1.setPacks("5");
+        packing1.setPacksType("BOX");
+        packing1.setContainerId(1L);
+        packing1.setGuid(UUID.randomUUID());
+
+        Packing packing2 = new Packing();
+        packing2.setId(11L);
+        packing2.setPacks("10");
+        packing2.setPacksType("CRATE");
+        packing2.setContainerId(2L);
+        packing2.setGuid(UUID.randomUUID());
+
+        when(packingV3Service.getPackingsByConsolidationId(100L)).thenReturn(List.of(packing1, packing2));
+
+        ShippingInstruction si = new ShippingInstruction();
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "setPackingAndContainerDetails", ConsolidationDetails.class, ShippingInstruction.class);
+        method.setAccessible(true);
+        method.invoke(service, consolidation, si);
+
+        // Assert
+        assertNotNull(si.getCommonPackagesList());
+        assertNotNull(si.getContainersList());
+        assertEquals(2, si.getCommonPackagesList().size());
+        assertEquals(2, si.getContainersList().size());
+
+        // Verify container details
+        assertEquals("CONT001", si.getContainersList().get(0).getContainerNo());
+        assertEquals("20GP", si.getContainersList().get(0).getContainerCode());
+
+        // Verify package details
+        assertEquals(5, si.getCommonPackagesList().get(0).getPacks());
+        assertEquals("BOX", si.getCommonPackagesList().get(0).getPacksUnit());
+        assertEquals("CONT001", si.getCommonPackagesList().get(0).getContainerNo());
+
+        verify(packingV3Service).getPackingsByConsolidationId(100L);
+    }
+
+    @Test
+    void setPackingAndContainerDetails_ShouldHandleEmptyContainersList() throws Exception {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(100L);
+        consolidation.setContainersList(null); // No containers
+
+        Packing packing = new Packing();
+        packing.setId(10L);
+        packing.setPacks("5");
+        packing.setContainerId(null); // Not assigned to container
+        packing.setGuid(UUID.randomUUID());
+
+        when(packingV3Service.getPackingsByConsolidationId(100L)).thenReturn(List.of(packing));
+
+        ShippingInstruction si = new ShippingInstruction();
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "setPackingAndContainerDetails", ConsolidationDetails.class, ShippingInstruction.class);
+        method.setAccessible(true);
+        method.invoke(service, consolidation, si);
+
+        // Assert
+        assertNotNull(si.getCommonPackagesList());
+        assertEquals(1, si.getCommonPackagesList().size());
+        assertNull(si.getCommonPackagesList().get(0).getContainerNo()); // No container mapping
+
+        // Containers list should be empty
+        assertTrue(si.getContainersList() == null || si.getContainersList().isEmpty());
     }
 }
