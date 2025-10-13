@@ -1353,6 +1353,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .collect(Collectors.toMap(ContainerBaseResponse::getId, c -> c));
 
         Map<Long, List<Packing>> packingsByContainer = packings.stream()
+                .filter(p -> p.getContainerId() != null)
                 .collect(Collectors.groupingBy(Packing::getContainerId));
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
