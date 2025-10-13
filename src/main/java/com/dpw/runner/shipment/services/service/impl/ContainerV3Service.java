@@ -1784,7 +1784,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
   private void handlePostSaveActionsBulk(List<Containers> containers, List<ContainerV3Request> requests, String module) {
-    if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;;
+    if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
 
     for (int i = 0; i < containers.size(); i++) {
       Containers container = containers.get(i);
