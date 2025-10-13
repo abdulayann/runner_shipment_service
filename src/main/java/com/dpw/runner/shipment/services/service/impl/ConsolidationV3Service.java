@@ -331,6 +331,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map.entry(Constants.INTER_BRANCH_CONSOLE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.INTER_BRANCH_CONSOLE).build()),
             Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build()),
             Map.entry("reefer", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName("reefer").build()),
+            Map.entry("assignedTo", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(String.class).fieldName("assignedTo").build()),
             Map.entry(Constants.LAT_DATE,
                     RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName(Constants.LAT_DATE).build())
     );
