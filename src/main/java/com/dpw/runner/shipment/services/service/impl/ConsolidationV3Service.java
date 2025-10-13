@@ -5403,8 +5403,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         for (Map<String, Object> curr : nestedList) {
             consolDetails = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
         }
-        ConsolidationDetailsResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
-        return consolListResponse;
+        return (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
+
     }
 
     public ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException {

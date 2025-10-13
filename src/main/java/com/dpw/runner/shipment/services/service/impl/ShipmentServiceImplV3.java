@@ -1230,8 +1230,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipDetails = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
 
         }
-        ShipmentDetailsResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
-        return shipmentListResponse;
+        return (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
     }
 
 
