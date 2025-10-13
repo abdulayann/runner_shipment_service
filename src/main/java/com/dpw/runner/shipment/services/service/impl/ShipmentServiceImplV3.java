@@ -1944,7 +1944,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-
+        includeColumns.add(Constants.CONTAINERS_LIST);
         // Handle pending notifications
         handlePendingNotifications(lst, shipmentListResponses);
 
