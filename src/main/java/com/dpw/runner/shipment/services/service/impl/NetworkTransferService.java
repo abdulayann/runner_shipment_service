@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
@@ -51,6 +48,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -88,6 +90,9 @@ public class NetworkTransferService implements INetworkTransferService {
     private final V1ServiceUtil v1ServiceUtil;
 
     @Autowired
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
+
+    @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
@@ -116,8 +121,7 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("sourceBranchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("sourceBranchId").build()),
             Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build()),
-            Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build()),
-            Map.entry("shipmentNumber", RunnerEntityMapping.builder().tableName(NETWORK_SHIPMENTS_MAPPINGS).dataType(LocalDateTime.class).fieldName("shipmentNumber").build())
+            Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build())
     );
 
 
@@ -130,8 +134,16 @@ public class NetworkTransferService implements INetworkTransferService {
                 log.error("Request is empty for NetworkTransfer list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
+            String shipmentNumber = extractShipmentNumber(request.getFilterCriteria());
+            removeShipmentNumberFilter(request.getFilterCriteria());
+
+            Specification<NetworkTransfer> shipmentNumberSpec = buildShipmentNumberFilterSpec(shipmentNumber);
             Pair<Specification<NetworkTransfer>, Pageable> tuple = fetchData(request, NetworkTransfer.class, tableNames);
-            Page<NetworkTransfer> networkTransferPage = networkTransferDao.findAll(tuple.getLeft(), tuple.getRight());
+            Specification<NetworkTransfer> finalSpec = shipmentNumberSpec;
+            if (tuple.getLeft() != null) {
+                finalSpec = finalSpec == null ? tuple.getLeft() : finalSpec.and(tuple.getLeft());
+            }
+            Page<NetworkTransfer> networkTransferPage = networkTransferDao.findAll(finalSpec, tuple.getRight());
             log.info("NetworkTransfer list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(networkTransferPage.getContent()),
                     networkTransferPage.getTotalPages(), networkTransferPage.getTotalElements());
@@ -139,6 +151,52 @@ public class NetworkTransferService implements INetworkTransferService {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public Specification<NetworkTransfer> buildShipmentNumberFilterSpec(String shipmentNumber) {
+        if (shipmentNumber == null || shipmentNumber.isEmpty()) {
+            return null;
+        }
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<NetworkTransferShipmentsMapping> subRoot = subquery.from(NetworkTransferShipmentsMapping.class);
+
+            subquery.select(subRoot.get("networkTransferId"))
+                    .where(cb.equal(subRoot.get("shipmentNumber"), shipmentNumber.trim().toUpperCase()));
+
+            return root.get("id").in(subquery);
+        };
+    }
+
+    private String extractShipmentNumber(List<FilterCriteria> filters) {
+        if (filters == null) return null;
+        for (FilterCriteria filter : filters) {
+            if (filter.getCriteria() != null && "shipmentNumber".equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+                Object val = filter.getCriteria().getValue();
+                return val != null ? val.toString() : null;
+            }
+            String nested = extractShipmentNumber(filter.getInnerFilter());
+            if (nested != null) return nested;
+        }
+        return null;
+    }
+
+    private void removeShipmentNumberFilter(List<FilterCriteria> filters) {
+        if (filters == null) return;
+
+        Iterator<FilterCriteria> iterator = filters.iterator();
+        while (iterator.hasNext()) {
+            FilterCriteria filter = iterator.next();
+            if (filter.getCriteria() != null &&
+                    "shipmentNumber".equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+                iterator.remove();
+                continue;
+            }
+            removeShipmentNumberFilter(filter.getInnerFilter());
+            if ((filter.getInnerFilter() == null || filter.getInnerFilter().isEmpty()) && filter.getCriteria() == null) {
+                iterator.remove();
+            }
         }
     }
 

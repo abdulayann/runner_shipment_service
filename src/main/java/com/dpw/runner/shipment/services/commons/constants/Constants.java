@@ -666,7 +666,6 @@ public class Constants {
     public static final String ORIGINATED_FROM = "OriginatedFrom";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
-    public static final String NETWORK_SHIPMENTS_MAPPINGS = "networkShipmentsMappings";
     public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
     public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
     public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
