@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -26,7 +25,6 @@ import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingConsolidatedListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -748,8 +746,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         List<IRunnerResponse> carrierBookingResponses = convertEntityListToDtoList(carrierBookings, getMasterData, new HashSet<>());
         List<ShippingInstruction> shippingInstructionList = new ArrayList<>();
         List<VerifiedGrossMass> verifiedGrossMassList = new ArrayList<>();
-        CarrierBookingConsolidatedListResponse finalResponses = new CarrierBookingConsolidatedListResponse();
-        finalResponses.setCarrierBookingListResponses(carrierBookingResponses);
+        List<IRunnerResponse> finalResponses = new ArrayList<>(carrierBookingResponses);
         for (CarrierBooking carrierBooking : carrierBookings) {
             if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
                 shippingInstructionList.add(carrierBooking.getShippingInstruction());
@@ -758,12 +755,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
             }
         }
-        ListCommonRequest constructListCommonRequest = CommonUtils.constructListCommonRequest("entityType", EntityType.CONSOLIDATION.name(), Constants.EQ);
-        SortRequest sortRequest = new SortRequest();
-        sortRequest.setFieldName("updatedAt");
-        sortRequest.setOrder("DESC");
-        listCommonRequest.setSortRequest(sortRequest);
-        Page<ShippingInstruction> shippingInstructionEntityList = shippingInstructionsService.getShippingInstructions(constructListCommonRequest);
+        Page<ShippingInstruction> shippingInstructionEntityList = shippingInstructionsService.getShippingInstructions(listCommonRequest);
         shippingInstructionList.addAll(shippingInstructionEntityList.getContent());
         if (!CollectionUtils.isEmpty(shippingInstructionList)) {
             List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
@@ -773,9 +765,9 @@ public class CarrierBookingService implements ICarrierBookingService {
             }
             List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
             shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
-            finalResponses.setShippingInstructionResponses(responseList);
+            finalResponses.addAll(responseList);
         }
-        Page<VerifiedGrossMass> vgmEntityList = verifiedGrossMassService.getVerifiedGrossMasses(constructListCommonRequest);
+        Page<VerifiedGrossMass> vgmEntityList = verifiedGrossMassService.getVerifiedGrossMasses(listCommonRequest);
         verifiedGrossMassList.addAll(vgmEntityList.getContent());
 
         if (!CollectionUtils.isEmpty(verifiedGrossMassList)) {
@@ -787,7 +779,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             }
             List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
             verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
-            finalResponses.setVerifiedGrossMassListResponses(responseList);
+            finalResponses.addAll(responseList);
         }
         return ResponseHelper.buildSuccessResponse(finalResponses);
     }

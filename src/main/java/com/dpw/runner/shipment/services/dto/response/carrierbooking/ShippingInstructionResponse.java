@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -17,6 +18,7 @@ import java.util.List;
 public class ShippingInstructionResponse implements IRunnerResponse {
 
     private Long id;
+    private String type = ShippingInstructionsConstants.SHIPPING_INSTRUCTION_TYPE;
     private String status;
     private String bookingStatus;
     private String bookingNo;
