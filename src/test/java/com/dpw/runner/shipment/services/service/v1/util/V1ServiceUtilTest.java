@@ -61,6 +61,15 @@ class V1ServiceUtilTest {
     private CommonUtils commonUtils;
     @MockBean
     private ModelMapper modelMapper;
+    
+    @MockBean
+    private org.springframework.cache.CacheManager cacheManager;
+    
+    @MockBean
+    private com.dpw.runner.shipment.services.config.CustomKeyGenerator keyGenerator;
+    
+    @MockBean
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
