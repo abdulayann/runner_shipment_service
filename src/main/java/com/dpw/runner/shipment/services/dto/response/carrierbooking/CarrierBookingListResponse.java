@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
@@ -19,6 +20,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class CarrierBookingListResponse implements IRunnerResponse {
     private Long id;
+    private String type= CarrierBookingConstants.CARRIER_BOOKING_TYPE;
     private String status;
     private String bookingNo;
     private Integer tenantId;
