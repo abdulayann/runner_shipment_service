@@ -183,6 +183,8 @@ class EntityTransferServiceTest extends CommonMocks {
     private IConsolidationMigrationV3Service consolidationMigrationV3Service;
     @Mock
     private NotesUtil notesUtil;
+    @Mock
+    private IApplicationConfigService applicationConfigService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;

@@ -4,6 +4,7 @@ public class NPMConstants {
     private NPMConstants(){}
     public static final String NPM_API_HANDLE = "/api/v2/external/npm";
     public static final String LIST_CONTRACT = "/contract";
+    public static final String LIST_CONTRACTS_WITH_FILTERS = "/contracts/filter";
     public static final String RETRIEVE_CONTRACT = "/retrieve/contract";
     public static final String RETRIEVE_CONTRACT_SHIPMENT = "/retrieve/contracts";
     public static final String CONTRACT_LIST_SUCCESSFUL = "Successful Contract Data List Retrieval";
@@ -41,5 +42,19 @@ public class NPMConstants {
     public static final String PER_KILOMETER = "Per_Kilometer";
     public static final String PER_BL_AWB = "Per_Bl_Awb";
     public static final String CUSTOM = "Custom";
+
+    public static final String ORIGIN = "origin";
+    public static final String DESTINATION = "destination";
+    public static final String LOAD_TYPE = "load_type";
+    public static final String COMMODITY_CLASSIFICATION = "commodity_classification";
+    public static final String PARENT_CONTRACT_ID = "parent_contract_id";
+    public static final String MIN_TRANSIT_HOURS = "min_transit_hours";
+    public static final String MAX_TRANSIT_HOURS = "max_transit_hours";
+    public static final String VALID_TILL = "valid_till";
+
+    public static final String HAZARDOUS = "HAZ";
+
+    public static final String MIN_TRANSIT_DAYS = "minTransitDays";
+    public static final String MAX_TRANSIT_DAYS = "maxTransitDays";
 
 }

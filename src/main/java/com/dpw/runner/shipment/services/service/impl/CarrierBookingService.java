@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingCloneResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingConsolidatedListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
@@ -80,6 +82,8 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
+import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -92,6 +96,8 @@ import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -167,6 +173,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IRoutingsV3Service routingsV3Service;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+    @Lazy
+    @Autowired
+    private IVerifiedGrossMassService verifiedGrossMassService;
+    @Lazy
+    @Autowired
+    private IShippingInstructionsService shippingInstructionsService;
 
 
     @Override
@@ -238,7 +250,8 @@ public class CarrierBookingService implements ICarrierBookingService {
 
     /**
      * Populates the carrier booking response with IDs of Vgm and Si entities.
-     * @param carrierBooking Entity carrier booking data
+     *
+     * @param carrierBooking         Entity carrier booking data
      * @param carrierBookingResponse updated response
      */
     private void setVgmAndSiId(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
@@ -691,13 +704,13 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
 
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
+        setInternalExternalEmails(carrierBookingBridgeRequest, carrierBooking);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
         carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
-
         BridgeServiceResponse bridgeResponse = carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
-        processInttraResponse(bridgeResponse,  carrierBooking);
+        processInttraResponse(bridgeResponse, carrierBooking);
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         //Make it async
@@ -735,7 +748,8 @@ public class CarrierBookingService implements ICarrierBookingService {
         List<IRunnerResponse> carrierBookingResponses = convertEntityListToDtoList(carrierBookings, getMasterData, new HashSet<>());
         List<ShippingInstruction> shippingInstructionList = new ArrayList<>();
         List<VerifiedGrossMass> verifiedGrossMassList = new ArrayList<>();
-        List<IRunnerResponse> finalResponses = new ArrayList<>(carrierBookingResponses);
+        CarrierBookingConsolidatedListResponse finalResponses = new CarrierBookingConsolidatedListResponse();
+        finalResponses.setCarrierBookingListResponses(carrierBookingResponses);
         for (CarrierBooking carrierBooking : carrierBookings) {
             if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
                 shippingInstructionList.add(carrierBooking.getShippingInstruction());
@@ -744,6 +758,13 @@ public class CarrierBookingService implements ICarrierBookingService {
                 verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
             }
         }
+        ListCommonRequest constructListCommonRequest = CommonUtils.constructListCommonRequest("entityType", EntityType.CONSOLIDATION.name(), Constants.EQ);
+        SortRequest sortRequest = new SortRequest();
+        sortRequest.setFieldName("updatedAt");
+        sortRequest.setOrder("DESC");
+        listCommonRequest.setSortRequest(sortRequest);
+        Page<ShippingInstruction> shippingInstructionEntityList = shippingInstructionsService.getShippingInstructions(constructListCommonRequest);
+        shippingInstructionList.addAll(shippingInstructionEntityList.getContent());
         if (!CollectionUtils.isEmpty(shippingInstructionList)) {
             List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
             for (ShippingInstruction shippingInstruction : shippingInstructionList) {
@@ -752,8 +773,10 @@ public class CarrierBookingService implements ICarrierBookingService {
             }
             List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
             shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
-            finalResponses.addAll(responseList);
+            finalResponses.setShippingInstructionResponses(responseList);
         }
+        Page<VerifiedGrossMass> vgmEntityList = verifiedGrossMassService.getVerifiedGrossMasses(constructListCommonRequest);
+        verifiedGrossMassList.addAll(vgmEntityList.getContent());
 
         if (!CollectionUtils.isEmpty(verifiedGrossMassList)) {
             List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
@@ -764,9 +787,9 @@ public class CarrierBookingService implements ICarrierBookingService {
             }
             List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
             verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
-            finalResponses.addAll(responseList);
+            finalResponses.setVerifiedGrossMassListResponses(responseList);
         }
-        return ResponseHelper.buildListSuccessResponse(finalResponses);
+        return ResponseHelper.buildSuccessResponse(finalResponses);
     }
 
 
@@ -1096,7 +1119,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .orElse(null);
             if (carrierBookingTemplate != null) {
                 List<String> toEmails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
-                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails ,new ArrayList<>());
+                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails, new ArrayList<>());
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {

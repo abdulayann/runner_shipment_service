@@ -48,6 +48,11 @@ public class ShipmentOrderService implements IShipmentOrderService {
     }
 
     @Override
+    public List<ShipmentOrder> findByOrderGuidIn(List<UUID> orderGuidList) {
+        return shipmentOrderDao.findByOrderGuidIn(orderGuidList);
+    }
+
+    @Override
     public Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid) {
         return shipmentOrderDao.findByShipmentIdAndOrderGuid(shipmentId, orderGuid);
     }

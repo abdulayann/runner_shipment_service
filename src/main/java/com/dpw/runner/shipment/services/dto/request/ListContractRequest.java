@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -20,4 +21,5 @@ public class ListContractRequest implements IRunnerRequest {
     private Long filter_per_page_records;
     private LocalDate filter_start_date;
     private List<String> filter_attributes;
+    private Map<String, Object> additional_filters;
 }
