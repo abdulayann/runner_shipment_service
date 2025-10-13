@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
@@ -94,19 +95,25 @@ class PartialFetchUtilsTest {
 
     @Test
     void testFetchPartialListData_WithIncludeColumns() throws Exception {
-        IRunnerResponse response = mock(IRunnerResponse.class);
+        // Create a real response object instead of a mock
+        RunnerResponse<String> response = new RunnerResponse<>();
+        response.setData("testListData");
 
         List<String> includeColumns = List.of("data");
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        ObjectMapper modified = Squiggly.init(objectMapper, String.join(",", includeColumns));
-        String jsonString = SquigglyUtils.stringify(modified, response);
-//        when(jsonHelper.readFromJson(jsonString, Object.class)).thenReturn("partialData");
+        // Setup the mock to return the expected partial data
+        // This avoids trying to actually serialize with Squiggly, which has dependency issues
+        String expectedPartialData = "{\"data\":\"testListData\"}";
+        when(jsonHelper.readFromJson(anyString(), eq(Object.class)))
+                .thenReturn(expectedPartialData);
 
         Object result = partialFetchUtils.fetchPartialListData(response, includeColumns);
 
-        assertNull(result);
+        assertNotNull(result);
+        assertEquals(expectedPartialData, result);
+
+        // Verify jsonHelper was called
+        verify(jsonHelper, times(1)).readFromJson(anyString(), eq(Object.class));
     }
 
 }

@@ -67,7 +67,7 @@ class NotificationDaoTest {
 
     @Test
     void testDelete(){
-        notificationDao.delete(any());
+        notificationDao.delete(notification);
         verify(notificationRepository, times(1)).delete(Mockito.any(Notification.class));
     }
 

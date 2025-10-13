@@ -192,6 +192,7 @@ class DbAccessHelperTest {
         assertNotNull(specification);
         CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
         CriteriaBuilder.In<Object> inClause = mock(CriteriaBuilder.In.class);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join(Constants.CARRIER_DETAILS, JoinType.LEFT)).thenReturn((Join) join);
         when(criteriaBuilder.in(path.get("id"))).thenReturn(inClause);
         when(criteriaBuilder.in(path.get("guid"))).thenReturn(inClause);
@@ -219,6 +220,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -241,6 +243,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -256,6 +259,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIsEnum, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -295,7 +299,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIn, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         assertThrows(RuntimeException.class, () -> {
             specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -326,12 +329,29 @@ class DbAccessHelperTest {
         listCommonRequest6.setContainsText("guid");
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("shipment_details", RunnerEntityMapping.builder().tableName("shipment_details").build());
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Integer.class).build());
         tableNames.put("guid", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(UUID.class).build());
 
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest6, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+
+        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
+//        when(root.getJoins()).thenReturn(Set.of(join));
+        when(root.getFetches()).thenReturn(Collections.emptySet());
+        Predicate mockPredicate = mock(Predicate.class);
+        when(criteriaBuilder.equal(any(), any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.and(any(Predicate.class), any(Predicate.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.or(any(Predicate.class), any(Predicate.class))).thenReturn(mockPredicate);
+
+        // Mock Path methods
+        when(root.get("status")).thenReturn((Path) path);
+        when(root.get("guid")).thenReturn((Path) path);
+        when(path.as(any())).thenReturn((Path) path);
+
+
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -380,7 +400,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest4, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
         assertNull(predicate);
     }
@@ -395,6 +415,8 @@ class DbAccessHelperTest {
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
 
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest8, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
@@ -414,6 +436,7 @@ class DbAccessHelperTest {
         Pair<Specification<AdditionalDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest9, AdditionalDetails.class, tableNames);
         Specification<AdditionalDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_additional_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<AdditionalDetails>) root, criteriaQuery, criteriaBuilder);
@@ -433,6 +456,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest10, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -440,7 +464,7 @@ class DbAccessHelperTest {
     }
 
     @Test
-    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesser () {
+    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesser() {
         ListCommonRequest listCommonRequest11 = jsonTestUtility.getListRequest11();
         listCommonRequest11.getFilterCriteria().get(0).getInnerFilter().get(1).getCriteria().setValue(LocalDateTime.now());
 
@@ -452,7 +476,24 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest11, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
+
+        // Create a real CriteriaBuilder and CriteriaQuery using EntityManager, or use a spy
+        // For unit testing with mocks, setup all the mocks BEFORE calling toPredicate
+        Root<ShipmentDetails> mockRoot = mock(Root.class);
+        CriteriaQuery<ShipmentDetails> mockCriteriaQuery = mock(CriteriaQuery.class);
+        CriteriaBuilder mockCriteriaBuilder = mock(CriteriaBuilder.class);
+
+        // IMPORTANT: Set up getResultType() BEFORE calling toPredicate
+        when(mockCriteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
+
+        // Setup join
+        Join mockJoin = mock(Join.class);
+        when(mockRoot.join("shipment_details", JoinType.LEFT)).thenReturn(mockJoin);
+
+        // Setup paths
+//        Path<?> mockPath = mock(Path.class);
+//        when(mockRoot.get(anyString())).thenReturn(mockPath);
+//        when(mockJoin.get(anyString())).thenReturn(mockPath);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
         assertNull(predicate);
@@ -471,6 +512,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest12, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -490,6 +532,7 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest13, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
 
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -513,6 +556,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
@@ -536,6 +580,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getJoins()).thenReturn(null);
@@ -561,6 +606,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getJoins()).thenReturn(Set.of(mock(Join.class)));
@@ -585,6 +631,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getFetches()).thenReturn(Set.of(mock(Fetch.class)));
@@ -611,6 +658,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getFetches()).thenReturn(Set.of(mock(Fetch.class)));
@@ -637,6 +685,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getJoins()).thenReturn((Set) Set.of(join));
@@ -663,6 +712,7 @@ class DbAccessHelperTest {
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
 
+        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
         when(root.join("pickupDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(join.join("transportDetails", JoinType.LEFT)).thenReturn((Join) join);
         when(root.getFetches()).thenReturn((Set) Set.of(join));

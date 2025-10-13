@@ -313,7 +313,7 @@ class ProductSequenceConfigDaoTest {
 
         // Mock query execution
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
         when(typedQuery.getResultList()).thenReturn(List.of(testProductSequenceConfig));
@@ -339,7 +339,7 @@ class ProductSequenceConfigDaoTest {
         when(pageable.getPageSize()).thenReturn(1);
 
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
         when(typedQuery.getResultList()).thenReturn(List.of());
@@ -361,7 +361,7 @@ class ProductSequenceConfigDaoTest {
         when(pageable.getPageSize()).thenReturn(1);
 
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
         when(typedQuery.getResultList()).thenReturn(List.of(testProductSequenceConfig));
@@ -385,7 +385,7 @@ class ProductSequenceConfigDaoTest {
         when(pageable.getPageSize()).thenReturn(1);
 
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
         when(typedQuery.getResultList()).thenReturn(Collections.emptyList());
@@ -408,7 +408,7 @@ class ProductSequenceConfigDaoTest {
         when(pageable.getPageSize()).thenReturn(1);
 
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
 
@@ -434,7 +434,7 @@ class ProductSequenceConfigDaoTest {
         when(pageable.getPageSize()).thenReturn(1);
 
         when(typedQuery.setLockMode(LockModeType.PESSIMISTIC_WRITE)).thenReturn(typedQuery);
-        when(typedQuery.setHint(eq("javax.persistence.lock.timeout"), any())).thenReturn(typedQuery);
+        when(typedQuery.setHint(eq("jakarta.persistence.lock.timeout"), any())).thenReturn(typedQuery);
         when(typedQuery.setFirstResult(anyInt())).thenReturn(typedQuery);
         when(typedQuery.setMaxResults(anyInt())).thenReturn(typedQuery);
 
