@@ -929,11 +929,6 @@ public class HblService implements IHblService {
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
                 hblParties.add(hblParty);
             }
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            hblParty.setAddress(CommonUtils.constructAddress(party.getAddressData(), party.getOrgData()));
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
-            hblParties.add(hblParty);
         }
         return hblParties;
     }
@@ -1282,10 +1277,6 @@ public class HblService implements IHblService {
 
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null && createNotifyParty) {
-            hblParty.setIsShipmentCreated(true);
-            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            hblParty.setAddress(CommonUtils.constructAddress(party.getAddressData(), party.getOrgData()));
-            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
                 hblParty.setIsShipmentCreated(true);
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)).toUpperCase());
