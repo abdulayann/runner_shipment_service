@@ -1,20 +1,18 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
-import com.dpw.runner.shipment.services.dto.request.carrierbooking.CarrierBookingBridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleIdProjection;
 import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +24,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
@@ -573,6 +572,152 @@ public class ShippingInstructionUtil {
                 .filter(email -> !email.isEmpty())
                 .distinct() // remove duplicates if any
                 .toList();
+    }
+
+    public void validateShippingInstructionForSubmission(ShippingInstruction si) {
+        List<String> errors = new ArrayList<>();
+
+        validateHeader(si, errors);
+        validateSailingInformation(si, errors);
+        validateParties(si, errors);
+        validateContainers(si, errors);
+        validatePackages(si, errors);
+        validateFreightDetails(si, errors);
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(String.join("; ", errors));
+        }
+    }
+
+    private void validateHeader(ShippingInstruction si, List<String> errors) {
+        addErrorIfEmpty(si.getServiceType(), "Service Type is mandatory", errors);
+        addErrorIfEmpty(si.getBlReleaseOffice(), "BL Release Office is mandatory", errors);
+        addErrorIfEmpty(si.getCarrierBookingNo(), "Carrier Booking Number is mandatory", errors);
+
+        if (si.getShippingInstructionType() == null) {
+            errors.add("Original/SeaWaybill (Shipping Instruction Type) is mandatory");
+        }
+    }
+
+    private void validateSailingInformation(ShippingInstruction si, List<String> errors) {
+        if (si.getSailingInformation() == null) {
+            errors.add("Sailing Information is mandatory");
+            return;
+        }
+
+        SailingInformation sailingInfo = si.getSailingInformation();
+        addErrorIfEmpty(sailingInfo.getPol(), "POL (Port of Loading) is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getPod(), "POD (Port of Discharge) is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getCarrierReceiptPlace(), "Place of Receipt is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getCarrierDeliveryPlace(), "Place of Delivery is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getCarrier(), "Carrier is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getVesselName(), "Vessel is mandatory", errors);
+        addErrorIfEmpty(sailingInfo.getVoyageNo(), "Voyage is mandatory", errors);
+    }
+
+    private void validateParties(ShippingInstruction si, List<String> errors) {
+        validateParty(si.getShipper(), "Shipper", errors);
+        validateParty(si.getConsignee(), "Consignee", errors);
+        validateParty(si.getNotifyParty(), "Notify Party", errors);
+    }
+
+    private void validateParty(Parties party, String partyName, List<String> errors) {
+        if (party == null || !CommonUtils.checkPartyNotNull(party)) {
+            errors.add(partyName + " is mandatory");
+        }
+    }
+
+    // ========== CONTAINERS VALIDATION ==========
+    private void validateContainers(ShippingInstruction si, List<String> errors) {
+        if (CollectionUtils.isEmpty(si.getContainersList())) {
+            errors.add("At least one Container is mandatory");
+            return;
+        }
+
+        for (int i = 0; i < si.getContainersList().size(); i++) {
+            validateContainer(si.getContainersList().get(i), i + 1, errors);
+        }
+    }
+
+    private void validateContainer(CommonContainers container, int index, List<String> errors) {
+        String prefix = "Container #" + index + ": ";
+
+        addErrorIfEmpty(container.getContainerNo(), prefix + "Container Number is mandatory", errors);
+        addErrorIfEmpty(container.getContainerCode(), prefix + "Container Type is mandatory", errors);
+
+        if (isAllSealsEmpty(container)) {
+            errors.add(prefix + "At least one Seal Number is mandatory");
+        }
+    }
+
+    private boolean isAllSealsEmpty(CommonContainers container) {
+        return isStringNullOrEmpty(container.getCustomsSealNumber())
+                && isStringNullOrEmpty(container.getShipperSealNumber())
+                && isStringNullOrEmpty(container.getVeterinarySealNumber());
+    }
+
+    private void validatePackages(ShippingInstruction si, List<String> errors) {
+        if (CollectionUtils.isEmpty(si.getCommonPackagesList())) {
+            errors.add("At least one Package is mandatory");
+            return;
+        }
+
+        for (int i = 0; i < si.getCommonPackagesList().size(); i++) {
+            validatePackage(si.getCommonPackagesList().get(i), i + 1, errors);
+        }
+    }
+
+    private void validatePackage(CommonPackages pkg, int index, List<String> errors) {
+        String prefix = "Package #" + index + ": ";
+
+        addErrorIfNull(pkg.getPacks(), prefix + "Package Count is mandatory", errors);
+        addErrorIfEmpty(pkg.getPacksUnit(), prefix + "Package Type is mandatory", errors);
+        addErrorIfEmpty(pkg.getHsCode(), prefix + "HS Code is mandatory", errors);
+        addErrorIfEmpty(pkg.getGoodsDescription(), prefix + "Cargo Description is mandatory", errors);
+        addErrorIfNullOrZero(pkg.getGrossWeight(), prefix + "Cargo Gross Weight is mandatory", errors);
+
+    }
+
+    private void validateFreightDetails(ShippingInstruction si, List<String> errors) {
+        if (CollectionUtils.isEmpty(si.getFreightDetailList())) {
+            errors.add("At least one Freight Detail is mandatory");
+            return;
+        }
+
+        for (int i = 0; i < si.getFreightDetailList().size(); i++) {
+            validateFreight(si.getFreightDetailList().get(i), i + 1, errors);
+        }
+    }
+
+    private void validateFreight(FreightDetail freight, int index, List<String> errors) {
+        String prefix = "Freight Detail #" + index + ": ";
+
+        addErrorIfEmpty(freight.getChargeType(), prefix + "Charge Type is mandatory", errors);
+        addErrorIfEmpty(freight.getPaymentTerms(), prefix + "Payment Terms is mandatory", errors);
+        addErrorIfEmpty(freight.getPayerLocation(), prefix + "Payer Location is mandatory", errors);
+
+        if (freight.getPayerType() == null) {
+            errors.add(prefix + "Payer Type is mandatory");
+        }
+    }
+
+    // ========== HELPER METHODS ==========
+    private void addErrorIfEmpty(String value, String errorMessage, List<String> errors) {
+        if (isStringNullOrEmpty(value)) {
+            errors.add(errorMessage);
+        }
+    }
+
+    private void addErrorIfNull(Object value, String errorMessage, List<String> errors) {
+        if (value == null) {
+            errors.add(errorMessage);
+        }
+    }
+
+    private void addErrorIfNullOrZero(BigDecimal value, String errorMessage, List<String> errors) {
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add(errorMessage);
+        }
     }
 
 }
