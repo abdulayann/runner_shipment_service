@@ -12,35 +12,35 @@ import java.util.List;
 @Repository
 @Slf4j
 public class NetworkTransferShipmentsMappingDao implements INetworkTransferShipmentsMappingDao {
-    private final INetworkTransferShipmentsMappingRepository networkShipmentMappingRepository;
+    private final INetworkTransferShipmentsMappingRepository networkTransferShipmentMappingRepository;
 
     @Autowired
-    public NetworkTransferShipmentsMappingDao(INetworkTransferShipmentsMappingRepository networkShipmentMappingRepository) {
-        this.networkShipmentMappingRepository = networkShipmentMappingRepository;
+    public NetworkTransferShipmentsMappingDao(INetworkTransferShipmentsMappingRepository networkTransferShipmentMappingRepository) {
+        this.networkTransferShipmentMappingRepository = networkTransferShipmentMappingRepository;
     }
 
     @Override
     public NetworkTransferShipmentsMapping save(NetworkTransferShipmentsMapping networkShipmentsMapping) {
-        return networkShipmentMappingRepository.save(networkShipmentsMapping);
+        return networkTransferShipmentMappingRepository.save(networkShipmentsMapping);
     }
 
     @Override
     public List<NetworkTransferShipmentsMapping> saveAll(List<NetworkTransferShipmentsMapping> networkShipmentsMappingList) {
-        return networkShipmentMappingRepository.saveAll(networkShipmentsMappingList);
+        return networkTransferShipmentMappingRepository.saveAll(networkShipmentsMappingList);
     }
 
     @Override
     public void deleteByNetworkTransferId(Long networkTransferId) {
-        networkShipmentMappingRepository.deleteByNetworkTransferId(networkTransferId);
+        networkTransferShipmentMappingRepository.deleteByNetworkTransferId(networkTransferId);
     }
 
     @Override
     public List<String> findShipmentNumbersByNetworkTransferId(Long networkTransferId) {
-        return networkShipmentMappingRepository.findShipmentNumbersByNetworkTransferId(networkTransferId);
+        return networkTransferShipmentMappingRepository.findShipmentNumbersByNetworkTransferId(networkTransferId);
     }
 
     @Override
     public void deleteByNetworkTransferIdAndShipmentNumbers(Long networkTransferId, List<String> shipmentNumbers) {
-        networkShipmentMappingRepository.deleteByNetworkTransferIdAndShipmentNumbers(networkTransferId, shipmentNumbers);
+        networkTransferShipmentMappingRepository.deleteByNetworkTransferIdAndShipmentNumbers(networkTransferId, shipmentNumbers);
     }
 }

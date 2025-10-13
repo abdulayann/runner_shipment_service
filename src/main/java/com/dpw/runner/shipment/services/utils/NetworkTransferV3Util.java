@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferShipmentsMappingDao;
@@ -50,6 +52,10 @@ public class NetworkTransferV3Util {
 
     @Autowired
     private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
+    @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private ShipmentDao shipmentDao;
     @Autowired
     private IApplicationConfigService applicationConfigService;
 
@@ -157,23 +163,17 @@ public class NetworkTransferV3Util {
         if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
             processNetworkTransferToUpdateNetworkTransferShipmentMapping(shipmentDetails.getId(), shipmentDetails.getShipmentId(), SHIPMENT, List.of(shipmentDetails.getShipmentId()));
         } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
-            updateNetworkTransferShipmentMappingForConsolidation(consolidationDetails);
+            Set<Long> consoleShipmentIds = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId()).stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toSet());
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(consoleShipmentIds);
+            updateNetworkTransferShipmentMappingForConsolidation(consolidationDetails, shipmentDetailsList);
         }
     }
 
-    private void updateNetworkTransferShipmentMappingForConsolidation(ConsolidationDetails consolidationDetails) {
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+    private void updateNetworkTransferShipmentMappingForConsolidation(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
+        List<String> shipmentNumbers = shipmentDetailsList.stream().map(ShipmentDetails::getShipmentId).toList();
+        processNetworkTransferToUpdateNetworkTransferShipmentMapping(consolidationDetails.getId(), consolidationDetails.getConsolidationNumber(), CONSOLIDATION, shipmentNumbers);
 
-        if(!Objects.isNull(consolidationDetails.getShipmentsList())) {
-            shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
-        }
-
-        List<String> shipmentNumbersList = shipmentDetailsList.stream().map(ShipmentDetails::getShipmentId).toList();
-        processNetworkTransferToUpdateNetworkTransferShipmentMapping(consolidationDetails.getId(), consolidationDetails.getConsolidationNumber(), CONSOLIDATION, shipmentNumbersList);
-
-        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole()) && !Objects.isNull(consolidationDetails.getShipmentsList())) {
-            shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
-
+        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
                 Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails1.getReceivingBranch()), shipmentDetails1.getId(), SHIPMENT);
                 if(optionalNetworkTransfer.isPresent()) {

@@ -8,7 +8,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferShipmentsMappingDao;
@@ -63,6 +65,12 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
     @Mock
     private CommonErrorLogsDao commonErrorLogsDao;
+
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private ShipmentDao shipmentDao;
 
     @Mock
     private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
@@ -1707,6 +1715,8 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         ShipmentDetails s1 = new ShipmentDetails();
         s1.setShipmentId("S1");
         consolidation.setShipmentsList(Set.of(s1));
+        ShipmentDetails s2 = new ShipmentDetails();
+        s1.setShipmentId("S2");
 
         NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.REQUESTED_TO_TRANSFER, 100L);
 
@@ -1714,11 +1724,12 @@ class NetworkTransferV3UtilTest extends CommonMocks {
                 .thenReturn(List.of(mockTransfer));
 
         when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
-                .thenReturn(List.of("S2"));
+                .thenReturn(List.of("S1", "S2", "S3"));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(s1, s2));
 
         networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("CONSOLIDATION", null, consolidation);
 
-        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("S2"));
+        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("S3", "S1"));
         verify(networkTransferShipmentsMappingDao).saveAll(anyList());
     }
 

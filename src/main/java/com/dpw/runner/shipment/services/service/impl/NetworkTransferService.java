@@ -49,8 +49,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 import java.time.LocalDateTime;
@@ -88,9 +86,6 @@ public class NetworkTransferService implements INetworkTransferService {
     private final INotificationDao notificationDao;
 
     private final V1ServiceUtil v1ServiceUtil;
-
-    @Autowired
-    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
 
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
@@ -163,7 +158,7 @@ public class NetworkTransferService implements INetworkTransferService {
             Root<NetworkTransferShipmentsMapping> subRoot = subquery.from(NetworkTransferShipmentsMapping.class);
 
             subquery.select(subRoot.get("networkTransferId"))
-                    .where(cb.equal(subRoot.get("shipmentNumber"), shipmentNumber.trim().toUpperCase()));
+                    .where(cb.equal(subRoot.get(NetworkTransferConstants.SHIPMENT_NUMBER), shipmentNumber.trim().toUpperCase()));
 
             return root.get("id").in(subquery);
         };
@@ -172,7 +167,7 @@ public class NetworkTransferService implements INetworkTransferService {
     private String extractShipmentNumber(List<FilterCriteria> filters) {
         if (filters == null) return null;
         for (FilterCriteria filter : filters) {
-            if (filter.getCriteria() != null && "shipmentNumber".equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+            if (filter.getCriteria() != null && NetworkTransferConstants.SHIPMENT_NUMBER.equalsIgnoreCase(filter.getCriteria().getFieldName())) {
                 Object val = filter.getCriteria().getValue();
                 return val != null ? val.toString() : null;
             }
@@ -189,7 +184,7 @@ public class NetworkTransferService implements INetworkTransferService {
         while (iterator.hasNext()) {
             FilterCriteria filter = iterator.next();
             if (filter.getCriteria() != null &&
-                    "shipmentNumber".equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+                    NetworkTransferConstants.SHIPMENT_NUMBER.equalsIgnoreCase(filter.getCriteria().getFieldName())) {
                 iterator.remove();
                 continue;
             }
@@ -204,6 +199,16 @@ public class NetworkTransferService implements INetworkTransferService {
         List<NetworkTransferListResponse> networkTransferListResponses = new ArrayList<>();
         lst.forEach(networkTransfer -> {
             var response = modelMapper.map(networkTransfer, NetworkTransferListResponse.class);
+            if (networkTransfer.getNetworkTransferShipmentsMappings() != null) {
+                List<String> shipmentNumbers = networkTransfer.getNetworkTransferShipmentsMappings()
+                        .stream()
+                        .map(NetworkTransferShipmentsMapping::getShipmentNumber)
+                        .collect(Collectors.toList());
+                response.setShipmentNumbers(shipmentNumbers);
+            } else {
+                response.setShipmentNumbers(Collections.emptyList());
+            }
+
             networkTransferListResponses.add(response);
         });
 

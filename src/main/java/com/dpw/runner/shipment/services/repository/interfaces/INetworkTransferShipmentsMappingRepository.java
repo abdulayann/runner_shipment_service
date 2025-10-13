@@ -27,6 +27,7 @@ public interface INetworkTransferShipmentsMappingRepository extends MultiTenancy
     List<String> findShipmentNumbersByNetworkTransferId(@Param("networkTransferId") Long networkTransferId);
 
     @Modifying
+    @Transactional
     @Query("DELETE FROM NetworkTransferShipmentsMapping n WHERE n.networkTransferId = :networkTransferId AND n.shipmentNumber IN :shipmentNumbers")
     void deleteByNetworkTransferIdAndShipmentNumbers(
             @Param("networkTransferId") Long networkTransferId,
