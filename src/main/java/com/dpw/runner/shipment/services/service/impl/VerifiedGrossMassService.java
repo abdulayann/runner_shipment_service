@@ -84,8 +84,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -130,6 +130,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     }
 
     @Override
+    @Transactional
     public VerifiedGrossMassResponse create(VerifiedGrossMassRequest request) {
         Object entity = verifiedGrossMassValidationUtil.validateRequest(request.getEntityType(), request.getEntityId());
         VerifiedGrossMass verifiedGrossMass = jsonHelper.convertValue(request, VerifiedGrossMass.class);
@@ -217,7 +218,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     @Override
     public Page<VerifiedGrossMass> getVerifiedGrossMasses(ListCommonRequest listCommonRequest) {
         Pair<Specification<VerifiedGrossMass>, Pageable> tuple = fetchData(listCommonRequest, VerifiedGrossMass.class, VerifiedGrossMassConstants.tableNames);
-       return verifiedGrossMassDao.findAll(tuple.getLeft(), tuple.getRight());
+        return verifiedGrossMassDao.findAll(tuple.getLeft(), tuple.getRight());
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<VerifiedGrossMass> verifiedGrossMassList, boolean getMasterData) {
@@ -238,6 +239,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
     }
 
     @Override
+    @Transactional
     public VerifiedGrossMassResponse update(VerifiedGrossMassRequest request) {
         if (Objects.isNull(request.getId())) {
             throw new ValidationException("Id can not be null");
@@ -316,6 +318,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
                 sailingInformation.setCarrier(carrierBooking.getSailingInformation().getCarrier());
             }
             verifiedGrossMass.setSailingInformation(sailingInformation);
+            carrierBooking.setVerifiedGrossMass(verifiedGrossMass);
         }
     }
 

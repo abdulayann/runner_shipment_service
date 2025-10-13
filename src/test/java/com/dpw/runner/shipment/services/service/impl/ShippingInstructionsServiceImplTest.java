@@ -1176,7 +1176,7 @@ class ShippingInstructionsServiceImplTest {
     void getDefaultShippingInstructionValues_shouldThrow_whenUnsupportedEntityType() {
         assertThatThrownBy(() -> service.getDefaultShippingInstructionValues(null, 100L))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test
@@ -1190,7 +1190,7 @@ class ShippingInstructionsServiceImplTest {
 
         assertThatThrownBy(() -> service.updateShippingInstructions(request))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test

@@ -29,7 +29,7 @@ public class ShippingInstructionsConstants {
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Shipping Instruction Retrieval";
     public static final String SUBMIT_SUCCESSFUL = "Shipping Instruction submitted successfully.";
     public static final String AMEND_SUCCESSFUL = "Shipping Instruction amend successful.";
-    public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Type";
+    public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Entity Type";
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
     public static final String SI_TABLE = "ShippingInstruction";
     public static final String SAILING_INFORMATION = "sailingInformation";
@@ -48,6 +48,8 @@ public class ShippingInstructionsConstants {
     public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
     public static final String PROCESSED = "Processed";
     public static final String SHIPPING_INSTRUCTION_EMAIL_TEMPLATE = "SHIPPING_INSTRUCTION";
+    public static final String SHIPPING_INSTRUCTION_TYPE = "si";
+
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
