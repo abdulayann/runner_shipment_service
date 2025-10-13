@@ -496,11 +496,11 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
     @Override
     public ShippingInstructionResponse getDefaultShippingInstructionValues(EntityType entityType, Long entityId) {
-        ShippingInstruction instruction = new ShippingInstruction();
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         setDefaultValues(entityType, entityId, mapper, false);
-        instruction.setStatus(ShippingInstructionStatus.Draft);
-        ShippingInstructionResponse response = jsonHelper.convertValue(mapper.getShippingInstruction(), ShippingInstructionResponse.class);
+        ShippingInstruction shippingInstruction = mapper.getShippingInstruction();
+        shippingInstruction.setEntityType(entityType);
+        ShippingInstructionResponse response = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
         response.setBookingStatus(mapper.getBookingStatus());
         return response;
     }
