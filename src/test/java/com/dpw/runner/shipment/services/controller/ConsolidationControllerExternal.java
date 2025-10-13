@@ -121,4 +121,34 @@ class ConsolidationControllerExternalTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(consolidationV3Service).listExternal(listRequest);
     }
+
+    @Test
+    void retrieveByIdExternal_whenServiceThrows_shouldPropagateRunnerException() throws Exception {
+        // arrange
+        when(consolidationV3Service.retrieveByIdExternal(any()))
+                .thenThrow(new RunnerException("service failure"));
+        // act + assert
+        assertThrows(RunnerException.class, () -> controller.retrieveByIdExternal(1L, "g-1", "src"));
+    }
+
+    @Test
+    void retrieveByIdExternalPartial_whenServiceThrows_shouldPropagateRunnerException() throws Exception {
+        // arrange
+        when(consolidationV3Service.retrieveByIdExternalPartial(any()))
+                .thenThrow(new RunnerException("partial failure"));
+        // build request
+        CommonGetRequest request = CommonGetRequest.builder().guid("g-1").build();
+        // act + assert
+        assertThrows(RunnerException.class, () -> controller.retrieveByIdExternalPartial(request, "src"));
+    }
+
+    @Test
+    void getConsolidationsList_whenServiceThrows_shouldPropagateRunnerException() throws Exception {
+        // arrange
+        ListCommonRequest request = new ListCommonRequest();
+        when(consolidationV3Service.fetchConsolidation(request))
+                .thenThrow(new RunnerException("fetch failure"));
+        // act + assert
+        assertThrows(RunnerException.class, () -> controller.getConsolidationsList(request));
+    }
 }
