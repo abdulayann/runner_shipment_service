@@ -1,40 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -43,26 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -75,14 +21,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
-import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
-import com.dpw.runner.shipment.services.dao.impl.CustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.impl.EventDao;
-import com.dpw.runner.shipment.services.dao.impl.HblDao;
-import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
-import com.dpw.runner.shipment.services.dao.impl.HblTermsConditionTemplateDao;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -99,36 +38,12 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.DocDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TiLegs;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -142,28 +57,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -175,11 +68,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -187,6 +76,21 @@ import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -377,7 +281,6 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void shouldValidateHblReport_CallInternalValidator() {
-        // Arrange
         when(reportsFactory.getReport(any())).thenReturn(new HblReport());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(
                 ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
@@ -397,10 +300,8 @@ class ReportServiceTest extends CommonMocks {
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
-        // Act
         reportService.validateHouseBill(reportRequest);
 
-        // Assert
         verify(reportService).validateUnassignedPackagesInternal(
                 any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
         );
@@ -408,11 +309,9 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void shouldNotThrow_whenShipmentControlledIsTrue() {
-        // Arrange
         when(reportsFactory.getReport(any())).thenReturn(new HblReport());
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(
-                ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
-        );
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build());
 
         ShipmentDetails shipment = new ShipmentDetails();
         AdditionalDetails details = new AdditionalDetails();
@@ -423,47 +322,39 @@ class ReportServiceTest extends CommonMocks {
         cont1.setContainerNumber("C1");
         shipment.setContainersList(Set.of(cont1));
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(reportService).validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
-        // Act & Assert
         assertDoesNotThrow(() -> reportService.validateHouseBill(reportRequest));
     }
 
     @Test
     void shouldThrowValidationException_whenShipmentControlledIsFalse() {
-        // Arrange
         when(reportsFactory.getReport(any())).thenReturn(new HblReport());
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(
-                ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
-        );
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build());
 
-        ShipmentDetails shipment = new ShipmentDetails();
-        AdditionalDetails details = new AdditionalDetails();
-        details.setReleaseType("RANDOM");
-        shipment.setAdditionalDetails(details);
-        shipment.setControlled(false);
-        Containers cont1 = new Containers();
-        cont1.setContainerNumber("C1");
-        shipment.setContainersList(Set.of(cont1));
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+        shipmentDetails.setControlled(false);
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
-        // Act
         ValidationException ex = assertThrows(ValidationException.class,
                 () -> reportService.validateHouseBill(reportRequest));
 
-        // Assert
-        assertTrue(ex.getMessage().contains("Update the Shipment as Controlled - YES and Controlled Ref No."));
+        assertEquals("Update the Shipment as Controlled - YES and Controlled Ref No.", ex.getMessage());
     }
 
     @Test
     void shouldThrowValidationException_WhenInvalidReportType() {
-        // Arrange
+        // some dummy report implementation or plain mock
         when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
 
-        // Act & Assert
-        assertThrows(ValidationException.class, () -> reportService.validateHouseBill(reportRequest));
+        assertThrows(ValidationException.class, () ->
+                reportService.validateHouseBill(reportRequest));
     }
 
     @Test

@@ -519,6 +519,7 @@ class V1ServiceUtilTest {
         mockResponse.setEntities(Arrays.asList(tenant1, tenant2));
 
         when(iV1Service.getTenantDetails(any())).thenReturn(mockResponse);
+        when(modelMapper.map(any(), eq(V1TenantSettingsResponse.class))).thenReturn(V1TenantSettingsResponse.builder().build());
 
         var response = v1ServiceUtil.getTenantSettingsMap(Arrays.asList(11));
         assertFalse(response.isEmpty());

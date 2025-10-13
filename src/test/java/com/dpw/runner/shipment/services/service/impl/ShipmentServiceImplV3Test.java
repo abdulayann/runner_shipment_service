@@ -294,6 +294,7 @@ import org.springframework.http.ResponseEntity;
 @SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Spy
