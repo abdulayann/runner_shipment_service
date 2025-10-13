@@ -3654,6 +3654,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .entityId(123L)
                 .entityType(Constants.SHIPMENT)
                 .sendToBranch("XYZ")
+                .transportMode("AIR")
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         EntityTransferV3ShipmentDetails entityTransferShipmentDetails = EntityTransferV3ShipmentDetails.builder()
@@ -3675,6 +3676,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .entityId(123L)
                 .entityType(Constants.SHIPMENT)
                 .sendToBranch("XYZ")
+                .transportMode("AIR")
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -3688,6 +3690,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .entityId(123L)
                 .entityType(Constants.CONSOLIDATION)
                 .sendToBranch("XYZ")
+                .transportMode("SEA")
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = EntityTransferV3ConsolidationDetails.builder()
@@ -3721,6 +3724,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .entityId(123L)
                 .entityType(Constants.CONSOLIDATION)
                 .sendToBranch("XYZ")
+                .transportMode("SEA")
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
