@@ -909,6 +909,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         commonContainers.setCustomsSealNumber(containers.getCustomsSealNumber());
         commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
         commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
+        commonContainers.setCount(containers.getContainerCount());
         return commonContainers;
     }
 
