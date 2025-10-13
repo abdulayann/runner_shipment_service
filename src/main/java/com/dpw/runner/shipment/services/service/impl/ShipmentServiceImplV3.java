@@ -219,15 +219,7 @@ import com.dpw.runner.shipment.services.dto.request.notification.AibNotification
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.QuoteResetField;
@@ -1371,6 +1363,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
+        try {
+            ShipmentDetailsResponse response = retrieveShipmentDetails(commonGetRequest);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ShipmentDetailsResponse retrieveShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
         List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
         Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
@@ -1414,13 +1417,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             finalResult.add(rowMap);
         }
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
+        if(nestedList.isEmpty()){
+            log.error(SHIPMENT_DETAILS_IS_NULL_MESSAGE_DR, commonGetRequest.getId() == null ? commonGetRequest.getGuid() : commonGetRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
         ShipmentDetails shipDetails = new ShipmentDetails();
         for( Map<String, Object> curr : nestedList) {
             shipDetails = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
 
         }
-        IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
-       return ResponseHelper.buildSuccessResponse(shipmentListResponse);
+        ShipmentDetailsResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
+        return shipmentListResponse;
     }
 
 

@@ -78,10 +78,12 @@ public class ConsolidationControllerExternal {
 
     @PostMapping(ApiConstants.API_DYNAMIC_LIST)
     public ResponseEntity<IRunnerResponse> getConsolidationsList(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
+        log.info("Received Consolidation Dynamic list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         return consolidationV3Service.fetchConsolidation(listCommonRequest);
     }
     @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
     public  ResponseEntity<IRunnerResponse> retrieveConsolidationDetails(@RequestBody CommonGetRequest commonGetRequest) throws RunnerException {
+        log.info("Received Consolidation Dynamic Retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(commonGetRequest));
         if(commonGetRequest.getId() == null && commonGetRequest.getGuid() ==null) {
             throw new ValidationException("Id or Guid is mandatory");
         }

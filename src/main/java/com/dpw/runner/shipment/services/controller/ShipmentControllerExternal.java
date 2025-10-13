@@ -67,10 +67,12 @@ public class ShipmentControllerExternal {
 
     @PostMapping(ApiConstants.API_DYNAMIC_LIST)
     public ResponseEntity<IRunnerResponse> getShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
+        log.info("Received Shipment Dynamic List request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         return shipmentService.fetchShipments(listCommonRequest);
     }
     @PostMapping(ApiConstants.API_DYNAMIC_RETRIEVE)
     public  ResponseEntity<IRunnerResponse> retrieveShipmentDetails(@RequestBody @Valid CommonGetRequest commonGetRequest) throws RunnerException {
+        log.info("Received Shipment Dynamic retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(commonGetRequest));
         if(commonGetRequest.getId() == null && commonGetRequest.getGuid() ==null) {
             throw new ValidationException("Id or Guid is mandatory");
         }

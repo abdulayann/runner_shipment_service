@@ -117,6 +117,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,6 +127,8 @@ import java.util.function.IntConsumer;
 
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ERROR_SHIPMENT_NOT_FOUND;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
@@ -5339,6 +5342,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Override
     public ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException {
+        try {
+            ConsolidationDetailsResponse response = retrieveConsolidationDetailds(commonGetRequest);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ConsolidationDetailsResponse retrieveConsolidationDetailds(CommonGetRequest commonGetRequest) throws RunnerException {
         List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
         // Step 1: Read requested columns
         Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns, ShipmentConstants.CONSOLIDATION_DETAILS);
@@ -5382,14 +5396,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             finalResult.add(rowMap);
         }
         List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.CONSOLIDATION_ROOT_KEY_NAME);
-
+        if(nestedList.isEmpty()){
+            log.error(CONSOLIDATION_DETAILS_IS_NULL_MESSAGE_DR, commonGetRequest.getId() == null ? commonGetRequest.getGuid() : commonGetRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
         ConsolidationDetails consolDetails = new ConsolidationDetails();
         for (Map<String, Object> curr : nestedList) {
             consolDetails = jsonHelper.convertValue(curr.get(Constants.CONSOLIDATION_ROOT_KEY_NAME), ConsolidationDetails.class);
-
         }
-        IRunnerResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
-        return ResponseHelper.buildSuccessResponse(consolListResponse);
+        ConsolidationDetailsResponse consolListResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ConsolidationDetailsResponse());
+        return consolListResponse;
     }
 
     public ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException {
