@@ -406,6 +406,16 @@ class BookingIntegrationsUtilityTest {
     }
 
     @Test
+    void testUpdateBookingInPlatform_fromShipment_createAtPlatform_throws_handled() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        doThrow(new RuntimeException("platform-down")).when(platformServiceAdapter).createAtPlatform(any(CommonRequestModel.class));
+        assertDoesNotThrow(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment));
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
+    }
+
+    @Test
     void createShipmentInV1_fromCustomerBooking_throwsException() throws RunnerException {
         willAnswer(invocation -> {
             throw new Exception("abc msg");
