@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
@@ -56,10 +57,12 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -1140,6 +1143,53 @@ class NPMServiceAdapterTest {
         verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<ApiError>any());
         verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
         verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
+    }
+    @Test
+    void testAwbAutoSell_npmServiceExchange() throws RunnerException, RestClientException {
+        // Arrange
+        // prepare RunnerResponse returned by jsonHelper.readFromJson(...)
+        RunnerResponse.RunnerResponseBuilder<Object> builderResult = RunnerResponse.builder();
+        RunnerResponse.RunnerResponseBuilder<Object> dataResult = builderResult.count(3L).data("Data");
+        RunnerResponse<Object> buildResult = dataResult.error(new ApiError(HttpStatus.CONTINUE))
+                .pageNo(1)
+                .requestId("42")
+                .success(true)
+                .build();
+
+        // jsonHelper stubs
+        when(jsonHelper.readFromJson(anyString(), any(Class.class))).thenReturn(buildResult);
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        // ensure the adapter uses the test restTemplate and URL parts
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbAutoSell", "/awb/auto-sell");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
+
+        // make exchange throw an HttpClientErrorException with an empty body (so readFromJson gets "")
+        when(restTemplate.exchange(any(RequestEntity.class), any(Class.class)))
+                .thenThrow(new HttpClientErrorException(
+                        HttpStatus.CONTINUE,
+                        "Continue",
+                        "".getBytes(StandardCharsets.UTF_8),
+                        StandardCharsets.UTF_8));
+
+        // build a real CommonRequestModel via its builder (use actual request type expected by method)
+        NPMAutoSellRequest autoSellRequest = new NPMAutoSellRequest(); // populate if required by your logic
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(autoSellRequest)
+                .dataList(new ArrayList<>())
+                .dependentData("Dependent Data")
+                .guid("1234")
+                .id(1L)
+                .build();
+
+        // Act & Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.awbAutoSell(commonRequestModel));
+
+        // Verifications - adjust as needed if your test class uses different mock instances
+        verify(jsonHelper, atLeastOnce()).convertToJson(any());
+        verify(jsonHelper).readFromJson(eq(""), any(Class.class));
+        verify(restTemplate).exchange(any(RequestEntity.class), any(Class.class));
     }
 
     /**

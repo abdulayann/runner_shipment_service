@@ -124,7 +124,7 @@ class TenantAspectTest {
             tenantAspect.beforeFindOfMultiTenancyRepository(joinPoint);
             verify(entityManager, atLeastOnce()).unwrap(Session.class);
             verify(session, times(1)).enableFilter(MultiTenancy.TENANT_FILTER_NAME);
-            verify(filter, times(1)).setParameter(eq(MultiTenancy.TENANT_PARAMETER_NAME), eq(77L));
+            verify(filter, times(1)).setParameter(MultiTenancy.TENANT_PARAMETER_NAME, 77L);
         }
     }
 }
