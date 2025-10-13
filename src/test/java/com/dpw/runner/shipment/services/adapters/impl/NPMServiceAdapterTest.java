@@ -44,8 +44,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,6 +118,9 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "executorService")
     private ExecutorService executorService;
+
+    @MockBean(name = "shipmentService")
+    private IShipmentService shipmentService;
 
     /**
      * Method under test:
@@ -1840,5 +1843,61 @@ class NPMServiceAdapterTest {
                 Arguments.of(true, new ArrayList<>(), new ArrayList<>()),
                 Arguments.of(true, nullDgList, nullDgList)
         );
+    }
+
+    @Test
+    void fetchContract_success() throws Exception {
+        // given
+        ListContractRequest listReq = new ListContractRequest();
+        ListContractResponse listRes = new ListContractResponse();
+        String json = "{}";
+
+        when(jsonHelper.convertToJson(listReq)).thenReturn(json);
+        org.springframework.http.ResponseEntity<ListContractResponse> okResponse = ResponseEntity.ok(listRes);
+
+        // Simple stubbing using doReturn to avoid spy/proxy matching issues:
+        doReturn(okResponse).when(restTemplate)
+                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+        doReturn(okResponse).when(restTemplate2)
+                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+        doReturn(okResponse).when(restTemplate3)
+                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+
+        // mock CommonRequestModel to avoid constructor access issues
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        when(commonRequestModel.getData()).thenReturn(listReq);
+
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContract(commonRequestModel);
+        assertNotNull(result, "Service should return a non-null ResponseEntity");
+        verify(quoteContractsService, times(1)).updateQuoteContracts(listRes);
+        // verify exchange was called at least once on any of the rest templates
+        verify(restTemplate, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+        verify(restTemplate2, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+        verify(restTemplate3, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
+    }
+
+    @Test
+    void fetchContractFromShipment_success() throws Exception {
+        ListContractRequest listReq = new ListContractRequest();
+        ResponseEntity<ListContractResponse> nullBodyResponse = ResponseEntity.ok(null);
+        String json = "{}";
+
+        when(jsonHelper.convertToJson(listReq)).thenReturn(json);
+        doReturn(nullBodyResponse).when(restTemplate)
+                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
+        doReturn(nullBodyResponse).when(restTemplate2)
+                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
+        doReturn(nullBodyResponse).when(restTemplate3)
+                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
+        when(shipmentService.fetchAllMasterDataByKey(any(), any()))
+                .thenReturn(Map.of("key", "value"));
+
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        when(commonRequestModel.getData()).thenReturn(listReq);
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractFromShipment(commonRequestModel);
+
+        assertNotNull(result, "Should return a non-null ResponseEntity");
+        verify(quoteContractsService, times(1)).updateQuoteContracts(null);
+        verify(shipmentService, never()).fetchAllMasterDataByKey(any(), any());
     }
 }
