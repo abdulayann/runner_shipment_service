@@ -5,7 +5,9 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,8 +43,9 @@ public class BookingContainerV3Request {
     private String hsCode;
     private Boolean isShipperOwned;
     private Boolean isEmpty;
-    @NonNull
-    @Min(value = 1, message = "Container count cannot be less than 1")
+    @NotNull
+    @Min(value = 1L, message = "Container count cannot be less than 1")
+    @Max(value = 200L, message = "Container count cannot be more than 200")
     private Long containerCount = 1L;
     @Size(max = 100, message = "max size is 100 for carrier_seal_number")
     private String carrierSealNumber;
