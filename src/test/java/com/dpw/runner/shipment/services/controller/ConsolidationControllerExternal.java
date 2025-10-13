@@ -56,7 +56,7 @@ class ConsolidationControllerExternalTest {
         CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
         when(consolidationV3Service.getConsolidationDetails(request)).thenReturn(ResponseEntity.ok(mockResponse));
-
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         ResponseEntity<IRunnerResponse> response = controller.retrieveConsolidationDetails(request);
 
         assertEquals(200, response.getStatusCodeValue());
@@ -67,6 +67,7 @@ class ConsolidationControllerExternalTest {
     void testRetrieveConsolidationDetailsWithValidGuid_Success() throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().guid("01544fd2-16d1-4c17-b369-f431bd85d2f0").build();
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(consolidationV3Service.getConsolidationDetails(request)).thenReturn(ResponseEntity.ok(mockResponse));
 
         ResponseEntity<IRunnerResponse> response = controller.retrieveConsolidationDetails(request);
@@ -78,6 +79,7 @@ class ConsolidationControllerExternalTest {
     void testRetrieveConsolidationDetailsWithNullId_Success() throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().build();
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         Exception ex = assertThrows(ValidationException.class, () -> controller.retrieveConsolidationDetails(request));
 
         assertEquals("Id or Guid is mandatory", ex.getMessage());
@@ -86,6 +88,7 @@ class ConsolidationControllerExternalTest {
     @Test
     void testRetrieveConsolidationDetails_ValidationException() {
         CommonGetRequest request = CommonGetRequest.builder().build();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         assertThrows(ValidationException.class, () -> controller.retrieveConsolidationDetails(request));
     }
 
