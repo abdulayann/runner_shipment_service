@@ -3175,7 +3175,6 @@ public class ReportService implements IReportService {
 
     private void validateControlledFieldsForBlGeneration(ShipmentDetails shipment) {
         if(ObjectUtils.isNotEmpty(shipment)
-                && ObjectUtils.isNotEmpty(shipment.getControlled())
                 && !Boolean.TRUE.equals(shipment.getControlled())) {
             throw new ValidationException("Update the Shipment as Controlled - YES and Controlled Ref No.");
         }
