@@ -702,7 +702,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return ecpk;
         }
 
-        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole, safeDescription);
+        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole);
         if (fcgi != null) {
             return fcgi;
         }
@@ -765,7 +765,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    private String getFCGIEventCode(String safeEventCode, String safeLocationRole, String safeDescription) {
+    private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.info("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);

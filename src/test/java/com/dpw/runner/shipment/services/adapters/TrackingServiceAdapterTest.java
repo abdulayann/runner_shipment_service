@@ -498,7 +498,7 @@ class TrackingServiceAdapterTest {
                 .events(List.of(event)).build();
         String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
-        assertEquals(EventConstants.FCGI, result);
+        assertEquals(EventConstants.CAAW, result);
     }
 
     @Test
