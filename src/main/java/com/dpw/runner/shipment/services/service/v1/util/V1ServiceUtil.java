@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.v1.util;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -27,9 +28,13 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -37,6 +42,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ACTIVE_CLIENT;
@@ -55,6 +61,12 @@ public class V1ServiceUtil {
     private CommonUtils commonUtils;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private CustomKeyGenerator keyGenerator;
+    @Autowired
+    private CacheManager cacheManager;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -338,45 +350,109 @@ public class V1ServiceUtil {
                 + (StringUtility.isNotEmpty(container.getCommodityGroup()) ? container.getCommodityGroup() : NPMConstants.FAK);
     }
 
-    public Map<Integer, Object> getTenantDetails(List<Integer> tenantIds) {
+    private Map<Integer, TenantDetailsByListResponse.TenantDetails> getTenantDetailsWithCache(List<Integer> tenantIds) {
         if (tenantIds.isEmpty())
             return new HashMap<>();
 
-        try {
-            var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
-            return v1Response.getEntities()
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            TenantDetailsByListResponse.TenantDetails::getTenantId,
-                            Collectors.collectingAndThen(
-                                    Collectors.toList(),
-                                    list -> list.get(0).getTenant()
-                            )));
+        Map<Integer, TenantDetailsByListResponse.TenantDetails> result = new ConcurrentHashMap<>();
+        List<Integer> uncachedTenantIds = new ArrayList<>();
+
+        Cache cache = cacheManager.getCache(CacheConstants.TENANTS);
+
+        // Step 1: Check cache for each tenant
+        for (Integer tenantId : tenantIds) {
+            Object cachedTenant = getCachedTenant(tenantId, cache);
+            if (cachedTenant != null) {
+                try {
+                    TenantDetailsByListResponse.TenantDetails tenantDetails =
+                            jsonHelper.readFromJson((String) cachedTenant, TenantDetailsByListResponse.TenantDetails.class);
+                    result.put(tenantId, tenantDetails);
+                } catch (Exception e) {
+                    log.error("Error deserializing cached tenant {}: {}", tenantId, e.getMessage());
+                    uncachedTenantIds.add(tenantId);
+                }
+            } else {
+                uncachedTenantIds.add(tenantId);
+            }
         }
-        catch (Exception ex) {
-            log.error(ex.getMessage());
-            return new HashMap<>();
+
+        // Step 2: Fetch uncached tenants from API
+        if (!uncachedTenantIds.isEmpty()) {
+            try {
+                var v1Response = v1Service.getTenantDetails(
+                        TenantDetailsByListRequest.builder()
+                                .tenantIds(uncachedTenantIds)
+                                .take(100)
+                                .build()
+                );
+
+                // Step 3: Cache and add to result
+                v1Response.getEntities().forEach(tenantDetails -> {
+                    Integer tenantId = tenantDetails.getTenantId();
+                    updateCacheByTenantId(tenantId, tenantDetails, cache);
+                    result.put(tenantId, tenantDetails);
+                });
+
+                log.info("Tenant fetch: {} from cache, {} from API",
+                        tenantIds.size() - uncachedTenantIds.size(),
+                        uncachedTenantIds.size());
+
+            } catch (Exception ex) {
+                log.error("Error fetching tenant details: {}", ex.getMessage());
+            }
         }
+
+        return result;
+    }
+
+    public Map<Integer, Object> getTenantDetails(List<Integer> tenantIds) {
+        Map<Integer, TenantDetailsByListResponse.TenantDetails> cachedDetails = getTenantDetailsWithCache(tenantIds);
+
+        // Extract tenant object from TenantDetails
+        return cachedDetails.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().getTenant()
+                ));
     }
 
     public Map<Integer, V1TenantSettingsResponse> getTenantSettingsMap(List<Integer> tenantIds) {
-        if (tenantIds.isEmpty())
-            return new HashMap<>();
+        Map<Integer, TenantDetailsByListResponse.TenantDetails> cachedDetails = getTenantDetailsWithCache(tenantIds);
+
+        // Extract tenant settings and map to V1TenantSettingsResponse
+        return cachedDetails.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> modelMapper.map(entry.getValue().getTenantSettings(), V1TenantSettingsResponse.class)
+                ));
+    }
+
+    private Object getCachedTenant(Integer tenantId, Cache cache) {
+        if (cache == null) {
+            return null;
+        }
+
+        String cacheKey = keyGenerator.customCacheKey(CacheConstants.TENANT_ID, tenantId);
+        Cache.ValueWrapper wrapper = cache.get(cacheKey);
+
+        return wrapper != null ? wrapper.get() : null;
+    }
+
+    private void updateCacheByTenantId(Integer tenantId, TenantDetailsByListResponse.TenantDetails tenantDetails, Cache cache) {
+        if (cache == null) {
+            log.warn("Cache '{}' not found for tenantId: {}", CacheConstants.TENANTS, tenantId);
+            return;
+        }
 
         try {
-            var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
-            return v1Response.getEntities()
-                .stream()
-                .collect(Collectors.groupingBy(
-                    TenantDetailsByListResponse.TenantDetails::getTenantId,
-                    Collectors.collectingAndThen(
-                        Collectors.toList(),
-                        list ->  modelMapper.map(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
-                    )));
-        }
-        catch (Exception ex) {
-            log.error(ex.getMessage());
-            return new HashMap<>();
+            // Store the FULL TenantDetails object so both methods can use it
+            String tenantString = objectMapper.writeValueAsString(tenantDetails);
+            String idKey = keyGenerator.customCacheKey(CacheConstants.TENANT_ID, tenantId);
+            cache.put(idKey, tenantString);
+
+            log.debug("Cached tenant {} with key {}", tenantId, idKey);
+        } catch (JsonProcessingException e) {
+            log.error("Error caching tenant {}: {}", tenantId, e.getMessage());
         }
     }
 

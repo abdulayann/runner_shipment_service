@@ -1078,14 +1078,15 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
 
     private void sendCopyDocumentRequest(CopyDocumentsRequest copyDocumentsRequest, String authToken) {
-
         if(!copyDocumentsRequest.getDocuments().isEmpty()){
             copyDocumentsRequest.setDeleteExistingDocuments(true);
-            try {
-                documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), authToken);
-            } catch (Exception ex) {
-                log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
-            }
+            CompletableFuture.runAsync(() -> {
+                try {
+                    documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), authToken);
+                } catch (Exception ex) {
+                    log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
+                }
+            }, executorService);
         }
     }
 
