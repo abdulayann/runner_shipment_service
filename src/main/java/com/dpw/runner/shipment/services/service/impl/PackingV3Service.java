@@ -527,7 +527,9 @@ public class PackingV3Service implements IPackingV3Service {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Packing packing = optionalPacking.get();
-
+        PackingV3Request packingRequest = new PackingV3Request();
+        packingRequest.setConsolidationId(packing.getConsolidationId());
+        module = validateEligibilityForConsoleAndUpdateModule(module, Collections.singletonList(packingRequest));
         Long consolidationId = packing.getConsolidationId();
         if(consolidationId == null && packing.getShipmentId() != null) {
             consolidationId = packingV3Util.getConsolidationId(packing.getShipmentId());
