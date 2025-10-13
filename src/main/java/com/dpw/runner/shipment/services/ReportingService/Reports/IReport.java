@@ -5596,8 +5596,8 @@ public abstract class IReport {
         addShipmentReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
         addShipmentRoutingDetails(dict, shipmentDetails.getRoutingsList());
         addShipmentPartyDetails(dict, shipmentDetails);
-        addShipmentAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getSendingAgent());
-        addShipmentAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getReceivingAgent());
+        addShipmentAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getExportBroker());
+        addShipmentAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getImportBroker());
         addShipmentBranchAndTriangulationDetails(dict, shipmentDetails);
     }
 
