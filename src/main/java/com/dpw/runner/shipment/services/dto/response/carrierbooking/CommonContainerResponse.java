@@ -21,7 +21,7 @@ public class CommonContainerResponse implements IRunnerResponse {
     private Long id;   // from MultiTenancy / BaseEntity
     private UUID guid;
     private String containerCode;
-    private Integer count;
+    private Long count;
     private String goodsDescription;
     private String hsCode;
     private String commodityCode;
