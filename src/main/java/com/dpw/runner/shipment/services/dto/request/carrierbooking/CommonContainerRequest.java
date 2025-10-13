@@ -20,7 +20,7 @@ public class CommonContainerRequest implements Serializable {
     private Long id;
     private UUID guid;
     private String containerCode;
-    private Integer count;
+    private Long count;
     private String goodsDescription;
     private String hsCode;
     private String commodityCode;
