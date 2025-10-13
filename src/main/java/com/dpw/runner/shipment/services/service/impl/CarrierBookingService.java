@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNum
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -747,12 +748,20 @@ public class CarrierBookingService implements ICarrierBookingService {
         List<ShippingInstruction> shippingInstructionList = new ArrayList<>();
         List<VerifiedGrossMass> verifiedGrossMassList = new ArrayList<>();
         List<IRunnerResponse> finalResponses = new ArrayList<>(carrierBookingResponses);
+        Map<Long, String> siCbMap = new HashMap<>();
+        Map<Long, CarrierBookingStatus> vgmCbMap = new HashMap<>();
+        Map<Long, ShippingInstructionStatus> vgmSiMap = new HashMap<>();
         for (CarrierBooking carrierBooking : carrierBookings) {
             if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
                 shippingInstructionList.add(carrierBooking.getShippingInstruction());
+                siCbMap.put(carrierBooking.getShippingInstruction().getId(), carrierBooking.getStatus().name());
             }
             if (Objects.nonNull(carrierBooking.getVerifiedGrossMass())) {
                 verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
+                vgmCbMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getStatus());
+                if(Objects.nonNull(carrierBooking.getShippingInstruction())) {
+                    vgmSiMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getShippingInstruction().getStatus());
+                }
             }
         }
         Page<ShippingInstruction> shippingInstructionEntityList = shippingInstructionsService.getShippingInstructions(listCommonRequest);
@@ -761,6 +770,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
             for (ShippingInstruction shippingInstruction : shippingInstructionList) {
                 ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+                shippingInstructionResponse.setBookingStatus(siCbMap.get(shippingInstructionResponse.getId()));
                 shippingInstructionResponses.add(shippingInstructionResponse);
             }
             List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
@@ -771,11 +781,12 @@ public class CarrierBookingService implements ICarrierBookingService {
         verifiedGrossMassList.addAll(vgmEntityList.getContent());
 
         if (!CollectionUtils.isEmpty(verifiedGrossMassList)) {
-            List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
-
+            List<VerifiedGrossMassResponse> verifiedGrossMassListResponses = new ArrayList<>();
             for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
-                VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
-                verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
+                VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassResponse.class);
+                verifiedGrossMassResponse.setBookingStatus(vgmCbMap.get(verifiedGrossMassResponse.getId()));
+                verifiedGrossMassResponse.setSiStatus(vgmSiMap.get(verifiedGrossMassResponse.getId()));
+                verifiedGrossMassListResponses.add(verifiedGrossMassResponse);
             }
             List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
             verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
