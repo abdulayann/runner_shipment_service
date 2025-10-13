@@ -574,7 +574,7 @@ public class ShippingInstructionUtil {
                 .toList();
     }
 
-    public void validateShippingInstructionForSubmission(ShippingInstruction si) {
+    public void validateMandatoryFieldsForSubmitAndAmend(ShippingInstruction si) {
         List<String> errors = new ArrayList<>();
 
         validateHeader(si, errors);
@@ -627,7 +627,6 @@ public class ShippingInstructionUtil {
         }
     }
 
-    // ========== CONTAINERS VALIDATION ==========
     private void validateContainers(ShippingInstruction si, List<String> errors) {
         if (CollectionUtils.isEmpty(si.getContainersList())) {
             errors.add("At least one Container is mandatory");
@@ -701,7 +700,6 @@ public class ShippingInstructionUtil {
         }
     }
 
-    // ========== HELPER METHODS ==========
     private void addErrorIfEmpty(String value, String errorMessage, List<String> errors) {
         if (isStringNullOrEmpty(value)) {
             errors.add(errorMessage);

@@ -703,7 +703,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
-        shippingInstructionUtil.validateShippingInstructionForSubmission(si);
+        shippingInstructionUtil.validateMandatoryFieldsForSubmitAndAmend(si);
         // Step 3: Mark SI as submitted
         si.setStatus(Requested);
         si.setSubmitByUserEmail(UserContext.getUser().getEmail());
@@ -803,7 +803,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING);
         validateSIRequest(shippingInstruction);
-        shippingInstructionUtil.validateShippingInstructionForSubmission(shippingInstruction);
+        shippingInstructionUtil.validateMandatoryFieldsForSubmitAndAmend(shippingInstruction);
         if (booking != null) {
             shippingInstruction.setCarrierBookingNo(booking.getCarrierBookingNo());
         }
