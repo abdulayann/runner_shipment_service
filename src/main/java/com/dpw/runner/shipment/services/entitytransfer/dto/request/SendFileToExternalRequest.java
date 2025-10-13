@@ -15,6 +15,7 @@ public class SendFileToExternalRequest implements IRunnerRequest {
     private Long entityId;
     private String entityType;
     private String sendToBranch;
+    private String transportMode;
     private List<String> additionalDocs;
     private Map<String, List<String>> shipAdditionalDocs;
 }

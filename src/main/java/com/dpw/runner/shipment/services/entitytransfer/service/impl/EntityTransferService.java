@@ -588,6 +588,10 @@ public class EntityTransferService implements IEntityTransferService {
 
     public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
         SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
+        if(sendFileToExternalRequest.getTransportMode().equals("AIR"))
+            sendFileToExternalRequest.setSendToBranch("EWLAIREXP");
+        else
+            sendFileToExternalRequest.setSendToBranch("GBLCS");
         if(Objects.equals(sendFileToExternalRequest.getEntityType(), SHIPMENT)){
             sendShipmentToExternalSystem(sendFileToExternalRequest);
         } else if(Objects.equals(sendFileToExternalRequest.getEntityType(), CONSOLIDATION)){
