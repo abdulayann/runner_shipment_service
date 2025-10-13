@@ -93,9 +93,10 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.6</version>
+            <version>2.6.0</version>
         </dependency>
-<!--        <dependency>-->
+
+        <!--        <dependency>-->
 <!--            <groupId>io.springfox</groupId>-->
 <!--            <artifactId>springfox-swagger2</artifactId>-->
 <!--            <version>2.9.2</version>-->
@@ -239,11 +240,11 @@
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.dpw.runner</groupId>
-            <artifactId>runner-timezone-utils</artifactId>
-            <version>0.0.4</version>  <!-- 0.0.4-->
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.dpw.runner</groupId>-->
+<!--            <artifactId>runner-timezone-utils</artifactId>-->
+<!--            <version>0.0.4</version>  &lt;!&ndash; 0.0.4&ndash;&gt;-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
