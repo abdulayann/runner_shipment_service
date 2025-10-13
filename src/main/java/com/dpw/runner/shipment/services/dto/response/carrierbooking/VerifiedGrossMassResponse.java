@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
@@ -21,6 +22,7 @@ import java.util.List;
 public class VerifiedGrossMassResponse implements IRunnerResponse {
 
     private Long id;
+    private String type = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_TYPE;
     private String serviceType;
     private CarrierBookingStatus bookingStatus;
     private VerifiedGrossMassStatus status;
