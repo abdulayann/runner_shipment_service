@@ -8259,11 +8259,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateAgentDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getSendingAgent())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_ORIGIN_AGENT);
         }
 
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getReceivingAgent())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_DESTINATION_AGENT);
         }
     }
