@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
@@ -34,6 +35,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -216,6 +218,42 @@ public class AwbUtility {
         }
 
         return sb.toString();
+    }
+
+    public static String buildSecurityStatus(String securityStatus, String screeningStatus, String branchRaNo, String screener, String dateTime) {
+
+        return Constants.SECURITY_STATUS_TEMPLATE
+                .replace("<Security status>", securityStatus)
+                .replace("<Screening method>", screeningStatus)
+                .replace("<Branch RA No>", branchRaNo)
+                .replace("<Screener>", screener)
+                .replace("<Date+Time>", dateTime);
+    }
+
+    public static String buildThirdPartySecurityStatus(String securityStatus, String screeningStatus, String thirdPartyRaNo, String branchRaNo, String screener, String dateTime) {
+
+        return Constants.THIRD_PARTY_SECURITY_STATUS_TEMPLATE
+                .replace("<Security status>", securityStatus)
+                .replace("<Screening method>", screeningStatus)
+                .replace("<3rd party RA No>", thirdPartyRaNo)
+                .replace("<Branch RA No>", branchRaNo)
+                .replace("<Screener>", screener)
+                .replace("<Date+Time>", dateTime);
+    }
+
+    public static boolean isCargoSecuredByDPW(AdditionalDetailModel additionalDetails){
+        AirAuthorisingEntity receivedFrom = additionalDetails.getSecurityStatusReceivedFrom();
+        String regulatedEntity = additionalDetails.getRegulatedEntityCategory();
+
+        List<String> screeningStatus = additionalDetails.getScreeningStatus();
+
+        boolean hasKCOrAO = screeningStatus != null &&
+                screeningStatus.stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .anyMatch(s -> s.equalsIgnoreCase("KC") || s.equalsIgnoreCase("AOM"));
+
+        return hasKCOrAO || (receivedFrom == null && StringUtils.isBlank(regulatedEntity));
     }
 
     public static String constructAddress(Map<String, Object> addressData) {

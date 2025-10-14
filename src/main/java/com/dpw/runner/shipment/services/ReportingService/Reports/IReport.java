@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Containe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
@@ -49,6 +48,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
@@ -5332,6 +5332,26 @@ public abstract class IReport {
 
         return String.join("/", eCsdInfoList.stream().filter(StringUtility::isNotEmpty).toList());
     }
+
+    public String getCSDSecurityInfo(AdditionalDetailModel additionalDetails, Awb awb){
+
+        AwbCargoInfo awbCargoInfo  = awb.getAwbCargoInfo();
+        boolean isCargoSecuredByDPW = AwbUtility.isCargoSecuredByDPW(additionalDetails);
+
+        LocalDateTime screeningTime = awbCargoInfo.getScreeningTime();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
+        String dateTimeStr = screeningTime.format(fmt);
+
+        List<String> screeningStatusList = awbCargoInfo.getScreeningStatus();
+        String screeningStatus =  (screeningStatusList == null || screeningStatusList.isEmpty()) ? "" : String.join(", ", screeningStatusList);
+        if(isCargoSecuredByDPW){
+            return AwbUtility.buildSecurityStatus(awbCargoInfo.getSecurityStatus(), screeningStatus, awbCargoInfo.getRaNumber(), awbCargoInfo.getUserInitials(), dateTimeStr);
+        }else{
+            return AwbUtility.buildThirdPartySecurityStatus(awbCargoInfo.getSecurityStatus(), screeningStatus, additionalDetails.getRegulatedEntityCategory(),
+                    awbCargoInfo.getRaNumber(), awbCargoInfo.getUserInitials(), dateTimeStr);
+        }
+    }
+
 
     public String getPrintOriginalDate(Awb awb) {
         if (Objects.nonNull(awb.getAwbCargoInfo().getScreeningTime()))

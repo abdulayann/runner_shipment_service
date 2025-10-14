@@ -940,6 +940,7 @@ public class HawbReport extends IReport{
                 masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
+            dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getShipmentDetails().getAdditionalDetails(), hawbModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
             dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
