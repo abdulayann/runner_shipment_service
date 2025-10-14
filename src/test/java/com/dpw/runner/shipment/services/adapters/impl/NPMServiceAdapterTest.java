@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
@@ -23,10 +24,7 @@ import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
@@ -47,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,6 +121,16 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "shipmentService")
     private IShipmentService shipmentService;
+
+    @Mock
+    private RestTemplate npmServiceRestTemplate;
+
+    @Mock
+    private AwbDao awbDao;
+
+
+    private String npmServiceBaseUrl = "http://localhost:8080";
+    private String npmAwbImportRates = "/api/awb/import-rates";
 
     /**
      * Method under test:
@@ -1900,5 +1909,88 @@ class NPMServiceAdapterTest {
         assertNotNull(result, "Should return a non-null ResponseEntity");
         verify(quoteContractsService, times(1)).updateQuoteContracts(null);
         verify(shipmentService, never()).fetchAllMasterDataByKey(any(), any());
+    }
+
+    @Test
+    void awbImportRates_Success_ShouldSaveAwbAndReturnResponse() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbImportRates", "/api/awb/import-rates");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
+
+        NPMImportRatesRequest importRatesRequest = new NPMImportRatesRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(importRatesRequest)
+                .build();
+
+        String requestJson = "{\"request\":\"data\"}";
+        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
+        dependentServiceResponse.setData(new Object());
+
+        NpmAwbImportRateResponse npmAwbImportRateResponse = new NpmAwbImportRateResponse();
+        npmAwbImportRateResponse.updatedAwb = new Awb();
+
+        ResponseEntity<DependentServiceResponse> mockResponse =
+                ResponseEntity.ok(dependentServiceResponse);
+
+        when(jsonHelper.convertToJson(importRatesRequest)).thenReturn(requestJson);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenReturn(mockResponse);
+        when(jsonHelper.convertValue(any(), eq(NpmAwbImportRateResponse.class)))
+                .thenReturn(npmAwbImportRateResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.awbImportRates(commonRequestModel);
+
+        // Assert
+        assertNotNull(result);
+        verify(iAwbDao, times(1)).save(npmAwbImportRateResponse.updatedAwb);
+        verify(restTemplate, times(1)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+        verify(jsonHelper, times(1)).convertToJson(importRatesRequest);
+        verify(jsonHelper, times(1)).convertValue(any(), eq(NpmAwbImportRateResponse.class));
+    }
+
+    @Test
+    void awbImportRates_HttpStatusCodeException_ShouldThrowNPMException() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost:8080");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbImportRates", "/api/awb/import-rates");
+        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
+
+        NPMImportRatesRequest importRatesRequest = new NPMImportRatesRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(importRatesRequest)
+                .build();
+
+        String requestJson = "{\"request\":\"data\"}";
+        String errorResponseBody = "{\"error\":{\"message\":\"NPM service error\"}}";
+
+        RunnerResponse<?> errorResponse = new RunnerResponse<>();
+        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST);
+        apiError.setMessage("NPM service error");
+        errorResponse.setError(apiError);
+
+        HttpClientErrorException exception = new HttpClientErrorException(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                errorResponseBody.getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8
+        );
+
+        when(jsonHelper.convertToJson(importRatesRequest)).thenReturn(requestJson);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenThrow(exception);
+        when(jsonHelper.readFromJson(errorResponseBody, RunnerResponse.class))
+                .thenReturn(errorResponse);
+
+        // Act & Assert
+        NPMException thrownException = assertThrows(NPMException.class, () -> {
+            nPMServiceAdapter.awbImportRates(commonRequestModel);
+        });
+
+        assertTrue(thrownException.getMessage().contains("Error from NPM"));
+        assertTrue(thrownException.getMessage().contains("NPM service error"));
+        verify(iAwbDao, never()).save(any());
+        verify(jsonHelper, times(1)).readFromJson(errorResponseBody, RunnerResponse.class);
     }
 }
