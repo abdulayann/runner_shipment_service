@@ -1112,6 +1112,105 @@ if (unitConversionUtilityMockedStatic != null) {
     assertNotNull(consolidationDetailsV3Response);
   }
 
+    @Test
+    void testCreateConsolidationPayload6() {
+        testShipment.setPacksUnit("BBG");
+        testShipment.setContainersList(Set.of(testContainer));
+        ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setPacksUnit("BKG");
+        testShipment1.setId(2L);
+        testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment1)));
+        ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+        consolidationDetailsV3Response.setReceivingBranch(3L);
+        consolidationDetailsV3Response.setShipmentType(DIRECTION_IMP);
+        consolidationDetailsV3Response.setSourceGuid(UUID.randomUUID());
+        consolidationDetailsV3Response.setSourceTenantId(1L);
+        mockShipmentSettings();
+        consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+        assertNotNull(consolidationDetailsV3Response);
+    }
+
+
+    @Test
+    void testCreateConsolidationPayload7() {
+        testShipment.setPacksUnit("BBG");
+        testShipment.setContainersList(Set.of(testContainer));
+        ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setPacksUnit("BKG");
+        testShipment1.setId(2L);
+        testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment1)));
+        ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+        consolidationDetailsV3Response.setReceivingBranch(3L);
+        consolidationDetailsV3Response.setShipmentType(DIRECTION_IMP);
+        consolidationDetailsV3Response.setSourceGuid(UUID.randomUUID());
+        consolidationDetailsV3Response.setSourceTenantId(1L);
+        consolidationDetailsV3Response.setTenantId(1);
+        mockShipmentSettings();
+        consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+        assertNotNull(consolidationDetailsV3Response);
+    }
+
+    @Test
+    void testCreateConsolidationPayload8() {
+        testShipment.setPacksUnit("BBG");
+        testShipment.setContainersList(Set.of(testContainer));
+        ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setPacksUnit("BKG");
+        testShipment1.setId(2L);
+        testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment1)));
+        UUID guid = UUID.randomUUID();
+        ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+        consolidationDetailsV3Response.setReceivingBranch(3L);
+        consolidationDetailsV3Response.setShipmentType(DIRECTION_IMP);
+        consolidationDetailsV3Response.setSourceGuid(guid);
+        consolidationDetailsV3Response.setGuid(guid);
+        consolidationDetailsV3Response.setSourceTenantId(1L);
+        consolidationDetailsV3Response.setTenantId(1);
+        mockShipmentSettings();
+        consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+        assertNotNull(consolidationDetailsV3Response);
+    }
+
+    @Test
+    void testCreateConsolidationPayload9() {
+        testShipment.setPacksUnit("BBG");
+        testShipment.setContainersList(Set.of(testContainer));
+        ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setPacksUnit("BKG");
+        testShipment1.setId(2L);
+        testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment1)));
+        UUID guid = UUID.randomUUID();
+        ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+        consolidationDetailsV3Response.setReceivingBranch(3L);
+        consolidationDetailsV3Response.setShipmentType(DIRECTION_IMP);
+        consolidationDetailsV3Response.setSourceGuid(guid);
+        consolidationDetailsV3Response.setGuid(guid);
+        consolidationDetailsV3Response.setTenantId(1);
+        mockShipmentSettings();
+        consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+        assertNotNull(consolidationDetailsV3Response);
+    }
+
+    @Test
+    void testCreateConsolidationPayload10() {
+        testShipment.setPacksUnit("BBG");
+        testShipment.setContainersList(Set.of(testContainer));
+        ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setPacksUnit("BKG");
+        testShipment1.setId(2L);
+        testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment1)));
+        UUID guid = UUID.randomUUID();
+        ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+        consolidationDetailsV3Response.setSourceGuid(null);
+        consolidationDetailsV3Response.setReceivingBranch(3L);
+        consolidationDetailsV3Response.setShipmentType(DIRECTION_IMP);
+        consolidationDetailsV3Response.setGuid(guid);
+        consolidationDetailsV3Response.setTenantId(1);
+        mockShipmentSettings();
+        consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+        assertNotNull(consolidationDetailsV3Response);
+    }
+
   @Test
   void testPopulateOriginDestination_EXP(){
     consolidationDetails.setInterBranchConsole(false);

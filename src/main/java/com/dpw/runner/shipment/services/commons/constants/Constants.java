@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 public class Constants {
 
@@ -768,6 +772,7 @@ public class Constants {
     public static final String KAFKA_CONSUME = "[InternalKafkaConsume] Consolidation: ";
     public static final String IS_RAIL_TRANSFER_ENABLED = "IS_RAIL_TRANSFER_ENABLED";
     public static final String OMS_SELECTIVE_INCLUDE_ALL = "/selective?include=all";
+    public static final Set<String> DESTINATION_DIRECTION_SET = Set.of(DIRECTION_IMP, DIRECTION_CTS);
     private Constants() {
     }
 

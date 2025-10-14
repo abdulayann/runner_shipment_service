@@ -2939,6 +2939,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(consolidationDetailsV3Response.getId(), CONSOLIDATION, consolidationDetailsV3Response.getReceivingBranch().intValue());
             consolidationDetailsV3Response.setTransferStatus(transferStatus);
         }
+        if(Constants.DESTINATION_DIRECTION_SET.contains(consolidationDetailsV3Response.getShipmentType()) && Objects.nonNull(consolidationDetailsV3Response.getSourceGuid()) && Objects.nonNull(consolidationDetailsV3Response.getSourceTenantId()) && !Objects.equals(consolidationDetailsV3Response.getGuid(), consolidationDetailsV3Response.getSourceGuid()) && !Objects.equals(consolidationDetailsV3Response.getTenantId(), consolidationDetailsV3Response.getSourceTenantId().intValue())){
+            consolidationDetailsV3Response.setIsTransferred(true);
+        }
     }
 
     public String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails) {
