@@ -2714,6 +2714,8 @@ public class ReportService implements IReportService {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
 
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
+        if (Objects.isNull(shipment)) return;
+
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         if (report instanceof HblReport) {
