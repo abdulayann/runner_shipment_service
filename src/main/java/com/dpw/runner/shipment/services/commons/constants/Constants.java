@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
