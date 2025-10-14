@@ -476,6 +476,14 @@ public class AwbService implements IAwbService {
         }
     }
 
+    private void validateIATAComplianceV2(FetchAwbListRequest request) {
+        if (Boolean.TRUE.equals(request.getFromGenerateAwbButton()) &&
+            !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())
+        ) {
+            validateBeforeGenerateAWB();
+        }
+    }
+
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -483,10 +491,7 @@ public class AwbService implements IAwbService {
             if (request == null) {
                 log.error("Request is empty for AWB list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(Boolean.TRUE.equals(request.getFromGenerateAwbButton()) &&
-               !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-                validateBeforeGenerateAWB();
-            }
+            validateIATAComplianceV2(request);
             // construct specifications for filter request
             Pair<Specification<Awb>, Pageable> tuple = fetchData(request, Awb.class);
             Page<Awb> awbPage = awbDao.findAll(tuple.getLeft(), tuple.getRight());
