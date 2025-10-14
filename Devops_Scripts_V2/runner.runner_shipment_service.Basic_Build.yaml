@@ -9,7 +9,7 @@ variables:
   isJava: 'True'
   jdkVersion: '1.17'
   POM_XML_PATH: 'pom.xml'
-  MAVEN_OPTIONS: '-DskipTests'
+  MAVEN_OPTIONS: '-Xmx3072m'
   JAR_NAME: 'runner-shipment-services-0.0.1.jar'
 
 steps:
@@ -21,12 +21,10 @@ steps:
       javaHomeOption: 'JDKVersion'
       jdkVersionOption: '$(jdkVersion)'
       mavenVersionOption: 'Default'
-      mavenAuthenticateFeed: false
+      mavenAuthenticateFeed: true
       mavenOptions: '-Xmx3072m'
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
-    displayName: 'Build JAR with Maven'
-    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
 
   - script: |
       echo "===================================="
