@@ -35,7 +35,6 @@ import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
 import org.hibernate.type.SqlTypes;
@@ -167,7 +166,6 @@ public class DpsEvent {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Embeddable
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DpsFieldData {
         private String key;

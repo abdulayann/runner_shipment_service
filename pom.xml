@@ -165,6 +165,11 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>11.7.1</version> <!-- Match version with your flyway-core -->
+        </dependency>
+        <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
             <version>9.21</version>
@@ -196,6 +201,17 @@
             <groupId>org.eclipse.parsson</groupId>
             <artifactId>jakarta.json</artifactId>
             <version>1.1.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+
+        <!-- Also likely needed -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
         </dependency>
 
 <!--        <dependency>-->
@@ -240,11 +256,11 @@
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.dpw.runner</groupId>-->
-<!--            <artifactId>runner-timezone-utils</artifactId>-->
-<!--            <version>0.0.4</version>  &lt;!&ndash; 0.0.4&ndash;&gt;-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.dpw.runner</groupId>
+            <artifactId>runner-timezone-utils</artifactId>
+            <version>0.0.4</version>  <!-- 0.0.4-->
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -302,17 +318,23 @@
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-commons</artifactId>
-            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+            <version>1.3.1-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>*</groupId>-->
+<!--                    <artifactId>*</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-quartz</artifactId>
-            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+            <version>1.3.1-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-messaging-quartz</artifactId>
-            <version>1.1.0.RELEASE</version> <!-- 1.1.0.RELEASE-->
+            <version>1.3.1-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.quartz-scheduler</groupId>-->
