@@ -2911,12 +2911,6 @@ public class ReportService implements IReportService {
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         validateControlledFieldsForBlGeneration(shipment);
-        if (Boolean.FALSE.equals(isValidForRegeneration(Long.parseLong(reportRequest.getReportId()),
-                shipment, shipmentSettingsDetails))) {
-            return HouseBillValidationResponse.builder()
-                    .isApprovalRequired(true)
-                    .build();
-        }
 
         if (report instanceof HblReport) {
             validateUnassignedPackagesInternal(
@@ -2936,17 +2930,28 @@ public class ReportService implements IReportService {
         } else {
             throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
         }
+
+        boolean approvalRequired = Boolean.FALSE.equals(
+                isValidForRegeneration(Long.parseLong(reportRequest.getReportId()), shipmentSettingsDetails)
+        );
+
         return HouseBillValidationResponse.builder()
-                .isApprovalRequired(false)
+                .isApprovalRequired(approvalRequired)
                 .build();
     }
 
-    private Boolean isValidForRegeneration(Long shipmentId, ShipmentDetails shipmentDetails,
+    private boolean isValidForRegeneration(Long shipmentId,
                                            ShipmentSettingsDetails shipmentSettingsDetails) {
         if(Boolean.FALSE.equals(shipmentSettingsDetails.getRestrictBlRelease())) {
             log.info("Release flag is disabled for shipmentId {}", shipmentId);
             return true;
         }
+        Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
+        if(shipment.isEmpty()) {
+            log.info("Invalid shipment id: {}", shipmentId);
+            return true;
+        }
+        ShipmentDetails shipmentDetails = shipment.get();
         AdditionalDetails additionalDetails = shipmentDetails.getAdditionalDetails();
         List<EntityTransferMasterLists> entityTransferMasterLists = masterDataUtils.fetchMultipleMasterData(
                 createMasterListRequest(additionalDetails.getReleaseType()));
