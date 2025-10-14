@@ -17,7 +17,7 @@ steps:
       echo "===================================="
       echo "Backing up config folder"
       echo "===================================="
-      mv src/main/resources/config config_backup
+      mv src/main/resources config_backup
       echo "✅ Config folder moved to backup (config_backup)"
       ls -la src/main/resources/
     displayName: 'Backup config folder'
