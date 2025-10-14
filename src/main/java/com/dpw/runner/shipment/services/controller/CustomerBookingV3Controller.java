@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -72,6 +73,7 @@ public class CustomerBookingV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
+    @Validated
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -82,6 +84,7 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.create(request));
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
@@ -89,6 +92,7 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.DELETE_SUCCESSFUL, response = CustomerBookingV3DeleteResponse.class)})
     @DeleteMapping(ApiConstants.API_DELETE)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
@@ -96,6 +100,7 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.delete(id));
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3ListResponse.class, message = CustomerBookingConstants.LIST_SUCCESSFUL, responseContainer = CustomerBookingConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
@@ -182,6 +187,7 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.retryForBilling(CommonGetRequest.builder().id(id).build()));
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ContainerResponse.class)})
     @PostMapping(ApiConstants.BOOKING_API_CREATE_CONTAINERS)
     public ResponseEntity<IRunnerResponse> createBookingContainers(@RequestBody @Valid BookingContainerV3Request bookingContainerV3Request) throws RunnerException {
@@ -189,13 +195,15 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(containerResponse);
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(ApiConstants.BOOKING_API_UPDATE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> updateBookingContainers(@RequestBody @Valid List<BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateBookingContainers(@RequestBody @Valid List<@Valid BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
         BulkContainerResponse containerResponse = containerV3Service.updateBulk(jsonHelper.convertValueToList(bookingContainerV3Requests, ContainerV3Request.class), BOOKING);
         return ResponseHelper.buildSuccessResponse(containerResponse);
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ApiConstants.BOOKING_API_LIST_CONTAINERS)
     public ResponseEntity<IRunnerResponse> listBookingContainers(@RequestBody ListCommonRequest listCommonRequest) throws RunnerException {
@@ -203,9 +211,10 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(containerListResponse);
     }
 
+    @Validated
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(ApiConstants.BOOKING_API_DELETE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<@Valid BookingContainerV3Request> bookingContainerV3Requests) throws RunnerException {
         BulkContainerResponse bulkContainerResponse = containerV3Service.deleteBulk(jsonHelper.convertValueToList(bookingContainerV3Requests, ContainerV3Request.class), BOOKING);
         return ResponseHelper.buildSuccessResponse(bulkContainerResponse);
     }
