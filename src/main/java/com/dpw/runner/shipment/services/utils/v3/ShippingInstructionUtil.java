@@ -691,9 +691,9 @@ public class ShippingInstructionUtil {
     private void validateFreight(FreightDetail freight, int index, List<String> errors) {
         String prefix = "Freight Detail #" + index + ": ";
 
-        addErrorIfEmpty(freight.getChargeType(), prefix + "Charge Type is mandatory", errors);
-        addErrorIfEmpty(freight.getPaymentTerms(), prefix + "Payment Terms is mandatory", errors);
-        addErrorIfEmpty(freight.getPayerLocation(), prefix + "Payer Location is mandatory", errors);
+        addErrorIfEmpty(freight.getChargeType(), prefix + "Charge Type is mandatory in FreightDetail", errors);
+        addErrorIfEmpty(freight.getPaymentTerms(), prefix + "Payment Terms is mandatory in FreightDetail", errors);
+        addErrorIfEmpty(freight.getPayerLocation(), prefix + "Payer Location is mandatory in FreightDetail", errors);
 
         if (freight.getPayerType() == null) {
             errors.add(prefix + "Payer Type is mandatory");
