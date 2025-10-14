@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContai
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.VgmCancelRequest;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -32,8 +33,11 @@ import com.dpw.runner.shipment.services.entity.SailingInformation;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
+import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
+import com.dpw.runner.shipment.services.entity.enums.FlowType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
+import com.dpw.runner.shipment.services.entity.enums.SourceSystem;
 import com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus;
 import com.dpw.runner.shipment.services.entity.enums.WeightDeterminationMethodType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -72,6 +76,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,6 +84,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus.CancelledRequested;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -90,6 +96,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -97,6 +104,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -160,6 +168,10 @@ class VerifiedGrossMassServiceTest {
     private CarrierBooking testCarrierBooking;
     private ConsolidationDetails testConsolidationDetails;
     private SubmitAmendInttraRequest request;
+    private VgmCancelRequest vgmCancelRequest;
+    private CommonContainers container1;
+    private CommonContainers container2;
+    private VerifiedGrossMass verifiedGrossMass;
 
     @BeforeEach
     void setUp() {
@@ -168,6 +180,34 @@ class VerifiedGrossMassServiceTest {
         testResponse = createTestResponse();
         testCarrierBooking = createTestCarrierBooking();
         testConsolidationDetails = createTestConsolidationDetails();
+
+        vgmCancelRequest = new VgmCancelRequest();
+        vgmCancelRequest.setContainersIds(List.of(1L, 2L));
+
+        container1 = new CommonContainers();
+        container1.setId(1L);
+        container1.setContainerNo("C1");
+        container1.setContainerCode("CODE1");
+        container1.setVgmStatus(VerifiedGrossMassStatus.Requested.name());
+        container1.setVerifiedGrossMassId(10L);
+
+        container2 = new CommonContainers();
+        container2.setId(2L);
+        container2.setContainerNo("C2");
+        container2.setContainerCode("CODE2");
+        container2.setVgmStatus(VerifiedGrossMassStatus.Requested.name());
+        container2.setVerifiedGrossMassId(10L);
+
+        verifiedGrossMass = new VerifiedGrossMass();
+        verifiedGrossMass.setId(10L);
+        verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Requested);
+        verifiedGrossMass.setContainersList(List.of(container1, container2));
+
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
     }
 
     @Test
@@ -1558,5 +1598,88 @@ class VerifiedGrossMassServiceTest {
                     }
                 })
                 .orElseThrow();
+    }
+
+    // ❌ Test invalid container IDs
+    @Test
+    void testCancelVerifiedGrossMass_InvalidIds_ThrowsException() {
+        when(commonContainersRepository.findAllByIdIn(vgmCancelRequest.getContainersIds()))
+                .thenReturn(Collections.emptyList());
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> verifiedGrossMassService.cancelVerifiedGrossMass(vgmCancelRequest));
+
+        assertTrue(ex.getMessage().contains("Invalid containers id"));
+        verifyNoInteractions(verifiedGrossMassDao, carrierBookingInttraUtil);
+    }
+
+    // ❌ Test size mismatch (some invalid IDs)
+    @Test
+    void testCancelVerifiedGrossMass_SizeMismatch_ThrowsException() {
+        when(commonContainersRepository.findAllByIdIn(vgmCancelRequest.getContainersIds()))
+                .thenReturn(List.of(container1));
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> verifiedGrossMassService.cancelVerifiedGrossMass(vgmCancelRequest));
+
+        assertTrue(ex.getMessage().contains("Some of the invalid containers id"));
+        verifyNoInteractions(verifiedGrossMassDao, carrierBookingInttraUtil);
+    }
+
+    // ❌ Test already cancelled container
+    @Test
+    void testCancelVerifiedGrossMass_AlreadyCancelled_ThrowsException() {
+        container1.setVgmStatus(VerifiedGrossMassStatus.Cancelled.name());
+        when(commonContainersRepository.findAllByIdIn(vgmCancelRequest.getContainersIds()))
+                .thenReturn(List.of(container1, container2));
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> verifiedGrossMassService.cancelVerifiedGrossMass(vgmCancelRequest));
+
+        assertTrue(ex.getMessage().contains("Some containers are already cancelled"));
+        verifyNoInteractions(verifiedGrossMassDao, carrierBookingInttraUtil);
+    }
+
+    // ❌ Test invalid VerifiedGrossMassId
+    @Test
+    void testCancelVerifiedGrossMass_InvalidVgmId_ThrowsException() {
+        when(commonContainersRepository.findAllByIdIn(vgmCancelRequest.getContainersIds()))
+                .thenReturn(List.of(container1, container2));
+        when(verifiedGrossMassDao.findById(10L)).thenReturn(Optional.empty());
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> verifiedGrossMassService.cancelVerifiedGrossMass(vgmCancelRequest));
+
+        assertTrue(ex.getMessage().contains("Invalid verified gross mass id"));
+        verifyNoInteractions(carrierBookingInttraUtil);
+    }
+
+    // ✅ Test partial cancellation (only one container cancelled → one transaction history)
+    @Test
+    void testCancelVerifiedGrossMass_Success() {
+        // Given
+        VgmCancelRequest request = new VgmCancelRequest();
+        request.setContainersIds(List.of(1L, 2L));
+
+        when(commonContainersRepository.findAllByIdIn(List.of(1L, 2L)))
+                .thenReturn(List.of(container1, container2));
+        when(verifiedGrossMassDao.findById(10L)).thenReturn(Optional.of(verifiedGrossMass));
+        when(verifiedGrossMassDao.save(any())).thenReturn(verifiedGrossMass);
+
+        // When
+        verifiedGrossMassService.cancelVerifiedGrossMass(request);
+
+        // Then
+        assertEquals(CancelledRequested.name(), container1.getVgmStatus());
+        assertEquals(CancelledRequested.name(), container2.getVgmStatus());
+        verify(verifiedGrossMassDao, times(1)).save(verifiedGrossMass);
+        verify(carrierBookingInttraUtil, times(2)).createTransactionHistory(
+                eq(CancelledRequested.getDescription()),
+                eq(FlowType.Inbound),
+                contains("for container no: "),
+                eq(SourceSystem.CargoRunner),
+                anyLong(),
+                eq(EntityTypeTransactionHistory.VGM)
+        );
     }
 }

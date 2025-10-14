@@ -3,11 +3,19 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShippingInstructionDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IVerifiedGrossMassDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShippingInstructionContainerWarningResponse;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -16,7 +24,20 @@ import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.CommonContainers;
+import com.dpw.runner.shipment.services.entity.CommonPackages;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.FreightDetail;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.SailingInformation;
+import com.dpw.runner.shipment.services.entity.ShippingInstruction;
+import com.dpw.runner.shipment.services.entity.ShippingInstructionResponseMapper;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.EntityTypeTransactionHistory;
@@ -76,7 +97,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.INVALID_ENTITY_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.LIST_INCLUDE_COLUMNS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_COLLECT;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.PAYMENT_TERM_PREPAID;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SI_LIST_RESPONSE_SUCCESS;
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.tableNames;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.CancelledRequested;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -354,9 +386,13 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private void populateSailingInformationFromCarrierBooking(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
         if (Objects.nonNull(shippingInstruction.getSailingInformation()) && Objects.nonNull(carrierBooking.getSailingInformation())) {
             shippingInstruction.getSailingInformation().setCarrierReceiptPlace(carrierBooking.getSailingInformation().getCarrierReceiptPlace());
+            shippingInstruction.getSailingInformation().setCarrierReceiptLocCode(carrierBooking.getSailingInformation().getCarrierReceiptLocCode());
             shippingInstruction.getSailingInformation().setPol(carrierBooking.getSailingInformation().getPol());
+            shippingInstruction.getSailingInformation().setOriginPortLocCode(carrierBooking.getSailingInformation().getOriginPortLocCode());
             shippingInstruction.getSailingInformation().setPod(carrierBooking.getSailingInformation().getPod());
+            shippingInstruction.getSailingInformation().setDestinationPortLocCode(carrierBooking.getSailingInformation().getDestinationPortLocCode());
             shippingInstruction.getSailingInformation().setCarrierDeliveryPlace(carrierBooking.getSailingInformation().getCarrierDeliveryPlace());
+            shippingInstruction.getSailingInformation().setCarrierDeliveryLocCode(carrierBooking.getSailingInformation().getCarrierDeliveryLocCode());
             shippingInstruction.getSailingInformation().setCarrier(carrierBooking.getSailingInformation().getCarrier());
             shippingInstruction.getSailingInformation().setShipInstructionCutoff(carrierBooking.getSailingInformation().getShipInstructionCutoff());
             shippingInstruction.getSailingInformation().setVerifiedGrossMassCutoff(carrierBooking.getSailingInformation().getVerifiedGrossMassCutoff());
@@ -407,7 +443,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         if (Objects.nonNull(vgmEntity)) {
             return vgmEntity.getStatus().name();
         }
-       return null;
+        return null;
     }
 
     @Override
@@ -421,7 +457,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
 
         modelMapper.map(shippingInstructionRequest, shippingInstruction);
-        
+
         validateSIRequest(shippingInstruction);
         shippingInstruction.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getInternalEmailsList()));
         shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getExternalEmailsList()));
@@ -881,10 +917,10 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstruction shippingInstruction = repository.findById(id)
                 .orElseThrow(() -> new ValidationException("INVALID_SI:" + id));
 
-        shippingInstruction.setStatus(ShippingInstructionStatus.Cancelled);
+        shippingInstruction.setStatus(ShippingInstructionStatus.CancelledRequested);
         ShippingInstruction savedCarrierBooking = repository.save(shippingInstruction);
         log.info("SI with id :{} cancelled ", savedCarrierBooking.getId());
-        carrierBookingInttraUtil.createTransactionHistory(Requested.getDescription(), FlowType.Inbound, "SI Cancelled", SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
+        carrierBookingInttraUtil.createTransactionHistory(CancelledRequested.getDescription(), FlowType.Inbound, CancelledRequested.getDescription() + "by: " + UserContext.getUser().getUsername(), SourceSystem.CargoRunner, id, EntityTypeTransactionHistory.SI);
     }
 
     private static void checkIfAllowed(String remoteId, ShippingInstruction shippingInstructionEntity, CarrierBooking booking,
@@ -961,6 +997,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         };
 
     }
+
     protected void sendNotification(ShippingInstruction shippingInstruction) {
         try {
             List<String> requests = new ArrayList<>(List.of(ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE));
