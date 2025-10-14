@@ -69,9 +69,9 @@ class CarrierBookingMasterDataHelperTest {
 
         // verify underlying calls happened
         verify(masterDataUtils, atLeastOnce()).setLocationData(eq(responseList), anyString());
-        verify(masterDataUtils, atLeastOnce()).fetchVesselForList(eq(responseList));
-        verify(masterDataUtils, atLeastOnce()).fetchCarriersForList(eq(responseList));
-        verify(masterDataUtils, atLeastOnce()).fetchTenantIdForList(eq(responseList));
+        verify(masterDataUtils, atLeastOnce()).fetchVesselForList(responseList);
+        verify(masterDataUtils, atLeastOnce()).fetchCarriersForList(responseList);
+        verify(masterDataUtils, atLeastOnce()).fetchTenantIdForList(responseList);
     }
 
     @Test
@@ -95,7 +95,7 @@ class CarrierBookingMasterDataHelperTest {
         helper.addAllMasterDataInSingleCall(resp, masterDataResponse);
 
         verify(masterDataUtils, times(1)).fetchInBulkMasterList(any());
-        verify(masterDataUtils, times(1)).pushToCache(anyMap(), eq(CacheConstants.MASTER_LIST), anySet(), any(), anyMap());
-        verify(masterDataKeyUtils, times(1)).setMasterDataValue(anyMap(), eq(CacheConstants.MASTER_LIST), eq(masterDataResponse), anyMap());
+        verify(masterDataUtils, times(1)).pushToCache(anyMap(), CacheConstants.MASTER_LIST, anySet(), any(), anyMap());
+        verify(masterDataKeyUtils, times(1)).setMasterDataValue(anyMap(), CacheConstants.MASTER_LIST, masterDataResponse, anyMap());
     }
 }
