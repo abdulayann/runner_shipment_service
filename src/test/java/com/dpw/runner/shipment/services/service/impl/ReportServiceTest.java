@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -342,35 +343,18 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void shouldValidateHblReport_CallInternalValidator() {
-        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
-        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
-
-        doNothing().when(reportService)
-                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
-
-        reportService.validateHouseBill(reportRequest);
-
-        verify(reportService).validateUnassignedPackagesInternal(
-                any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
-        );
-    }
-
-    @Test
-    void shouldThrowValidationException_WhenInvalidReportType() {
-        // some dummy report implementation or plain mock
-        when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
-
-        assertThrows(ValidationException.class, () ->
-                reportService.validateHouseBill(reportRequest));
-    }
-
-    @Test
-    void shouldValidateSeawayBill_CallInternalValidator() {
         // Arrange
-        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+
         Mockito.when(commonUtils.getShipmentSettingFromContext())
                 .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
+        // IMPORTANT: Mock the shipment to avoid early return
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        doReturn(shipment).when(reportService)
+                .getValidatedShipment(any(ReportRequest.class), anyString());
+
+        // Mock the internal validator
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
@@ -379,7 +363,81 @@ class ReportServiceTest extends CommonMocks {
 
         // Assert
         verify(reportService).validateUnassignedPackagesInternal(
-                any(), any(), eq("Seaway Bill"), eq("Seaway for possible cargo discrepancies.")
+                eq(shipment),
+                any(ShipmentSettingsDetails.class),
+                eq("BL"),
+                eq("BL for possible cargo discrepancies.")
+        );
+    }
+
+    @Test
+    void shouldReturnEarly_WhenShipmentIsNull() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+
+        // Mock getValidatedShipment to return null
+        doReturn(null).when(reportService)
+                .getValidatedShipment(any(ReportRequest.class), anyString());
+
+        // Act
+        reportService.validateHouseBill(reportRequest);
+
+        // Assert - validateUnassignedPackagesInternal should NOT be called
+        verify(reportService, never()).validateUnassignedPackagesInternal(
+                any(), any(), anyString(), anyString()
+        );
+    }
+
+    @Test
+    void shouldThrowValidationException_WhenInvalidReportType() {
+        // Create a custom implementation that is NOT HblReport or SeawayBillReport
+        when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
+
+        // Mock shipment - IMPORTANT: Must not be null
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+
+        // Mock the internal method to return the shipment
+        doReturn(shipment).when(reportService).getValidatedShipment(any(ReportRequest.class), any());
+
+        // Mock shipment settings
+        ShipmentSettingsDetails shipmentSettings = mock(ShipmentSettingsDetails.class);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettings);
+
+        // Now the test should throw ValidationException
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                reportService.validateHouseBill(reportRequest));
+
+        // Optional: verify the exception message
+        assertThat(exception.getMessage()).contains("Report Info not supported");
+    }
+
+    @Test
+    void shouldValidateSeawayBill_CallInternalValidator() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+
+        // Mock shipment settings
+        Mockito.when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+
+        // IMPORTANT: Mock the shipment to avoid early return
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        doReturn(shipment).when(reportService)
+                .getValidatedShipment(any(ReportRequest.class), anyString());
+
+        // Mock the internal validator
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act
+        reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        verify(reportService).validateUnassignedPackagesInternal(
+                eq(shipment),
+                any(ShipmentSettingsDetails.class),
+                eq("Seaway Bill"),
+                eq("Seaway for possible cargo discrepancies.")
         );
     }
 
