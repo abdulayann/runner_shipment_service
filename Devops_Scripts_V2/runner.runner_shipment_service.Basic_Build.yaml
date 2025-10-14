@@ -1,36 +1,73 @@
 trigger:
-  batch: true
-  branches:
-    include:
-      - development
-      - test
-
-resources:
-  repositories:
-  - repository: baseline_project_repo
-    name: DevOps/_git/devops-common-utils
-    type: git
-    ref: main
-
-variables:
-- name: containerRegistrySC
-  value: ACR_Cargoes Runner
-- name: MAVEN_CACHE_FOLDER
-  value: $(Pipeline.Workspace)/.m2/repository
-- name: POM_XML_PATH
-  value: pom.xml
-- name: MAVEN_OPTIONS
-  value: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
+- main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
+
+variables:
+  isMaven: 'True'
+  isJava: 'True'
+  jdkVersion: '1.17'
+  POM_XML_PATH: 'pom.xml'
+  MAVEN_OPTIONS: '-DskipTests'
+  JAR_NAME: 'runner-shipment-services-0.0.1.jar'
 
 steps:
-  - checkout: self #my_current_repo 
-    path: s
-    displayName: 'Checking out my_current_repo'
-  
-  - checkout: baseline_project_repo
-    displayName: Cheking baseline_project_repo
+  - task: Maven@3
+    inputs:
+      mavenPomFile: $(POM_XML_PATH)
+      goals: 'clean package'
+      publishJUnitResults: false
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '$(jdkVersion)'
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      mavenOptions: '$(MAVEN_OPTIONS) -Dmaven.resources.excludes=src/main/resources/**'
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
+    displayName: 'Build JAR with Maven'
+    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
 
-  - template: /pipelines/ci_basic_build.yaml@baseline_project_repo
+  - script: |
+      echo "===================================="
+      echo "Checking if JAR exists:"
+      echo "===================================="
+      JAR_FILE="target/$(JAR_NAME)"
+      
+      if [ -f "$JAR_FILE" ]; then
+        echo "✅ JAR file found: $JAR_FILE"
+        ls -lh $JAR_FILE
+      else
+        echo "❌ JAR file not found: $JAR_FILE"
+        echo "Available files in target:"
+        ls -lh target/
+        exit 1
+      fi
+      
+      echo ""
+      echo "===================================="
+      echo "Checking JAR contents for config folder:"
+      echo "===================================="
+      
+      # List all contents of the JAR
+      echo "Full JAR contents:"
+      jar tf $JAR_FILE
+      
+      echo ""
+      echo "===================================="
+      echo "Searching specifically for 'config' folder:"
+      echo "===================================="
+      
+      if jar tf $JAR_FILE | grep -q "^config/"; then
+        echo "❌ WARNING: Config folder FOUND in JAR!"
+        echo ""
+        echo "Config files present:"
+        jar tf $JAR_FILE | grep "^config/"
+        echo ""
+        echo "Total config files found: $(jar tf $JAR_FILE | grep '^config/' | wc -l)"
+      else
+        echo "✅ SUCCESS: Config folder NOT found in JAR!"
+      fi
+      
+    displayName: 'Verify Config Folder in JAR'
+    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
