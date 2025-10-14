@@ -195,6 +195,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private Boolean isTransferred;
     private Boolean b2b;
 
     private Boolean isCoLoadEnabled;

@@ -1,12 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1127,6 +1121,140 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
         when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class)))
                 .thenReturn(new ShipmentRetrieveLiteResponse());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_IMP);
+        shipmentRetrieveLiteResponse.setSourceGuid(UUID.randomUUID());
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+        shipmentRetrieveLiteResponse.setSourceTenantId(2L);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success2() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_IMP);
+        shipmentRetrieveLiteResponse.setSourceGuid(UUID.randomUUID());
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+        shipmentRetrieveLiteResponse.setSourceTenantId(1L);
+        shipmentRetrieveLiteResponse.setTenantId(1);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success3() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_IMP);
+        shipmentRetrieveLiteResponse.setGuid(guid);
+        shipmentRetrieveLiteResponse.setSourceGuid(guid);
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+        shipmentRetrieveLiteResponse.setSourceTenantId(2L);
+        shipmentRetrieveLiteResponse.setTenantId(1);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success4() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_IMP);
+        shipmentRetrieveLiteResponse.setGuid(guid);
+        shipmentRetrieveLiteResponse.setSourceGuid(guid);
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success5() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_IMP);
+        shipmentRetrieveLiteResponse.setGuid(guid);
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");
+
+        assertNotNull(response);
+        verify(shipmentDao).findByGuid(guid);
+    }
+
+    @Test
+    void testRetrieveShipmentData_for_Nte_success6() throws Exception {
+        UUID guid = UUID.randomUUID();
+        CommonGetRequest getRequest = CommonGetRequest.builder().guid(guid.toString()).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setDirection(DIRECTION_EXP);
+        shipmentRetrieveLiteResponse.setGuid(guid);
+        shipmentRetrieveLiteResponse.setParentTenantId(1L);
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "SOME_SOURCE");

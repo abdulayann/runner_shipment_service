@@ -34,6 +34,7 @@ public class ConsolidationDetailsV3Response extends ConsolidationDetailsBaseResp
     private String printOtherDocs;
     private String awbDims;
     private String releaseType;
+    private Boolean isTransferred;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime masterBillIssueDate;
     private Boolean override;

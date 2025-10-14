@@ -888,9 +888,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     (Objects.equals(response.getJobType(), SHIPMENT_TYPE_DRT) || isInterBranchShip) && response.getReceivingBranch() != null) {
                 String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(response.getId(), SHIPMENT, response.getReceivingBranch().intValue());
                 response.setTransferStatus(transferStatus);
-            } else if (console.get() != null && console.get().getReceivingBranch() != null) {
+            } else if (console.isPresent() && console.get() != null && console.get().getReceivingBranch() != null) {
                 String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(console.get().getId(), CONSOLIDATION, console.get().getReceivingBranch().intValue());
                 response.setTransferStatus(transferStatus);
+            }
+            if(Constants.DESTINATION_DIRECTION_SET.contains(response.getDirection()) && Objects.nonNull(response.getSourceGuid()) && Objects.nonNull(response.getSourceTenantId()) && !Objects.equals(response.getGuid(), response.getSourceGuid()) && !Objects.equals(response.getTenantId(), response.getSourceTenantId().intValue())){
+                response.setIsTransferred(true);
             }
         } catch (Exception e) {
             log.error("{} | Error in setConsoleInfo: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
