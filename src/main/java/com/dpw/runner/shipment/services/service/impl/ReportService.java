@@ -3122,6 +3122,14 @@ public class ReportService implements IReportService {
                     + errors.stream().map(msg -> "- " + msg).collect(Collectors.joining("\n"));
             throw new ValidationException(finalMessage);
         }
+
+        boolean approvalRequired = Boolean.FALSE.equals(
+                isValidForRegeneration(Long.parseLong(reportRequest.getReportId()), shipmentSettings)
+        );
+
+        return HouseBillValidationResponse.builder()
+                .isApprovalRequired(approvalRequired)
+                .build();
     }
 
     private void validateOriginalHbl(ShipmentDetails shipment,
@@ -3193,14 +3201,7 @@ public class ReportService implements IReportService {
     }
 
 
-        boolean approvalRequired = Boolean.FALSE.equals(
-                isValidForRegeneration(Long.parseLong(reportRequest.getReportId()), shipmentSettingsDetails)
-        );
 
-        return HouseBillValidationResponse.builder()
-                .isApprovalRequired(approvalRequired)
-                .build();
-    }
 
     private boolean isValidForRegeneration(Long shipmentId,
                                            ShipmentSettingsDetails shipmentSettingsDetails) {
