@@ -121,12 +121,22 @@ class PushToDownstreamServiceTest {
     void setUp() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
+
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
-        MockitoAnnotations.initMocks(this);
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder()
+                        .multipleShipmentEnabled(true)
+                        .mergeContainers(false)
+                        .volumeChargeableUnit("M3")
+                        .weightChargeableUnit("KG")
+                        .build());
+
+        MockitoAnnotations.openMocks(this);
+
         testContainer = jsonTestUtility.getTestContainer();
         testConsolidation = jsonTestUtility.getTestConsolidation();
         testShipment = jsonTestUtility.getTestShipment();
