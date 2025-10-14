@@ -20,14 +20,14 @@ public class StringUtility {
 
     public static String toUpperCase(String value) {
         if(isEmpty(value)){
-            return null;
+            return value;
         }
         return value.toUpperCase();
     }
 
     public static String toLowerCase(String value) {
         if(isEmpty(value)){
-            return null;
+            return value;
         }
         return value.toLowerCase();
     }

@@ -1,0 +1,1 @@
+update shipment_setting set allow_unassigned_bl_inv_generation = false where tenant_id = 520;
