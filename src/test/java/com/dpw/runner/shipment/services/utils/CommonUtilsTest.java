@@ -7520,4 +7520,42 @@ class CommonUtilsTest {
         assertNull(InterBranchContext.getContext());
     }
 
+    @Test
+    void testAreTimeStampsEqual_trueWhenSameToMinute() {
+        LocalDateTime t1 = LocalDateTime.of(2025, 10, 14, 15, 30, 45);
+        LocalDateTime t2 = LocalDateTime.of(2025, 10, 14, 15, 30, 10);
+
+        assertTrue(CommonUtils.areTimeStampsEqual(t1, t2));
+    }
+
+    @Test
+    void testAreTimeStampsEqual_falseWhenDifferentMinutes() {
+        LocalDateTime t1 = LocalDateTime.of(2025, 10, 14, 15, 30);
+        LocalDateTime t2 = LocalDateTime.of(2025, 10, 14, 15, 31);
+
+        assertFalse(CommonUtils.areTimeStampsEqual(t1, t2));
+    }
+
+    @Test
+    void testAreTimeStampsEqual_falseWhenAnyIsNull() {
+        LocalDateTime now = LocalDateTime.now();
+
+        assertFalse(CommonUtils.areTimeStampsEqual(null, now));
+        assertFalse(CommonUtils.areTimeStampsEqual(now, null));
+    }
+    @Test
+    void testGetIntFromString_validNumber() {
+        assertEquals(123, CommonUtils.getIntFromString("123"));
+    }
+
+    @Test
+    void testGetIntFromString_nullOrEmpty() {
+        assertNull(CommonUtils.getIntFromString(null));
+        assertNull(CommonUtils.getIntFromString(""));
+    }
+
+    @Test
+    void testGetIntFromString_invalidNumber_throwsException() {
+        assertThrows(NumberFormatException.class, () -> CommonUtils.getIntFromString("abc"));
+    }
 }

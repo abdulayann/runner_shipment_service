@@ -563,21 +563,21 @@ class PushToDownstreamServiceTest {
         PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
 
         // stub the synchronous push to do nothing (so it won't throw)
-        doNothing().when(spyService).pushConsolidationData(eq(message), eq(txId));
+        doNothing().when(spyService).pushConsolidationData(message, txId);
 
         // for the async sync method, count down latch when called
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
             latch.countDown();
             return null;
-        }).when(spyService).syncContainerWithCommonContainer(eq(message), eq(txId));
+        }).when(spyService).syncContainerWithCommonContainer(message, txId);
 
         spyService.pushConsolidationDataToService(message, txId);
         boolean asyncRan = latch.await(2, TimeUnit.SECONDS);
 
         assertTrue(asyncRan, "Expected syncContainerWithCommonContainer to be invoked asynchronously");
-        verify(spyService, times(1)).pushConsolidationData(eq(message), eq(txId));
-        verify(spyService, times(1)).syncContainerWithCommonContainer(eq(message), eq(txId));
+        verify(spyService, times(1)).pushConsolidationData(message, txId);
+        verify(spyService, times(1)).syncContainerWithCommonContainer(message, txId);
     }
 
     @Test
@@ -586,9 +586,9 @@ class PushToDownstreamServiceTest {
         String txId = "tx-2";
 
         PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
-        doNothing().when(spyService).pushConsolidationDataToTracking(eq(message), eq(txId));
+        doNothing().when(spyService).pushConsolidationDataToTracking(message, txId);
         spyService.pushConsolidationDataToService(message, txId);
-        verify(spyService, times(1)).pushConsolidationDataToTracking(eq(message), eq(txId));
+        verify(spyService, times(1)).pushConsolidationDataToTracking(message, txId);
         verify(spyService, never()).pushConsolidationData(any(), anyString());
         verify(spyService, never()).syncContainerWithCommonContainer(any(), anyString());
     }
