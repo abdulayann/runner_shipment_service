@@ -494,6 +494,7 @@ public class ReportConstants {
     public static final String C_REEFER = "C_Reefer";
     public static final String C_LAT = "C_LAT";
     public static final String C_DG = "C_DG";
+    public static final String C_EAR_EPY_EQ_PICK = "C_EarEpyEqPick";
 
         /*
             Tenant fields

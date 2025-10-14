@@ -103,6 +103,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DESTINATION_AGENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DG;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_EAR_EPY_EQ_PICK;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_EMP_PICK;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_LAT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_ORIGIN_AGENT;
@@ -5375,9 +5376,9 @@ public abstract class IReport {
         dict.put(C_TERMINAL, convertToDPWDateFormat(consolidationDetails.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_VGM, convertToDPWDateFormat(consolidationDetails.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dict.put(C_SI, convertToDPWDateFormat(consolidationDetails.getShipInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
-        dict.put(C_EMP_PICK, convertToDPWDateFormat(consolidationDetails.getEarliestEmptyEquPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_EMP_PICK, convertToDPWDateFormat(consolidationDetails.getEarliestEmptyEquPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
         dict.put(C_REEFER, convertToDPWDateFormat(consolidationDetails.getReeferCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
-        dict.put(C_LAT, convertToDPWDateFormat(consolidationDetails.getLatDate(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dict.put(C_LAT, convertToDPWDateFormat(consolidationDetails.getLatDate(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
         dict.put(C_DG, convertToDPWDateFormat(consolidationDetails.getHazardousBookingCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
     }
 
@@ -5679,7 +5680,7 @@ public abstract class IReport {
         dictionary.put(S_TERMINAL, convertToDPWDateFormat(details.getTerminalCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dictionary.put(S_VGM, convertToDPWDateFormat(details.getVerifiedGrossMassCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
         dictionary.put(S_SI, convertToDPWDateFormat(details.getShippingInstructionCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
-        dictionary.put(S_EAR_EPY_EQ_PICK, convertToDPWDateFormat(details.getEarliestEmptyEquipmentPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
+        dictionary.put(S_EAR_EPY_EQ_PICK, convertToDPWDateFormat(details.getEarliestEmptyEquipmentPickUp(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, false));
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
         dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff(), Constants.DATE_TIME_FORMAT_DDMMMYYYY_HHMM, true));
