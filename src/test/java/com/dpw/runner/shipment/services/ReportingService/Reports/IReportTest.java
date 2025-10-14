@@ -2,15 +2,18 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +21,13 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,6 +38,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 // A concrete implementation of the abstract IReport class, created solely for testing purposes.
@@ -228,8 +236,6 @@ void testPopulateConsolidationReportData_withFirmsCode() {
 
         TiLegs deliveryLeg = createMockLeg(1L, deliveryLeg1Origin, null); // Destination can be null
         PickupDeliveryDetails deliveryInstruction = createMockTransportInstruction(InstructionType.Delivery, deliveryTransporter, List.of(deliveryLeg), Collections.emptyList());
-
-        List<PickupDeliveryDetails> transportInstructions = List.of(pickupInstruction, deliveryInstruction);
 
         Map<String, String> firmsCodeMap = Map.of(
                 "PICK_TRANS_ORG", "FIRMS_PICK_TRANS",
@@ -453,5 +459,76 @@ void testPopulateConsolidationReportData_withFirmsCode() {
         assertEquals(2, partiesToFetch.size(), "Should only add non-null parties");
         assertTrue(partiesToFetch.contains(legOrigin));
         assertTrue(partiesToFetch.contains(additionalParty));
+    }
+
+    @Test
+    void testGetCSDSecurityInfo_CargoSecuredByDPW() {
+        // Arrange
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        Awb awb = new Awb();
+        AwbCargoInfo cargoInfo = new AwbCargoInfo();
+
+        cargoInfo.setSecurityStatus("SECURED");
+        cargoInfo.setRaNumber("RA123");
+        cargoInfo.setUserInitials("JD");
+        cargoInfo.setScreeningTime(LocalDateTime.of(2025, 10, 14, 12, 30));
+        cargoInfo.setScreeningStatus(List.of("X-RAY", "ETD"));
+        awb.setAwbCargoInfo(cargoInfo);
+
+        // Mock static method
+        try (MockedStatic<AwbUtility> awbUtility = Mockito.mockStatic(AwbUtility.class)) {
+            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails)).thenReturn(true);
+            awbUtility.when(() -> AwbUtility.buildSecurityStatus(
+                    eq("SECURED"),
+                    eq("X-RAY, ETD"),
+                    eq("RA123"),
+                    eq("JD"),
+                    anyString()
+            )).thenReturn("SECURED_STATUS_DPW");
+
+            // Act
+            String result = iReport.getCSDSecurityInfo(additionalDetails, awb);
+
+            // Assert
+            assertEquals("SECURED_STATUS_DPW", result);
+            awbUtility.verify(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails));
+            awbUtility.verify(() -> AwbUtility.buildSecurityStatus(any(), any(), any(), any(), any()));
+        }
+    }
+
+    @Test
+    void testGetCSDSecurityInfo_CargoSecuredByThirdParty() {
+        // Arrange
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        additionalDetails.setRegulatedEntityCategory("KC");
+
+        Awb awb = new Awb();
+        AwbCargoInfo cargoInfo = new AwbCargoInfo();
+        cargoInfo.setSecurityStatus("CHECKED");
+        cargoInfo.setRaNumber("RA456");
+        cargoInfo.setUserInitials("AB");
+        cargoInfo.setScreeningTime(LocalDateTime.of(2025, 10, 14, 14, 45));
+        cargoInfo.setScreeningStatus(List.of("AO"));
+        awb.setAwbCargoInfo(cargoInfo);
+
+        try (MockedStatic<AwbUtility> awbUtility = Mockito.mockStatic(AwbUtility.class)) {
+            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails)).thenReturn(false);
+            awbUtility.when(() -> AwbUtility.buildThirdPartySecurityStatus(
+                    eq("CHECKED"),
+                    eq("AO"),
+                    eq("KC"),
+                    eq("RA456"),
+                    eq("AB"),
+                    anyString()
+            )).thenReturn("SECURED_STATUS_3P");
+
+            // Act
+            String result = iReport.getCSDSecurityInfo(additionalDetails, awb);
+
+            // Assert
+            assertEquals("SECURED_STATUS_3P", result);
+            awbUtility.verify(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails));
+            awbUtility.verify(() -> AwbUtility.buildThirdPartySecurityStatus(any(), any(), any(), any(), any(), any()));
+        }
     }
 }

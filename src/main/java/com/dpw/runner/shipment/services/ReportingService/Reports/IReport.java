@@ -5335,20 +5335,48 @@ public abstract class IReport {
 
     public String getCSDSecurityInfo(AdditionalDetailModel additionalDetails, Awb awb){
 
-        AwbCargoInfo awbCargoInfo  = awb.getAwbCargoInfo();
+        if (awb == null) {
+            return "";
+        }
+
+        AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
+        if (awbCargoInfo == null) {
+            return "";
+        }
+
         boolean isCargoSecuredByDPW = AwbUtility.isCargoSecuredByDPW(additionalDetails);
 
         LocalDateTime screeningTime = awbCargoInfo.getScreeningTime();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
-        String dateTimeStr = screeningTime.format(fmt);
+        String dateTimeStr = "";
+        if (screeningTime != null) {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
+            dateTimeStr = screeningTime.format(fmt);
+        }
 
         List<String> screeningStatusList = awbCargoInfo.getScreeningStatus();
-        String screeningStatus =  (screeningStatusList == null || screeningStatusList.isEmpty()) ? "" : String.join(", ", screeningStatusList);
-        if(isCargoSecuredByDPW){
-            return AwbUtility.buildSecurityStatus(awbCargoInfo.getSecurityStatus(), screeningStatus, awbCargoInfo.getRaNumber(), awbCargoInfo.getUserInitials(), dateTimeStr);
-        }else{
-            return AwbUtility.buildThirdPartySecurityStatus(awbCargoInfo.getSecurityStatus(), screeningStatus, additionalDetails.getRegulatedEntityCategory(),
-                    awbCargoInfo.getRaNumber(), awbCargoInfo.getUserInitials(), dateTimeStr);
+        String screeningStatus = (screeningStatusList == null || screeningStatusList.isEmpty())
+                ? ""
+                : String.join(", ", screeningStatusList);
+
+        if (isCargoSecuredByDPW) {
+            return AwbUtility.buildSecurityStatus(
+                    awbCargoInfo.getSecurityStatus(),
+                    screeningStatus,
+                    awbCargoInfo.getRaNumber(),
+                    awbCargoInfo.getUserInitials(),
+                    dateTimeStr
+            );
+        } else {
+            String regulatedEntityCategory = (additionalDetails != null) ? additionalDetails.getRegulatedEntityCategory() : null;
+
+            return AwbUtility.buildThirdPartySecurityStatus(
+                    awbCargoInfo.getSecurityStatus(),
+                    screeningStatus,
+                    regulatedEntityCategory,
+                    awbCargoInfo.getRaNumber(),
+                    awbCargoInfo.getUserInitials(),
+                    dateTimeStr
+            );
         }
     }
 

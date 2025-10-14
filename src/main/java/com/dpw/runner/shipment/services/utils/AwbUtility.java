@@ -223,25 +223,30 @@ public class AwbUtility {
     public static String buildSecurityStatus(String securityStatus, String screeningStatus, String branchRaNo, String screener, String dateTime) {
 
         return Constants.SECURITY_STATUS_TEMPLATE
-                .replace("<Security status>", securityStatus)
-                .replace("<Screening method>", screeningStatus)
-                .replace("<Branch RA No>", branchRaNo)
-                .replace("<Screener>", screener)
-                .replace("<Date+Time>", dateTime);
+                .replace("<Security status>", safeString(securityStatus))
+                .replace("<Screening method>", safeString(screeningStatus))
+                .replace("<Branch RA No>", safeString(branchRaNo))
+                .replace("<Screener>", safeString(screener))
+                .replace("<Date+Time>", safeString(dateTime));
+    }
+
+    private static String safeString(String value) {
+        return value != null ? value : "";
     }
 
     public static String buildThirdPartySecurityStatus(String securityStatus, String screeningStatus, String thirdPartyRaNo, String branchRaNo, String screener, String dateTime) {
 
         return Constants.THIRD_PARTY_SECURITY_STATUS_TEMPLATE
-                .replace("<Security status>", securityStatus)
-                .replace("<Screening method>", screeningStatus)
-                .replace("<3rd party RA No>", thirdPartyRaNo)
-                .replace("<Branch RA No>", branchRaNo)
-                .replace("<Screener>", screener)
-                .replace("<Date+Time>", dateTime);
+                .replace("<Security status>", safeString(securityStatus))
+                .replace("<Screening method>", safeString(screeningStatus))
+                .replace("<3rd party RA No>", safeString(thirdPartyRaNo))
+                .replace("<Branch RA No>", safeString(branchRaNo))
+                .replace("<Screener>", safeString(screener))
+                .replace("<Date+Time>", safeString(dateTime));
     }
 
     public static boolean isCargoSecuredByDPW(AdditionalDetailModel additionalDetails){
+        if(additionalDetails == null) return false;
         AirAuthorisingEntity receivedFrom = additionalDetails.getSecurityStatusReceivedFrom();
         String regulatedEntity = additionalDetails.getRegulatedEntityCategory();
 
