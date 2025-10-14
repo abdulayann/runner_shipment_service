@@ -740,7 +740,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private Long setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails,
-                                            Boolean isFromBooking, boolean includeGuid, List<BookingContainerV3Request> containerRequestList, Long id,
+                                            Boolean isFromBooking, boolean includeGuid, List<ContainerV3Request> containerRequestList, Long id,
                                             List<PackingV3Request> packingRequestList, CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
         Long containerAssignedToShipmentCargo = null;
         if(containerRequestList != null && !Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers())
@@ -765,10 +765,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return containerAssignedToShipmentCargo;
     }
 
-    private List<ContainerV3Request> splitContainerIntoLineItems(List<BookingContainerV3Request> containerRequestList) {
+    private List<ContainerV3Request> splitContainerIntoLineItems(List<ContainerV3Request> containerRequestList) {
         List<ContainerV3Request> expandedContainers = new ArrayList<>();
         if (!containerRequestList.isEmpty()) {
-            for(BookingContainerV3Request containerV3Request: containerRequestList) {
+            for(ContainerV3Request containerV3Request: containerRequestList) {
                 Long count = containerV3Request.getContainerCount();
                 for (int i = 0; i < count; i++) {
                     ContainerV3Request newContainer = jsonHelper.convertValue(containerV3Request, ContainerV3Request.class);
