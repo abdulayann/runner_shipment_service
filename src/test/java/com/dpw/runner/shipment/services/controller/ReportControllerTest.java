@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.response.HouseBillValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -186,12 +187,14 @@ class ReportControllerTest {
 
     @Test
     void validateHouseBill_success() throws Exception {
-        // No exception from service means success
-        doNothing().when(reportService).validateHouseBill(any());
+        when(reportService.validateHouseBill(any())).thenReturn(HouseBillValidationResponse.builder()
+                        .isApprovalRequired(false)
+                .build());
 
         var response = reportController.validateHouseBill(new ReportRequest());
 
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+        Assertions.assertNotNull(response.getBody());
     }
 
 

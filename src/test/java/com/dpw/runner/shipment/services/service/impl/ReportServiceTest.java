@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.HouseBillValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -42,6 +43,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -85,7 +87,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -355,6 +356,14 @@ class ReportServiceTest extends CommonMocks {
         Mockito.when(commonUtils.getShipmentSettingFromContext())
                 .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+        shipmentDetails.setControlled(false);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
@@ -366,6 +375,112 @@ class ReportServiceTest extends CommonMocks {
                 any(), any(), eq("Seaway Bill"), eq("Seaway for possible cargo discrepancies.")
         );
     }
+
+    @Test
+    void shouldRequireApproval_whenCopiesPrintedGreaterOrEqualToPermitted() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true)
+                        .restrictBlRelease(true)
+                        .volumeDecimalPlace(2).build());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        EntityTransferMasterLists master = mock(EntityTransferMasterLists.class);
+        when(master.getIdentifier1()).thenReturn("1");
+        when(masterDataUtils.fetchMultipleMasterData(any()))
+                .thenReturn(List.of(master));
+
+        Hbl hbl = mock(Hbl.class);
+        when(hbl.getId()).thenReturn(10L);
+        when(hblDao.findByShipmentId(any())).thenReturn(List.of(hbl));
+
+        HblReleaseTypeMapping mapping = mock(HblReleaseTypeMapping.class);
+        when(mapping.getCopiesPrinted()).thenReturn(1);
+        when(hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(eq(10L), anyString()))
+                .thenReturn(List.of(mapping));
+
+        // Act
+        HouseBillValidationResponse response = reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertTrue(response.getIsApprovalRequired(), "Approval should be required when copiesPrinted >= permittedCount");
+    }
+
+    @Test
+    void shouldNotRequireApproval_whenCopiesPrintedLessThanPermitted() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true)
+                        .restrictBlRelease(true)
+                        .volumeDecimalPlace(2).build());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        EntityTransferMasterLists master = mock(EntityTransferMasterLists.class);
+        when(master.getIdentifier1()).thenReturn("2");
+        when(masterDataUtils.fetchMultipleMasterData(any()))
+                .thenReturn(List.of(master));
+
+        Hbl hbl = mock(Hbl.class);
+        when(hbl.getId()).thenReturn(20L);
+        when(hblDao.findByShipmentId(any())).thenReturn(List.of(hbl));
+
+        HblReleaseTypeMapping mapping = mock(HblReleaseTypeMapping.class);
+        when(mapping.getCopiesPrinted()).thenReturn(1);
+        when(hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(eq(20L), anyString()))
+                .thenReturn(List.of(mapping));
+
+        // Act
+        HouseBillValidationResponse response = reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.getIsApprovalRequired(), "Approval should NOT be required when copiesPrinted < permittedCount");
+    }
+
+    @Test
+    void shouldNotRequireApproval_whenPermittedCountIsInvalid() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true)
+                        .restrictBlRelease(true)
+                        .volumeDecimalPlace(2).build());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("RANDOM");
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        EntityTransferMasterLists master = mock(EntityTransferMasterLists.class);
+        when(master.getIdentifier1()).thenReturn("abc");
+        when(masterDataUtils.fetchMultipleMasterData(any()))
+                .thenReturn(List.of(master));
+
+        // Act
+        HouseBillValidationResponse response = reportService.validateHouseBill(reportRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.getIsApprovalRequired(), "Approval should NOT be required when permitted count is invalid");
+    }
+
 
 
     @Test
