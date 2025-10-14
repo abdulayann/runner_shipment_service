@@ -75,7 +75,6 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -151,14 +150,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -224,16 +216,12 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
-import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -292,6 +280,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -439,6 +428,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Mock
     private Root<ShipmentDetails> root;
+
+    @Mock
+    private NetworkTransferV3Util networkTransferV3Util;
 
     @Mock
     private TypedQuery<Object[]> typedQuery;
@@ -2462,6 +2454,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(List.of(new ReferenceNumbers()));
         when(referenceNumbersDao.updateEntityFromShipment(any(), anyLong()))
                 .thenReturn(List.of(new ReferenceNumbers()));
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         mockTenantSettings();
 
         shipmentServiceImplV3.afterSave(newShipment, null, shipmentRequest, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -2491,6 +2484,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setFromET(false);
         consoleShipmentData.setSyncConsole(false);
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         mockTenantSettings();
         mockShipmentSettings();
@@ -2524,6 +2518,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentV3Request shipmentRequest = new ShipmentV3Request();
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         mockTenantSettings();
         mockShipmentSettings();
@@ -2549,6 +2544,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setFromET(false);
         consoleShipmentData.setSyncConsole(false);
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         mockTenantSettings();
 
@@ -2576,6 +2572,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(projection.getConsolidationNumber()).thenReturn("C123");
         when(projection.getTenantId()).thenReturn(5);
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consolidationDetailsDao.findMblNumberInDifferentTenant(any())).thenReturn(List.of(projection));
         mockTenantSettings();
 
@@ -2635,6 +2632,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         tenantSettings.setIsMAWBColoadingEnabled(true);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, shipmentRequest,
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -2667,6 +2665,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(eventsV3Util.createOrUpdateEvents(any(), any(), any(), anyBoolean()))
                 .thenReturn(eventsList);
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString()))
                 .thenReturn(eventsList);
         mockTenantSettings();
@@ -2696,6 +2695,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
                 shipmentSettings, consoleShipmentData);
@@ -2725,7 +2725,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
                 shipmentSettings, consoleShipmentData);
 
-        verify(masterDataUtils, times(2)).withMdc(any());
+        verify(masterDataUtils, times(3)).withMdc(any());
     }
 
     @Test
@@ -2739,6 +2739,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setCreate(true);
         consoleShipmentData.setFromET(false);
         consoleShipmentData.setSyncConsole(false);
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         mockTenantSettings();
 
@@ -2777,6 +2778,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
@@ -2816,6 +2818,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setFromET(false);
         consoleShipmentData.setSyncConsole(false);
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>());
 
         mockTenantSettings();
@@ -2861,6 +2864,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 new ShipmentSettingsDetails(), consoleShipmentData);
@@ -2910,6 +2914,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
@@ -2990,6 +2995,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(mappings);
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipment1, shipment2));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
@@ -3027,6 +3033,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, null, shipmentRequest,
                 new ShipmentSettingsDetails(), consoleShipmentData);
@@ -3050,6 +3057,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
                 shipmentSettings, consoleShipmentData);
@@ -3073,6 +3081,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3099,6 +3108,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3129,6 +3139,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3159,6 +3170,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3180,6 +3192,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3204,6 +3217,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(projection.getConsolidationNumber()).thenReturn("C123");
         when(projection.getTenantId()).thenReturn(5);
 
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consolidationDetailsDao.findMblNumberInDifferentTenant(any())).thenReturn(List.of(projection));
         doThrow(new RuntimeException("Test Exception")).when(auditLogService).addAuditLog(any());
         mockTenantSettings();
@@ -3226,6 +3240,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -3259,6 +3274,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consoleShipmentData.setSyncConsole(false);
 
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
@@ -4088,6 +4104,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(consolidationDetailsDao.findMblNumberInDifferentTenant(any())).thenReturn(List.of(projection));
         mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -6425,8 +6442,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
             UsersDto user = UsersDto.builder().build();
             userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
             userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(false);
-
-            when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+            when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
             Integer roleId = 1;
             List<String> users = new ArrayList<>();
             users.add("abc@email.com");
@@ -8864,6 +8880,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         expectedResponse.setJobType("DRT");
         mockTenantSettings();
         mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(existingShipment));
         when(jsonHelper.convertValue(any(ShipmentDetails.class), eq(ShipmentDetails.class))).thenReturn(new ShipmentDetails());
         doNothing().when(shipmentDetailsMapper).updateFromV3Patch(any(ShipmentPatchV3Request.class), any(ShipmentDetails.class));
@@ -8907,6 +8924,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(carrierDetailsMapper).updateCarrierPatchV3(any(), any());
         when(referenceNumbersDao.updateEntityFromShipment(any(), anyLong())).thenReturn(List.of(new ReferenceNumbers()));
         when(shipmentDetailsMapper.mapV3Response(any(ShipmentDetails.class))).thenReturn(new ShipmentDetailsV3Response());
+        when(masterDataUtils.withMdc(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.partialUpdate(commonRequestModel);

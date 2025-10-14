@@ -2083,10 +2083,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails consolidationDetails) {
         log.info("shipment afterSave syncShipment..... ");
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        CompletableFuture<Void> networkTransferFuture = CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> automaticTransferFuture = CompletableFuture.completedFuture(null);
+
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+            networkTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
+        }
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
+            automaticTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        }
+        CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
+                .thenRunAsync(
+                        masterDataUtils.withMdc(() -> networkTransferV3Util
+                                .syncNetworkTransferShipmentMappingsForConsolOrShipment(SHIPMENT, shipmentDetails, null)),
+                        executorService
+                );
     }
 
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
