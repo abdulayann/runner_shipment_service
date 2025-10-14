@@ -103,7 +103,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DESTINATION_AGENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_DG;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_EAR_EPY_EQ_PICK;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_EMP_PICK;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_LAT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.C_ORIGIN_AGENT;
