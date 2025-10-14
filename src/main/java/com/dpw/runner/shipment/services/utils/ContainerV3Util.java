@@ -629,8 +629,8 @@ public class ContainerV3Util {
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList, errorList);
         processErrorList(excelHeaders, errorList, containersList);
-        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         containersList.forEach(p -> p.setContainerCount(1L));
+        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
         setShipmentOrConsoleId(request, module, requests);
         containerUtilV3.setContainerNetWeight(containersList);
         createOrUpdateContainers(requests, module);
