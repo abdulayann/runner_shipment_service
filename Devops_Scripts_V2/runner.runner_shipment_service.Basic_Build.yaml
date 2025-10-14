@@ -13,6 +13,20 @@ variables:
   JAR_NAME: 'runner-shipment-services-0.0.1.jar'
 
 steps:
+  - script: |
+      echo "===================================="
+      echo "Backing up config folder"
+      echo "===================================="
+      if [ -d "src/main/resources/config" ]; then
+        mv src/main/resources/config config_backup
+        echo "✅ Config folder moved to backup (config_backup)"
+        ls -la src/main/resources/
+      else
+        echo "⚠️ Config folder not found at src/main/resources/config"
+      fi
+    displayName: 'Backup config folder'
+    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
+  
   - task: Maven@3
     inputs:
       mavenPomFile: $(POM_XML_PATH)
@@ -22,9 +36,24 @@ steps:
       jdkVersionOption: '$(jdkVersion)'
       mavenVersionOption: 'Default'
       mavenAuthenticateFeed: true
-      mavenOptions: '-Xmx3072m -Dmaven.resources.excludes=src/main/resources/**'
+      mavenOptions: '$(MAVEN_OPTIONS)'
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
+    displayName: 'Build JAR with Maven'
+    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
+
+  - script: |
+      echo "===================================="
+      echo "Restoring config folder"
+      echo "===================================="
+      if [ -d "config_backup" ]; then
+        mv config_backup src/main/resources/config
+        echo "✅ Config folder restored to src/main/resources/config"
+      else
+        echo "⚠️ Config backup folder not found"
+      fi
+    displayName: 'Restore config folder'
+    condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
 
   - script: |
       echo "===================================="
