@@ -22,7 +22,7 @@ steps:
       jdkVersionOption: '$(jdkVersion)'
       mavenVersionOption: 'Default'
       mavenAuthenticateFeed: false
-      mavenOptions: '$(MAVEN_OPTIONS) -Dmaven.resources.excludes=src/main/resources/**'
+      mavenOptions: '-Xmx3072m'
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
     displayName: 'Build JAR with Maven'
