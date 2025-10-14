@@ -670,4 +670,100 @@ class PushToDownstreamServiceTest {
 
         verify(logsHistoryService).createLogHistory(any());
     }
+
+    @Test
+    void processContainerData_noTriggers_callsPushContainerOnly() {
+        // Arrange
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(111L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+        dto.setTriggers(null);
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+
+        doNothing().when(spyService).pushContainerData(dto, "tx-100");
+        spyService.process(dto, "tx-100");
+        verify(spyService, times(1)).pushContainerData(dto, "tx-100");
+    }
+
+    @Test
+    void processContainer_withCustomerBookingTrigger_invokesPushCustomerBookingDataToPlatform() {
+        // arrange: container payload with a CUSTOMER_BOOKING trigger
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(222L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+
+        PushToDownstreamEventDto.Triggers bookingTrigger =
+                new PushToDownstreamEventDto.Triggers(555L, Constants.CUSTOMER_BOOKING, "");
+        dto.setTriggers(List.of(bookingTrigger));
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+        doNothing().when(spyService).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        doNothing().when(spyService).pushCustomerBookingDataToPlatform(any(), anyString());
+        spyService.process(dto, "tx-200");
+
+        verify(spyService, times(1)).pushCustomerBookingDataToPlatform(any(), anyString());
+    }
+
+    @Test
+    void processContainerData_withCustomerBookingTrigger_callsBookingToPlatform() {
+        // Another short variant: verify both container push and booking push were invoked (matchers)
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(222L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+
+        PushToDownstreamEventDto.Triggers bookingTrigger =
+                new PushToDownstreamEventDto.Triggers(555L, Constants.CUSTOMER_BOOKING, "");
+        dto.setTriggers(List.of(bookingTrigger));
+
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+
+        doNothing().when(spyService).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        doNothing().when(spyService).pushCustomerBookingDataToPlatform(any(), anyString());
+
+        spyService.process(dto, "tx-200");
+
+        verify(spyService, times(1)).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        verify(spyService, times(1)).pushCustomerBookingDataToPlatform(any(), anyString());
+    }
+
+    @Test
+    void process_withTransportInstruction_notFoundThrows_and_foundInvokesProcessing() {
+        // not-found case
+        PushToDownstreamEventDto dtoNotFound = new PushToDownstreamEventDto();
+        dtoNotFound.setParentEntityId(999L);
+        dtoNotFound.setParentEntityName(Constants.TRANSPORT_INSTRUCTION);
+        when(pickupDeliveryDetailsService.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(dtoNotFound, "tx-400"));
+
+        // found case
+        PushToDownstreamEventDto dtoFound = new PushToDownstreamEventDto();
+        dtoFound.setParentEntityId(1000L);
+        dtoFound.setParentEntityName(Constants.TRANSPORT_INSTRUCTION);
+
+        PickupDeliveryDetails pd = new PickupDeliveryDetails();
+        pd.setId(1000L);
+        pd.setShipmentId(42L);
+
+        List<PickupDeliveryDetails> pdList = List.of(pd);
+
+        when(pickupDeliveryDetailsService.findById(1000L)).thenReturn(Optional.of(pd));
+        when(pickupDeliveryDetailsService.findByShipmentId(42L)).thenReturn(pdList);
+        doNothing().when(pickupDeliveryDetailsService).processDownStreamConsumerData(pdList, 42L, dtoFound, "tx-401");
+        assertDoesNotThrow(() -> pushToDownstreamService.process(dtoFound, "tx-401"));
+
+        verify(pickupDeliveryDetailsService, times(1))
+                .processDownStreamConsumerData(pdList, 42L, dtoFound, "tx-401");
+    }
 }

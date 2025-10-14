@@ -11,13 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
@@ -78,6 +72,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,6 +103,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import javax.persistence.criteria.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -1523,5 +1520,106 @@ class EventServiceTest extends CommonMocks {
         assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
     }
 
+    @Test
+    void shouldProcessEvent_returnsTrue_forECPK_andFclShipment() throws Exception {
+        Events event = new Events();
+        event.setEventCode(EventConstants.ECPK);
 
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL); // FCL
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-1");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsTrue_forVSDP_whenCommonCriteriaMatched() throws Exception {
+        Events event = new Events();
+        event.setEventCode(EventConstants.VSDP);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        // choose values that satisfy matchCommonCriteria (sea + FCL is safe)
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-2");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsTrue_forAirTrackingCode_whenTransportModeIsAir() throws Exception {
+        Events event = new Events();
+        // use the first code from AIR_TRACKING_CODE_LIST
+        String airCode = EventConstants.AIR_TRACKING_CODE_LIST.get(0);
+        event.setEventCode(airCode);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType("ANY");
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-3");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsFalse_forNonMatchingEvent() throws Exception {
+        Events event = new Events();
+        event.setEventCode("NON_EXISTENT_CODE");
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-4");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void listV2_withConsolidationId_revampEnabled_appliesGroupingAndReturns() {
+        // Arrange
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setConsolidationId(99L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(jsonHelper.convertValue(request, ListCommonRequest.class)).thenReturn(new ListCommonRequest());
+
+        // stub dao to return events
+        Events e1 = new Events();
+        Events e2 = new Events();
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(e1, e2)));
+
+        // prepare event responses
+        EventsResponse r1 = new EventsResponse();
+        r1.setEventCode("EVT");
+        r1.setShipmentNumber("S2");
+        r1.setActual(LocalDateTime.now().minusHours(1));
+
+        EventsResponse r2 = new EventsResponse();
+        r2.setEventCode("EVT");
+        r2.setShipmentNumber("S1");
+        r2.setActual(LocalDateTime.now());
+
+        List<EventsResponse> converted = List.of(r1, r2);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(converted);
+        ShipmentSettingsDetails s = new ShipmentSettingsDetails();
+        s.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(s);
+        ResponseEntity<IRunnerResponse> result = eventService.listV2(commonRequestModel);
+        assertNotNull(result);
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertNotNull(result.getBody());
+    }
 }
