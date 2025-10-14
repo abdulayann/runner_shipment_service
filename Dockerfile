@@ -7,3 +7,4 @@ EXPOSE 8080
 RUN useradd -u 1001 -m appuser
 RUN chown -R appuser /usr
 USER appuser
+
