@@ -1181,11 +1181,6 @@ public class ReportService implements IReportService {
             return null;
         ShipmentDetails shipment = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))
                 .orElseThrow(() -> new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE));
-        AdditionalDetails details = shipment.getAdditionalDetails();
-
-        if(details == null || (details.getReleaseType() == null || details.getReleaseType().trim().isEmpty())) {
-            throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
-        }
         return shipment;
     }
 
