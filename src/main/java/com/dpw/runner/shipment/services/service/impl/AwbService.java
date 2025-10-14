@@ -447,6 +447,35 @@ public class AwbService implements IAwbService {
         }
     }
 
+    private void validateIATAComplianceV3(String awbShipmentInfoEntityType) throws RunnerException {
+        if (commonUtils.getShipmentSettingFromContext() == null ||
+            !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            return;
+        }
+
+        V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
+        TenantModel tenantModel = modelMapper.map(tenantResponse.getEntity(), TenantModel.class);
+        Boolean amrAirFreightFlag = commonUtils.getShipmentSettingFromContext().getIsAmrAirFreightEnabled();
+
+        boolean isIATAAgent = tenantModel.isIATAAgent();
+        log.info("AWB isIATAAgent: {} | isAmrAirFreight: {} | ShipmentInfo EntityType: {} for Request Id {}", isIATAAgent, amrAirFreightFlag, awbShipmentInfoEntityType, LoggerHelper.getRequestIdFromMDC());
+
+        if (!isIATAAgent && Boolean.FALSE.equals(amrAirFreightFlag) &&
+                (awbShipmentInfoEntityType.equalsIgnoreCase(Constants.DMAWB) ||
+                 awbShipmentInfoEntityType.equalsIgnoreCase(Constants.HAWB) ||
+                 awbShipmentInfoEntityType.equalsIgnoreCase(Constants.MAWB)
+        )) {
+            throw new RunnerException("Your branch is not IATA certified, kindly contact the support team");
+        }
+
+        if (!isIATAAgent && Boolean.TRUE.equals(amrAirFreightFlag) &&
+            (awbShipmentInfoEntityType.equalsIgnoreCase(Constants.DMAWB) ||
+             awbShipmentInfoEntityType.equalsIgnoreCase(Constants.MAWB))
+        ) {
+            throw new RunnerException("Your branch is not IATA certified, kindly contact the support team");
+        }
+    }
+
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -454,7 +483,8 @@ public class AwbService implements IAwbService {
             if (request == null) {
                 log.error("Request is empty for AWB list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(Boolean.TRUE.equals(request.getFromGenerateAwbButton())) {
+            if(Boolean.TRUE.equals(request.getFromGenerateAwbButton()) &&
+               !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
                 validateBeforeGenerateAWB();
             }
             // construct specifications for filter request
@@ -469,6 +499,7 @@ public class AwbService implements IAwbService {
             if (awbList != null) {
                 ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
                 for (Awb awb : awbList) {
+                    validateIATAComplianceV3(awb.getAwbShipmentInfo().getEntityType());
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         processMawbRequestFromGenerateAwbButton(awb, request, tenantSettings);
 
@@ -1534,6 +1565,9 @@ public class AwbService implements IAwbService {
             if (!existingAwbs.isEmpty())
                 throw new RunnerException("AWB already created for current Shipment !");
         }
+
+        // validate IATA certified
+        validateIATAComplianceV3(request.getAwbType());
 
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
