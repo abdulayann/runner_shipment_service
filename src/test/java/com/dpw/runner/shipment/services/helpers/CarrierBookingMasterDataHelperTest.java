@@ -95,7 +95,7 @@ class CarrierBookingMasterDataHelperTest {
         helper.addAllMasterDataInSingleCall(resp, masterDataResponse);
 
         verify(masterDataUtils, times(1)).fetchInBulkMasterList(any());
-        verify(masterDataUtils, times(1)).pushToCache(anyMap(), CacheConstants.MASTER_LIST, anySet(), any(), anyMap());
-        verify(masterDataKeyUtils, times(1)).setMasterDataValue(anyMap(), CacheConstants.MASTER_LIST, masterDataResponse, anyMap());
+        verify(masterDataUtils, times(1)).pushToCache(anyMap(), eq(CacheConstants.MASTER_LIST), anySet(), any(), anyMap());
+        verify(masterDataKeyUtils, times(1)).setMasterDataValue(anyMap(), eq(CacheConstants.MASTER_LIST), eq(masterDataResponse), anyMap());
     }
 }
