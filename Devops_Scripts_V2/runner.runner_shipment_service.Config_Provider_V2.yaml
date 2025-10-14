@@ -5,7 +5,7 @@ resources:
   - repository: baseline_project_repo
     name: DevOps/_git/devops-common-utils
     type: git
-    ref: feature/db_path
+    ref: feature/db-migration-change
 
 pool:
   vmImage: ubuntu-latest
