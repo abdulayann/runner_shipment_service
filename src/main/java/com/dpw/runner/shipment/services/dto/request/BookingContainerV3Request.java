@@ -45,7 +45,7 @@ public class BookingContainerV3Request {
     private Boolean isEmpty;
     @NotNull
     @Min(value = 1L, message = "Container count cannot be less than 1")
-    @Max(value = 200L, message = "Container count cannot be more than 200")
+    @Max(value = 100L, message = "Container count cannot be more than 200")
     private Long containerCount = 1L;
     @Size(max = 100, message = "max size is 100 for carrier_seal_number")
     private String carrierSealNumber;
