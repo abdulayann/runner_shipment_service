@@ -1137,6 +1137,9 @@ public class ReportService implements IReportService {
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportInfo);
         if (shipment == null) return;
 
+        if(shipment.getAdditionalDetails() == null || shipment.getAdditionalDetails().getReleaseType() == null || shipment.getAdditionalDetails().getReleaseType().trim().isEmpty()) {
+            throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
+        }
         String releaseType = shipment.getAdditionalDetails().getReleaseType();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
