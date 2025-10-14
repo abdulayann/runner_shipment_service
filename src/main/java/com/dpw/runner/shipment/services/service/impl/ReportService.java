@@ -323,6 +323,7 @@ public class ReportService implements IReportService {
 
     @Autowired
     private ITransportInstructionLegsService transportInstructionLegsService;
+
     @Autowired
     private TransportInstructionReportHelper transportInstructionReport;
 
