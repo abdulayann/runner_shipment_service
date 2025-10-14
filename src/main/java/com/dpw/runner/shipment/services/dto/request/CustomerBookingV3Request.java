@@ -13,7 +13,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -58,8 +57,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String contractId;
     private String contractStatus;
     private String businessCode;
-    @Valid
-    private List<BookingContainerV3Request> containersList;
+    private List<ContainerV3Request> containersList;
     private List<PackingV3Request> packingList;
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;

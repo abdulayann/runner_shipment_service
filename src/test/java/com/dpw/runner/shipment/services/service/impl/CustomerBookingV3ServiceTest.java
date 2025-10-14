@@ -2359,8 +2359,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         CustomerBookingV3Request customerBookingRequest = new CustomerBookingV3Request();
         customerBookingRequest.setContainersList(List.of(
-                BookingContainerV3Request.builder().guid(UUID.randomUUID()).id(123L).containerCode("20GP").containerCount(2L).containerCode("20GP").commodityGroup("group").build(),
-                BookingContainerV3Request.builder().guid(UUID.fromString("9f9c2d42-d479-44bf-8541-0029e498fc86")).containerCount(2L).containerCode("20GP").commodityGroup("group").build()
+                ContainerV3Request.builder().guid(UUID.randomUUID()).id(123L).containerCode("20GP").containerCount(2L).containerCode("20GP").commodityGroup("group").build(),
+                ContainerV3Request.builder().guid(UUID.fromString("9f9c2d42-d479-44bf-8541-0029e498fc86")).containerCount(2L).containerCode("20GP").commodityGroup("group").build()
         ));
         customerBookingRequest.setPackingList(List.of(
                 PackingV3Request.builder().guid(UUID.randomUUID()).packs("2").packsType("bundle").commodity("commodity").build(),
