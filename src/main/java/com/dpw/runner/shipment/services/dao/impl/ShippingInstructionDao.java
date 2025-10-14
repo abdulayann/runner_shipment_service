@@ -43,8 +43,8 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
     }
 
     @Override
-    public void delete(Long id) {
-        shippingInstructionRepository.deleteById(id);
+    public void delete(ShippingInstruction shippingInstruction) {
+        shippingInstructionRepository.delete(shippingInstruction);
     }
 
     @Override

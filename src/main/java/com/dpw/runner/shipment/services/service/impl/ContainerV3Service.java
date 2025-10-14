@@ -1353,6 +1353,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .collect(Collectors.toMap(ContainerBaseResponse::getId, c -> c));
 
         Map<Long, List<Packing>> packingsByContainer = packings.stream()
+                .filter(p -> p.getContainerId() != null)
                 .collect(Collectors.groupingBy(Packing::getContainerId));
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1779,31 +1780,17 @@ public class ContainerV3Service implements IContainerV3Service {
         if (Objects.equals(BOOKING, module)) {
             customerBookingV3Service.updateContainerInfoInBooking(request.getBookingId());
         }
-
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        futures.add(CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() -> afterSave(container, true, true)),
-                executorService
-        ));
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        afterSave(container, true, true);
     }
 
   private void handlePostSaveActionsBulk(List<Containers> containers, List<ContainerV3Request> requests, String module) {
     if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
 
-    List<CompletableFuture<Void>> futures = new ArrayList<>();
-
     for (int i = 0; i < containers.size(); i++) {
       Containers container = containers.get(i);
       ContainerV3Request request = requests.get(i); // assuming same index mapping
 
-      // Async afterSave
-      futures.add(CompletableFuture.runAsync(
-          masterDataUtils.withMdc(() -> afterSave(container, true, true)),
-          executorService
-      ));
+      afterSave(container, true, true);
 
       // Shipment assignment (sync)
       Optional.ofNullable(module)
@@ -1816,27 +1803,15 @@ public class ContainerV3Service implements IContainerV3Service {
               false
           ));
     }
-
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }
 
     private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) throws RunnerException {
         if (Objects.equals(BOOKING, module)) {
             customerBookingV3Service.updateContainerInfoInBooking(containers.iterator().next().getBookingId());
         }
-        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
-        CompletableFuture.allOf(afterSaveFuture).join();
-    }
-
-    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers, boolean isAutoSell) {
-        return CompletableFuture.allOf(
-                containers.stream()
-                        .map(container -> CompletableFuture.runAsync(
-                                masterDataUtils.withMdc(() -> afterSave(container, isAutoSell, false)),
-                                executorService
-                        ))
-                        .toArray(CompletableFuture[]::new)
-        );
+        for (Containers container : containers) {
+            afterSave(container, isAutoSell, false);
+        }
     }
 
     @Override

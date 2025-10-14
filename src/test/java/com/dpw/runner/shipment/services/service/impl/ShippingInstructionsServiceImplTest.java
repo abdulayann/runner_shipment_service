@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsCo
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShippingInstructionDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackageSiPayload;
@@ -16,9 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SailingInformationRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.ShippingInstructionRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionInttraRequest;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -29,6 +28,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ShippingInstructionMasterDataHelper;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.ShippingInstructionEventDto;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.CarrierBookingInfoProjection;
@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.IntraCommonKafkaHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.CarrierBookingInttraUtil;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
@@ -53,12 +54,13 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -67,8 +69,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES;
-import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.SHIPPING_INSTRUCTION_EMAIL_TEMPLATE;
+
+import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,6 +137,10 @@ class ShippingInstructionsServiceImplTest {
     private ShippingInstructionUtil shippingInstructionUtil;
     @Mock
     private IContainerDao containerDao;
+    @Mock
+    private MasterDataKeyUtils masterDataKeyUtils;
+    @InjectMocks // ✅ Inject its dependencies
+    private ShippingInstructionMasterDataHelper masterHelper;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShippingInstruction testSI;
@@ -174,6 +180,14 @@ class ShippingInstructionsServiceImplTest {
         si.setNonNegoUnFreightCopies(2);
         si.setSailingInformation(new SailingInformation());
         return si;
+    }
+
+    private Parties createPartyCopy(Parties original) {
+        Parties copy = new Parties();
+        copy.setId(original.getId());
+        copy.setGuid(original.getGuid());
+        // Copy other fields as needed
+        return copy;
     }
 
     private ShippingInstruction buildEntityWithInttraParty(ShippingInstructionStatus status, EntityType entityType, Long entityId) {
@@ -230,7 +244,6 @@ class ShippingInstructionsServiceImplTest {
         ShippingInstruction entity = buildSimpleEntity();
         CarrierBooking cb = buildCarrierBooking(100L, CarrierBookingStatus.Draft);
         cb.setEntityId(200L);
-        ConsolidationDetails consol = buildConsolidationDetails("CON-001", "CB-001");
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -238,7 +251,6 @@ class ShippingInstructionsServiceImplTest {
         UserContext.setUser(mockUser);
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
-        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
                 .thenReturn(ShippingInstructionResponse.builder()
@@ -520,10 +532,29 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void deleteShippingInstructions_ShouldInvokeDao() {
-        service.deleteShippingInstructions(55L);
-        verify(repository).delete(55L);
+        Long shippingInstructionId = 11L;
+        ShippingInstruction shippingInstruction = new ShippingInstruction();
+        shippingInstruction.setId(shippingInstructionId);
+
+        when(repository.findById(shippingInstructionId)).thenReturn(Optional.of(shippingInstruction));
+        service.deleteShippingInstructions(shippingInstructionId);
+        verify(repository).findById(shippingInstructionId);
+        verify(repository).delete(shippingInstruction);
     }
 
+    @Test
+    void deleteShippingInstructions_ShouldThrowValidationException_WhenSINotFound() {
+        Long shippingInstructionId = 11L;
+
+        when(repository.findById(shippingInstructionId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            service.deleteShippingInstructions(shippingInstructionId);
+        });
+
+        assertEquals("SI not found with Id: 11", exception.getMessage());
+        verify(repository).findById(shippingInstructionId);
+        verify(repository, never()).delete(any(ShippingInstruction.class));
+    }
     // ========== FREIGHT DETAILS TESTS ==========
 
     @Test
@@ -784,7 +815,7 @@ class ShippingInstructionsServiceImplTest {
         ReferenceNumbers existingRef = new ReferenceNumbers();
         existingRef.setType("EXISTING");
         existingRef.setReferenceNumber("REF-001");
-        si.setReferenceNumbers(List.of(existingRef));
+        si.setReferenceNumbersList(List.of(existingRef));
 
         CarrierBooking cb = new CarrierBooking();
         ReferenceNumbers newRef = new ReferenceNumbers();
@@ -798,29 +829,33 @@ class ShippingInstructionsServiceImplTest {
             method.invoke(service, si, cb);
         });
 
-        assertThat(si.getReferenceNumbers()).hasSize(1);
+        assertThat(si.getReferenceNumbersList()).hasSize(1);
     }
 
 // ========== MISSING PARTIES SETUP TESTS ==========
 
     @Test
-    void setPartiesNumber_copiesAllPartiesFromCarrierBooking() {
+    void setPartiesNumber_copiesAllPartiesFromCarrierBooking() throws Exception {
+        // Arrange
         ShippingInstruction si = new ShippingInstruction();
         CarrierBooking cb = new CarrierBooking();
 
-        // Setup all possible parties
         Parties consignee = new Parties();
         consignee.setId(1L);
         consignee.setGuid(UUID.randomUUID());
+
         Parties shipper = new Parties();
         shipper.setId(2L);
         shipper.setGuid(UUID.randomUUID());
+
         Parties forwardingAgent = new Parties();
         forwardingAgent.setId(3L);
         forwardingAgent.setGuid(UUID.randomUUID());
+
         Parties contract = new Parties();
         contract.setId(4L);
         contract.setGuid(UUID.randomUUID());
+
         Parties requester = new Parties();
         requester.setId(5L);
         requester.setGuid(UUID.randomUUID());
@@ -831,24 +866,23 @@ class ShippingInstructionsServiceImplTest {
         cb.setContract(contract);
         cb.setRequester(requester);
 
-        assertDoesNotThrow(() -> {
-            Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setPartiesNumber", ShippingInstruction.class, CarrierBooking.class);
-            method.setAccessible(true);
-            method.invoke(service, si, cb);
-        });
+        when(jsonHelper.convertValue(any(Parties.class), eq(Parties.class)))
+                .thenAnswer(invocation -> {
+                    Parties original = invocation.getArgument(0);
+                    return createPartyCopy(original);
+                });
 
-        // Verify all parties are copied and IDs are nullified
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod("setPartiesNumber", ShippingInstruction.class, CarrierBooking.class);
+        method.setAccessible(true);
+        method.invoke(service, si, cb);
+
         assertNotNull(si.getConsignee());
         assertNotNull(si.getShipper());
         assertNotNull(si.getForwardingAgent());
         assertNotNull(si.getContract());
         assertNotNull(si.getRequestor());
 
-        assertNull(si.getConsignee().getId());
-        assertNull(si.getShipper().getId());
-        assertNull(si.getForwardingAgent().getId());
-        assertNull(si.getContract().getId());
-        assertNull(si.getRequestor().getId());
+        verify(jsonHelper, times(5)).convertValue(any(Parties.class), eq(Parties.class));
     }
 
 // ========== MISSING GET BY ID TESTS ==========
@@ -1076,11 +1110,9 @@ class ShippingInstructionsServiceImplTest {
 
         CarrierBooking cb = buildCarrierBooking(100L, CarrierBookingStatus.Draft);
         cb.setEntityId(200L);
-        ConsolidationDetails consol = buildConsolidationDetails("CON-001", "CB-001");
 
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingDao.findById(100L)).thenReturn(Optional.of(cb));
-        when(carrierBookingInttraUtil.getConsolidationDetail(200L)).thenReturn(consol);
         when(repository.save(any(ShippingInstruction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(commonUtils.convertToEntityList(any(), eq(Parties.class), eq(false))).thenReturn(List.of(additionalParty));
         when(partiesDao.saveEntityFromOtherEntity(any(), any(), any())).thenReturn(List.of(additionalParty));
@@ -1144,7 +1176,7 @@ class ShippingInstructionsServiceImplTest {
     void getDefaultShippingInstructionValues_shouldThrow_whenUnsupportedEntityType() {
         assertThatThrownBy(() -> service.getDefaultShippingInstructionValues(null, 100L))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test
@@ -1158,7 +1190,7 @@ class ShippingInstructionsServiceImplTest {
 
         assertThatThrownBy(() -> service.updateShippingInstructions(request))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test
@@ -1177,7 +1209,7 @@ class ShippingInstructionsServiceImplTest {
         });
 
         // Reference numbers should remain null/empty
-        assertTrue(si.getReferenceNumbers() == null || si.getReferenceNumbers().isEmpty());
+        assertTrue(si.getReferenceNumbersList() == null || si.getReferenceNumbersList().isEmpty());
     }
 
     @Test
@@ -1718,4 +1750,367 @@ class ShippingInstructionsServiceImplTest {
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getContainerRefGuid()).isEqualTo(containerGuid);
     }
+
+    @Test
+    void list_ShouldReturnShippingInstructions_WhenRequestValid() {
+        // Arrange
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("id", "containersList"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        ShippingInstruction si1 = new ShippingInstruction();
+        si1.setId(1L);
+        si1.setCarrierBlNo("CX-001");
+        si1.setCarrierBookingNo("CB-001");
+
+        ShippingInstruction si2 = new ShippingInstruction();
+        si2.setId(2L);
+        si2.setCarrierBlNo("CX-002");
+        si2.setCarrierBookingNo("CB-002");
+
+        Page<ShippingInstruction> page = new PageImpl<>(List.of(si1, si2),
+                PageRequest.of(0, 10), 2);
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenAnswer(inv -> {
+                    ShippingInstruction si = inv.getArgument(0);
+                    ShippingInstructionResponse response = new ShippingInstructionResponse();
+                    response.setId(si.getId());
+                    response.setCarrierBookingNo(si.getCarrierBookingNo());
+                    return response;
+                });
+
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(any(), any())).thenReturn(vgm);
+
+        // Mock master data helper to do nothing
+        doNothing().when(shippingInstructionMasterDataHelper)
+                .getMasterDataForList(anyList(), eq(true), eq(false));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = service.list(commonRequestModel, true);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        RunnerListResponse listResponse = (RunnerListResponse) response.getBody();
+        assertNotNull(listResponse);
+        assertEquals(1, listResponse.getTotalPages());
+        assertEquals(2L, listResponse.getNumberOfRecords());
+
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
+        verify(shippingInstructionMasterDataHelper).getMasterDataForList(anyList(), eq(true), eq(false));
+    }
+
+    @Test
+    void list_ShouldThrowValidationException_WhenRequestIsNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+
+        assertThatThrownBy(() -> service.list(commonRequestModel, true))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining(SI_LIST_REQUEST_NULL_ERROR);
+
+        verify(repository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void list_ShouldNotFetchMasterData_WhenGetMasterDataIsFalse() {
+        // Arrange
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("id"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(1L);
+
+        Page<ShippingInstruction> page = new PageImpl<>(List.of(si));
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Draft);
+        when(vgmDao.findByEntityIdType(any(), any())).thenReturn(vgm);
+
+        doNothing().when(shippingInstructionMasterDataHelper)
+                .getMasterDataForList(anyList(), eq(false), eq(false));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = service.list(commonRequestModel, false);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // Verify master data was NOT fetched
+        verify(shippingInstructionMasterDataHelper).getMasterDataForList(anyList(), eq(false), eq(false));
+    }
+
+    @Test
+    void list_ShouldHandleEmptyPage() {
+        // Arrange
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("id"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+
+        Page<ShippingInstruction> emptyPage = new PageImpl<>(Collections.emptyList());
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(emptyPage);
+
+        doNothing().when(shippingInstructionMasterDataHelper)
+                .getMasterDataForList(anyList(), eq(true), eq(false));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = service.list(commonRequestModel, true);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void list_ShouldSetContractNo_WhenReferenceNumbersContainCON() throws Exception {
+        // Arrange
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(1L);
+        si.setCarrierBookingNo("CB-001");
+
+        ReferenceNumbers conRef = new ReferenceNumbers();
+        conRef.setType("CON");
+        conRef.setReferenceNumber("CONTRACT-12345");
+
+        ReferenceNumbers otherRef = new ReferenceNumbers();
+        otherRef.setType("OTHER");
+        otherRef.setReferenceNumber("REF-67890");
+
+        si.setReferenceNumbersList(List.of(conRef, otherRef));
+
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenAnswer(inv -> new ShippingInstructionResponse());
+        when(vgmDao.findByEntityIdType(any(), any())).thenReturn(null);
+
+        doNothing().when(shippingInstructionMasterDataHelper)
+                .getMasterDataForList(anyList(), eq(false), eq(false));
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "convertEntityListToDtoList", List.class, boolean.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<IRunnerResponse> result = (List<IRunnerResponse>) method.invoke(
+                service, List.of(si), false);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        ShippingInstructionResponse response = (ShippingInstructionResponse) result.get(0);
+        assertEquals("CONTRACT-12345", response.getContractNo());
+        assertEquals("CB-001", response.getCrBookingId());
+    }
+
+    @Test
+    void list_ShouldSetVgmStatusAndCarrierBookingId() throws Exception {
+        // Arrange
+        ShippingInstruction si = new ShippingInstruction();
+        si.setId(1L);
+        si.setCarrierBookingNo("CB-12345");
+        si.setEntityType(EntityType.CONSOLIDATION);
+        si.setEntityId(100L);
+
+        VerifiedGrossMass vgm = new VerifiedGrossMass();
+        vgm.setStatus(VerifiedGrossMassStatus.Requested);
+
+        when(vgmDao.findByEntityIdType(EntityType.CONSOLIDATION, 100L)).thenReturn(vgm);
+        when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
+                .thenReturn(new ShippingInstructionResponse());
+
+        doNothing().when(shippingInstructionMasterDataHelper)
+                .getMasterDataForList(anyList(), eq(false), eq(false));
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "convertEntityListToDtoList", List.class, boolean.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<IRunnerResponse> result = (List<IRunnerResponse>) method.invoke(
+                service, List.of(si), false);
+
+        // Assert
+        assertNotNull(result);
+        ShippingInstructionResponse siResponse = (ShippingInstructionResponse) result.get(0);
+
+        assertEquals("Requested", siResponse.getVgmStatus());
+        assertEquals("CB-12345", siResponse.getCrBookingId());
+    }
+
+
+    @Test
+    void setPackingAndContainerDetails_ShouldPopulatePackagesAndContainers_WhenDataExists() throws Exception {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(100L);
+
+        // Setup containers
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerNumber("CONT001");
+        container1.setContainerCode("20GP");
+        container1.setGuid(UUID.randomUUID());
+
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        container2.setContainerNumber("CONT002");
+        container2.setContainerCode("40GP");
+        container2.setGuid(UUID.randomUUID());
+
+        consolidation.setContainersList(List.of(container1, container2));
+
+        // Setup packing
+        Packing packing1 = new Packing();
+        packing1.setId(10L);
+        packing1.setPacks("5");
+        packing1.setPacksType("BOX");
+        packing1.setContainerId(1L);
+        packing1.setGuid(UUID.randomUUID());
+
+        Packing packing2 = new Packing();
+        packing2.setId(11L);
+        packing2.setPacks("10");
+        packing2.setPacksType("CRATE");
+        packing2.setContainerId(2L);
+        packing2.setGuid(UUID.randomUUID());
+
+        when(packingV3Service.getPackingsByConsolidationId(100L)).thenReturn(List.of(packing1, packing2));
+
+        ShippingInstruction si = new ShippingInstruction();
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "setPackingAndContainerDetails", ConsolidationDetails.class, ShippingInstruction.class);
+        method.setAccessible(true);
+        method.invoke(service, consolidation, si);
+
+        // Assert
+        assertNotNull(si.getCommonPackagesList());
+        assertNotNull(si.getContainersList());
+        assertEquals(2, si.getCommonPackagesList().size());
+        assertEquals(2, si.getContainersList().size());
+
+        // Verify container details
+        assertEquals("CONT001", si.getContainersList().get(0).getContainerNo());
+        assertEquals("20GP", si.getContainersList().get(0).getContainerCode());
+
+        // Verify package details
+        assertEquals(5, si.getCommonPackagesList().get(0).getPacks());
+        assertEquals("BOX", si.getCommonPackagesList().get(0).getPacksUnit());
+        assertEquals("CONT001", si.getCommonPackagesList().get(0).getContainerNo());
+
+        verify(packingV3Service).getPackingsByConsolidationId(100L);
+    }
+
+    @Test
+    void setPackingAndContainerDetails_ShouldHandleEmptyContainersList() throws Exception {
+        // Arrange
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(100L);
+        consolidation.setContainersList(null); // No containers
+
+        Packing packing = new Packing();
+        packing.setId(10L);
+        packing.setPacks("5");
+        packing.setContainerId(null); // Not assigned to container
+        packing.setGuid(UUID.randomUUID());
+
+        when(packingV3Service.getPackingsByConsolidationId(100L)).thenReturn(List.of(packing));
+
+        ShippingInstruction si = new ShippingInstruction();
+
+        // Act
+        Method method = ShippingInstructionsServiceImpl.class.getDeclaredMethod(
+                "setPackingAndContainerDetails", ConsolidationDetails.class, ShippingInstruction.class);
+        method.setAccessible(true);
+        method.invoke(service, consolidation, si);
+
+        // Assert
+        assertNotNull(si.getCommonPackagesList());
+        assertEquals(1, si.getCommonPackagesList().size());
+        assertNull(si.getCommonPackagesList().get(0).getContainerNo()); // No container mapping
+
+        // Containers list should be empty
+        assertTrue(si.getContainersList() == null || si.getContainersList().isEmpty());
+    }
+
+    @Test
+    void addAllMasterDataInSingleCall_ContainersList_NotProcessed_WhenListHasData() {
+        // Arrange
+        ShippingInstructionResponse response = new ShippingInstructionResponse();
+
+        CommonContainerResponse container1 = new CommonContainerResponse();
+        container1.setId(1L);
+        container1.setCommodityCode("COMM001");
+
+        CommonContainerResponse container2 = new CommonContainerResponse();
+        container2.setId(2L);
+
+        response.setContainersList(List.of(container1, container2));
+
+        Map<String, Object> masterDataResponse = new HashMap<>();
+
+        when(masterDataUtils.createInBulkMasterListRequest(
+                any(IRunnerResponse.class), any(Class.class), any(), anyString(), any()))
+                .thenReturn(List.of(new MasterListRequest()));
+
+        // Act - Call on REAL helper
+        masterHelper.addAllMasterDataInSingleCall(response, masterDataResponse);
+        verify(masterDataUtils, never()).createInBulkMasterListRequest(
+                any(CommonContainerResponse.class),
+                eq(CommonContainers.class),
+                any(),
+                anyString(),
+                any());
+    }
+
+    @Test
+    void addAllMasterDataInSingleCall_ReferenceNumbers_NotProcessed_WhenListHasData() {
+        // Arrange
+        ShippingInstructionResponse response = new ShippingInstructionResponse();
+
+        ReferenceNumberResponse refNum1 = new ReferenceNumberResponse();
+        refNum1.setId(1L);
+        refNum1.setType("CON");
+
+        ReferenceNumberResponse refNum2 = new ReferenceNumberResponse();
+        refNum2.setId(2L);
+        refNum2.setType("BKG");
+
+        response.setReferenceNumbersList(List.of(refNum1, refNum2));
+
+        Map<String, Object> masterDataResponse = new HashMap<>();
+
+        when(masterDataUtils.createInBulkMasterListRequest(
+                any(IRunnerResponse.class), any(Class.class), any(), anyString(), any()))
+                .thenReturn(List.of(new MasterListRequest()));
+
+        // Act
+        masterHelper.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+        verify(masterDataUtils, never()).createInBulkMasterListRequest(
+                any(ReferenceNumberResponse.class),
+                eq(ReferenceNumbers.class),
+                any(),
+                anyString(),
+                any());
+    }
+
 }

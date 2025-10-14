@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response.carrierbooking;
 
+import com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 public class VerifiedGrossMassListResponse implements IRunnerResponse {
     private Long id;  // from MultiTenancy / BaseEntity
+    private String type = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_TYPE;
     private String status;
     private Integer tenantId;
     private String carrierBookingNo;

@@ -25,6 +25,8 @@ import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeService
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -109,11 +111,9 @@ import java.util.concurrent.ExecutorService;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.MAIN_CARRIAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_EMAIL_TEMPLATE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_BOOKING_INTTRA_CREATE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus.Requested;
-import static com.dpw.runner.shipment.services.entity.enums.IntegrationType.BRIDGE_CB_SUBMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1338,8 +1338,13 @@ class CarrierBookingServiceTest extends CommonMocks {
         Page<CarrierBooking> resultPage = new PageImpl<>(List.of(carrierBooking1));
         Page<ShippingInstruction> shippingInstructionPage = new PageImpl<>(List.of(shippingInstruction1));
         Page<VerifiedGrossMass> verifiedGrossMassPage = new PageImpl<>(List.of(verifiedGrossMass1));
-
+        ShippingInstructionResponse shippingInstructionResponse = new ShippingInstructionResponse();
+        shippingInstructionResponse.setId(1L);
+        VerifiedGrossMassResponse verifiedGrossMassResponse = new VerifiedGrossMassResponse();
+        verifiedGrossMassResponse.setId(1L);
         // Mock repository behavior
+        when(jsonHelper.convertValue(any(), eq(ShippingInstructionResponse.class))).thenReturn(shippingInstructionResponse);
+        when(jsonHelper.convertValue(any(), eq(VerifiedGrossMassResponse.class))).thenReturn(verifiedGrossMassResponse);
         when(carrierBookingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(resultPage);
         when(shippingInstructionsService.getShippingInstructions(any())).thenReturn(shippingInstructionPage);
         when(verifiedGrossMassService.getVerifiedGrossMasses(any())).thenReturn(verifiedGrossMassPage);

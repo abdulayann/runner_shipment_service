@@ -33,6 +33,7 @@ public class VerifiedGrossMassConstants {
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Verified Gross Mass Retrieval";
     public static final String VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL = "Bulk update successful";
     public static final String VERIFIED_GROSS_MASS = "VERIFIED_GROSS_MASS";
+    public static final String VERIFIED_GROSS_MASS_TYPE = "vgm";
 
     private VerifiedGrossMassConstants() {
         // private constructor to prevent instantiation
