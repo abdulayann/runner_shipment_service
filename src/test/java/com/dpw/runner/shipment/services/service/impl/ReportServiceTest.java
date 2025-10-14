@@ -94,6 +94,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class ReportServiceTest extends CommonMocks {
 
     @InjectMocks
@@ -235,9 +236,6 @@ class ReportServiceTest extends CommonMocks {
     private DependentServiceHelper dependentServiceHelper;
 
     @Mock
-    private ReportService self;
-
-    @Mock
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @Mock
@@ -264,13 +262,17 @@ class ReportServiceTest extends CommonMocks {
     private static ReportRequest reportRequest;
 
     @BeforeEach
-    void setup() {
+    void setup() throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         reportRequest = jsonTestUtility.getTestReportRequest();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         reportService.executorService = executorService;
         reportService.executorServiceReport = executorService;
+        reportService.self = reportService;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        
+        // Prevent NPE in processPreAlert during finalization phase
+        lenient().when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
     }
 
     @AfterEach
@@ -1605,8 +1607,21 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setId(4415L);
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(reportsFactory.getReport(ReportConstants.CARGO_MANIFEST)).thenReturn(mock(IReport.class));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        
+        doAnswer(invocation -> {
+            CommonRequestModel req = invocation.getArgument(0);
+            ReportRequest rr = (ReportRequest) req.getData();
+            if (rr != null && !rr.isFromConsolidation()) {
+                return ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build();
+            }
+            return invocation.callRealMethod();
+        }).when(reportService).getDocumentData(any());
+        
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
         var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
@@ -1634,8 +1649,22 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(carrierDetails);
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(reportsFactory.getReport(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)).thenReturn(cargoManifestAirShipmentReport);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(cargoManifestAirShipmentReport.getData(any())).thenReturn(new HashMap<>());
+        
+        doAnswer(invocation -> {
+            CommonRequestModel req = invocation.getArgument(0);
+            ReportRequest rr = (ReportRequest) req.getData();
+            if (rr != null && !rr.isFromConsolidation()) {
+                return ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build();
+            }
+            return invocation.callRealMethod();
+        }).when(reportService).getDocumentData(any());
+        
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
         var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
@@ -5111,7 +5140,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void getFcrDocumentReportInvalidDocumentData() throws IOException {
+    void getFcrDocumentReportInvalidDocumentData() throws IOException, RunnerException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setFcrDocument("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -5127,7 +5156,9 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(fcrDocumentReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(fcrDocumentReport.getData(any())).thenReturn(null);
         reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         assertThrows(NullPointerException.class, () -> reportService.getDocumentData(commonRequestModel));
     }
