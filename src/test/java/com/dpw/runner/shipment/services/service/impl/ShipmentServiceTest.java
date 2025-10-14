@@ -11127,7 +11127,6 @@ ShipmentServiceTest extends CommonMocks {
         assertNotNull(response);
     }
 
-
     @Test
     void getDefaultShipment_Failure(){
         when(shipmentCommonUtils.buildDefaultShipment()).thenThrow(new GenericException("ex"));
