@@ -15,12 +15,45 @@ variables:
 steps:
   - script: |
       echo "===================================="
-      echo "Backing up config folder"
+      echo "Backing up application config files"
       echo "===================================="
-      mv src/main/resources config_backup
-      echo "✅ Config folder moved to backup (config_backup)"
+      
+      # Create backup directory
+      mkdir -p config_files_backup
+      
+      # Move application-*.properties files
+      if ls src/main/resources/application-*.properties 1> /dev/null 2>&1; then
+        mv src/main/resources/application-*.properties config_files_backup/
+        echo "✅ Moved application-*.properties files"
+      else
+        echo "⚠️ No application-*.properties files found"
+      fi
+      
+      # Move application-*.yaml files
+      if ls src/main/resources/application-*.yaml 1> /dev/null 2>&1; then
+        mv src/main/resources/application-*.yaml config_files_backup/
+        echo "✅ Moved application-*.yaml files"
+      else
+        echo "⚠️ No application-*.yaml files found"
+      fi
+      
+      # Move application-*.yml files
+      if ls src/main/resources/application-*.yml 1> /dev/null 2>&1; then
+        mv src/main/resources/application-*.yml config_files_backup/
+        echo "✅ Moved application-*.yml files"
+      else
+        echo "⚠️ No application-*.yml files found"
+      fi
+      
+      echo ""
+      echo "Files moved to backup:"
+      ls -la config_files_backup/ || echo "No files backed up"
+      
+      echo ""
+      echo "Remaining files in src/main/resources/:"
       ls -la src/main/resources/
-    displayName: 'Backup config folder'
+      
+    displayName: 'Backup application config files'
     condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
   
   - task: Maven@3
@@ -40,15 +73,22 @@ steps:
 
   - script: |
       echo "===================================="
-      echo "Restoring config folder"
+      echo "Restoring application config files"
       echo "===================================="
-      if [ -d "config_backup" ]; then
-        mv config_backup src/main/resources
-        echo "✅ Config folder restored to src/main/resources"
+      
+      if [ -d "config_files_backup" ]; then
+        if ls config_files_backup/* 1> /dev/null 2>&1; then
+          mv config_files_backup/* src/main/resources/
+          echo "✅ Config files restored to src/main/resources/"
+          rm -rf config_files_backup
+        else
+          echo "⚠️ No files in backup to restore"
+        fi
       else
         echo "⚠️ Config backup folder not found"
       fi
-    displayName: 'Restore config folder'
+      
+    displayName: 'Restore application config files'
     condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
 
   - script: |
@@ -69,7 +109,7 @@ steps:
       
       echo ""
       echo "===================================="
-      echo "Checking JAR contents for config folder:"
+      echo "Checking JAR contents:"
       echo "===================================="
       
       # List all contents of the JAR
@@ -78,19 +118,24 @@ steps:
       
       echo ""
       echo "===================================="
-      echo "Searching specifically for 'config' folder:"
+      echo "Searching for application-*.properties and application-*.yaml files:"
       echo "===================================="
       
-      if jar tf $JAR_FILE | grep -q "^config/"; then
-        echo "❌ WARNING: Config folder FOUND in JAR!"
-        echo ""
-        echo "Config files present:"
-        jar tf $JAR_FILE | grep "^config/"
-        echo ""
-        echo "Total config files found: $(jar tf $JAR_FILE | grep '^config/' | wc -l)"
+      # Check for application-*.properties
+      if jar tf $JAR_FILE | grep -q "application-.*\.properties"; then
+        echo "❌ WARNING: application-*.properties files FOUND in JAR!"
+        jar tf $JAR_FILE | grep "application-.*\.properties"
       else
-        echo "✅ SUCCESS: Config folder NOT found in JAR!"
+        echo "✅ SUCCESS: No application-*.properties files in JAR!"
       fi
       
-    displayName: 'Verify Config Folder in JAR'
+      # Check for application-*.yaml or application-*.yml
+      if jar tf $JAR_FILE | grep -q "application-.*\.ya*ml"; then
+        echo "❌ WARNING: application-*.yaml/yml files FOUND in JAR!"
+        jar tf $JAR_FILE | grep "application-.*\.ya*ml"
+      else
+        echo "✅ SUCCESS: No application-*.yaml/yml files in JAR!"
+      fi
+      
+    displayName: 'Verify Config Files in JAR'
     condition: and(eq(variables['isMaven'], 'True'), eq(variables['isJava'], 'True'))
