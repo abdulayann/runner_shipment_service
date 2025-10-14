@@ -17,11 +17,13 @@ import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
@@ -35,6 +37,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -117,6 +120,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IDocDetailsDao docDetailsDao;
+
+    @Mock
+    private IShipmentServiceV3 shipmentServiceV3;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -942,5 +948,83 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
         verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_WithValidAirTransport_ShouldCallPlatform() throws RunnerException {
+        // Arrange
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHIP123").bookingType(CustomerBookingConstants.ONLINE).bookingReference("BOOK456").transportMode(Constants.TRANSPORT_MODE_AIR).build();
+        shipment.setId(1L);
+
+        // Act
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+
+        // Assert
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_WithNullTransportMode_ShouldCallPlatform() throws RunnerException {
+        // Arrange
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHIP123").bookingType(CustomerBookingConstants.ONLINE).bookingReference("BOOK456").transportMode(null).build();
+        shipment.setId(1L);
+
+        // Act
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+
+        // Assert
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_WhenPlatformThrowsException_ShouldHandleGracefully() throws RunnerException {
+        // Arrange
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHIP123").bookingType(CustomerBookingConstants.ONLINE).bookingReference("BOOK456").transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        shipment.setId(1L);
+
+        RuntimeException exception = new RuntimeException("Platform service error");
+        doThrow(exception).when(platformServiceAdapter).updateAtPlatform(any());
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        // Act - Should not throw exception
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+
+        // Assert
+        verify(platformServiceAdapter, times(1)).updateAtPlatform(any());
+        verify(integrationResponseDao, times(1)).save(any());
+    }
+
+    @Test
+    void testCreateShipmentInV3_Success() throws RunnerException {
+        // Arrange
+        CustomerBookingV3Request request = new CustomerBookingV3Request();
+        request.setBookingNumber("BK123");
+
+        ShipmentDetailsV3Response expectedResponse = new ShipmentDetailsV3Response();
+        when(shipmentServiceV3.createShipmentInV3(request)).thenReturn(expectedResponse);
+
+        // Act
+        ShipmentDetailsV3Response response = bookingIntegrationsUtility.createShipmentInV3(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(expectedResponse, response);
+        verify(shipmentServiceV3, times(1)).createShipmentInV3(request);
+    }
+
+    @Test
+    void testCreateShipmentInV3_ThrowsException() throws RunnerException {
+        // Arrange
+        CustomerBookingV3Request request = new CustomerBookingV3Request();
+        request.setBookingNumber("BK123");
+
+        RuntimeException exception = new RuntimeException("Service error");
+        when(shipmentServiceV3.createShipmentInV3(request)).thenThrow(exception);
+
+        // Act & Assert
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> bookingIntegrationsUtility.createShipmentInV3(request));
+
+        assertEquals("Service error", thrown.getMessage());
+        verify(shipmentServiceV3, times(1)).createShipmentInV3(request);
     }
 }

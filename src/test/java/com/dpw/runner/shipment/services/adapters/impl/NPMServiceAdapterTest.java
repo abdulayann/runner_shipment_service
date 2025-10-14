@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
