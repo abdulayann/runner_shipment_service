@@ -31,11 +31,13 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.HouseBillValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.*;
@@ -43,6 +45,9 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.TagsData;
 import com.dpw.runner.shipment.services.service.interfaces.*;
@@ -85,7 +90,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORG_DATA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
@@ -2901,12 +2905,18 @@ public class ReportService implements IReportService {
     }
 
     @Override
-    public void validateHouseBill(ReportRequest reportRequest) {
+    public HouseBillValidationResponse validateHouseBill(ReportRequest reportRequest) {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
 
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         validateControlledFieldsForBlGeneration(shipment);
+        if (Boolean.FALSE.equals(isValidForRegeneration(Long.parseLong(reportRequest.getReportId()),
+                shipment, shipmentSettingsDetails))) {
+            return HouseBillValidationResponse.builder()
+                    .isApprovalRequired(true)
+                    .build();
+        }
 
         if (report instanceof HblReport) {
             validateUnassignedPackagesInternal(
@@ -2926,7 +2936,70 @@ public class ReportService implements IReportService {
         } else {
             throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
         }
+        return HouseBillValidationResponse.builder()
+                .isApprovalRequired(false)
+                .build();
     }
+
+    private Boolean isValidForRegeneration(Long shipmentId, ShipmentDetails shipmentDetails,
+                                           ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(Boolean.FALSE.equals(shipmentSettingsDetails.getRestrictBlRelease())) {
+            log.info("Release flag is disabled for shipmentId {}", shipmentId);
+            return true;
+        }
+        AdditionalDetails additionalDetails = shipmentDetails.getAdditionalDetails();
+        List<EntityTransferMasterLists> entityTransferMasterLists = masterDataUtils.fetchMultipleMasterData(
+                createMasterListRequest(additionalDetails.getReleaseType()));
+        if(entityTransferMasterLists == null || entityTransferMasterLists.isEmpty()) {
+            log.info("Master data not present for release type {}", additionalDetails.getReleaseType());
+            return true;
+        }
+        EntityTransferMasterLists transferMasterLists = entityTransferMasterLists.get(0);
+
+        if(!isValidPermittedCount(transferMasterLists.getIdentifier1(),additionalDetails)) {
+            return true;
+        }
+
+        List<Hbl> hblOptional = hblDao.findByShipmentId(shipmentId);
+        if (hblOptional == null || hblOptional.isEmpty()) {
+            log.info("No HBL entity present for shipmentId : {}", shipmentId);
+            return true;
+        }
+        Hbl hbl = hblOptional.get(0);
+        List<HblReleaseTypeMapping> hblReleaseTypeMappingList = hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(hbl.getId(),
+                additionalDetails.getReleaseType());
+
+        return hblReleaseTypeMappingList.isEmpty() ||
+                hblReleaseTypeMappingList.get(0).getCopiesPrinted() < Integer.parseInt(transferMasterLists.getIdentifier1());
+    }
+
+    private MasterListRequestV2 createMasterListRequest(String releaseTypeValue) {
+        List<MasterListRequest> masterListRequestList = List.of(
+                MasterListRequest.builder()
+                        .ItemType(MasterDataType.RELEASE_TYPE.getDescription())
+                        .ItemValue(releaseTypeValue)
+                        .build()
+        );
+       return MasterListRequestV2.builder()
+               .MasterListRequests(masterListRequestList)
+               .build();
+    }
+
+    private boolean isValidPermittedCount(String permittedCount, AdditionalDetails additionalDetails) {
+        if (permittedCount == null || permittedCount.isEmpty()) {
+            log.info("Master data max print allowed is not set for release type {}", additionalDetails.getReleaseType());
+            return false;
+        }
+        try {
+            Integer.parseInt(permittedCount);
+        } catch (NumberFormatException e) {
+            log.info("Invalid master data value '{}' for release type {}, expected a numeric permitted count",
+                    permittedCount, additionalDetails.getReleaseType());
+            return false;
+        }
+        return true;
+    }
+
 
     private void validateControlledFieldsForBlGeneration(ShipmentDetails shipment) {
         if(ObjectUtils.isNotEmpty(shipment)
