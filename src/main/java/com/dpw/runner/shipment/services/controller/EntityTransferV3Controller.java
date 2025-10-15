@@ -9,10 +9,14 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3Conso
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportConsolidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportShipmentResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -41,13 +45,14 @@ public class EntityTransferV3Controller {
     private final IEntityTransferV3Service entityTransferService;
     private static class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
     private static class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
+    private static class SendConsoleValidationResponseClass extends RunnerResponse<SendConsoleValidationResponse>{}
+    private static class SendShipmentValidationResponseClass extends RunnerResponse<SendShipmentValidationResponse>{}
     private final JsonHelper jsonHelper;
 
     @Autowired
     public EntityTransferV3Controller(IEntityTransferV3Service entityTransferService, JsonHelper jsonHelper) {
         this.entityTransferService = entityTransferService;
         this.jsonHelper = jsonHelper;
-
     }
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
@@ -64,6 +69,25 @@ public class EntityTransferV3Controller {
         return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
     }
 
+    @PostMapping(EntityTransferConstants.VALIDATE_SEND_SHIPMENT)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATE_SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentValidationResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> validateSendShipment(@RequestBody @Valid @NonNull ValidateSendShipmentRequest request) {
+        log.info("Received Validate Send Shipment Request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
+    }
+
+    @PostMapping(EntityTransferConstants.VALIDATE_AUTOMATIC_TRANSFER_SHIPMENT)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATE_AUTOMATIC_TRANSFER_SHIPMENT_SUCCESSFUL, response = SendShipmentValidationResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> validateAutomaticTransferShipment(@RequestBody @Valid @NonNull ValidateSendShipmentRequest request) {
+        log.info("Received Validate Automatic Transfer Shipment Request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        SendShipmentValidationResponse response = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
@@ -76,6 +100,25 @@ public class EntityTransferV3Controller {
                 .message(String.format("Consolidation Sent to branches %s", String.join(", ", tenantName)))
                 .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
+    }
+
+    @PostMapping(EntityTransferConstants.VALIDATE_SEND_CONSOLIDATION)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATE_SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsoleValidationResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> validateSendConsolidation(@RequestBody @Valid @NonNull ValidateSendConsolidationRequest request) {
+        log.info("Received Validate Send Consolidation Request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
+    }
+
+    @PostMapping(EntityTransferConstants.VALIDATE_AUTOMATIC_TRANSFER_CONSOLIDATION)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATE_AUTOMATIC_TRANSFER_CONSOLIDATION_SUCCESSFUL, response = SendConsoleValidationResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> validateAutomaticTransferConsolidation(@RequestBody @Valid @NonNull ValidateSendConsolidationRequest request) {
+        log.info("Received Validate Automatic Transfer Consolidation Request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        SendConsoleValidationResponse response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     @ApiResponses(value = {
@@ -110,5 +153,4 @@ public class EntityTransferV3Controller {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-
 }
