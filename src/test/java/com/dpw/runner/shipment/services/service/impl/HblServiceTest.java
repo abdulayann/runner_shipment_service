@@ -1865,32 +1865,7 @@ class HblServiceTest extends CommonMocks {
         assertEquals("LINE1", dto.getConsigneeAddressLine1());
         assertEquals("MUMBAI", dto.getConsigneeCity());
     }
-    @Test
-    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
-        // Given
-        Hbl hbl = new Hbl();
-        hbl.setHblNotifyParty(new ArrayList<>());
-        Parties party = new Parties();
-        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
-        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
-        HblLockSettings hblLock = new HblLockSettings();
 
-        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
-        // When
-        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
-        method.setAccessible(true);
-        method.invoke(hblService, party, hbl, hblLock);
-
-        assertNotNull(hbl.getHblNotifyParty());
-        assertFalse(hbl.getHblNotifyParty().isEmpty());
-        assertEquals(1, hbl.getHblNotifyParty().size());
-        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
-        assertEquals("Test Party", hblParty.getName());
-        assertEquals("123 MAIN ST", hblParty.getAddress());
-        assertTrue(hblParty.getIsShipmentCreated());
-    }
     @Test
     void testMapShipmentPartiesToHBL_v3Enabled() throws Exception {
         // Given

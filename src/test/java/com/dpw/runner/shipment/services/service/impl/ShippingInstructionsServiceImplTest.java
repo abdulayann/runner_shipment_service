@@ -518,7 +518,6 @@ class ShippingInstructionsServiceImplTest {
         when(consol.getShipInstructionCutoff()).thenReturn(LocalDateTime.now());
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
-        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingInttraUtil.getConsolidationDetail(999L)).thenReturn(consol);
         when(repository.save(any(ShippingInstruction.class))).thenReturn(entity);
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
@@ -1186,7 +1185,6 @@ class ShippingInstructionsServiceImplTest {
         entity.setEntityType(null); // unsupported
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
-        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
 
         assertThatThrownBy(() -> service.updateShippingInstructions(request))
                 .isInstanceOf(ValidationException.class)
