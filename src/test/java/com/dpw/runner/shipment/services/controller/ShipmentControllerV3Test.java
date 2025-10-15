@@ -162,7 +162,6 @@ class ShipmentControllerV3Test {
         when(shipmentService.getAllMasterData(any(), anyString())).thenReturn(masterData);
         var response = shipmentControllerV3.getAllMasterData(Optional.of(1L), Optional.empty(),"source");
         assertEquals(HttpStatus.OK, response.getStatusCode());
-//        verify(shipmentService).getAllMasterData(any(), "source");
     }
 
     @Test
