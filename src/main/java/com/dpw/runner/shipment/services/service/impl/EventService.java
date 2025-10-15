@@ -483,7 +483,8 @@ public class EventService implements IEventService {
         setEventCodesMasterData(
                 allEventResponses,
                 EventsResponse::getEventCode,
-                EventsResponse::setDescription
+                EventsResponse::setDescription,
+                EventsResponse::setDirection
         );
 
         return ResponseHelper.buildSuccessResponse(allEventResponses);
@@ -612,7 +613,7 @@ public class EventService implements IEventService {
         return locationRoleV1DataResponse;
     }
 
-    private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription) {
+    private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription, BiConsumer<T, String> setDirection) {
         try {
             if(Objects.isNull(eventsList) || eventsList.isEmpty())
                 return;
@@ -652,7 +653,11 @@ public class EventService implements IEventService {
             eventsList.forEach(event ->
                     Optional.ofNullable(eventCodeMap.get(getEventCode.apply(event)))
                             .ifPresentOrElse(
-                                    masterList -> setDescription.accept(event, masterList.getItemDescription()),
+                                    masterList -> {
+                                        setDescription.accept(event, masterList.getItemDescription());
+                                        if(masterList.getIdentifier3() != null) {
+                                            setDirection.accept(event, masterList.getIdentifier3());
+                                        }},
                                     () -> log.warn("No mapping found for event code: {}", getEventCode.apply(event))
                             )
             );
@@ -1350,7 +1355,8 @@ public class EventService implements IEventService {
         setEventCodesMasterData(
                 eventResponses,
                 EventsResponse::getEventCode,
-                EventsResponse::setDescription
+                EventsResponse::setDescription,
+                EventsResponse::setDirection
         );
         log.info("Populated event code descriptions for events");
 
@@ -1449,7 +1455,8 @@ public class EventService implements IEventService {
         setEventCodesMasterData(
                 allEventResponses,
                 EventsResponse::getEventCode,
-                EventsResponse::setDescription
+                EventsResponse::setDescription,
+                EventsResponse::setDirection
         );
 
         List<EventsResponse> groupedEvents = allEventResponses;
