@@ -1,19 +1,25 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.annotations.RequireApiKey;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -22,7 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -31,6 +40,9 @@ import java.util.Optional;
 @RequestMapping(value = NetworkTransferConstants.NETWORK_TRANSFER_API_HANDLE)
 public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private static class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
     private static class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
@@ -109,5 +121,62 @@ public class NetworkTransferController {
             log.error(responseMessage, e);
         }
         return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @RequireApiKey
+    @ExcludeTimeZone
+    @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE)
+    public ResponseEntity<IRunnerResponse> createExternalViaBridge(@RequestBody @Valid NetworkTransferRequest networkTransferRequest) {
+        String responseMessage;
+        try {
+            TenantContext.setCurrentTenant(networkTransferRequest.getTenantId());
+            UsersDto usersDto = new UsersDto();
+            usersDto.setTenantId(networkTransferRequest.getTenantId());
+            UserContext.setUser(usersDto);
+            return networkTransferService.createExternal(CommonRequestModel.buildRequest(networkTransferRequest));
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> getAllMasterDataForNT(@RequestBody Map<String, Object> requestPayload) {
+        String responseMessage;
+        try {
+            //Map which contains master data for consol and each shipment
+            return networkTransferService.getAllMasterDataForNT(requestPayload);
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+
+        return ResponseHelper.buildFailedResponse(responseMessage);
+    }
+
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NetworkTransferController.MyResponseClass.class, message = NetworkTransferConstants.FETCH_EMAILS_STATUS_SUCCESSFUL)})
+    @GetMapping(NetworkTransferConstants.NETWORK_TRANSFER_DESTINATION_BRANCH_EMAILS)
+    public List<String> getAllDestinationBranchEmailsForNT(@RequestParam Integer destinationBranch) {
+        String responseMessage;
+        try {
+            return networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return List.of("");
     }
 }

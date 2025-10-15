@@ -16,16 +16,13 @@ import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferExternalResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -34,16 +31,14 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -56,6 +51,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -84,6 +80,15 @@ public class NetworkTransferService implements INetworkTransferService {
     private final INotificationDao notificationDao;
 
     private final V1ServiceUtil v1ServiceUtil;
+
+    @Autowired @Lazy
+    private EntityTransferV3Service entityTransferV3Service;
+
+    @Autowired @Lazy
+    private ConsolidationService consolidationService;
+
+    @Autowired @Lazy
+    private  ShipmentService shipmentService;
 
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
@@ -588,8 +593,38 @@ public class NetworkTransferService implements INetworkTransferService {
         if(Objects.equals(networkTransfer.getStatus(), NetworkTransferStatus.TRANSFERRED)) {
             networkTransfer.setTransferredDate(LocalDateTime.now(ZoneOffset.UTC));
         }
-        networkTransfer = networkTransferDao.save(networkTransfer);
-        NetworkTransferExternalResponse networkTransferExternalResponse = jsonHelper.convertValue(networkTransfer, NetworkTransferExternalResponse.class);
+
+        // check if entity with same entityNumber already exists
+        Optional<NetworkTransfer> existing = networkTransferDao.findByEntityNumber(networkTransfer.getEntityNumber());
+
+        NetworkTransfer entityToSave;
+        if (existing.isPresent()) {
+            NetworkTransfer dbEntity = existing.get();
+
+            // copy fields that should be updated
+            dbEntity.setEntityType(networkTransfer.getEntityType())
+                    .setEntityId(networkTransfer.getEntityId())
+                    .setTransportMode(networkTransfer.getTransportMode())
+                    .setSourceBranchId(networkTransfer.getSourceBranchId())
+                    .setStatus(networkTransfer.getStatus())
+                    .setJobType(networkTransfer.getJobType())
+                    .setEntityPayload(networkTransfer.getEntityPayload())
+                    .setIsInterBranchEntity(networkTransfer.getIsInterBranchEntity())
+                    .setTransferredDate(networkTransfer.getTransferredDate())
+                    .setSource(networkTransfer.getSource());
+
+            dbEntity.setMigrationStatus(MigrationStatus.NT_CREATED);
+
+            entityToSave = dbEntity;
+        } else {
+            // new entity
+            networkTransfer.setMigrationStatus(MigrationStatus.NT_CREATED);
+            entityToSave = networkTransfer;
+        }
+
+        NetworkTransfer savedEntity = networkTransferDao.save(entityToSave);
+
+        NetworkTransferExternalResponse networkTransferExternalResponse = jsonHelper.convertValue(savedEntity, NetworkTransferExternalResponse.class);
         return ResponseHelper.buildSuccessResponse(networkTransferExternalResponse);
     }
 
@@ -737,5 +772,80 @@ public class NetworkTransferService implements INetworkTransferService {
         body = body.replace(EntityTransferConstants.REASSIGNED_USER_EMAIL_ID, user.getEmail());
         body = body.replace(EntityTransferConstants.ORIGINAL_DESTINATION_BRANCH, StringUtility.convertToString(branchIdVsTenantModelMap.get(networkTransfer.getTenantId()).tenantName));
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
+    }
+
+    public ResponseEntity<IRunnerResponse> getAllMasterDataForNT(Map<String, Object> requestPayload) {
+
+        // Convert incoming payload to consolidation model
+        ConsolidationDetails consolidationDetails =
+                jsonHelper.convertValue(requestPayload, ConsolidationDetails.class);
+
+        Map<String, Object> masterDataMap = new HashMap<>();
+
+        long start = System.currentTimeMillis();
+        List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null), createFieldClassDto(ArrivalDepartureDetails.class, "arrivalDetails."), createFieldClassDto(ArrivalDepartureDetails.class, "departureDetails.")));
+        includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null))));
+        includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS);
+        ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsResponse());
+
+        Map<String, Object> consolMasterDataMap = consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse);
+        masterDataMap.put(consolidationDetails.getConsolidationNumber(), consolMasterDataMap);
+
+
+        // Shipment Master Data
+        for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+
+            // Build include columns (MasterData + TenantId + Constants)
+            List<String> includeColumnsShipment = new ArrayList<>();
+            includeColumnsShipment.addAll(FieldUtils.getMasterDataAnnotationFields(
+                    List.of(
+                            createFieldClassDto(ShipmentDetails.class, null),
+                            createFieldClassDto(AdditionalDetails.class, "additionalDetails.")
+                    )
+            ));
+            includeColumnsShipment.addAll(FieldUtils.getTenantIdAnnotationFields(
+                    List.of(
+                            createFieldClassDto(ShipmentDetails.class, null),
+                            createFieldClassDto(AdditionalDetails.class, "additionalDetails.")
+                    )
+            ));
+            includeColumnsShipment.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS);
+
+            // Create response object with included fields
+            ShipmentDetailsResponse shipmentDetailsResponse =
+                    (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(
+                            shipmentDetails,
+                            new HashSet<>(includeColumnsShipment),
+                            new ShipmentDetailsResponse()
+                    );
+
+            log.info("Total time taken in setting shipment details response for shipment {} is {} ms",
+                    shipmentDetails.getShipmentId(),
+                    (System.currentTimeMillis() - start)
+            );
+
+            // Fetch Master Data for this shipment
+            Map<String, Object> shipmentMasterDataMap =
+                    shipmentService.fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+
+            // Add shipment-wise master data to the global consolMasterDataMap
+            masterDataMap.put(shipmentDetails.getShipmentId(), shipmentMasterDataMap);
+        }
+        log.info("Total time taken in setting NT master data details response {}", (System.currentTimeMillis() - start));
+
+        return ResponseHelper.buildSuccessResponse(masterDataMap);
+    }
+
+    public List<String> getAllDestinationBranchEmailsForNT(Integer destinationBranch) {
+        List<String> emailList;
+        emailList = entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranch);
+        return emailList;
+    }
+
+    private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
+        FieldClassDto fieldClassDto = new FieldClassDto();
+        fieldClassDto.setClazz(clazz);
+        fieldClassDto.setFieldRef(parentref);
+        return fieldClassDto;
     }
 }

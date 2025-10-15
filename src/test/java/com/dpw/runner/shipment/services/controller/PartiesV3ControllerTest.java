@@ -54,6 +54,7 @@ class PartiesV3ControllerTest {
         RunnerResponse<?> actual = (RunnerResponse<?>) result.getBody();
         assertEquals(expectedResponse, actual.getData());
     }
+
     @Test
     void testDelete_success() {
         PartiesRequest request = new PartiesRequest();

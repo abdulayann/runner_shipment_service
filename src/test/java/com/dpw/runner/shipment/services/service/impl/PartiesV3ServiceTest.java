@@ -95,6 +95,7 @@ class PartiesV3ServiceTest {
         verify(partiesDao).save(partyEntity);
         verify(jsonHelper).convertValue(savedEntity, PartiesResponse.class);
     }
+
     @Test
     void testUpdate_success() {
         // Arrange

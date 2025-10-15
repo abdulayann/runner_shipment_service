@@ -18,6 +18,8 @@ public interface INetworkTransferDao {
 
     Optional<NetworkTransfer> findById(Long id);
 
+    Optional<NetworkTransfer> findByEntityNumber(String entityNumber);
+
     Optional<NetworkTransfer> findByGuid(UUID id);
     Optional<NetworkTransfer> findByIdWithQuery(Long id);
 

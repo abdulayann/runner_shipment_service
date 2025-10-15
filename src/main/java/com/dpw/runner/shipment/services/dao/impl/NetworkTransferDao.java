@@ -78,6 +78,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
+    public Optional<NetworkTransfer> findByEntityNumber(String entityNumber) {
+        return networkTransferRepository.findByEntityNumber(entityNumber);
+    }
+
+    @Override
     public Optional<NetworkTransfer> findByIdWithQuery(Long id) {
         return networkTransferRepository.findByIdWithQuery(id);
     }

@@ -158,6 +158,7 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
@@ -984,7 +985,7 @@ public class ReportService implements IReportService {
             // Verify if the specified implication (HAWBPR) exists for the report's ID.
             // If true, throw a ReportException indicating the implication is already present.
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
-                throw new ReportException(DpsConstants.DPS_ERROR_1);
+                throw new DpsException(DpsConstants.DPS_ERROR_1);
             }
             vHawbReport.printType = reportRequest.getPrintType();
 
@@ -1023,7 +1024,7 @@ public class ReportService implements IReportService {
             // Verify if the specified implication (HBLPR) exists for the report's ID.
             // If true, throw a ReportException indicating the implication is already present.
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HBLPR))) {
-                throw new ReportException(DpsConstants.DPS_ERROR_1);
+                throw new DpsException(DpsConstants.DPS_ERROR_1);
             }
 
             dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
@@ -1128,7 +1129,7 @@ public class ReportService implements IReportService {
         // Verify if the specified implication (DOPR) exists for the report's ID.
         // If true, throw a ReportException indicating the implication is already present.
         if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.DOPR))) {
-            throw new ReportException(DpsConstants.DPS_ERROR_1);
+            throw new DpsException(DpsConstants.DPS_ERROR_1);
         }
 
         // If a Transport Instruction ID is provided in the request:
