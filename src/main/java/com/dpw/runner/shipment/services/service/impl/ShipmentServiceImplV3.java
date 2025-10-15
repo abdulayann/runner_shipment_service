@@ -1344,7 +1344,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Transactional
-    private ShipmentDetailsV3Response createShipment(ShipmentV3Request request,
+    public ShipmentDetailsV3Response createShipment(ShipmentV3Request request,
                                                      boolean includeGuid,
                                                      boolean isFromET,
                                                      ListContractResponse npmContractResponse,
