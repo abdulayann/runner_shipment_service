@@ -3128,14 +3128,20 @@ public class ReportService implements IReportService {
     }
 
     private static void processUnlocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, Map<String, EntityTransferUnLocations> unLocMap) {
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(shipmentDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(shipmentDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
+        CarrierDetails carrier = shipmentDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Put location into map if present (shared between methods)
+    private static void putLocationIfPresent(Map<String, Object> map, String key, String locationCode, 
+                                      Map<String, EntityTransferUnLocations> unLocMap) {
+        if (!CommonUtils.isStringNullOrEmpty(locationCode) && unLocMap.containsKey(locationCode)) {
+            map.put(key, unLocMap.get(locationCode).getName());
+        }
     }
 
     public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
@@ -3200,23 +3206,40 @@ public class ReportService implements IReportService {
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture, userEmailsFuture).join();
+        
         if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
             map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
         }
 
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(consolidationDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(consolidationDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()) && usernameEmailsMap.containsKey(consolidationDetails.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(consolidationDetails.getCreatedBy()));
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()) && usernameEmailsMap.containsKey(consolidationDetails.getAssignedTo()))
-            cc.add(usernameEmailsMap.get(consolidationDetails.getAssignedTo()));
-
+        // Populate location data using shared helper
+        populateConsolLocationData(consolidationDetails, map, unLocMap);
+        
+        // Add user emails to CC using shared helper
+        addConsolUserEmailsToCC(consolidationDetails, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Populate consolidation location data
+    private void populateConsolLocationData(ConsolidationDetails consolidationDetails, Map<String, Object> map, 
+                                             Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = consolidationDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add consolidation user emails to CC
+    private void addConsolUserEmailsToCC(ConsolidationDetails consolidationDetails, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = consolidationDetails.getCreatedBy();
+        String assignedTo = consolidationDetails.getAssignedTo();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
+        }
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo) && usernameEmailsMap.containsKey(assignedTo)) {
+            cc.add(usernameEmailsMap.get(assignedTo));
+        }
     }
 
     public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
@@ -3265,21 +3288,36 @@ public class ReportService implements IReportService {
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture, userEmailsFuture).join();
+        
         if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
             map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
         }
 
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOrigin()) && unLocMap.containsKey(booking.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(booking.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestination()) && unLocMap.containsKey(booking.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(booking.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(booking.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(booking.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(booking.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(booking.getCarrierDetails().getDestinationPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()) && usernameEmailsMap.containsKey(booking.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(booking.getCreatedBy()));
-
+        // Populate location data using shared helper
+        populateBookingLocationData(booking, map, unLocMap);
+        
+        // Add user emails to CC
+        addBookingUserEmailsToCC(booking, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Populate booking location data
+    private void populateBookingLocationData(CustomerBooking booking, Map<String, Object> map, 
+                                              Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = booking.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add booking user email to CC
+    private void addBookingUserEmailsToCC(CustomerBooking booking, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = booking.getCreatedBy();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
+        }
     }
 
     @Override
@@ -3392,11 +3430,30 @@ public class ReportService implements IReportService {
     }
 
     public void populateTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, Long emailTemplateId, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> to, Set<String> cc) {
+        // Step 1: Add destination agent email to recipients
+        addDestinationAgentEmail(shipmentDetails, to);
+        
+        // Step 2: Populate basic shipment fields
+        populateBasicShipmentFields(shipmentDetails, map);
+        
+        // Step 3: Populate agent details (OA & DA)
+        populateAgentDetails(shipmentDetails, map);
+        
+        // Step 4: Fetch and populate master data (locations, templates, users)
+        fetchAndPopulateMasterData(shipmentDetails, emailTemplateId, map, emailTemplatesRequests, cc);
+    }
+    
+    // Helper: Add destination agent email to recipients
+    private void addDestinationAgentEmail(ShipmentDetails shipmentDetails, Set<String> to) {
         try {
             to.add(shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get("Email").toString());
         } catch (Exception ignored) {
             log.error("Email not available for DA for Pre Alert Email");
         }
+    }
+    
+    // Helper: Populate basic shipment fields
+    private void populateBasicShipmentFields(ShipmentDetails shipmentDetails, Map<String, Object> map) {
         map.put(CBN_NUMBER, shipmentDetails.getBookingReference());
         map.put(MODE, shipmentDetails.getTransportMode());
         map.put(LOAD, shipmentDetails.getShipmentType());
@@ -3411,12 +3468,15 @@ public class ReportService implements IReportService {
         map.put(CBR, shipmentDetails.getBookingNumber());
         map.put(COMMODITY, shipmentDetails.getCommodity());
         map.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
-        
-        // Origin Agent - using utility to eliminate duplication  
+    }
+    
+    // Helper: Populate agent details (OA & DA) with email key correction
+    private void populateAgentDetails(ShipmentDetails shipmentDetails, Map<String, Object> map) {
+        // Origin Agent
         try {
             Map<String, Object> oaMap = PartyDataMapper.buildFlatPartyMap(
                 shipmentDetails.getAdditionalDetails().getExportBroker(), "OA_", modelMapper);
-            // Note: Pre-alert uses OA_EMAIL not OA_EMAIL_CAPS, so we need to adjust
+            // Pre-alert uses OA_EMAIL not OA_EMAIL_CAPS
             if (oaMap.containsKey("OA_EMAIL_CAPS")) {
                 oaMap.put("OA_EMAIL", oaMap.remove("OA_EMAIL_CAPS"));
             }
@@ -3425,11 +3485,11 @@ public class ReportService implements IReportService {
             log.error(ORIGIN_ERROR);
         }
         
-        // Destination Agent - using utility to eliminate duplication
+        // Destination Agent
         try {
             Map<String, Object> daMap = PartyDataMapper.buildFlatPartyMap(
                 shipmentDetails.getAdditionalDetails().getImportBroker(), "DA_", modelMapper);
-            // Note: Pre-alert uses DA_EMAIL not DA_EMAIL_CAPS, so we need to adjust  
+            // Pre-alert uses DA_EMAIL not DA_EMAIL_CAPS
             if (daMap.containsKey("DA_EMAIL_CAPS")) {
                 daMap.put("DA_EMAIL", daMap.remove("DA_EMAIL_CAPS"));
             }
@@ -3437,32 +3497,68 @@ public class ReportService implements IReportService {
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
+    }
+    
+    // Helper: Fetch and populate all master data asynchronously
+    private void fetchAndPopulateMasterData(ShipmentDetails shipmentDetails, Long emailTemplateId, 
+                                            Map<String, Object> map, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
+        // Prepare data containers
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
-
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
-                shipmentDetails.getCarrierDetails().getDestinationPort(),
-                shipmentDetails.getCarrierDetails().getOrigin(),
-                shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
-        var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplateId, emailTemplatesRequests)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
-
+        
+        // Fetch all master data in parallel
+        CompletableFuture<Void> unlocationsFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> fetchLocationData(shipmentDetails, unLocMap)));
+        CompletableFuture<Void> templatesFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplateId, emailTemplatesRequests)), executorService);
+        CompletableFuture<Void> userEmailsFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        
+        // Wait for all async operations
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, userEmailsFuture).join();
-
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
-            map.put(DSTN, unLocMap.get(shipmentDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(shipmentDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
-
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()) && usernameEmailsMap.containsKey(shipmentDetails.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(shipmentDetails.getCreatedBy()));
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()) && usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
-            cc.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+        
+        // Populate location data from fetched results
+        populateLocationData(shipmentDetails, map, unLocMap);
+        
+        // Add user emails to CC
+        addUserEmailsToCC(shipmentDetails, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Fetch location data
+    private void fetchLocationData(ShipmentDetails shipmentDetails, Map<String, EntityTransferUnLocations> unLocMap) {
+        Set<String> locations = Stream.of(
+            shipmentDetails.getCarrierDetails().getOriginPort(),
+            shipmentDetails.getCarrierDetails().getDestinationPort(),
+            shipmentDetails.getCarrierDetails().getOrigin(),
+            shipmentDetails.getCarrierDetails().getDestination()
+        ).filter(Objects::nonNull).collect(Collectors.toSet());
+        
+        masterDataUtils.getLocationDataFromCache(locations, unLocMap);
+    }
+    
+    // Helper: Populate location data into map
+    private void populateLocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, 
+                                      Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = shipmentDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DSTN, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add user emails to CC list
+    private void addUserEmailsToCC(ShipmentDetails shipmentDetails, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = shipmentDetails.getCreatedBy();
+        String assignedTo = shipmentDetails.getAssignedTo();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
+        }
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo) && usernameEmailsMap.containsKey(assignedTo)) {
+            cc.add(usernameEmailsMap.get(assignedTo));
+        }
     }
 
     private Set<String> getUsernamesList(ShipmentDetails shipmentDetails) {
