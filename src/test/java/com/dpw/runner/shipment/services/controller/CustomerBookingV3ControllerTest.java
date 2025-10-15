@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -301,5 +302,79 @@ class CustomerBookingV3ControllerTest {
         when(customerBookingV3Service.resetBookingQuoteRules(any())).thenReturn(new QuoteResetRulesResponse());
         var response = customerBookingV3Controller.resetBookingQuoteRules(1L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void cloneBookingPackages_Success() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(200L)
+                .numberOfClones(3)
+                .build();
+        BulkPackingResponse mockResponse = new BulkPackingResponse();
+
+        when(customerBookingV3Service.cloneBookingPackages(request)).thenReturn(mockResponse);
+
+        // Act
+        var response = customerBookingV3Controller.cloneBookingPackages(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(customerBookingV3Service).cloneBookingPackages(request);
+    }
+
+    @Test
+    void cloneBookingPackages_ThrowsException() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(200L)
+                .numberOfClones(3)
+                .build();
+
+        when(customerBookingV3Service.cloneBookingPackages(request))
+                .thenThrow(new RunnerException("Error cloning packages"));
+
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> customerBookingV3Controller.cloneBookingPackages(request));
+        verify(customerBookingV3Service).cloneBookingPackages(request);
+    }
+
+    @Test
+    void cloneBookingContainers_Success() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(300L)
+                .numberOfClones(4)
+                .build();
+        BulkContainerResponse mockResponse = new BulkContainerResponse();
+
+        when(customerBookingV3Service.cloneBookingContainers(request)).thenReturn(mockResponse);
+
+        // Act
+        var response = customerBookingV3Controller.cloneBookingContainers(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(customerBookingV3Service).cloneBookingContainers(request);
+    }
+
+    @Test
+    void cloneBookingContainers_ThrowsException() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(300L)
+                .numberOfClones(4)
+                .build();
+
+        when(customerBookingV3Service.cloneBookingContainers(request))
+                .thenThrow(new RunnerException("Error cloning containers"));
+
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> customerBookingV3Controller.cloneBookingContainers(request));
+        verify(customerBookingV3Service).cloneBookingContainers(request);
     }
 }

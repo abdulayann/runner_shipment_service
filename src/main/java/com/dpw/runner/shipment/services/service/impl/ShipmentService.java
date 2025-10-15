@@ -299,7 +299,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -2670,7 +2669,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        containerDao.saveAll(allConsolConts);
+        containerDao.saveAllContainers(allConsolConts);
     }
 
     private void getContPacksMap(ShipmentRequest shipmentRequest, Map<Long, List<PackingRequest>> containerPacksMap) {
@@ -4249,7 +4248,7 @@ public class ShipmentService implements IShipmentService {
     private void setContainersInConsole(List<Containers> containers, Long id, ConsolidationDetails consolidationDetails) {
         if(containers != null && !containers.isEmpty()) {
             containers = containers.stream().map(e -> e.setConsolidationId(id)).toList();
-            containers = containerDao.saveAll(containers);
+            containers = containerDao.saveAllContainers(containers);
         }
         consolidationDetails.setContainersList(containers);
     }
@@ -4930,7 +4929,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             if(isFCL)
-                containerDao.saveAll(containersList);
+                containerDao.saveAllContainers(containersList);
         }
     }
 
@@ -5080,7 +5079,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         if(isFCL)
-            containerDao.saveAll(containersList);
+            containerDao.saveAllContainers(containersList);
     }
 
     private void saveDGShipment(ShipmentDetails shipmentDetails, boolean isDGClass1Added) throws RunnerException {

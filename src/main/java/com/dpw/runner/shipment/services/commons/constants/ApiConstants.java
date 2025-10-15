@@ -237,4 +237,6 @@ public class ApiConstants {
     public static final String API_CONSOLE_FROM_SHIPMENT = "console-from-shipment";
     public static final String API_CREATE_CONSOLE_ATTACH_SHIPMENT = "/create-console-attach-shipment";
 
+    public static final String API_CLONE_PACKAGES = "/clone/packages";
+    public static final String API_CLONE_CONTAINERS = "/clone/containers";
 }

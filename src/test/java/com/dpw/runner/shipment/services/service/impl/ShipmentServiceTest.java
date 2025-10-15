@@ -4796,7 +4796,7 @@ ShipmentServiceTest extends CommonMocks {
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
-        when(containerDao.saveAll(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(containerDao.saveAllContainers(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
         doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any(), any());
         mockShipmentSettings();
         mockTenantSettings();
@@ -9574,7 +9574,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setContainersList(Set.of(Containers.builder().build()));
         shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), new ArrayList<>(shipmentDetails.getContainersList()));
-        verify(containerDao, times(1)).saveAll(any());
+        verify(containerDao, times(1)).saveAllContainers(any());
     }
 
     @Test
@@ -9583,7 +9583,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setContainersList(Set.of(Containers.builder().build()));
         shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), new ArrayList<>(shipmentDetails.getContainersList()));
-        verify(containerDao, times(1)).saveAll(any());
+        verify(containerDao, times(1)).saveAllContainers(any());
     }
 
     @Test
@@ -9596,7 +9596,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setContainersList(Set.of(Containers.builder().build()));
         shipmentDetails.getContainersList().iterator().next().setId(1L);
         shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), new ArrayList<>(shipmentDetails.getContainersList()));
-        verify(containerDao, times(1)).saveAll(any());
+        verify(containerDao, times(1)).saveAllContainers(any());
     }
 
     @Test

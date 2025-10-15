@@ -313,7 +313,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
         doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
-        lenient().when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
+        lenient().when(containerDao.saveAllContainers(anyList())).thenReturn(List.of(new Containers()));
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
         assertDoesNotThrow(() ->
@@ -343,7 +343,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         doNothing().when(shipmentDao).setShipmentIdsToContainer(anyList(), isNull());
         doNothing().when(packingDao).setPackingIdsToContainer(anyList(), isNull());
-        lenient().when(containerDao.saveAll(anyList())).thenReturn(List.of(new Containers()));
+        lenient().when(containerDao.saveAllContainers(anyList())).thenReturn(List.of(new Containers()));
         lenient().doNothing().when(containerDao).deleteByIdIn(anyList());
         doNothing().when(shipmentsContainersMappingDao).deleteAll(anyList());
 
@@ -850,10 +850,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         doNothing().when(containerValidationUtil).validateCreateBulkRequest(containerRequests);
         doNothing().when(containerValidationUtil).validateContainerNumberUniquenessForCreateBulk(containerRequests);
-        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), anyString());
         when(jsonHelper.convertValueToList(containerRequests, Containers.class)).thenReturn(containers);
-        when(containerDao.saveAll(containers)).thenReturn(containers);
-        doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValueToList(containers, ContainerResponse.class)).thenReturn(responseList);
 

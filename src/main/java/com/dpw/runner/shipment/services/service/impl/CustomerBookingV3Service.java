@@ -82,24 +82,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3DeleteResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3ListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.QuoteResetField;
-import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
@@ -112,7 +95,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -155,9 +140,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
@@ -256,6 +239,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
     private final IFusionServiceAdapter fusionServiceAdapter;
+    private final IPackingV3Service packingV3Service;
+    private final IContainerV3Service containerV3Service;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -344,7 +329,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     ModelMapper modelMapper,
                                     DependentServiceHelper dependentServiceHelper,
                                     IFusionServiceAdapter fusionServiceAdapter,
-                                    ConsolidationV3Service consolidationService){
+                                    ConsolidationV3Service consolidationService,
+                                    IPackingV3Service packingV3Service,
+                                    IContainerV3Service containerV3Service){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -368,6 +355,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
         this.fusionServiceAdapter = fusionServiceAdapter;
+        this.packingV3Service = packingV3Service;
+        this.containerV3Service = containerV3Service;
     }
 
     @Override
@@ -2808,5 +2797,84 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .thenCompose(v -> CompletableFuture.allOf(
                         CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService)
                 ));
+    }
+
+    @Override
+    public BulkPackingResponse cloneBookingPackages(BulkCloneLineItemRequest request) throws RunnerException{
+        try {
+            Long bookingId = request.getModuleId();
+            Long packageId = request.getPackageId();
+            Integer numberOfClones = request.getNumberOfClones();
+            if (packageId == null) {
+                throw new ValidationException("packageId is required for cloning packages");
+            }
+
+            Packing originalPacking = packingDao.findById(packageId)
+                    .orElseThrow(() -> new DataRetrievalFailureException("Package not found with ID: " + packageId));
+
+            PackingV3Request basePackage = jsonHelper.convertValue(originalPacking, PackingV3Request.class);
+            basePackage.setId(null);
+            basePackage.setGuid(null);
+            basePackage.setBookingId(bookingId);
+
+            List<PackingV3Request> clonedRequests = new ArrayList<>(numberOfClones);
+
+            for (int i = 0; i < numberOfClones; i++) {
+                PackingV3Request packageClone = jsonHelper.convertValue(basePackage, PackingV3Request.class);
+                clonedRequests.add(packageClone);
+            }
+
+            BulkPackingResponse response = packingV3Service.updateBulk(clonedRequests, BOOKING, false);
+            log.info("Created Clone Packages for Booking ID: {}, Number of Clones: {}", bookingId, numberOfClones);
+            return response;
+
+        }
+        catch (Exception e) {
+            log.error("Error in cloneBookingPackages: {} for bookingId: {}", e.getMessage(), request.getModuleId());
+            String errMessage = e.getMessage() != null ? e.getMessage() : "Failed to clone booking packages";
+            throw new RunnerException(errMessage + " | bookingId: " + request.getModuleId());
+        }
+    }
+
+    @Override
+    public BulkContainerResponse cloneBookingContainers(BulkCloneLineItemRequest request) throws RunnerException{
+        try {
+            Long bookingId = request.getModuleId();
+            Long containerId = request.getContainerId();
+            Integer numberOfClones = request.getNumberOfClones();
+            if (containerId == null) {
+                throw new ValidationException("containerId is required for cloning containers");
+            }
+
+            Containers originalContainer = containerDao.findById(containerId)
+                    .orElseThrow(() -> new DataRetrievalFailureException("Container not found with ID: " + containerId));
+
+            validateBookingExists(bookingId);
+
+            ContainerV3Request baseContainer = jsonHelper.convertValue(originalContainer, ContainerV3Request.class);
+            baseContainer.setId(null);
+            baseContainer.setGuid(null);
+            baseContainer.setContainerNumber(null);
+            baseContainer.setBookingId(bookingId);
+
+            List<ContainerV3Request> clonedRequests = new ArrayList<>(numberOfClones);
+            for (int i = 0; i < numberOfClones; i++) {
+                ContainerV3Request containerClone = jsonHelper.convertValue(baseContainer, ContainerV3Request.class);
+                clonedRequests.add(containerClone);
+            }
+            BulkContainerResponse response = containerV3Service.createBulk(clonedRequests, BOOKING);
+            log.info("Created Clone Containers for Booking ID: {}, Number of Clones: {}", bookingId, numberOfClones);
+            return response;
+        }
+        catch (Exception e) {
+            log.error("Error in cloneBookingContainers: {} for bookingId: {}", e.getMessage(), request.getModuleId());
+            String message = e.getMessage() != null ? e.getMessage() : "Failed to clone booking containers";
+            throw new RunnerException(message + " | bookingId: " + request.getModuleId());
+        }
+    }
+
+    private void validateBookingExists(Long bookingId){
+        CustomerBooking booking = customerBookingDao.findById(bookingId).
+                orElseThrow(() -> new DataRetrievalFailureException("Booking not found with ID: " + bookingId));
     }
 }

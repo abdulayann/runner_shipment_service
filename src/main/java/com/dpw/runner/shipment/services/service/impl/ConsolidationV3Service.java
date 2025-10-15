@@ -5546,4 +5546,44 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         log.info("Received attachShipments request: {}", shipmentConsoleAttachRequest);
         return this.attachShipmentDetails(shipmentConsoleAttachRequest);
     }
+
+    @Override
+    public BulkContainerResponse cloneContainers(BulkCloneLineItemRequest request) throws RunnerException{
+        try{
+            Long consolidationId = request.getModuleId();
+            Long containerId = request.getContainerId();
+            Integer numberOfClones = request.getNumberOfClones();
+            if (containerId == null) {
+                throw new ValidationException("containerId is required for cloning containers.");
+            }
+
+            Containers originalContainer = containerDao.findById(containerId).orElseThrow(
+                    () -> new DataRetrievalFailureException("Container not found with Id: " + containerId));
+
+            // validate consolidation
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).orElseThrow(
+                    () -> new DataRetrievalFailureException("Consolidation not found with Id: " + consolidationId));
+
+            // create base req once and then clone
+            ContainerV3Request baseRequest = jsonHelper.convertValue(originalContainer, ContainerV3Request.class);
+            baseRequest.setId(null);
+            baseRequest.setGuid(null);
+            baseRequest.setContainerNumber(null);
+            baseRequest.setConsolidationId(consolidationId);
+
+            List<ContainerV3Request> clonedRequests = new ArrayList<>(numberOfClones);
+
+            for (int i = 0; i < numberOfClones; i++) {
+                ContainerV3Request clone = jsonHelper.convertValue(baseRequest, ContainerV3Request.class);
+                clonedRequests.add(clone);
+            }
+            BulkContainerResponse response = containerV3Service.createBulk(clonedRequests, CONSOLIDATION);
+            log.info("Created Clone Containers for Consolidation ID: {}, Number of Clones: {}", consolidationId, numberOfClones);
+            return response;
+        }
+        catch (Exception e){
+            log.error("Error while cloning containers for Consolidation: {}", e.getMessage());
+            throw new RunnerException("Error while cloning containers: " + e.getMessage());
+        }
+    }
 }

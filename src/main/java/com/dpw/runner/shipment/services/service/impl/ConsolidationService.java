@@ -992,7 +992,7 @@ public class ConsolidationService implements IConsolidationService {
                     for (Containers container : containersList) {
                         container.setConsolidationId(consolidationId);
                     }
-                    containersList = containerDao.saveAll(containersList);
+                    containersList = containerDao.saveAllContainers(containersList);
                     containerService.afterSaveList(containersList, false);
                 }
                 processConsolePackingAndEvents(consolidationId, shipmentDetails);
@@ -1251,7 +1251,7 @@ public class ConsolidationService implements IConsolidationService {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 saveSeaPacks = isSaveSeaPacks(shipmentDetail, packingList, saveSeaPacks, allContainersList);
                 shipmentsContainersMappingDao.detachListShipments(allContainersList.stream().map(Containers::getId).toList(), removedShipmentIds, false);
-                containerDao.saveAll(allContainersList);
+                containerDao.saveAllContainers(allContainersList);
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerService.afterSaveList(allContainersList, false)), executorService);
 
                 packingList = getPackingList(shipmentDetail, packingList);
@@ -1564,7 +1564,7 @@ public class ConsolidationService implements IConsolidationService {
                     for(Containers container : containersList) {
                         shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), true);
                     }
-                    containerDao.saveAll(new ArrayList<>(containersList));
+                    containerDao.saveAllContainers(new ArrayList<>(containersList));
                 }
             }
         }

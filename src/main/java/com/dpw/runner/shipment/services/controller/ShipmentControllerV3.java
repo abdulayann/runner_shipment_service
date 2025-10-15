@@ -19,17 +19,15 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachReq
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -346,4 +344,15 @@ public class ShipmentControllerV3 {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_PACKAGES)
+    public ResponseEntity<IRunnerResponse> cloneShipmentPackages(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipmentPackages(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> cloneShipmentContainers(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipmentContainers(request));
+    }
 }

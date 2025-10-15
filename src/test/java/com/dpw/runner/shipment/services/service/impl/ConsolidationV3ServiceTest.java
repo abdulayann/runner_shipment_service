@@ -65,10 +65,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
@@ -7196,5 +7193,118 @@ if (unitConversionUtilityMockedStatic != null) {
             () -> consolidationV3Service.createConsolidation(request, false)
     );
     assertEquals("save failed", ex.getMessage());
+  }
+
+  @Test
+  void testCloneContainers_Success() throws RunnerException {
+    // Setup
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(1L)
+            .containerId(100L)
+            .numberOfClones(3)
+            .build();
+
+    Containers originalContainer = new Containers();
+    originalContainer.setId(100L);
+    originalContainer.setContainerNumber("CONT001");
+    originalContainer.setContainerCode("20GP");
+
+    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setId(1L);
+    consolidationDetails.setConsolidationNumber("CONSOL001");
+
+    ContainerV3Request baseRequest = new ContainerV3Request();
+    baseRequest.setContainerNumber("CONT001");
+    baseRequest.setContainerCode("20GP");
+
+    ContainerV3Request cloneRequest1 = new ContainerV3Request();
+    cloneRequest1.setContainerNumber("CONT001");
+    cloneRequest1.setConsolidationId(1L);
+
+    ContainerV3Request cloneRequest2 = new ContainerV3Request();
+    cloneRequest2.setContainerNumber("CONT001");
+    cloneRequest2.setConsolidationId(1L);
+
+    ContainerV3Request cloneRequest3 = new ContainerV3Request();
+    cloneRequest3.setContainerNumber("CONT001");
+    cloneRequest3.setConsolidationId(1L);
+
+    List<ContainerResponse> containerResponses = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+        ContainerResponse containerResponse = new ContainerResponse();
+      containerResponse.setId((long) (101 + i));
+      containerResponses.add(containerResponse);
+    }
+
+    BulkContainerResponse expectedResponse = new BulkContainerResponse();
+    expectedResponse.setContainerResponseList(containerResponses);
+
+    when(containerDao.findById(100L)).thenReturn(Optional.of(originalContainer));
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+    when(jsonHelper.convertValue(eq(originalContainer), eq(ContainerV3Request.class))).thenReturn(baseRequest);
+    when(jsonHelper.convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class)))
+            .thenReturn(cloneRequest1, cloneRequest2, cloneRequest3);
+    when(containerV3Service.createBulk(anyList(), eq(Constants.CONSOLIDATION))).thenReturn(expectedResponse);
+
+    // Execute
+    BulkContainerResponse result = consolidationV3Service.cloneContainers(request);
+
+    // Verify
+    assertNotNull(result);
+    assertEquals(3, result.getContainerResponseList().size());
+    verify(containerDao).findById(100L);
+    verify(consolidationDetailsDao).findById(1L);
+    verify(jsonHelper).convertValue(eq(originalContainer), eq(ContainerV3Request.class));
+    verify(jsonHelper, times(3)).convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class));
+    verify(containerV3Service).createBulk(anyList(), eq(Constants.CONSOLIDATION));
+  }
+
+  @Test
+  void testCloneContainers_ContainerNotFound() {
+    // Setup
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(1L)
+            .containerId(999L)
+            .numberOfClones(3)
+            .build();
+
+    when(containerDao.findById(999L)).thenReturn(Optional.empty());
+
+    // Execute & Verify
+    assertThrows(RunnerException.class, () -> consolidationV3Service.cloneContainers(request));
+    verify(containerDao).findById(999L);
+  }
+
+  @Test
+  void testCloneContainers_ConsolidationNotFound() {
+    // Setup
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(999L)
+            .containerId(100L)
+            .numberOfClones(3)
+            .build();
+
+    Containers originalContainer = new Containers();
+    originalContainer.setId(100L);
+
+    when(containerDao.findById(100L)).thenReturn(Optional.of(originalContainer));
+    when(consolidationDetailsDao.findById(999L)).thenReturn(Optional.empty());
+
+    // Execute & Verify
+    assertThrows(RunnerException.class, () -> consolidationV3Service.cloneContainers(request));
+    verify(containerDao).findById(100L);
+    verify(consolidationDetailsDao).findById(999L);
+  }
+
+  @Test
+  void testCloneContainers_MissingContainerId() {
+    // Setup
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(1L)
+            .numberOfClones(3)
+            .build();
+
+    // Execute & Verify
+    assertThrows(RunnerException.class, () -> consolidationV3Service.cloneContainers(request));
   }
 }

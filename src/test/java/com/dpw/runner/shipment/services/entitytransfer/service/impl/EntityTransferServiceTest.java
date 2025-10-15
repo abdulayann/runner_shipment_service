@@ -3923,7 +3923,7 @@ class EntityTransferServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(container);
 
         when(containerDao.findByConsolidationId(consoleId)).thenReturn(containersList);
-        when(containerDao.saveAll(anyList())).thenReturn(containersList);
+        when(containerDao.saveAllContainers(anyList())).thenReturn(containersList);
 
         // When
         ReflectionTestUtils.invokeMethod(entityTransferService, "attachShipmentToContainers",
