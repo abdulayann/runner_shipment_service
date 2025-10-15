@@ -3093,10 +3093,8 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
-                shipmentDetails.getCarrierDetails().getDestinationPort(),
-                shipmentDetails.getCarrierDetails().getOrigin(),
-                shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(shipmentDetails.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var tenantsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getTenantDataFromCache(Set.of(UserContext.getUser().getTenantId().toString()),tenantModelMap )), executorService);
         var vesselsFuture = Optional.ofNullable(shipmentDetails.getCarrierDetails())
@@ -3112,12 +3110,12 @@ public class ReportService implements IReportService {
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture, userEmailsFuture).join();
-        if (tenantModelMap.get(UserContext.getUser().getTenantId().toString()) != null) {
-            map.put(SALES_BRANCH, tenantModelMap.get(UserContext.getUser().getTenantId().toString()).tenantName);
-        }
-        if (vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()) != null) {
-            map.put(VESSEL, vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()).Name);
-        }
+        
+        // Populate tenant and vessel data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, SALES_BRANCH, tenantModelMap, 
+            UserContext.getUser().getTenantId().toString(), tenant -> tenant.tenantName);
+        AsyncDataFetcher.putFromMapIfPresent(map, VESSEL, vesselMap, 
+            shipmentDetails.getCarrierDetails().getVessel(), vessel -> vessel.Name);
 
         processUnlocationData(shipmentDetails, map, unLocMap);
 
@@ -3188,10 +3186,8 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getConsolUsernamesList(consolidationDetails);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
-                consolidationDetails.getCarrierDetails().getDestinationPort(),
-                consolidationDetails.getCarrierDetails().getOrigin(),
-                consolidationDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(consolidationDetails.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var vesselsFuture = Optional.ofNullable(consolidationDetails.getCarrierDetails())
                 .map(CarrierDetails::getVessel)
@@ -3207,9 +3203,9 @@ public class ReportService implements IReportService {
 
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture, userEmailsFuture).join();
         
-        if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
-            map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
-        }
+        // Populate vessel data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, VESSEL, vesselMap, 
+            consolidationDetails.getCarrierDetails().getVessel(), vessel -> vessel.Name);
 
         // Populate location data using shared helper
         populateConsolLocationData(consolidationDetails, map, unLocMap);
@@ -3280,18 +3276,16 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getBookingUsernamesList(booking);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
-                booking.getCarrierDetails().getDestinationPort(),
-                booking.getCarrierDetails().getOrigin(),
-                booking.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(booking.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture, userEmailsFuture).join();
         
-        if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
-            map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
-        }
+        // Populate carrier/airline data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, AIRLINE, carrierMap, 
+            booking.getCarrierDetails().getShippingLine(), carrier -> carrier.getItemValue());
 
         // Populate location data using shared helper
         populateBookingLocationData(booking, map, unLocMap);
@@ -3527,13 +3521,7 @@ public class ReportService implements IReportService {
     
     // Helper: Fetch location data
     private void fetchLocationData(ShipmentDetails shipmentDetails, Map<String, EntityTransferUnLocations> unLocMap) {
-        Set<String> locations = Stream.of(
-            shipmentDetails.getCarrierDetails().getOriginPort(),
-            shipmentDetails.getCarrierDetails().getDestinationPort(),
-            shipmentDetails.getCarrierDetails().getOrigin(),
-            shipmentDetails.getCarrierDetails().getDestination()
-        ).filter(Objects::nonNull).collect(Collectors.toSet());
-        
+        Set<String> locations = AsyncDataFetcher.extractLocationCodes(shipmentDetails.getCarrierDetails());
         masterDataUtils.getLocationDataFromCache(locations, unLocMap);
     }
     
@@ -3561,27 +3549,30 @@ public class ReportService implements IReportService {
         }
     }
 
+    // Helper: Extract usernames from shipment (createdBy, assignedTo)
     private Set<String> getUsernamesList(ShipmentDetails shipmentDetails) {
-        Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()))
-            usernamesList.add(shipmentDetails.getCreatedBy());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()))
-            usernamesList.add(shipmentDetails.getAssignedTo());
-        return usernamesList;
+        return extractUsernames(shipmentDetails.getCreatedBy(), shipmentDetails.getAssignedTo());
     }
+    
+    // Helper: Extract usernames from consolidation
     private Set<String> getConsolUsernamesList(ConsolidationDetails consolidationDetails) {
-        Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()))
-            usernamesList.add(consolidationDetails.getCreatedBy());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()))
-            usernamesList.add(consolidationDetails.getAssignedTo());
-        return usernamesList;
+        return extractUsernames(consolidationDetails.getCreatedBy(), consolidationDetails.getAssignedTo());
     }
 
+    // Helper: Extract usernames from booking
     private Set<String> getBookingUsernamesList(CustomerBooking booking) {
+        return extractUsernames(booking.getCreatedBy(), null);
+    }
+    
+    // Shared utility: Extract non-empty usernames
+    private Set<String> extractUsernames(String createdBy, String assignedTo) {
         Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()))
-            usernamesList.add(booking.getCreatedBy());
+        if (!CommonUtils.isStringNullOrEmpty(createdBy)) {
+            usernamesList.add(createdBy);
+        }
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo)) {
+            usernamesList.add(assignedTo);
+        }
         return usernamesList;
     }
 
@@ -4048,6 +4039,39 @@ public class ReportService implements IReportService {
     }
 
     // ==================== UTILITY CLASSES FOR ELIMINATING CODE DUPLICATION ====================
+    
+    /**
+     * Utility class for async master data fetching operations.
+     * Eliminates duplicate async patterns across email template methods.
+     */
+    private static class AsyncDataFetcher {
+        
+        /**
+         * Fetches location data for a set of location codes
+         */
+        public static Set<String> extractLocationCodes(CarrierDetails carrier) {
+            return Stream.of(
+                carrier.getOriginPort(),
+                carrier.getDestinationPort(),
+                carrier.getOrigin(),
+                carrier.getDestination()
+            ).filter(Objects::nonNull).collect(Collectors.toSet());
+        }
+        
+        /**
+         * Adds a value from a map to another map if the key exists
+         */
+        public static <K, V> void putFromMapIfPresent(Map<String, Object> targetMap, String targetKey, 
+                                                       Map<K, V> sourceMap, K sourceKey, 
+                                                       java.util.function.Function<V, Object> valueExtractor) {
+            if (sourceMap != null && sourceMap.containsKey(sourceKey)) {
+                V value = sourceMap.get(sourceKey);
+                if (value != null) {
+                    targetMap.put(targetKey, valueExtractor.apply(value));
+                }
+            }
+        }
+    }
     
     /**
      * Utility class for mapping party/organization data to dictionaries.
