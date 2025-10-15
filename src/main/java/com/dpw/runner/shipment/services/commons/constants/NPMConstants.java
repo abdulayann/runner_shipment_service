@@ -65,4 +65,6 @@ public class NPMConstants {
     public static final String TOTAL_RATE = "totalRate";
     public static final String AUTO_SELL = "AUTO_SELL";
     public static final String AUTO_COST = "AUTO_COST";
+
+    public static final String NPM_FETCH_OFFER_ERROR_MESSAGE = "Error from NPM while fetching offers: ";
 }

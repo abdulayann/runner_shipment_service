@@ -57,7 +57,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -1920,7 +1919,7 @@ class NPMServiceAdapterTest {
     }
 
     @Test
-    public void fetchOffersWithFilter_successfulResponse_sortsFiltersPaginates() throws Exception {
+    void fetchOffersWithFilter_successfulResponse_sortsFiltersPaginates() throws Exception {
         UsersDto usersDto = new UsersDto();
         usersDto.setTenantId(1);
         usersDto.setCompanyCurrency("AED");
