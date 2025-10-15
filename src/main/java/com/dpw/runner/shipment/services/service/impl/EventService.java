@@ -778,6 +778,7 @@ public class EventService implements IEventService {
         }
 
         if (EventConstants.CACO.contains(eventCode)
+                || EventConstants.CAAW.contains(eventCode)
                 || EventConstants.FCGI.contains(eventCode)
                 || EventConstants.INTR.contains(eventCode)
                 || EventConstants.CAFS.contains(eventCode)

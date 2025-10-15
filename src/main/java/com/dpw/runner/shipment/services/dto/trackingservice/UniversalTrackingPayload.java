@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class UniversalTrackingPayload {
   private String carrier;
   private String masterBill;
+  private String clientName;
   private String bookingReferenceNumber;
   private String runnerReferenceNumber;
   private String referenceNumberType;

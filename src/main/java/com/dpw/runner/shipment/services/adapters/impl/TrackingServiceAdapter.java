@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
@@ -104,6 +105,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private ISBUtils sbUtils;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
     @Value("${trackingService.apiKey}")
     private String trackingServiceApiKey;
     @Autowired
@@ -308,9 +311,20 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
         setEntityTypeInTrackingPayload(inputConsol, inputShipment, trackingPayload);
 
+        setClientNameInTrackingPayload(inputShipment, trackingPayload);
+
         setCarrierInTrackingPayload(inputConsol, inputShipment, trackingPayload);
 
         return trackingPayload;
+    }
+
+    private void setClientNameInTrackingPayload(ShipmentDetails inputShipment, UniversalTrackingPayload trackingPayload) {
+        if (inputShipment != null && isTeslaShipment(inputShipment)) {
+            if (trackingPayload == null) {
+                trackingPayload = UniversalTrackingPayload.builder().build();
+            }
+            trackingPayload.setClientName(Constants.TESLA.toUpperCase());
+        }
     }
 
     private String getDefaultMasterBill(ShipmentDetails inputShipment) {
@@ -688,9 +702,14 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return ecpk;
         }
 
-        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole, safeDescription);
+        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole);
         if (fcgi != null) {
             return fcgi;
+        }
+
+        String caaw = getCAAWEventCode(safeEventType, safeDescription);
+        if (caaw != null) {
+            return caaw;
         }
 
         String vsdp = getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource, safeJourneyScacCode);
@@ -746,17 +765,21 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    private String getFCGIEventCode(String safeEventCode, String safeLocationRole, String safeDescription) {
+    private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.info("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
 
+        return null;
+    }
+
+    private String getCAAWEventCode(String safeEventCode, String safeDescription) {
         if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeEventCode)
                 && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
-            log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
-            return EventConstants.FCGI;
+            log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.CAAW);
+            return EventConstants.CAAW;
         }
 
         return null;
@@ -931,4 +954,13 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                 .max(Comparator.comparing(LocationHistory::getLocationUpdateTime))
                 .orElse(null);
     }
+
+    private boolean isTeslaShipment(ShipmentDetails shipmentDetails) {
+        if (StringUtility.isEmpty(shipmentDetails.getBookingReference())) {
+            return false;
+        }
+        String integrationSource = customerBookingDao.findCustomerBookingIntegrationSourceByBookingNumber(shipmentDetails.getBookingReference());
+        return Constants.TESLA.equalsIgnoreCase(integrationSource);
+    }
+
 }
