@@ -78,6 +78,11 @@ public class EntityTransferConstants {
     public static final String TO_RE_TRIGGER_THE_TRANSFER = " to retrigger the transfer.";
     public static final String TO_TRANSFER_THE_FILES = " to transfer the files.";
     public static final String SELECT_BRANCH_FOR_ET = "one of the branches in the entity transfer details section";
+    public static final String SELECT_BRANCH_FOR_ET_V3 = "destination or triangulation branches in the agents section";
+    public static final String SELECT_TRIANGULATION_BRANCH_FOR_ET = "triangulation branch in the agents section";
+    public static final String SHIPMENT_NAME = " of the shipment to initiate the transfer.";
+    public static final String CONSOLIDATION_NAME = " of the consolidation to initiate the transfer.";
+
     public static final String SHIPMENT_REJECTION_EMAIL_SUBJECT = "{#SHIPMENT_NUMBER} Retransfer Cancellation Notification";
     public static final String SHIPMENT_REJECTION_EMAIL_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>The retransfer request for shipment {#SHIPMENT_NUMBER} has been cancelled by {#USER_NAME} at {#BRANCH_NAME}. The reason for cancellation is: “{#CANCELLATION_REASON}”.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#CANCELLED_USER_EMAIL_ID}.</p> <p>Thanks,&nbsp;<br /> Cargoes Runner</p>";
     public static final String CONSOLIDATION_REJECTION_EMAIL_SUBJECT = "{#CONSOLIDATION_NUMBER} Retransfer Cancellation Notification";
