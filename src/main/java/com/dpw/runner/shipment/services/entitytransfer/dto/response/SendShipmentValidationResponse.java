@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,4 +15,5 @@ import lombok.NoArgsConstructor;
 public class SendShipmentValidationResponse implements IRunnerResponse {
     private Boolean isError;
     private String shipmentErrorMessage;
+    private List<String> missingKeys;
 }
