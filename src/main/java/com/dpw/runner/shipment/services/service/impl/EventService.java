@@ -1160,7 +1160,7 @@ public class EventService implements IEventService {
         AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
 
         // Determine the appropriate event code based on shipment type
-        String eventCode = determineInvoiceEventCode(shipmentDetails.getShipmentType());
+        String eventCode = determineInvoiceEventCode(shipmentDetails.getDirection());
         if (eventCode == null) {
             return Collections.emptyList();
         }
