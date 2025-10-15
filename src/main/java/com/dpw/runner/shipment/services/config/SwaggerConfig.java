@@ -6,12 +6,14 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.media.Schema;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.RequestMethod;
+
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -143,6 +145,34 @@ public class SwaggerConfig implements WebMvcConfigurer {
 //        auths.add(reference);
 //        return auths;
 //    }
+//@Bean
+//public OpenApiCustomiser globalResponseCustomiser() {
+//    return openApi -> openApi.getPaths().values().forEach(pathItem ->
+//            pathItem.readOperations().forEach(operation -> {
+//                ApiResponses responses = operation.getResponses();
+//
+//                // Define shared schema for error (optional: create class ErrorResponse and generate schema)
+//                Schema<?> errorSchema = new Schema<>().type("object");
+//
+//                Content content = new Content()
+//                        .addMediaType(APPLICATION_JSON_VALUE, new MediaType().schema(errorSchema));
+//
+//                // Add 400, 404, 500 responses if not present
+//                if (!responses.containsKey("400")) {
+//                    responses.addApiResponse("400",
+//                            new ApiResponse().description("Bad Request").content(content));
+//                }
+//                if (!responses.containsKey("404")) {
+//                    responses.addApiResponse("404",
+//                            new ApiResponse().description("Not Found").content(content));
+//                }
+//                if (!responses.containsKey("500")) {
+//                    responses.addApiResponse("500",
+//                            new ApiResponse().description("Internal Server Error").content(content));
+//                }
+//            })
+//    );
+//}
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -151,6 +181,9 @@ public class SwaggerConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/webjars/**")
                 .addResourceLocations("classpath:/META-INF/resources/webjars/");
+        registry.addResourceHandler("/swagger-ui/**")
+                .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/");
+
     }
 
 }

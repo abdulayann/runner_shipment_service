@@ -60,20 +60,42 @@ public class AuthFilter extends OncePerRequestFilter {
     private JsonHelper jsonHelper;
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
+//            "/v2/api-docs",
+////            "/swagger-resources",
+////            "/swagger-resources/**",
+//            "/configuration/ui",
+//            "/configuration/security",
+////            "/swagger-ui.html",
+//            "/webjars/**",
+//            "/swagger-ui/**",
+//            "/migration/consolidation/**",
+//            "/api/restore",
+//            "/rollback/**",
+//            "/api/v2/enums/**",
+//            "/api/v2/events/push-tracking-events",
+//            "/api/v2/cache/**",
+//            "/api/v2/network-transfer/create/external/bridge"
+            "/actuator/**",
             "/v2/api-docs",
+            "/v3/api-docs",              // add for Springdoc 3.x
+            "/v3/api-docs/**",           // add for grouped endpoints
             "/swagger-resources",
             "/swagger-resources/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**",            // add for index.html + JS
+            "/webjars/**",
+            "/api-docs/**",
             "/configuration/ui",
             "/configuration/security",
-            "/swagger-ui.html",
-            "/webjars/**",
             "/migration/consolidation/**",
             "/api/restore",
             "/rollback/**",
             "/api/v2/enums/**",
             "/api/v2/events/push-tracking-events",
             "/api/v2/cache/**",
-            "/api/v2/network-transfer/create/external/bridge"
+            "/api/v2/network-transfer/create/external/bridge",
+            "/v3/api-docs/swagger-config"
+
     };
 
     @Override

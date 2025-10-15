@@ -61,7 +61,7 @@ public class TransportInstructionPackagesController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse( responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_PACKAGES_LIST_SUCCESSFUL, content = @Content( array = @ArraySchema(schema = @Schema(implementation = TransportInstructionLegsPackagesResponse.class))))})
+            @ApiResponse( responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_PACKAGES_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         TransportInstructionLegsPackagesListResponse legsListResponse = transportInstructionLegsPackagesService.list(listCommonRequest, getMasterData);

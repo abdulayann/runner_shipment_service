@@ -83,7 +83,7 @@ public class ReferenceNumbersV3Controller {
         return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.delete(request));
     }
 
-    @ApiResponses(value = {
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,

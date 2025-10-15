@@ -134,7 +134,6 @@ public class VerifiedGrossMassController {
                     )
             )
     })
-
     @PutMapping(API_BULK_UPDATE)
     public ResponseEntity<IRunnerResponse> bulkUpdateContainers(@RequestBody @Valid VerifiedGrossMassBulkUpdateRequest request) {
         log.info("Received container bulk update request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
