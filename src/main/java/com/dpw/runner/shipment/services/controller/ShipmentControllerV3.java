@@ -150,9 +150,12 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shipmentId,
-                                              @RequestHeader(value = "x-source", required = false) String xSource) {
-        return ResponseHelper.buildSuccessResponse(shipmentService.getAllMasterData(shipmentId, xSource));
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> shipmentId, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> shipmentGuid,
+                                              @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        shipmentId.ifPresent(request::setId);
+        shipmentGuid.ifPresent(request::setGuid);
+        return ResponseHelper.buildSuccessResponse(shipmentService.getAllMasterData(CommonRequestModel.buildRequest(request), xSource));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentAssignContainerTrayList.class)})

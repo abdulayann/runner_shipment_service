@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -5744,7 +5745,7 @@ public abstract class IReport {
 
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
-        Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(details.getId(), SHIPMENT);
+        Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(details.getId()).build()), SHIPMENT);
         Map<String, String> orderDpwMap = extractOrderDpwMap(masterDataMap);
         Map<String, String> orgMap = extractOrgMap(masterDataMap);
 
