@@ -37,7 +37,6 @@ public class CacheEvictionService {
             cacheManager.getCache(CacheConstants.CACHE_KEY_USER).clear();
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).clear();
             cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING).clear();
-            cacheManager.getCache(CacheConstants.TENANT_ID).clear();
         } catch (Exception e) {
             log.error("Error during evicting cache {}", e);
             throw new CacheEvictionException(e.getMessage());

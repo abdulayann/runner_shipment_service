@@ -41,5 +41,4 @@ public class CacheConstants {
     public static final String ORGANIZATIONS = "Organizations";
     public static final String ORDER_DPW = "ORDER_DPW";
     public static final String FIRMS_CODE = "FIRMS_CODE";
-    public static final String TENANT_ID = "TENANT_ID";
 }
