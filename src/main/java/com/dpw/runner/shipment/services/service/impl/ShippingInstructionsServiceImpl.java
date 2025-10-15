@@ -51,6 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -184,22 +185,25 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             if (carrierBooking.isEmpty()) {
                 throw new ValidationException("Invalid entity id");
             }
-            populateHeaderSection(shippingInstruction, carrierBooking.get());
-            populateSailingInformationFromCarrierBooking(shippingInstruction, carrierBooking.get());
-            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(carrierBooking.get().getEntityId());
-            setReferenceNumber(shippingInstruction, carrierBooking.get());
-            response.setBookingStatus(carrierBooking.get().getStatus().name());
-            setPartiesNumber(shippingInstruction, carrierBooking.get());
+
+            CarrierBooking booking = carrierBooking.get();
+            populateHeaderSection(shippingInstruction, booking);
+            populateSailingInformationFromCarrierBooking(shippingInstruction, booking);
+            consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(booking.getEntityId());
+            setReferenceNumber(shippingInstruction, booking);
+            response.setBookingStatus(booking.getStatus().name());
+            setPartiesNumber(shippingInstruction, booking);
+            response.setCrBookingId(booking.getBookingNo());
 
         } else if (EntityType.CONSOLIDATION == type) {
             consolidationDetails = carrierBookingInttraUtil.getConsolidationDetail(entityId);
             response.setBookingStatus(consolidationDetails.getBookingStatus());
             shippingInstruction.setReferenceNumbersList(getReferenceNumberResponses(consolidationDetails));
+            shippingInstruction.setCarrierBookingNo(consolidationDetails.getBookingNumber());
         } else {
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
         shippingInstruction.setEntityId(entityId);
-        setEntityNumber(shippingInstruction);
         fillDetailsFromConsol(shippingInstruction, consolidationDetails);
         shippingInstruction.setStatus(ShippingInstructionStatus.Draft);
         if (isCreate) {
@@ -500,6 +504,9 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityType(entityType);
         ShippingInstructionResponse response = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
         response.setBookingStatus(mapper.getBookingStatus());
+        if (Objects.nonNull(mapper.getCrBookingId())) {
+            response.setCrBookingId(mapper.getCrBookingId());
+        }
         return response;
     }
 
@@ -507,7 +514,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         shippingInstruction.setEntityNumber(consolidationDetails.getConsolidationNumber());
         setSailingInfoAndCutoff(shippingInstruction, consolidationDetails);
         populateFreightDetails(shippingInstruction, consolidationDetails);
-        shippingInstruction.setCarrierBookingNo(consolidationDetails.getBookingNumber());
     }
 
     private void setSailingInfoAndCutoff(ShippingInstruction shippingInstruction, ConsolidationDetails consolidationDetails) {
@@ -538,11 +544,6 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
     private void populateHeaderSection(ShippingInstruction shippingInstruction, CarrierBooking carrierBooking) {
         shippingInstruction.setCarrierBookingNo(carrierBooking.getCarrierBookingNo());
         shippingInstruction.setCarrierBlNo(carrierBooking.getCarrierBlNo());
-        setEntityNumber(shippingInstruction);
-    }
-
-    private void setEntityNumber(ShippingInstruction shippingInstruction) {
-        shippingInstruction.setEntityNumber(String.valueOf(shippingInstruction.getEntityNumber()));
     }
 
     private void validateSIRequest(ShippingInstruction shippingInstruction) {
