@@ -7,11 +7,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.HblConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -430,10 +426,19 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel request) {
-        Long shipmentId = ((CommonGetRequest) request.getData()).getId();
+    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel commonRequestModel) throws RunnerException {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
 
+        if(request.getId() == null && request.getGuid() == null) {
+            log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
+        }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        Long shipmentId = request.getId();
+        if (Objects.nonNull(request.getGuid())) {
+            shipmentId = shipmentDao.findByGuid(UUID.fromString(request.getGuid())).orElse(new ShipmentDetails()).getId();
+        }
+
         if(shipmentSettingsDetails != null && ((shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) || (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()))){
             HblGenerateRequest req = HblGenerateRequest.builder().shipmentId(shipmentId).build();
             try {

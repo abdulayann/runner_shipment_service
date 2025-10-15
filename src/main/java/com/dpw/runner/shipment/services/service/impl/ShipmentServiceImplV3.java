@@ -2471,24 +2471,38 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
-        Optional<ShipmentDetails> shipmentDetailsOptional;
-        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
-            shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(shipmentId);
-        else
-            shipmentDetailsOptional = shipmentDao.findById(shipmentId);
-        if (!shipmentDetailsOptional.isPresent()) {
-            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentId);
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource) {
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
+            }
+            Optional<ShipmentDetails> shipmentDetailsOptional;
+            if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
+                shipmentDetailsOptional = Objects.nonNull(request.getId()) ? shipmentDao.findShipmentByIdWithQuery(request.getId()) : shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(request.getGuid()));
+            else
+                shipmentDetailsOptional = Objects.nonNull(request.getId()) ? shipmentDao.findById(request.getId()) : shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
+
+            if (!shipmentDetailsOptional.isPresent()) {
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+            long start = System.currentTimeMillis();
+            List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
+            includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails."))));
+            includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS_V3);
+            ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns.stream().collect(Collectors.toSet()), new ShipmentDetailsResponse());
+            log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
+            return fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
         }
-        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
-        long start = System.currentTimeMillis();
-        List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
-        includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails."))));
-        includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS_V3);
-        ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns.stream().collect(Collectors.toSet()), new ShipmentDetailsResponse());
-        log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
-        return fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+        catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            throw new ValidationException(responseMsg);
+        }
+
     }
 
     @Override

@@ -1422,7 +1422,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithEmptyHbl() {
+    void retrieveByShipmentIdTestWithEmptyHbl() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1432,7 +1432,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithHblInResponse() {
+    void retrieveByShipmentIdTestWithHblInResponse() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1444,7 +1444,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(true).build());
 
@@ -1456,7 +1456,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(false).restrictBLEdit(false).build());
 
@@ -1468,7 +1468,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdWithShipmentDetailsNull() {
+    void retrieveByShipmentIdWithShipmentDetailsNull() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
 
         var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);

@@ -83,7 +83,7 @@ public interface IShipmentServiceV3 {
 
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
-    Map<String, Object>  getAllMasterData(Long shipmentId, String xSource);
+    Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
 
     ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 

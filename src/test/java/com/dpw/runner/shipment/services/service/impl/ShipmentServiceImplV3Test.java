@@ -1490,8 +1490,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testGetAllMasterData_whenShipmentNotFound_shouldThrow() {
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentServiceImplV3.getAllMasterData(1L, "source");
+        assertThrows(ValidationException.class, () -> {
+            shipmentServiceImplV3.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()), "source");
         });
     }
 
@@ -1630,7 +1630,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
         doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
 
-        Map<String, Object> result = spyService.getAllMasterData(shipmentId, xSource);
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(shipmentId).build()), xSource);
 
         assertNotNull(result);
         assertEquals("value1", result.get("key1"));
@@ -1657,7 +1657,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
         doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
 
-        Map<String, Object> result = spyService.getAllMasterData(shipmentId, xSource);
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(shipmentId).build()), xSource);
 
         assertNotNull(result);
         assertEquals("value1", result.get("key1"));
