@@ -244,14 +244,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
-import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -2498,7 +2491,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
         }
         catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
+            String responseMsg = StringUtility.isNotEmpty(e.getMessage()) ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             throw new ValidationException(responseMsg);
         }
