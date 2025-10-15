@@ -352,6 +352,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private INotesDao notesDao;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private ShipmentServiceImplV3 self;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -1329,8 +1331,22 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
             request.setSlac(null);
         }
-        EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(request.getTransportMode());
-        ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        return self.createShipment(request, false, false, npmContractResponse, hasDestinationContract,
+                entityTransferAddress, shipmentSettingsDetails);
+    }
+
+    @Transactional
+    private ShipmentDetailsV3Response createShipment(ShipmentV3Request request,
+                                                     boolean includeGuid,
+                                                     boolean isFromET,
+                                                     ListContractResponse npmContractResponse,
+                                                     Boolean hasDestinationContract,
+                                                     EntityTransferAddress entityTransferAddress,
+                                                     ShipmentSettingsDetails shipmentSettingsDetails) {
+
+        ShipmentDetails shipmentDetails = includeGuid ?
+                jsonHelper.convertValue(request, ShipmentDetails.class) :
+                jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         shipmentDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
 
         try {
