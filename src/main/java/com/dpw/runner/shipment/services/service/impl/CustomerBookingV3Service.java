@@ -333,7 +333,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-
     @Override
     public Map<String, Object> getAllMasterData(Long bookingId) {
         Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(bookingId);
@@ -1775,9 +1774,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
-        List<ContainerV3Request> containerRequest = request.getContainersList();
+        List<BookingContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
-            for(ContainerV3Request container: containerRequest) {
+            for(BookingContainerV3Request container: containerRequest) {
                 container.setTeu(containerTeuMap.get(container.getContainerCode()));
             }
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
@@ -1868,9 +1867,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
-        List<ContainerV3Request> containerRequest = request.getContainersList();
+        List<BookingContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
-            for(ContainerV3Request container: containerRequest) {
+            for(BookingContainerV3Request container: containerRequest) {
                 container.setTeu(containerTeuMap.get(container.getContainerCode()));
             }
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
