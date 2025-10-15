@@ -3072,21 +3072,18 @@ public class ReportService implements IReportService {
         if (!notifyPartyName.isEmpty()) {
             map.put(NOTIFY_PARTY, notifyPartyName);
         }
+        // Origin Agent - using utility to eliminate duplication
         try {
-            map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
-            map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
-            map.put(OA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getExportBroker(), "OA_", modelMapper));
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent - using utility to eliminate duplication
         try {
-            map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
-            map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
-            map.put(DA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getImportBroker(), "DA_", modelMapper));
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
@@ -3164,21 +3161,19 @@ public class ReportService implements IReportService {
         map.put(VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume());
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        
+        // Origin Agent (Sending Agent) - using utility to eliminate duplication
         try {
-            map.put(OA_BRANCH, consolidationDetails.getSendingAgent().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getSendingAgent(), PartiesModel.class))));
-            map.put(OA_NAME, consolidationDetails.getSendingAgent().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, consolidationDetails.getSendingAgent().getOrgData().get(PHONE));
-            map.put(OA_EMAIL_CAPS, consolidationDetails.getSendingAgent().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                consolidationDetails.getSendingAgent(), "OA_", modelMapper));
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent (Receiving Agent) - using utility to eliminate duplication
         try {
-            map.put(DA_BRANCH, consolidationDetails.getReceivingAgent().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getReceivingAgent(), PartiesModel.class))));
-            map.put(DA_NAME, consolidationDetails.getReceivingAgent().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, consolidationDetails.getReceivingAgent().getOrgData().get(PHONE));
-            map.put(DA_EMAIL_CAPS, consolidationDetails.getReceivingAgent().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                consolidationDetails.getReceivingAgent(), "DA_", modelMapper));
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
@@ -3416,21 +3411,29 @@ public class ReportService implements IReportService {
         map.put(CBR, shipmentDetails.getBookingNumber());
         map.put(COMMODITY, shipmentDetails.getCommodity());
         map.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        
+        // Origin Agent - using utility to eliminate duplication  
         try {
-            map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
-            map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
-            map.put(OA_EMAIL, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
+            Map<String, Object> oaMap = PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getExportBroker(), "OA_", modelMapper);
+            // Note: Pre-alert uses OA_EMAIL not OA_EMAIL_CAPS, so we need to adjust
+            if (oaMap.containsKey("OA_EMAIL_CAPS")) {
+                oaMap.put("OA_EMAIL", oaMap.remove("OA_EMAIL_CAPS"));
+            }
+            map.putAll(oaMap);
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent - using utility to eliminate duplication
         try {
-            map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
-            map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
-            map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
+            Map<String, Object> daMap = PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getImportBroker(), "DA_", modelMapper);
+            // Note: Pre-alert uses DA_EMAIL not DA_EMAIL_CAPS, so we need to adjust  
+            if (daMap.containsKey("DA_EMAIL_CAPS")) {
+                daMap.put("DA_EMAIL", daMap.remove("DA_EMAIL_CAPS"));
+            }
+            map.putAll(daMap);
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
@@ -3899,29 +3902,7 @@ public class ReportService implements IReportService {
 
     // Converts a Parties object into a consistent map of address/organization values
     private List<Map<String, Object>> buildPartyMap(Parties party) {
-
-        if(party == null) {
-            return List.of();
-        }
-
-        Map<String, Object> map = new HashMap<>();
-
-        // Add organization name if available
-        if (party.getOrgData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, party.getOrgData().get(PartiesConstants.FULLNAME));
-        }
-
-        // Add address lines if available
-        if (party.getAddressData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, party.getAddressData().get(PartiesConstants.ADDRESS1));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, party.getAddressData().get(PartiesConstants.ADDRESS2));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, party.getAddressData().get(PartiesConstants.CITY));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, party.getAddressData().get(PartiesConstants.STATE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, party.getAddressData().get(PartiesConstants.COUNTRY));
-        }
-
-        return List.of(map); // wrap in list as required by caller
+        return PartyDataMapper.buildNestedPartyMap(party, "C_");
     }
 
     // Adds origin/receiving branches and triangulated partner branch info
@@ -3946,9 +3927,8 @@ public class ReportService implements IReportService {
                     .collect(Collectors.toSet()));
         }
 
-        // Fetch full tenant data in bulk
-        Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
-        masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+        // Fetch and cache full tenant data in bulk
+        Map<String, TenantModel> tenantData = TenantDataMapper.fetchAndCacheTenantData(tenantIds, masterDataUtils);
 
         // Add origin & destination branches
         dict.put("C_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
@@ -3968,33 +3948,137 @@ public class ReportService implements IReportService {
 
     // Builds a map from a tenant's address and name info
     private List<Map<String, Object>> buildTenantMap(TenantModel tenant) {
-        if (tenant == null) {
-            return List.of();
-        }
-
-        Map<String, Object> map = new HashMap<>();
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, tenant.getDisplayName());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, tenant.getAddress1());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, tenant.getAddress2());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, tenant.getCity());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, tenant.getState());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, tenant.getCountry());
-
-        return List.of(map); // wrap in list
+        return TenantDataMapper.buildNestedTenantMap(tenant, "C_");
     }
 
-    private void putUpperCaseIfNotNullString(Map<String, Object> map, String key, Object value) {
-        if (value == null) {
-            return;
+    // ==================== UTILITY CLASSES FOR ELIMINATING CODE DUPLICATION ====================
+    
+    /**
+     * Utility class for mapping party/organization data to dictionaries.
+     * Centralizes all party data mapping logic to eliminate duplication.
+     */
+    private static class PartyDataMapper {
+        
+        /**
+         * Builds a flat party map for email templates
+         * @param party The party to map
+         * @param prefix Key prefix (e.g., "OA_", "DA_")
+         * @param modelMapper ModelMapper instance for converting party objects
+         * @return Map with party details (name, phone, email, address)
+         */
+        public static Map<String, Object> buildFlatPartyMap(Parties party, String prefix, ModelMapper modelMapper) {
+            if (party == null) return Map.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            
+            // Organization data
+            if (party.getOrgData() != null) {
+                putIfPresent(map, prefix + "BRANCH", party.getOrgData().get(FULL_NAME));
+                putIfPresent(map, prefix + "PHONE", party.getOrgData().get(PHONE));
+                putIfPresent(map, prefix + "EMAIL_CAPS", party.getOrgData().get(EMAIL));
+            }
+            
+            // Address data
+            if (party.getAddressData() != null) {
+                putIfPresent(map, prefix + "NAME", party.getAddressData().get(CONTACT_PERSON));
+                try {
+                    PartiesModel partiesModel = modelMapper.map(party, PartiesModel.class);
+                    String address = String.join(", ", IReport.getPartyAddress(partiesModel));
+                    if (!address.isEmpty()) {
+                        map.put(prefix + "BRANCH_ADD", address);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not build address for party with prefix: {}", prefix);
+                }
+            }
+            
+            return map;
         }
-
-        if (value instanceof String) {
-            map.put(key, ((String) value).toUpperCase());
-        } else {
-            map.put(key, value);
+        
+        /**
+         * Builds a nested party map for consolidation reports (with uppercase values)
+         * @param party The party to map
+         * @param prefix Key prefix (e.g., "C_")
+         * @return List containing party map
+         */
+        public static List<Map<String, Object>> buildNestedPartyMap(Parties party, String prefix) {
+            if (party == null) return List.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            
+            if (party.getOrgData() != null) {
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.FULLNAME, 
+                                     party.getOrgData().get(PartiesConstants.FULLNAME));
+            }
+            
+            if (party.getAddressData() != null) {
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS1, 
+                                     party.getAddressData().get(PartiesConstants.ADDRESS1));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS2, 
+                                     party.getAddressData().get(PartiesConstants.ADDRESS2));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.CITY, 
+                                     party.getAddressData().get(PartiesConstants.CITY));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.STATE, 
+                                     party.getAddressData().get(PartiesConstants.STATE));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ZIP_POST_CODE, 
+                                     party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.COUNTRY, 
+                                     party.getAddressData().get(PartiesConstants.COUNTRY));
+            }
+            
+            return List.of(map);
+        }
+        
+        private static void putIfPresent(Map<String, Object> map, String key, Object value) {
+            if (value != null) {
+                map.put(key, value);
+            }
+        }
+        
+        static void putUpperCaseIfNotNull(Map<String, Object> map, String key, Object value) {
+            if (value == null) return;
+            map.put(key, value instanceof String ? ((String) value).toUpperCase() : value);
         }
     }
-
+    
+    /**
+     * Utility class for mapping tenant/branch data to dictionaries.
+     */
+    private static class TenantDataMapper {
+        
+        /**
+         * Builds a nested tenant map for consolidation reports
+         * @param tenant The tenant to map
+         * @param prefix Key prefix (e.g., "C_")
+         * @return List containing tenant map
+         */
+        public static List<Map<String, Object>> buildNestedTenantMap(TenantModel tenant, String prefix) {
+            if (tenant == null) return List.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.FULLNAME, tenant.getDisplayName());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS1, tenant.getAddress1());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS2, tenant.getAddress2());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.CITY, tenant.getCity());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.STATE, tenant.getState());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.COUNTRY, tenant.getCountry());
+            
+            return List.of(map);
+        }
+        
+        /**
+         * Fetches and caches tenant data for multiple tenant IDs
+         * @param tenantIds Set of tenant IDs to fetch
+         * @param masterDataUtils Master data utility for fetching and caching
+         * @return Map of tenant ID to TenantModel
+         */
+        public static Map<String, TenantModel> fetchAndCacheTenantData(
+                Set<String> tenantIds, MasterDataUtils masterDataUtils) {
+            Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
+            masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+            return tenantData;
+        }
+    }
 
 }
