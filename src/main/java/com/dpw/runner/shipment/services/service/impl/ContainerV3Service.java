@@ -261,6 +261,11 @@ public class ContainerV3Service implements IContainerV3Service {
         log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
 
         // Validate request parameters
+        if(Objects.equals(module, BOOKING)) {
+            if(containerRequest.getContainerCount() > 100L) {
+                throw new RunnerException("Container count cannot be more than 100");
+            }
+        }
         validateContainerRequest(containerRequest);
         updateContainerRequestOnDgFlag(List.of(containerRequest));
 
@@ -385,6 +390,13 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public BulkContainerResponse createBulk(List<ContainerV3Request> containerRequests, String module) throws RunnerException {
+        if(Objects.equals(module, BOOKING)) {
+            for(ContainerV3Request containerV3Request: containerRequests) {
+                if(containerV3Request.getContainerCount() > 100L) {
+                    throw new RunnerException("Container count cannot be more than 100");
+                }
+            }
+        }
         containerValidationUtil.validateCreateBulkRequest(containerRequests);
         containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(containerRequests);
         String requestId = LoggerHelper.getRequestIdFromMDC();
@@ -417,6 +429,13 @@ public class ContainerV3Service implements IContainerV3Service {
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         log.info("Starting container UpdateBulk | Request ID: {} | Request Body: {}", requestId, containerRequestList);
+        if(Objects.equals(module, BOOKING)) {
+            for(ContainerV3Request containerV3Request: containerRequestList) {
+                if(containerV3Request.getContainerCount() > 100L) {
+                    throw new RunnerException("Container count cannot be more than 100");
+                }
+            }
+        }
         validateBulkUpdateRequest(containerRequestList);
 
         ShipmentDetails shipmentDetails = null;

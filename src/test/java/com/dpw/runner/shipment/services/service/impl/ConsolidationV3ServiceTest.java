@@ -452,13 +452,14 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
 
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
@@ -475,13 +476,14 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
 
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(new ArrayList<>(List.of(testContainer)));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
@@ -520,15 +522,16 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
         consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
         consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
 
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
@@ -545,16 +548,17 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
         consoleDetails.getCarrierDetails().setDestinationPortLocCode("CANADA");
         consoleDetails.getCarrierDetails().setOriginPortLocCode("INDIA");
         when(commonUtils.checkIfPartyExists((Parties) any())).thenReturn(true);
 
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
@@ -571,13 +575,14 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
 
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
@@ -594,13 +599,14 @@ if (unitConversionUtilityMockedStatic != null) {
         // Setup
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
         ConsolidationDetails consoleDetails = testConsol;
-        ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+        BookingContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, BookingContainerV3Request.class);
         customerBookingV3Request.setContainersList(List.of(containerV3Request));
         customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
         consoleDetails.setCarrierDetails(null);
+        ContainerV3Request containerRequest = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
         when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+        when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerRequest);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
