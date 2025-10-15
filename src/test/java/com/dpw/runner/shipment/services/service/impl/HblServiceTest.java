@@ -1444,6 +1444,25 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
+    void retrieveByShipmentIdTestWithError() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
+        assertThrows(RunnerException.class, () -> hblService.retrieveByShipmentId(commonRequestModel));
+    }
+
+    @Test
+    void retrieveByShipmentIdTestWithHblInResponseWithGuid() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
+        var shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipment));
+        when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(mockHbl));
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class));
+        var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
+        // Test
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(true).build());

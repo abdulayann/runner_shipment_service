@@ -1489,9 +1489,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testGetAllMasterData_whenShipmentNotFound_shouldThrow() {
+        var request = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
         assertThrows(ValidationException.class, () -> {
-            shipmentServiceImplV3.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()), "source");
+            shipmentServiceImplV3.getAllMasterData(request, "source");
         });
     }
 
