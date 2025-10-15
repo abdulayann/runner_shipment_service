@@ -418,19 +418,17 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException("Invalid shipping instruction id");
         }
 
-        ShippingInstruction shippingInstruction = jsonHelper.convertValue(shippingInstructionRequest, ShippingInstruction.class);
+        ShippingInstruction shippingInstruction = shippingInstructionEntity.get();
+
+        modelMapper.map(shippingInstructionRequest, shippingInstruction);
+        
         validateSIRequest(shippingInstruction);
-        shippingInstruction.setCreateByUserEmail(shippingInstructionEntity.get().getCreateByUserEmail());
-        shippingInstruction.setSubmitByUserEmail(shippingInstructionEntity.get().getSubmitByUserEmail());
-        shippingInstruction.setContainersList(shippingInstructionEntity.get().getContainersList());
-        shippingInstruction.setCommonPackagesList(shippingInstructionEntity.get().getCommonPackagesList());
         shippingInstruction.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getInternalEmailsList()));
         shippingInstruction.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(shippingInstructionRequest.getExternalEmailsList()));
         ShippingInstructionResponseMapper responseMapper = new ShippingInstructionResponseMapper();
         responseMapper.setShippingInstruction(shippingInstruction);
         populateReadOnlyFields(responseMapper, false);
-        ShippingInstruction si = responseMapper.getShippingInstruction();
-        ShippingInstruction saved = repository.save(si);
+        ShippingInstruction saved = repository.save(shippingInstruction);
         ShippingInstructionResponse response = jsonHelper.convertValue(saved, ShippingInstructionResponse.class);
         response.setBookingStatus(responseMapper.getBookingStatus());
         return response;
@@ -703,6 +701,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
             throw new ValidationException(INVALID_ENTITY_TYPE);
         }
 
+        shippingInstructionUtil.validateMandatoryFieldsForSubmitAndAmend(si);
         // Step 3: Mark SI as submitted
         si.setStatus(Requested);
         si.setSubmitByUserEmail(UserContext.getUser().getEmail());
@@ -802,7 +801,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
 
         checkIfAllowed(remoteId, shippingInstruction, booking, shippingInstruction.getEntityType() != EntityType.CARRIER_BOOKING);
         validateSIRequest(shippingInstruction);
-
+        shippingInstructionUtil.validateMandatoryFieldsForSubmitAndAmend(shippingInstruction);
         if (booking != null) {
             shippingInstruction.setCarrierBookingNo(booking.getCarrierBookingNo());
         }

@@ -21,6 +21,7 @@ public class MasterDataLoggingAspect {
     @Before("execution(* com.dpw.runner.shipment.services.controller.MasterDataController.*(..))")
     public void logSourceServiceType(JoinPoint joinPoint) {
         try {
+            
             ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs != null) {
                 HttpServletRequest request = attrs.getRequest();

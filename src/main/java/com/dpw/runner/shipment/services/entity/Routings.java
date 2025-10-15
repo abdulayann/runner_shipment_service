@@ -10,7 +10,7 @@ import com.dpw.runner.shipment.services.utils.UnlocationData;
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-
+import java.util.UUID;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -130,6 +130,9 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "inherited_from_consolidation", columnDefinition = "boolean default false")
     private Boolean inheritedFromConsolidation;
+
+    @Column(name = "consol_route_ref_guid")
+    private UUID consolRouteRefGuid;
 
     public boolean getIsDomestic() {
         return isDomestic;

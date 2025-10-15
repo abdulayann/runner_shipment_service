@@ -416,12 +416,11 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -3767,20 +3766,32 @@ public class CommonUtils {
         return null;
     }
 
-    public static String constructAddress(Map<String, Object> addressData) {
+    public static String constructAddress(Map<String, Object> addressData, Map<String, Object> orgData) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
 
         if (addressData != null) {
+            // Name
+            if (addressData.containsKey(PartiesConstants.COMPANY_NAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME))
+                ));
+            }
+            else if (Objects.nonNull(orgData) && orgData.containsKey(PartiesConstants.FULLNAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(orgData.get(PartiesConstants.FULLNAME))
+                ));
+            }
+
             // Address1
             if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
-                sb.append(StringUtility.toUpperCase(
+                sb.append(newLine).append(StringUtility.toUpperCase(
                         StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
                 ));
             }
 
             // Address2
-            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+            if (checkAddressKeyExists(addressData, PartiesConstants.ADDRESS2)) {
                 sb.append(newLine).append(
                         StringUtility.toUpperCase(
                                 StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
@@ -3801,30 +3812,35 @@ public class CommonUtils {
 
     private static String constructAddressL3(Map<String, Object> addressData) {
         StringBuilder line3 = new StringBuilder();
-        if (addressData.containsKey(PartiesConstants.CITY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.CITY)) {
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.STATE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.STATE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.ZIP_POST_CODE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.COUNTRY)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
             ));
         }
         return line3.toString();
+    }
+
+    private static boolean checkAddressKeyExists(Map<String, Object> addressData, String key) {
+        return addressData.containsKey(key) &&
+                addressData.get(key) != null && StringUtility.isNotEmpty(String.valueOf(addressData.get(key)));
     }
 
     private static String getCountryName(String code) {
@@ -4803,6 +4819,109 @@ public class CommonUtils {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
         }
     }
+
+    public void validateAndSetOriginAndDestinationPortIfNotExist(ShipmentDetails shipment, ConsolidationDetails console) {
+
+        CarrierDetails carrierDetails;
+        List<Routings> routings;
+        if (null != shipment) {
+            carrierDetails = shipment.getCarrierDetails();
+            routings = shipment.getRoutingsList();
+        } else {
+            carrierDetails = console.getCarrierDetails();
+            routings = console.getRoutingsList();
+        }
+
+        Set<String> plcData = new HashSet<>();
+        boolean isCarrierLocCodeAdded = false;
+        boolean isRoutingLocCodeAdded = false;
+        isCarrierLocCodeAdded = validateCarrierDetail(carrierDetails, isCarrierLocCodeAdded, plcData);
+        isRoutingLocCodeAdded = validateRoute(routings, isRoutingLocCodeAdded, plcData);
+        setIfLocCodeExist(plcData, isCarrierLocCodeAdded, carrierDetails, isRoutingLocCodeAdded, routings);
+    }
+
+    private static boolean validateCarrierDetail(CarrierDetails carrierDetails, boolean isCarrierLocCodeAdded, Set<String> plcData) {
+        if (null != carrierDetails) {
+            if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getOriginPort());
+            }
+            if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getDestinationPort());
+            }
+        }
+        return isCarrierLocCodeAdded;
+    }
+
+    private static boolean validateRoute(List<Routings> routings, boolean isRoutingLocCodeAdded, Set<String> plcData) {
+        if (Objects.isNull(routings) || routings.isEmpty()) {
+            return isRoutingLocCodeAdded;
+        }
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPol());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPod());
+            }
+        }
+        return isRoutingLocCodeAdded;
+    }
+
+    private void setIfLocCodeExist(Set<String> plcData, boolean isCarrierLocCodeAdded, CarrierDetails carrierDetails, boolean isRoutingLocCodeAdded, List<Routings> routings) {
+
+        if (!CollectionUtils.isEmpty(plcData)) {
+            log.info("Getting unLocationData from v1 for plcData : {}", plcData.stream().toList());
+            Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(plcData);
+            if (!unlocationsMap.isEmpty()) {
+                unlocationsMap.forEach((key, value) ->
+                    log.info("UnlocCode for : {} is  : {} ", key, value.getLocCode())
+                );
+            }
+            if (isCarrierLocCodeAdded && Objects.nonNull(carrierDetails)) {
+                setCarrierData(carrierDetails, unlocationsMap);
+            }
+            if (isRoutingLocCodeAdded && Objects.nonNull(routings) && !routings.isEmpty()) {
+                setRoutingData(routings, unlocationsMap);
+            }
+        }
+    }
+
+    private static void setCarrierData(CarrierDetails carrierDetails, Map<String, UnlocationsResponse> unlocationsMap) {
+        if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort() && unlocationsMap.containsKey(carrierDetails.getOriginPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getOriginPort());
+            carrierDetails.setOriginPortLocCode(unLocResp.getLocCode());
+        }
+        if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort() && unlocationsMap.containsKey(carrierDetails.getDestinationPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getDestinationPort());
+            carrierDetails.setDestinationPortLocCode(unLocResp.getLocCode());
+        }
+    }
+
+    private static void setRoutingData(List<Routings> routings, Map<String, UnlocationsResponse> unlocationsMap) {
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol() && unlocationsMap.containsKey(route.getPol())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPol());
+                route.setOriginPortLocCode(unLocResp.getLocCode());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod() && unlocationsMap.containsKey(route.getPod())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPod());
+                route.setDestinationPortLocCode(unLocResp.getLocCode());
+            }
+        }
+    }
+
+    public boolean getBooleanConfigFromAppConfig(String appConfigKey) {
+        String configuredValue = applicationConfigService.getValue(appConfigKey);
+        if (null == configuredValue) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(configuredValue);
+    }
+
 
     public Map<Long, String> getTenantNameMap(List<Integer> tenantIds){
         CommonV1ListRequest request = new CommonV1ListRequest();

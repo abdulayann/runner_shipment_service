@@ -110,6 +110,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S3776")
 public class EventService implements IEventService {
 
     private IEventDao eventDao;
@@ -744,16 +745,10 @@ public class EventService implements IEventService {
         String eventCode = safeString(event.getEventCode());
         String shipmentType = shipmentDetails.getShipmentType();
         String transportMode = shipmentDetails.getTransportMode();
-
         // Log the input values for debugging
         log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
             log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
             return true;
         }
@@ -780,6 +775,16 @@ public class EventService implements IEventService {
 
         if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
             log.info("Event code {} matches air transport shipment criteria. messageId {}", eventCode, messageId);
+            return true;
+        }
+
+        if (EventConstants.CACO.contains(eventCode)
+                || EventConstants.FCGI.contains(eventCode)
+                || EventConstants.INTR.contains(eventCode)
+                || EventConstants.CAFS.contains(eventCode)
+                || EventConstants.PRDE.contains(eventCode)) {
+
+            log.info("Event code {} matches messageId {}", eventCode, messageId);
             return true;
         }
 

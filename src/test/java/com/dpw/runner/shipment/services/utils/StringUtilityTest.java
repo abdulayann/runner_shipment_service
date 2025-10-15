@@ -47,7 +47,7 @@ class StringUtilityTest {
 
     @Test
     void testToUpperCase_EmptyString() {
-        assertNull(StringUtility.toUpperCase(""));
+        assertEquals("", StringUtility.toUpperCase(""));
     }
 
     @Test

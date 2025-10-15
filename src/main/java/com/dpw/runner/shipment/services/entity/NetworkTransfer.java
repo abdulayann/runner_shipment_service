@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -86,5 +87,9 @@ public class NetworkTransfer extends MultiTenancy {
     @Column(name = "migration_status")
     @Enumerated(EnumType.STRING)
     private MigrationStatus migrationStatus;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "network_transfer_id", referencedColumnName = "id")
+    private List<NetworkTransferShipmentsMapping> networkTransferShipmentsMappings;
 
 }

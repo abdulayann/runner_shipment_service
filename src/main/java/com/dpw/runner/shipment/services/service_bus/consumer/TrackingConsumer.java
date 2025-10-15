@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@SuppressWarnings("java:S125")
 public class TrackingConsumer {
 
     private final SBConfiguration sbConfiguration;
@@ -76,9 +77,10 @@ public class TrackingConsumer {
         String messageId = UUID.randomUUID().toString();
         MDC.put(LoggingConstants.TS_ID, messageId);
 
-        log.info("Tracking Consumer - Started processing Bus id: {} message with id : {}", receivedMessage.getMessageId(), messageId);
-
+        log.info("Tracking Consumer - Started processing Bus id: {} message with id : {} Raw data {}", receivedMessage.getMessageId(), messageId,
+                receivedMessage.getBody());
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
+//         Container container = fetchTrackingData();
         log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         v1Service.setAuthContext();
         // IMPORTANT: This context disables the auto population of tenant Id while saving.
@@ -109,5 +111,29 @@ public class TrackingConsumer {
         processorClient.stop();
         processorClient.close();
     }
+
+
+    //    @PostConstruct
+//    public TrackingServiceApiResponse.Container fetchTrackingData() throws RunnerException {
+//        Container container = fetchFromJsonFile("src/main/resources/ts_payload_sample.json");
+//
+//        eventService.processUpstreamTrackingMessage(container, "messageId");
+//
+//        return container;
+//    }
+//
+//    private TrackingServiceApiResponse.Container fetchFromJsonFile(String filePath) throws RunnerException {
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//            objectMapper.registerModule(new JavaTimeModule());
+//            // Assuming the JSON file is on the classpath, adjust if needed
+//
+//            return objectMapper.readValue(new File(filePath), TrackingServiceApiResponse.Container.class);
+//        } catch (IOException e) {
+//            log.error("Error reading JSON file", e);
+//            throw new RunnerException("Error reading JSON file: " + e.getMessage());
+//        }
+//    }
 
 }
