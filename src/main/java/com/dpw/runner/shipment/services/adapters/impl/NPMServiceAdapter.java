@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -52,6 +53,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -61,6 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
@@ -227,7 +230,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             }
 
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
-            return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
+            return paginateGetContractsResponse(listContractsWithFilterRequest, listResponse);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -261,6 +264,33 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             this.setMeasurementBasis(response.getBody());
             this.modifyOffersAPIData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchOffersWithFilter(CommonRequestModel req) throws RunnerException {
+        String url = npmBaseUrl + npmOffersUrl;
+        NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+        var request = createNPMOffersRequestWithFilter(fetchOffersRequest);
+        try {
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
+            FetchOffersResponse fetchOffersResponse = response.getBody();
+            this.setMeasurementBasis(fetchOffersResponse);
+            this.modifyOffersAPIData(fetchOffersResponse);
+            this.filterOffers(fetchOffersRequest, fetchOffersResponse);
+            this.updateRouteMarginInOffers(fetchOffersResponse);
+            List<FetchOffersResponse.Offer> sortedOffers;
+            if(!Objects.isNull(fetchOffersResponse) && !Objects.isNull(fetchOffersResponse.getOffers()) && !Objects.isNull(fetchOffersRequest.getSortRequest())) {
+                sortedOffers = this.sortNpmOffers(fetchOffersRequest, fetchOffersResponse);
+                fetchOffersResponse.setOffers(sortedOffers);
+            }
+
+            return paginateFetchOffersResponse(fetchOffersRequest ,fetchOffersResponse);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
@@ -584,6 +614,62 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
             }
         }
+    }
+
+    private NPMFetchOffersRequest createNPMOffersRequestWithFilter(NPMFetchOffersRequestFromUI request) {
+        Optional<CustomerBooking> customerBooking = Optional.empty();
+        if(request.getBookingId() != null){
+            customerBooking = customerBookingDao.findById(request.getBookingId());
+        }
+        boolean isAlteration = customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty();
+
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        String xBrowserTimeZone = TimeZoneConstants.DEFAULT_TIME_ZONE_ID;
+        if (Objects.nonNull(requestAttributes)) {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
+            xBrowserTimeZone = attributes.getRequest().getHeader(TimeZoneConstants.BROWSER_TIME_ZONE_NAME);
+            if (StringUtils.isNotBlank(xBrowserTimeZone)) {
+                xBrowserTimeZone = xBrowserTimeZone.replaceAll("\\s", "").trim().strip();
+            }
+        }
+        String preferredDateInUTC = null;
+        if(request.getPreferredDate() != null)
+        {
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime utcDate = DateUtils.convertDateFromUserTimeZone(LocalDateTime.parse(request.getPreferredDate(), formatter), xBrowserTimeZone, null, false);
+                preferredDateInUTC = String.valueOf(utcDate.toLocalDate());
+            }
+            catch(Exception e)
+            {
+                log.error("Error in converting preferred date: {} to UTC", request.getPreferredDate());
+                throw e;
+            }
+        }
+        return NPMFetchOffersRequest.builder()
+                .origin(request.getOrigin())
+                .destination(request.getDestination())
+                .POD(request.getPod())
+                .POL(request.getPol())
+                .exchange_rates(null)
+                .currency(getCurrencyCode())
+                .preferred_date(preferredDateInUTC)
+                .preferred_date_type(request.getPreferredDateType())
+                .carrier(NPMConstants.ANY)
+                .loads_information(createLoadsInfo(request, customerBooking.orElse(null), isAlteration, NPMConstants.OFFERS_V2))
+                .mode_of_transport(request.getModeOfTransport())
+                .product_name(request.getCargoType())
+                .contract_details(createContractDetails(request))
+                .shipment_type(request.getDirection() != null ? request.getDirection() : customerBooking.map(CustomerBooking::getDirection).orElse(null))
+                .service_mode(request.getServiceMode())
+                .fetch_default_rates(request.isFetchDefaultRates())
+                .slab_rates(false)
+                .scope_restriction(NPMConstants.SELL_COST_MARGIN)
+                .service_category(null)
+                .customer_category(null)
+                .is_alteration(isAlteration)
+                .offer_type(NPMConstants.ALL_OFFER_TYPE)
+                .build();
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
@@ -1154,7 +1240,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private List<NPMContractsResponse.NPMContractResponse> sortNpmContracts(List<NPMContractsResponse.NPMContractResponse> contracts, SortRequest sortRequest) {
-        if (sortRequest == null || sortRequest.getFieldName() == null) {
+        if (sortRequest == null || StringUtils.isBlank(sortRequest.getFieldName())) {
             return contracts;
         }
 
@@ -1194,16 +1280,191 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if (!asc) {
             comparator = comparator.reversed();
         }
-        return contracts.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        return contracts.stream().sorted(comparator).collect(Collectors.toList());
     }
 
-    private static Double parseDoubleSafe(String value) {
+    private Double parseDoubleSafe(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
         try {
-            return value != null ? Double.parseDouble(value) : null;
+            return Double.parseDouble(value.trim());
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private List<FetchOffersResponse.Offer> sortNpmOffers(NPMFetchOffersRequestFromUI fetchOffersRequest, FetchOffersResponse fetchOffersResponse) {
+        if (fetchOffersRequest.getSortRequest() == null
+                || StringUtils.isBlank(fetchOffersRequest.getSortRequest().getFieldName())) {
+            return fetchOffersResponse.getOffers();
+        }
+        String field = fetchOffersRequest.getSortRequest().getFieldName();
+        boolean asc = !"desc".equalsIgnoreCase(fetchOffersRequest.getSortRequest().getOrder());
+
+        Comparator<FetchOffersResponse.Offer> comparator = switch (field) {
+            case FASTEST -> Comparator.comparing(
+                    o -> parseDoubleSafe(o.getMaxTransitHours()),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case DEPARTURE -> Comparator.comparing(
+                    o -> parseLocalDateSafe(o.getScheduleInfo() != null
+                            ? o.getScheduleInfo().getProposedPickupDate()
+                            : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case ARRIVAL -> Comparator.comparing(
+                    o -> parseLocalDateSafe(o.getScheduleInfo() != null
+                            ? o.getScheduleInfo().getEstimatedArrivalDate()
+                            : null),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case FREIGHT_RATE -> Comparator.comparing(
+                    o -> {
+                        if (AUTO_SELL.equals(fetchOffersRequest.getRequestSource())) {
+                            return o.getGroupTotals() != null && o.getGroupTotals().getFreightCharges() != null
+                                    ? o.getGroupTotals().getFreightCharges().getTotal()
+                                    : null;
+                        } else if (AUTO_COST.equals(fetchOffersRequest.getRequestSource())) {
+                            return o.getGroupTotals() != null && o.getGroupTotals().getFreightCharges() != null
+                                    ? o.getGroupTotals().getFreightCharges().getTotalCost()
+                                    : null;
+                        }
+                        return null;
+                    },
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case TOTAL_RATE -> Comparator.comparing(
+                    o -> {
+                        if (AUTO_SELL.equals(fetchOffersRequest.getRequestSource())) {
+                            return o != null ? o.getTotalRoutePrice() : null;
+                        } else if (AUTO_COST.equals(fetchOffersRequest.getRequestSource())) {
+                            return o != null ? o.getTotalRouteCost() : null;
+                        }
+                        return null;
+                    },
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            default -> throw new IllegalArgumentException("Unsupported sort field: " + field);
+        };
+        if (!asc) {
+            comparator = comparator.reversed();
+        }
+        return fetchOffersResponse.getOffers().stream().sorted(comparator).collect(Collectors.toList());
+    }
+
+    private LocalDate parseLocalDateSafe(String date) {
+        try {
+            if (date == null) return null;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            return LocalDate.parse(date, formatter);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void filterOffers(NPMFetchOffersRequestFromUI request, FetchOffersResponse fetchOffersResponse) {
+        if (fetchOffersResponse == null || fetchOffersResponse.getOffers() == null) {
+            return;
+        }
+
+        List<FetchOffersResponse.Offer> filteredOffers = fetchOffersResponse.getOffers().stream()
+                .filter(offer -> {
+                    boolean matches = true;
+                    if (StringUtils.isNotBlank(request.getCarrier())) {
+                        matches &= (offer.getCarrier() == null || request.getCarrier().equalsIgnoreCase(offer.getCarrier()));
+                    }
+                    if (request.getMinTransitDays() != null) {
+                        long minTransitHours = request.getMinTransitDays() * 24L;
+                        if (StringUtils.isNotBlank(offer.getMinTransitHours())) {
+                            try {
+                                long offerMinTransitHours = Long.parseLong(offer.getMinTransitHours());
+                                matches &= offerMinTransitHours >= minTransitHours;
+                            } catch (NumberFormatException e) {
+                                log.warn("Invalid transit hour value for offer: {}", offer, e);
+                            }
+                        }
+                    }
+                    if (request.getMaxTransitDays() != null) {
+                        long maxTransitHours = request.getMaxTransitDays() * 24L;
+                        if (StringUtils.isNotBlank(offer.getMaxTransitHours())) {
+                            try {
+                                long offerMaxTransitHours = Long.parseLong(offer.getMaxTransitHours());
+                                matches &= offerMaxTransitHours <= maxTransitHours;
+                            } catch (NumberFormatException e) {
+                                log.warn("Invalid transit hour value for offer: {}", offer, e);
+                            }
+                        }
+                    }
+                    return matches;
+                })
+                .collect(Collectors.toList());
+
+        fetchOffersResponse.setOffers(filteredOffers);
+    }
+
+    private ResponseEntity<IRunnerResponse> paginateFetchOffersResponse(NPMFetchOffersRequestFromUI npmFetchOffersRequestFromUI, FetchOffersResponse fetchOffersResponse) {
+        int totalElements = 0;
+        int totalPages = 0;
+
+        if (fetchOffersResponse != null && fetchOffersResponse.getOffers() != null && !fetchOffersResponse.getOffers().isEmpty()) {
+            int pageNo = npmFetchOffersRequestFromUI.getPageNo();
+            int pageSize = npmFetchOffersRequestFromUI.getPageSize();
+            totalElements = fetchOffersResponse.getOffers().size();
+            int fromIndex = (pageNo - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalElements);
+
+            List<FetchOffersResponse.Offer> paginatedFetchOffersResponseList = new ArrayList<>();
+            if (fromIndex < totalElements) {
+                paginatedFetchOffersResponseList = fetchOffersResponse.getOffers().subList(fromIndex, toIndex);
+            }
+            fetchOffersResponse.setOffers(paginatedFetchOffersResponseList);
+            totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        } else {
+            if (fetchOffersResponse == null) {
+                fetchOffersResponse = new FetchOffersResponse();
+            }
+            fetchOffersResponse.setOffers(Collections.emptyList());
+        }
+        return ResponseHelper.buildDependentServiceResponse(fetchOffersResponse, totalElements, totalPages);
+    }
+
+
+    private ResponseEntity<IRunnerResponse> paginateGetContractsResponse(ListContractsWithFilterRequest listContractsWithFilterRequest, List<NPMContractsRunnerResponse> npmContractsRunnerResponseList) {
+        int totalElements = 0;
+        int totalPages = 0;
+        List<NPMContractsRunnerResponse> paginatedGetContractResponseList;
+
+        if (npmContractsRunnerResponseList != null && !npmContractsRunnerResponseList.isEmpty()) {
+            int pageNo = listContractsWithFilterRequest.getPageNo();
+            int pageSize = listContractsWithFilterRequest.getPageSize();
+            totalElements = npmContractsRunnerResponseList.size();
+            int fromIndex = (pageNo - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalElements);
+
+            if (fromIndex < totalElements) {
+                paginatedGetContractResponseList = npmContractsRunnerResponseList.subList(fromIndex, toIndex);
+            } else {
+                paginatedGetContractResponseList = new ArrayList<>();
+            }
+            totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        } else {
+            paginatedGetContractResponseList = new ArrayList<>();
+        }
+        return ResponseHelper.buildDependentServiceResponse(paginatedGetContractResponseList, totalElements, totalPages);
+    }
+
+    private void updateRouteMarginInOffers(FetchOffersResponse fetchOffersResponse) {
+        if (fetchOffersResponse == null || fetchOffersResponse.getOffers() == null) {
+            return;
+        }
+
+        fetchOffersResponse.getOffers().forEach(offer -> {
+            if (offer.getTotalRoutePrice() != null && offer.getTotalRouteCost() != null) {
+                offer.setTotalRouteMargin(offer.getTotalRoutePrice().subtract(offer.getTotalRouteCost()));
+            } else {
+                offer.setTotalRouteMargin(null);
+            }
+        });
     }
 }

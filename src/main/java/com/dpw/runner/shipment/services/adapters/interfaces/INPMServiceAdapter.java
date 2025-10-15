@@ -19,6 +19,8 @@ public interface INPMServiceAdapter {
 
     ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel commonRequestModel) throws RunnerException;
 
+    ResponseEntity<IRunnerResponse> fetchOffersWithFilter(CommonRequestModel req) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> fetchOffersV8(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws RunnerException;
