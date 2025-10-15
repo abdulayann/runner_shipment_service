@@ -1372,7 +1372,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
             cont.setShipmentsList(shipmentDetails);
         });
-        containerDao.saveAll(containersList);
+        containerDao.saveAllContainers(containersList);
         log.info("Consolidation containers got attached to Shipment with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
     }
 

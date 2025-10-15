@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface IContainerDao {
+    List<Containers> saveAll(List<Containers> containersList);
+
     Containers save(Containers containers);
 
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
@@ -33,7 +35,7 @@ public interface IContainerDao {
 
     List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws RunnerException;
 
-    List<Containers> saveAll(List<Containers> containers);
+    List<Containers> saveAllContainers(List<Containers> containers);
 
     List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws RunnerException;
     List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws RunnerException;

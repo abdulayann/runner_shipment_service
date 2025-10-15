@@ -272,7 +272,7 @@ public class ContainerService implements IContainerService {
         ).toList();
 
         applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
-        containersList = containerDao.saveAll(containersList);
+        containersList = containerDao.saveAllContainers(containersList);
         if (request.getShipmentId() != null && !CommonUtils.listIsNullOrEmpty(containersList)) {
             containersList.forEach(container -> shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId())));
         }

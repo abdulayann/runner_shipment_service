@@ -1206,7 +1206,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             }
             cont.setShipmentsList(shipmentDetails);
         });
-        containerDao.saveAll(containersList);
+        containerDao.saveAllContainers(containersList);
         log.info("Consolidation containers got attached to Shipment with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
     }
 
