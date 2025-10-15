@@ -369,8 +369,7 @@ public class ReportService implements IReportService {
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @Override
-    public ReportResponse getDocumentData(CommonRequestModel request)
-            throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
+    public ReportResponse getDocumentData(CommonRequestModel request) throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
         // Phase 1: Pre-PDF Database Operations (Transactional)
@@ -533,8 +532,7 @@ public class ReportService implements IReportService {
     @Transactional
     public void finalizeReportGeneration(ReportRequest reportRequest,
                                           byte[] pdfByteContent,
-                                          ReportPreparationData prepData)
-            throws DocumentException, IOException, RunnerException {
+                                          ReportPreparationData prepData) {
 
         ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
         Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
@@ -558,7 +556,7 @@ public class ReportService implements IReportService {
     }
 
     private byte[] generatePdfForMawb(ReportPreparationData prepData)
-            throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
+            throws DocumentException, IOException, RunnerException {
         ReportRequest reportRequest = prepData.getReportRequest();
         ReportResponse response = getBytesForMawb(reportRequest, prepData.getDataRetrieved(),
                 prepData.getIsOriginalPrint(), prepData.getIsSurrenderPrint(),
@@ -567,12 +565,8 @@ public class ReportService implements IReportService {
     }
 
     private byte[] generatePdfForHawb(ReportPreparationData prepData)
-            throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
-        ReportRequest reportRequest = prepData.getReportRequest();
-        ReportResponse response = getBytesForHawb(reportRequest, prepData.getDataRetrieved(),
-                prepData.getIsOriginalPrint(), prepData.getIsSurrenderPrint(), prepData.getIsNeutralPrint(),
-                prepData.getHbltype(), prepData.getObjectType(), prepData.getTenantSettingsRow(),
-                prepData.getReport(), prepData.getAwb());
+            throws DocumentException, IOException, ExecutionException, InterruptedException, RunnerException {
+        ReportResponse response = getBytesForHawb(prepData);
         return response.getContent();
     }
 
@@ -1021,7 +1015,18 @@ public class ReportService implements IReportService {
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
     }
 
-    public ReportResponse getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report, Awb awb) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
+    public ReportResponse getBytesForHawb(ReportPreparationData prepData) throws DocumentException, IOException, ExecutionException, InterruptedException, RunnerException {
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrived = prepData.getDataRetrieved();
+        Boolean isOriginalPrint = prepData.getIsOriginalPrint();
+        Boolean isSurrenderPrint = prepData.getIsSurrenderPrint();
+        Boolean isNeutralPrint = prepData.getIsNeutralPrint();
+        String hbltype = prepData.getHbltype();
+        String objectType = prepData.getObjectType();
+        ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
+        IReport report = prepData.getReport();
+        Awb awb = prepData.getAwb();
+        
         updateCustomDataInDataRetrivedForHawb(reportRequest, dataRetrived);
 
         updateDateAndStatusForHawbPrint(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
