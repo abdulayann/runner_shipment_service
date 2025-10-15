@@ -21,6 +21,7 @@ import lombok.ToString;
 @SuppressWarnings("java:S1948")
 public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
     private UUID shipmentGuid;
+    private Long shipmentId;
     private String event;
     private List<OrderDetails> orderDetailsList;
     private List<OrderDetails> orderDetailsForAttach;
@@ -32,6 +33,7 @@ public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
     @AllArgsConstructor
     public static class OrderDetails {
         private String orderNumber;
+        private String orderId;
         private UUID orderGuid;
         private Long shipmentId;
         private LocalDateTime orderDate;

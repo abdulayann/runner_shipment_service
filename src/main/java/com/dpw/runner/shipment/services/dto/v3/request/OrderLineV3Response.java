@@ -77,6 +77,8 @@ public class OrderLineV3Response extends CommonRequest implements IRunnerRequest
 
     private Long shipmentOrderId;
 
+    private UUID orderGuid;
+
     @JsonProperty("itemId")
     private Long orderLineId;
 

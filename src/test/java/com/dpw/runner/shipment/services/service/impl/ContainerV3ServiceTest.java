@@ -854,12 +854,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(containerRequests, Containers.class)).thenReturn(containers);
         when(containerDao.saveAll(containers)).thenReturn(containers);
         doNothing().when(auditLogService).addAuditLog(any());
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
 
         when(jsonHelper.convertValueToList(containers, ContainerResponse.class)).thenReturn(responseList);
 
@@ -880,12 +874,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         when(containerDao.save(testContainer)).thenReturn(testContainer);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
@@ -901,12 +889,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
         lenient().when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         when(containerDao.save(testContainer)).thenReturn(testContainer);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         lenient().when(iConsoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
@@ -978,13 +960,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
-
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
 
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         lenient().doNothing().when(shipmentsContainersMappingDao).assignShipments(containerId, Set.of(shipmentId), false);

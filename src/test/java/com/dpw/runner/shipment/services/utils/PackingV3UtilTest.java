@@ -17,12 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -33,6 +28,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,6 +99,9 @@ class PackingV3UtilTest extends CommonMocks {
 
     @InjectMocks
     private PackingV3Util packingV3Util;
+
+    @Mock
+    private IShipmentOrderService shipmentOrderService;
 
     private Packing samplePacking;
     private PackingResponse sampleResponse;
@@ -932,6 +931,14 @@ class PackingV3UtilTest extends CommonMocks {
         orderLine.setProductCode("PROD-1");
         orderLine.setShipmentOrderId(555L);
 
+        UUID randomUUID = UUID.randomUUID();
+        orderLine.setOrderGuid(randomUUID);
+
+        ShipmentOrder shipmentOrder = new ShipmentOrder();
+        shipmentOrder.setId(555L);
+        shipmentOrder.setOrderGuid(randomUUID);
+        when(shipmentOrderService.findByOrderGuidIn(Arrays.asList(randomUUID))).thenReturn(Arrays.asList(shipmentOrder));
+
         List<OrderLineV3Response> input = Arrays.asList(orderLine, null);
         List<PackingV3Request> result = packingV3Util.mapOrderLineListToPackingV3RequestList(input);
 
@@ -958,7 +965,7 @@ class PackingV3UtilTest extends CommonMocks {
 
     @Test
     void mapOrderLine_null_returnsNull() {
-        PackingV3Request result = packingV3Util.mapOrderLineToPackingV3Request(null);
+        PackingV3Request result = packingV3Util.mapOrderLineToPackingV3Request(null, new HashMap<>());
         assertNull(result, "Mapping a null OrderLine should return null");
     }
 
@@ -980,7 +987,7 @@ class PackingV3UtilTest extends CommonMocks {
         orderLineRes.setProductCode("P-01");
         orderLineRes.setShipmentOrderId(100L);
 
-        PackingV3Request packingReq = packingV3Util.mapOrderLineToPackingV3Request(orderLineRes);
+        PackingV3Request packingReq = packingV3Util.mapOrderLineToPackingV3Request(orderLineRes, new HashMap<>());
         assertNotNull(packingReq);
 
         assertEquals(orderLineRes.getCommodityGroup(), packingReq.getCommodityGroup());
@@ -990,7 +997,6 @@ class PackingV3UtilTest extends CommonMocks {
         assertEquals(orderLineRes.getPacks(), packingReq.getPacks());
         assertEquals(orderLineRes.getPacksType(), packingReq.getPacksType());
         assertEquals(orderLineRes.getProductCode(), packingReq.getProductCode());
-        assertEquals(orderLineRes.getShipmentOrderId(), packingReq.getShipmentOrderId());
         assertEquals(0, packingReq.getLength().compareTo(orderLineRes.getLength()));
     }
 

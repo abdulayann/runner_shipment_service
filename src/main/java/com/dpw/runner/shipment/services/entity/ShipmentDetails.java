@@ -461,6 +461,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "parent_contract_id")
     private String parentContractId;
 
+    @Column(name = "quote_date")
+    private LocalDateTime quoteDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_date_type")
+    private ShipmentDetailsQuoteDateType quoteDateType;
+
     @MasterData(type = MasterDataType.COUNTRIES)
     @Column(name = "client_country")
     private String clientCountry;

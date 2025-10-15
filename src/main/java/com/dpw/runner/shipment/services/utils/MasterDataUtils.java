@@ -847,7 +847,7 @@ public class MasterDataUtils{
         List<String> fields = fetchFieldsMap(mainClass, Constants.MASTER_DATA);
         for (String field: fields){
             try {
-                Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field);
+                Field field1 = getFieldFromClassHierarchy(entityPayload.getClass(), field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
                 String itemType = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).type().getDescription();
@@ -856,7 +856,7 @@ public class MasterDataUtils{
                 String cascade = null;
 
                 if(!cascadeField.equals("")){
-                    Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
+                    Field field2 = getFieldFromClassHierarchy(entityPayload.getClass(), cascadeField);
                     field2.setAccessible(true);
                     cascade = (String) field2.get(entityPayload);
                 }
@@ -874,6 +874,20 @@ public class MasterDataUtils{
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return requests;
+    }
+
+    private Field getFieldFromClassHierarchy(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Class<?> currentClass = clazz;
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException e) {
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException("Field " + fieldName + " not found in class hierarchy");
     }
 
     public Map<String, EntityTransferMasterLists> fetchMasterListFromCache(MasterListRequestV2 requests) {
@@ -1093,7 +1107,7 @@ public class MasterDataUtils{
         List<String> fields = fetchFieldsMap(mainClass, Constants.ORGANIZATIONS);
         for (String field: fields){
             try {
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                Field field1 = getFieldFromClassHierarchy(entityPayload.getClass(), field);
                 field1.setAccessible(true);
                 String orgId = field1.get(entityPayload) != null ? String.valueOf(field1.get(entityPayload)): null;
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ORGANIZATIONS, orgId));
@@ -1729,7 +1743,7 @@ public class MasterDataUtils{
         List<String> fields = fetchFieldsMap(mainClass, Constants.CURRENCY_MASTER_DATA);
         for (String field: fields){
             try {
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                Field field1 = getFieldFromClassHierarchy(entityPayload.getClass(), field);
                 field1.setAccessible(true);
                 String currencyCode = (String) field1.get(entityPayload);
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CURRENCIES, currencyCode));
@@ -1783,7 +1797,7 @@ public class MasterDataUtils{
         for (String tenantMasterDataField : tenantMasterDataFields) {
             try {
                 // Access the field in the entityPayload object
-                Field field = entityPayload.getClass().getDeclaredField(tenantMasterDataField);
+                Field field = getFieldFromClassHierarchy(entityPayload.getClass(), tenantMasterDataField);
                 field.setAccessible(true);
                 Object fieldValue = field.get(entityPayload);
 
@@ -2073,7 +2087,7 @@ public class MasterDataUtils{
         List<String> fields = fetchFieldsMap(mainClass, Constants.SALES_AGENT);
         for (String field: fields){
             try {
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                Field field1 = getFieldFromClassHierarchy(entityPayload.getClass(), field);
                 field1.setAccessible(true);
                 Long salesAgentId = (Long) field1.get(entityPayload);
                 if(salesAgentId != null) {

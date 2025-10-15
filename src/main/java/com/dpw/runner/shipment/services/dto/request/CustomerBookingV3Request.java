@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteDateType;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -78,6 +79,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String consigneeCountry;
     private String notifyPartyCountry;
     private String parentContractId;
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
+    private CustomerBookingQuoteDateType quoteDateType;
     private String salesBranch;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;

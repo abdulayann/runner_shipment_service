@@ -117,6 +117,7 @@ public class PackingResponse implements IRunnerResponse {
     private String productCode;
     private Long shipmentOrderId;
     private Long orderLineId;
+    private UUID orderGuid;
     private String orderLineGuid;
 
     public boolean getAssigned() {return containerId != null;}

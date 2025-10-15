@@ -17,6 +17,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -291,6 +292,9 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "shipment_order_id")
     private Long shipmentOrderId;
+
+    @Column(name = "order_guid")
+    private UUID orderGuid;
 
     @Column(name = "order_line_guid")
     private String orderLineGuid;

@@ -111,6 +111,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private BigDecimal subLineNo;
     private String productCode;
     private Long shipmentOrderId;
+    private UUID orderGuid;
     private Long orderLineId;
     private String orderLineGuid;
 

@@ -1,15 +1,18 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.SubmitAmendInttraRequest;
 import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGrossMassRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 
@@ -32,6 +35,8 @@ public interface IVerifiedGrossMassService {
     VerifiedGrossMassResponse retrieveById(Long id);
 
     ResponseEntity<IRunnerResponse> list(CommonRequestModel listCommonRequest, boolean getMasterData);
+
+    Page<VerifiedGrossMass> getVerifiedGrossMasses(ListCommonRequest listCommonRequest);
 
     /**
      * Update an existing Verified Gross mass.

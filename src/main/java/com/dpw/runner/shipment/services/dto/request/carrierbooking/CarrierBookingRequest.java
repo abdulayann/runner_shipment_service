@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.carrierbooking;
 
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,12 +24,8 @@ public class CarrierBookingRequest implements Serializable {
     private String bookingNo;
     private String carrierBookingNo;
     private String carrierBlNo;
-    @NotBlank(message = "Entity type can not be empty")
     private String entityType;
-    @NotNull(message = "Entity Id can not be null")
-    @Min(value = 1, message = "Entity id can not be zero/negative")
     private Long entityId;
-    @NotBlank(message = "Entity Number can not be empty")
     private String entityNumber;
     @NotBlank(message = "Service type can not be empty")
     private String serviceType;
@@ -51,12 +46,9 @@ public class CarrierBookingRequest implements Serializable {
     private List<String> externalEmailsList;
     private String otherInternalEmails;
     private String otherExternalEmails;
-    @NotNull(message = "Requester can not be null")
     private PartiesRequest requester;
-    @NotNull(message = "Shipper can not be null")
     private PartiesRequest shipper;
     private PartiesRequest consignee;
-    @NotNull(message =  "Contract can not be null")
     private PartiesRequest contract;
     private PartiesRequest forwardingAgent;
     private PartiesRequest pickupFrom;

@@ -4803,4 +4803,21 @@ public class CommonUtils {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
         }
     }
+
+    public Map<Long, String> getTenantNameMap(List<Integer> tenantIds){
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of("TenantId"));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(tenantIds)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse tenantName = v1Service.tenantNameByTenantId(request);
+
+        List<V1TenantResponse> v1TenantResponse = jsonHelper.convertValueToList(tenantName.entities, V1TenantResponse.class);
+        return v1TenantResponse.stream()
+                .filter(response -> response.getTenantId() != null && response.getTenantName() != null)
+                .collect(Collectors.toMap(
+                        V1TenantResponse::getTenantId,
+                        V1TenantResponse::getTenantName
+                ));
+    }
 }

@@ -110,6 +110,10 @@ public class ListContractResponse implements IRunnerResponse {
         private String pol;
         @JsonProperty("route")
         private List<Route> route;
+        @JsonProperty("pdfUrl")
+        private List<PdfUrl> pdfUrlList;
+        @JsonProperty("currencyMeta")
+        private CurrencyMeta currencyMeta;
         @JsonProperty("incoterm")
         private String incoterm;
         @JsonProperty("service_mode")
@@ -254,6 +258,59 @@ public class ListContractResponse implements IRunnerResponse {
         private Long length;
         @JsonProperty("uom")
         private String uom;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PdfUrl implements Serializable{
+        @JsonProperty("url")
+        private String url;
+        @JsonProperty("code")
+        private String code;
+        @JsonProperty("language")
+        private String language;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CurrencyMeta implements Serializable{
+
+        @JsonProperty("chargeGroups")
+        private Map<String, Map<String, CurrencyTotal>> chargeGroups;
+
+        @JsonProperty("exchangeRates")
+        private ExchangeRates exchangeRates;
+
+        @JsonProperty("showZeroValueCharges")
+        private Boolean showZeroValueCharges;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CurrencyTotal implements Serializable{
+        @JsonProperty("total")
+        private Double total;
+        @JsonProperty("currency")
+        private String currency;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ExchangeRates implements Serializable{
+
+        @JsonProperty("conversionRates")
+        private List<Map<String, Object>> conversionRates;
+
+        @JsonProperty("isExchangeRatesShown")
+        private Boolean isExchangeRatesShown;
     }
 
 }

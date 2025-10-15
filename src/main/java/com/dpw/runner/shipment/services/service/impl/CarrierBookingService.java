@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNum
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
@@ -80,6 +81,8 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShippingInstructionsService;
+import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -91,6 +94,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -167,6 +172,12 @@ public class CarrierBookingService implements ICarrierBookingService {
     private final IRoutingsV3Service routingsV3Service;
     private final VerifiedGrossMassMasterDataHelper verifiedGrossMassMasterDataHelper;
     private final ShippingInstructionMasterDataHelper shippingInstructionMasterDataHelper;
+    @Lazy
+    @Autowired
+    private IVerifiedGrossMassService verifiedGrossMassService;
+    @Lazy
+    @Autowired
+    private IShippingInstructionsService shippingInstructionsService;
 
 
     @Override
@@ -238,7 +249,8 @@ public class CarrierBookingService implements ICarrierBookingService {
 
     /**
      * Populates the carrier booking response with IDs of Vgm and Si entities.
-     * @param carrierBooking Entity carrier booking data
+     *
+     * @param carrierBooking         Entity carrier booking data
      * @param carrierBookingResponse updated response
      */
     private void setVgmAndSiId(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
@@ -691,13 +703,13 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
 
         CarrierBookingBridgeRequest carrierBookingBridgeRequest = jsonHelper.convertValue(carrierBooking, CarrierBookingBridgeRequest.class);
+        setInternalExternalEmails(carrierBookingBridgeRequest, carrierBooking);
         carrierBookingUtil.populateCarrierDetails(carrierBookingInttraUtil.fetchCarrierDetailsForBridgePayload(carrierBookingBridgeRequest.getSailingInformation()), carrierBookingBridgeRequest);
         carrierBookingUtil.populateIntegrationCode(carrierBookingInttraUtil.addAllContainerTypesInSingleCall(carrierBookingBridgeRequest.getContainersList()), carrierBookingBridgeRequest);
         carrierBookingInttraUtil.validateContainersIntegrationCode(carrierBookingBridgeRequest.getContainersList());
         convertWeightVolumeToRequiredUnit(carrierBookingBridgeRequest);
-
         BridgeServiceResponse bridgeResponse = carrierBookingInttraUtil.sendPayloadToBridge(carrierBookingBridgeRequest, carrierBooking.getId(), integrationCode, UUID.randomUUID().toString(), UUID.randomUUID().toString(), integrationType, EntityTypeTransactionHistory.CARRIER_BOOKING.name());
-        processInttraResponse(bridgeResponse,  carrierBooking);
+        processInttraResponse(bridgeResponse, carrierBooking);
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
         //Make it async
@@ -736,37 +748,51 @@ public class CarrierBookingService implements ICarrierBookingService {
         List<ShippingInstruction> shippingInstructionList = new ArrayList<>();
         List<VerifiedGrossMass> verifiedGrossMassList = new ArrayList<>();
         List<IRunnerResponse> finalResponses = new ArrayList<>(carrierBookingResponses);
+        Map<Long, String> siCbMap = new HashMap<>();
+        Map<Long, CarrierBookingStatus> vgmCbMap = new HashMap<>();
+        Map<Long, ShippingInstructionStatus> vgmSiMap = new HashMap<>();
         for (CarrierBooking carrierBooking : carrierBookings) {
             if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
                 shippingInstructionList.add(carrierBooking.getShippingInstruction());
+                siCbMap.put(carrierBooking.getShippingInstruction().getId(), carrierBooking.getStatus().name());
             }
             if (Objects.nonNull(carrierBooking.getVerifiedGrossMass())) {
                 verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
+                vgmCbMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getStatus());
+                if(Objects.nonNull(carrierBooking.getShippingInstruction())) {
+                    vgmSiMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getShippingInstruction().getStatus());
+                }
             }
         }
+        Page<ShippingInstruction> shippingInstructionEntityList = shippingInstructionsService.getShippingInstructions(listCommonRequest);
+        shippingInstructionList.addAll(shippingInstructionEntityList.getContent());
         if (!CollectionUtils.isEmpty(shippingInstructionList)) {
             List<ShippingInstructionResponse> shippingInstructionResponses = new ArrayList<>();
             for (ShippingInstruction shippingInstruction : shippingInstructionList) {
                 ShippingInstructionResponse shippingInstructionResponse = jsonHelper.convertValue(shippingInstruction, ShippingInstructionResponse.class);
+                shippingInstructionResponse.setBookingStatus(siCbMap.get(shippingInstructionResponse.getId()));
                 shippingInstructionResponses.add(shippingInstructionResponse);
             }
             List<IRunnerResponse> responseList = new ArrayList<>(shippingInstructionResponses);
             shippingInstructionMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
             finalResponses.addAll(responseList);
         }
+        Page<VerifiedGrossMass> vgmEntityList = verifiedGrossMassService.getVerifiedGrossMasses(listCommonRequest);
+        verifiedGrossMassList.addAll(vgmEntityList.getContent());
 
         if (!CollectionUtils.isEmpty(verifiedGrossMassList)) {
-            List<VerifiedGrossMassListResponse> verifiedGrossMassListResponses = new ArrayList<>();
-
+            List<VerifiedGrossMassResponse> verifiedGrossMassListResponses = new ArrayList<>();
             for (VerifiedGrossMass verifiedGrossMass : verifiedGrossMassList) {
-                VerifiedGrossMassListResponse verifiedGrossMassListResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassListResponse.class);
-                verifiedGrossMassListResponses.add(verifiedGrossMassListResponse);
+                VerifiedGrossMassResponse verifiedGrossMassResponse = jsonHelper.convertValue(verifiedGrossMass, VerifiedGrossMassResponse.class);
+                verifiedGrossMassResponse.setBookingStatus(vgmCbMap.get(verifiedGrossMassResponse.getId()));
+                verifiedGrossMassResponse.setSiStatus(vgmSiMap.get(verifiedGrossMassResponse.getId()));
+                verifiedGrossMassListResponses.add(verifiedGrossMassResponse);
             }
             List<IRunnerResponse> responseList = new ArrayList<>(verifiedGrossMassListResponses);
             verifiedGrossMassMasterDataHelper.getMasterDataForList(responseList, getMasterData, false);
             finalResponses.addAll(responseList);
         }
-        return ResponseHelper.buildListSuccessResponse(finalResponses);
+        return ResponseHelper.buildSuccessResponse(finalResponses);
     }
 
 
@@ -886,6 +912,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         commonContainers.setCustomsSealNumber(containers.getCustomsSealNumber());
         commonContainers.setShipperSealNumber(containers.getShipperSealNumber());
         commonContainers.setVeterinarySealNumber(containers.getVeterinarySealNumber());
+        commonContainers.setCount(containers.getContainerCount());
         return commonContainers;
     }
 
@@ -1096,7 +1123,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                     .orElse(null);
             if (carrierBookingTemplate != null) {
                 List<String> toEmails = carrierBookingUtil.getSendEmailBaseRequest(carrierBooking);
-                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails ,new ArrayList<>());
+                notificationService.sendEmail(carrierBookingTemplate.getBody(), carrierBookingTemplate.getSubject(), toEmails, new ArrayList<>());
                 log.info("Email sent with Excel attachment");
             }
         } catch (Exception e) {

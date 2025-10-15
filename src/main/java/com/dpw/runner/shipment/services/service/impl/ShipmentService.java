@@ -356,6 +356,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
@@ -666,6 +667,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IPartiesRepository iPartiesRepository;
+
+    @Autowired
+    private ShipmentCommonUtils shipmentCommonUtils;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -1186,7 +1190,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty())
             {
                 for (Containers container: shipmentDetails.getContainersList()) {
-                    addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
+                   shipmentCommonUtils.addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
                 }
             }
 
@@ -1214,21 +1218,7 @@ public class ShipmentService implements IShipmentService {
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
     }
 
-    private void addAuditLogContainers(Containers container, Containers prev, Long shipmentId, String operationName) throws RunnerException {
-        try {
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                    .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(container)
-                            .prevData(prev)
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(shipmentId)
-                            .operation(operationName).build()
-            );
-        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-            log.error(e.getMessage());
-        }
-    }
+
 
     @Override
     public ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentRequest shipmentRequest) {
@@ -2152,7 +2142,7 @@ public class ShipmentService implements IShipmentService {
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
-            createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+            shipmentCommonUtils.createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
@@ -2514,11 +2504,11 @@ public class ShipmentService implements IShipmentService {
     private void processInterBranchConsoleInBeforeSave(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1) {
         if(!Boolean.TRUE.equals(consolidationDetails1.getInterBranchConsole())) {
             if (CommonUtils.checkPartyNotNull(consolidationDetails1.getSendingAgent())) {
-                setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails1);
+                shipmentCommonUtils.setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails1);
             }
 
             if (CommonUtils.checkPartyNotNull(consolidationDetails1.getReceivingAgent())) {
-                setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails1);
+               shipmentCommonUtils.setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails1);
             }
         }
     }
@@ -5796,7 +5786,7 @@ public class ShipmentService implements IShipmentService {
                     } catch (Exception ignored) {
                         log.error("Execption during common sequence {}", ignored.getMessage());
                         log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
-                        shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
+                        shipmentId = Constants.SHIPMENT_ID_PREFIX + shipmentCommonUtils.getShipmentsSerialNumber();
                     }
                 }
                 shipmentId = getShipmentId(shipmentId, shipmentSettingsOptional);
@@ -5813,7 +5803,7 @@ public class ShipmentService implements IShipmentService {
                         jsonHelper.convertToJson(shipmentSettingsOptional.get()));
             }
             log.info("CR-ID {} || no common sequence found", LoggerHelper.getRequestIdFromMDC());
-            shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
+            shipmentId = Constants.SHIPMENT_ID_PREFIX + shipmentCommonUtils.getShipmentsSerialNumber();
         }
         return shipmentId;
     }
@@ -5850,10 +5840,7 @@ public class ShipmentService implements IShipmentService {
         return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.TenantId, true, null, false);
     }
 
-    private String getShipmentsSerialNumber() {
-        // Moving this responsibility to v1 sequnce table to avoid syncing overhead
-        return v1Service.getShipmentSerialNumber();
-    }
+
 
     public ResponseEntity<IRunnerResponse> syncShipmentAuditLogsToService(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -5934,7 +5921,7 @@ public class ShipmentService implements IShipmentService {
 
             shipmentDao.saveCreatedDateAndUser(id, createdBy, shipmentRequest.getCreatedAt());
 
-            createAuditLog(entity, oldEntityJsonString, operation);
+            shipmentCommonUtils.createAuditLog(entity, oldEntityJsonString, operation);
             if (dataMigration) {
                 createV1AuditLogs(entity.getId(), auditLogRequestV2);
             }
@@ -6101,25 +6088,6 @@ public class ShipmentService implements IShipmentService {
             syncEntityConversionService.auditLogsV1ToV2(auditLogRequestV2, id);
         } catch (Exception ignored) {
             log.error("Error while migrating audit logs for id: " + id);
-        }
-    }
-
-    private void createAuditLog(ShipmentDetails entity, String oldEntityJsonString, String operation)
-    {
-        try {
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(entity)
-                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class) : null)
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(entity.getId())
-                            .operation(operation).build()
-            );
-        }
-        catch (Exception e) {
-            log.error("Error creating audit service log", e);
         }
     }
 
@@ -6720,78 +6688,14 @@ public class ShipmentService implements IShipmentService {
     }
 
     public String generateCustomHouseBL(ShipmentDetails shipmentDetails) {
-        String res = null;
-        if(shipmentDetails != null) {
-            res = shipmentDetails.getHouseBill();
-        }
-        ShipmentSettingsDetails tenantSetting = commonUtils.getShipmentSettingFromContext();
-        if(shipmentDetails == null && tenantSetting != null && Boolean.TRUE.equals(tenantSetting.getRestrictHblGen())) {
-            return null;
-        }
-
-        if (shipmentDetails != null && tenantSetting.getCustomisedSequence()) {
-            try {
-                res = productEngine.getCustomizedBLNumber(shipmentDetails);
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-        }
-
-        if(res == null || res.isEmpty()) {
-            res = tenantSetting.getHousebillPrefix() ==  null ? "" : tenantSetting.getHousebillPrefix();
-            String numberGeneration = tenantSetting.getHousebillNumberGeneration() ==  null ? "" : tenantSetting.getHousebillNumberGeneration();
-            switch(numberGeneration) {
-                case "Random" :
-                    res += StringUtility.getRandomString(10);
-                    break;
-                case "Serial" :
-                    String serialNumber = getShipmentsSerialNumber();
-                    res += serialNumber;
-                    break;
-                default : res = "";
-                    break;
-            }
-        }
-
-        return res;
+        return shipmentCommonUtils.generateCustomHouseBL(shipmentDetails);
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> getDefaultShipment() {
         String responseMsg;
         try {
-            var tenantSettings = commonUtils.getShipmentSettingFromContext();
-            // Populate shipment details on basis of tenant settings
-            ShipmentDetailsResponse response = new ShipmentDetailsResponse();
-            response.setAdditionalDetails(new AdditionalDetailResponse());
-            response.setCarrierDetails(new CarrierDetailResponse());
-            response.setTransportMode(tenantSettings.getDefaultTransportMode());
-            response.setDirection(tenantSettings.getDefaultShipmentType());
-            response.setShipmentType(tenantSettings.getDefaultContainerType());
-
-            response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
-            response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
-            response.setStatus(0);
-            response.setSource(Constants.SYSTEM);
-            response.setCreatedBy(UserContext.getUser().getUsername());
-            response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
-            response.setShipmentCreatedOn(LocalDateTime.now());
-            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
-            response.setAutoUpdateWtVol(true);
-            response.setDateType(ESTIMATED);
-            //Generate HBL
-            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL(null));
-
-            // Populate default department
-            response.setDepartment(commonUtils.getAutoPopulateDepartment(
-                    response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE
-            ));
-
-            setTenantAndDefaultAgent(response);
-
-            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL(null));
+            ShipmentDetailsResponse response = shipmentCommonUtils.buildDefaultShipment();
 
             Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(null, response);
             response.setMasterDataMap(masterDataResponse);
@@ -6818,40 +6722,6 @@ public class ShipmentService implements IShipmentService {
                 masterDataMap.put("Tenants", tenantMap);
                 response.setMasterDataMap(masterDataMap);
             }
-        }
-    }
-
-    public void setTenantAndDefaultAgent(ShipmentDetailsResponse response) {
-        try {
-            log.info("Fetching Tenant Model");
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-            String currencyCode = tenantModel.currencyCode;
-            response.setFreightLocalCurrency(currencyCode);
-            List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
-            if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
-                EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-                if ((Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode())
-                        || Constants.TRANSPORT_MODE_RAI.equals(response.getTransportMode()))
-                        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled())
-                        && null != entityTransferAddress) {
-                    response.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
-                } else {
-                    response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
-                }
-                response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
-                response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
-            }
-            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
-            if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
-                response.getAdditionalDetails().setExportBroker(partiesResponse);
-                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get("TenantId")!=null)
-                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get("TenantId").toString()));
-            } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
-                response.getAdditionalDetails().setImportBroker(partiesResponse);
-            }
-        } catch (Exception e) {
-            log.error("Failed in fetching tenant data from V1 with error : {}", e);
         }
     }
 
@@ -7396,28 +7266,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getGuid() == null) {
-                log.error("Request Guid Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
-            if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        return shipmentCommonUtils.getIdFromGuid(commonRequestModel);
     }
 
     @Override
@@ -8410,11 +8259,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateAgentDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getSendingAgent())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_ORIGIN_AGENT);
         }
 
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getReceivingAgent())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_DESTINATION_AGENT);
         }
     }
@@ -8855,7 +8704,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         String warning = sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
-        DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
+        DBOperationType operationType = shipmentCommonUtils.determineOperationTypeAfterApproval(oldDgStatus, request::getStatus);
 
         closeOceanDgTask(request);
         try {
@@ -9336,7 +9185,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             consolPage.getContent().stream().forEach(i -> {
-                var res = mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData);
+                var res = shipmentCommonUtils.mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData, false);
                 consolVsShipIdMap.get(i.getId()).forEach(shipId -> notificationResultMap.get(shipId).add(res));
             });
 
@@ -9346,28 +9195,6 @@ public class ShipmentService implements IShipmentService {
         }
 
         return notificationResultMap;
-    }
-
-    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData, Map<String, EntityTransferUnLocations> v1LocationData) {
-        var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
-        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
-        return PendingShipmentActionsResponse.builder()
-            .consolId(consol.getId())
-            .consolidationNumber(consol.getReferenceNumber())
-            .masterBill(consol.getMawb())
-            .ata(carrierDetails.getAta())
-            .atd(carrierDetails.getAtd())
-            .eta(carrierDetails.getEta())
-            .etd(carrierDetails.getEtd())
-            .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
-            .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
-            .lat(consol.getLatDate())
-            .branch(tenantData.getCode() + " - " + tenantData.getTenantName())
-            .branchDisplayName(tenantData.displayName)
-            .hazardous(consol.getHazardous())
-            .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
-            .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())
-            .build();
     }
 
     @Override
@@ -9646,7 +9473,7 @@ public class ShipmentService implements IShipmentService {
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
             setShipmentFromBooking(shipmentDetails, notesRequest);
-            createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
+            shipmentCommonUtils.createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -9702,7 +9529,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
-        createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+        shipmentCommonUtils.createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
         dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
@@ -9719,14 +9546,14 @@ public class ShipmentService implements IShipmentService {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
-                setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+               shipmentCommonUtils.setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
             }
 
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
-                setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+               shipmentCommonUtils.setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker())) {
                 consolidationDetails.setReceivingAgent(shipmentDetails.getAdditionalDetails().getImportBroker());
                 consolUpdated = true;
@@ -9757,25 +9584,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void setImportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if(shipmentDetails.getAdditionalDetails() != null &&
-                !CommonUtils.checkSameParties(consolidationDetails.getReceivingAgent(), shipmentDetails.getAdditionalDetails().getImportBroker())) {
-            shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
-        } else if (shipmentDetails.getAdditionalDetails() == null) {
-            shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-            shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
-        }
-    }
-
-    private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if(shipmentDetails.getAdditionalDetails() != null &&
-                !CommonUtils.checkSameParties(consolidationDetails.getSendingAgent(), shipmentDetails.getAdditionalDetails().getExportBroker())) {
-            shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
-        } else if (shipmentDetails.getAdditionalDetails() == null) {
-            shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-            shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
-        }
-    }
 
     @Override
     @Transactional
@@ -9976,7 +9784,7 @@ public class ShipmentService implements IShipmentService {
             addAuditLogParties(partyData, prev, request.getShipmentId(), DBOperationType.UPDATE.name());
         }
         shipmentDao.save(shipmentDetails, false, false);
-        createAuditLog(shipmentDetails, jsonHelper.convertToJson(oldShipment), DBOperationType.UPDATE.name());
+        shipmentCommonUtils.createAuditLog(shipmentDetails, jsonHelper.convertToJson(oldShipment), DBOperationType.UPDATE.name());
         return ResponseEntity.ok("Parties updated successfully");
     }
     private void validateTenantId(Integer requestTenantId, ShipmentDetails shipmentDetails) {
@@ -10016,6 +9824,7 @@ public class ShipmentService implements IShipmentService {
         }
         return null;
     }
+
     private void addAuditLogParties(Parties parties, Parties prev, Long shipmentId, String operationName) throws RunnerException {
         try {
             auditLogService.addAuditLog(
@@ -10042,6 +9851,7 @@ public class ShipmentService implements IShipmentService {
             throw new IllegalStateException("Cannot access field '" + fieldName + "' on " + obj.getClass().getSimpleName(), e);
         }
     }
+
 public String mdmDGApprovalResponse(OceanDGRequestV3 request) throws RunnerException {
         if (Objects.isNull(request)) {
             log.error("Invalid request for sendEmailForDGApprove");
@@ -10068,7 +9878,7 @@ public String mdmDGApprovalResponse(OceanDGRequestV3 request) throws RunnerExcep
         }
 
         String warning = sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
-        DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
+        DBOperationType operationType = shipmentCommonUtils.determineOperationTypeAfterApproval(oldDgStatus, request::getStatus);
 
         closeOceanDgTask(request);
         try {
@@ -10129,39 +9939,4 @@ public String mdmDGApprovalResponse(OceanDGRequestV3 request) throws RunnerExcep
         }
     }
 
-    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequestV3 request){
-        DBOperationType operationType = DG_REQUEST;
-        if(dgStatus == OCEAN_DG_REQUESTED){
-            if(request.getStatus() == TaskStatus.APPROVED){
-                operationType = DG_APPROVE;
-            }else{
-                operationType = DBOperationType.DG_REJECT;
-            }
-        }else if(dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == TaskStatus.APPROVED){
-                operationType = COMMERCIAL_APPROVE;
-            }else{
-                operationType = DBOperationType.COMMERCIAL_REJECT;
-            }
-        }
-        return operationType;
-    }
-
-    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequest request){
-        DBOperationType operationType = DG_REQUEST;
-        if(dgStatus == OCEAN_DG_REQUESTED){
-            if(request.getStatus() == TaskStatus.APPROVED){
-                operationType = DG_APPROVE;
-            }else{
-                operationType = DBOperationType.DG_REJECT;
-            }
-        }else if(dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == TaskStatus.REJECTED){
-                operationType = COMMERCIAL_APPROVE;
-            }else{
-                operationType = DBOperationType.COMMERCIAL_REJECT;
-            }
-        }
-        return operationType;
-    }
 }

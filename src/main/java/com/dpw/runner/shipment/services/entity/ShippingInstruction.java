@@ -159,11 +159,11 @@ public class ShippingInstruction extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "shipping_instruction_id")
-    private List<CommonContainers> commonContainersList;
+    private List<CommonContainers> containersList;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "shipping_instruction_id")
-    private List<ReferenceNumbers> referenceNumbers;
+    private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "sailing_information_id", referencedColumnName = "id")

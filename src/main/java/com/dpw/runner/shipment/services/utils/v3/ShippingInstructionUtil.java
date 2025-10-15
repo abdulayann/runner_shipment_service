@@ -166,6 +166,7 @@ public class ShippingInstructionUtil {
 
         List<Long> siIds = resolveShippingInstructionIds(consolId);
         if (siIds.isEmpty()) {
+            log.info("Containers not linked with any shipping instruction");
             return;
         }
 
@@ -355,6 +356,11 @@ public class ShippingInstructionUtil {
                     .toList());
         }
 
+        if (siIds.isEmpty()) {
+            log.info("Packages not linked with any shipping instruction");
+            return;
+        }
+
         // --- Step 3: Fetch existing commons ---
         List<UUID> guids = packings.stream()
                 .map(Packing::getGuid)
@@ -459,7 +465,7 @@ public class ShippingInstructionUtil {
 
     private void calculateEquipmentTotals(ShippingInstructionInttraRequest response, List<CommonContainerResponse> containers) {
         int totalEquipments = containers.stream()
-                .mapToInt(container -> container.getCount() != null ? container.getCount() : 1)
+                .mapToInt(container -> Math.toIntExact(container.getCount() != null ? container.getCount() : 1))
                 .sum();
 
         int totalPackages = containers.stream()
