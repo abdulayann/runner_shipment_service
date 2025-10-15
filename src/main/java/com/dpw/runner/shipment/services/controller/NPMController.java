@@ -78,8 +78,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.LIST_CONTRACTS_WITH_FILTERS)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> fetchContractsWithFilters(@RequestBody @Valid ListContractsWithFilterRequest request) {
