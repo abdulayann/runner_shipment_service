@@ -156,11 +156,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerListRes
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
-import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -455,12 +451,12 @@ public class ReportService implements IReportService {
         // DB WRITE: Update date and status for HAWB/MAWB (BEFORE PDF)
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
             updateDateAndStatusForHawbPrint(reportRequest, dataRetrieved, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
-            if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null
-                    && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID)) {
-                shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()),
-                        LocalDate.now().atStartOfDay(), null);
-            }
+        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)
+                && (isOriginalPrint || isSurrenderPrint)
+                && reportRequest.getReportKey() != null
+                && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID)) {
+            shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()),
+                    LocalDate.now().atStartOfDay(), null);
         }
 
         String hbltype = (String) dataRetrieved.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);

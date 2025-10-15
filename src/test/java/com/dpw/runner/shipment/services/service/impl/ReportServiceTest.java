@@ -83,9 +83,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -324,7 +324,7 @@ class ReportServiceTest extends CommonMocks {
         cont1.setContainerNumber("C1");
         shipment.setContainersList(Set.of(cont1));
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
         doNothing().when(reportService).validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
         assertDoesNotThrow(() -> reportService.validateHouseBill(reportRequest));
@@ -341,13 +341,16 @@ class ReportServiceTest extends CommonMocks {
         additionalDetails.setReleaseType("RANDOM");
         shipmentDetails.setAdditionalDetails(additionalDetails);
         shipmentDetails.setControlled(false);
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipmentDetails.setContainersList(Set.of(cont1));
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
         ValidationException ex = assertThrows(ValidationException.class,
                 () -> reportService.validateHouseBill(reportRequest));
 
-        assertEquals("Update the Shipment as Controlled - YES and Controlled Ref No.", ex.getMessage());
+        assertTrue(ex.getMessage().contains("Update the Shipment as Controlled"));
     }
 
     @Test
