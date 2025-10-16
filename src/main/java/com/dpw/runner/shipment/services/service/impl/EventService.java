@@ -706,7 +706,7 @@ public class EventService implements IEventService {
         log.info("Mapping and filtering tracking events. messageId {}", messageId);
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
-                .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails, messageId))
+                .filter(trackingEvent -> shouldProcessEvent(trackingEvent, messageId))
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, shipmentDetails.getId(), entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId(),
                         messageId, shipmentDetails.getTenantId()))
                 .toList();
@@ -732,56 +732,65 @@ public class EventService implements IEventService {
      * codes.
      *
      * @param event           the event to be evaluated
-     * @param shipmentDetails the details of the shipment
      * @param messageId
      * @return true if the event should be processed, false otherwise
      */
-    private boolean shouldProcessEvent(Events event, ShipmentDetails shipmentDetails, String messageId) {
-        if (requiredParametersMissing(event, shipmentDetails)) {
+    private boolean shouldProcessEvent(Events event, String messageId) {
+        if (event == null) {
             return false;
         }
 
         String eventCode = safeString(event.getEventCode());
-        String shipmentType = shipmentDetails.getShipmentType();
-        String transportMode = shipmentDetails.getTransportMode();
         // Log the input values for debugging
-        log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
-
-        if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.VSDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.ARDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
-            log.info("Event code {} matches air transport shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
+        log.info("Evaluating event with code: {} messageId {}", eventCode, messageId);
 
         if (EventConstants.CACO.contains(eventCode)
                 || EventConstants.FCGI.contains(eventCode)
+                || EventConstants.EMCR.contains(eventCode)
+                || EventConstants.ARDP.contains(eventCode)
+                || EventConstants.BOCO.contains(eventCode)
+                || EventConstants.ECCC.contains(eventCode)
+                || EventConstants.FUGO.contains(eventCode)
+                || EventConstants.COOD.contains(eventCode)
+                || EventConstants.DISC.contains(eventCode)
+                || EventConstants.ECPK.contains(eventCode)
                 || EventConstants.INTR.contains(eventCode)
+                || EventConstants.FLAR.contains(eventCode)
+                || EventConstants.FLDR.contains(eventCode)
+                || EventConstants.VSDP.contains(eventCode)
                 || EventConstants.CAFS.contains(eventCode)
-                || EventConstants.PRDE.contains(eventCode)) {
+                || EventConstants.FWBF.contains(eventCode)
+                || EventConstants.MFST.contains(eventCode)
+                || EventConstants.EMTC.contains(eventCode)
+                || EventConstants.ONBF.contains(eventCode)
+                || EventConstants.TRCF.contains(eventCode)
+                || EventConstants.TRCS.contains(eventCode)
+                || EventConstants.TNFD.contains(eventCode)
+                || EventConstants.UNAT.contains(eventCode)
+                || EventConstants.PRDE.contains(eventCode)
+                || EventConstants.RAAR.contains(eventCode)
+                || EventConstants.UNFR.contains(eventCode)
+                || EventConstants.LOBA.contains(eventCode)
+                || EventConstants.ARDT.contains(eventCode)
+                || EventConstants.DCVS.contains(eventCode)
+                || EventConstants.NTDA.contains(eventCode)
+                || EventConstants.STCD.contains(eventCode)
+                || EventConstants.DORC.contains(eventCode)
+                || EventConstants.FCAD.contains(eventCode)
+                || EventConstants.GATP.contains(eventCode)
+                || EventConstants.VSDT.contains(eventCode)
+                || EventConstants.VGMA.contains(eventCode)
+                || EventConstants.VBFL.contains(eventCode)
+                || EventConstants.LDVS.contains(eventCode)
+                || EventConstants.UNBA.contains(eventCode)
+                || EventConstants.BAAR.contains(eventCode)
+                || EventConstants.BADE.contains(eventCode)
+                || EventConstants.LORA.contains(eventCode)
+                || EventConstants.RADE.contains(eventCode)
+                || EventConstants.COSC.contains(eventCode)
+                || EventConstants.GATO.contains(eventCode)
+                || EventConstants.EFFT.contains(eventCode)
+                || EventConstants.EFLT.contains(eventCode)) {
 
             log.info("Event code {} matches messageId {}", eventCode, messageId);
             return true;
@@ -789,26 +798,6 @@ public class EventService implements IEventService {
 
         log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
         return false;
-    }
-
-    private boolean requiredParametersMissing(Events event, ShipmentDetails shipmentDetails) {
-        return event == null || shipmentDetails == null;
-    }
-
-    private boolean matchCommonCriteria(String shipmentType, String transportMode) {
-        return isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode);
-    }
-
-    private boolean isFclShipment(String shipmentType) {
-        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(safeString(shipmentType));
-    }
-
-    private boolean isLclShipment(String shipmentType) {
-        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(safeString(shipmentType));
-    }
-
-    private boolean isAirShipment(String transportMode) {
-        return Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(safeString(transportMode));
     }
 
     private String safeString(String value) {

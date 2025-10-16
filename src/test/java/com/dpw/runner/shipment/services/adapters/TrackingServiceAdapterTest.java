@@ -477,7 +477,7 @@ class TrackingServiceAdapterTest {
     void convertTrackingEventCodeToShortCode_GateInWithContainerEmpty_Origin() {
         Event event = new Event();
         event.setLocationRole(EventConstants.ORIGIN);
-        event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
+        event.setEventType(EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY);
         event.setDescription("some description");
         Container container = Container.builder()
                 .journey(Journey.builder().scacCode("").build())
@@ -533,7 +533,7 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
-    void convertTrackingEventCodeToShortCode_VSDP() {
+    void convertTrackingEventCodeToShortCode_LDVS() {
         Event event = new Event();
         event.setEventType(EventConstants.LOAD_ON_VESSEL);
         event.setDescriptionFromSource(EventConstants.EXPORT_LOADED_ON_VESSEL);
@@ -543,8 +543,8 @@ class TrackingServiceAdapterTest {
                 .events(List.of(event)).build();
         String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
-        // Expect VSDP to be returned
-        assertEquals(EventConstants.VSDP, result);
+        // Expect LDVS to be returned
+        assertEquals(EventConstants.LDVS, result);
     }
 
     @Test

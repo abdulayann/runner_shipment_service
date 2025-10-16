@@ -5,6 +5,18 @@ import java.util.List;
 public class EventConstants {
 
 
+    public static final String LOAD_ON_BARGE = "loadOnBarge";
+    public static final String BARGE_DEPARTURE_WITH_CONTAINER = "bargeDepartureWithContainer";
+    public static final String DISCHARGE_FROM_BARGE = "dischargeFromBarge";
+    public static final String BARGE_ARRIVAL_WITH_CONTAINER = "bargeArrivalWithContainer";
+    public static final String VGM_VERIFICATION = "vgmVerification";
+    public static final String VESSEL_ARRIVAL_FOR_LOADING = "vesselArrivalForLoading";
+    public static final String BERTHING_WITH_CONTAINER = "berthingWithContainer";
+    public static final String DISCHARGE_FROM_VESSEL = "dischargeFromVessel";
+    public static final String AVAILABLE_FOR_DELIVERY_FULL = "availableForDeliveryFull";
+    public static final String STORAGE_COMMENCE_DATE = "storageCommenceDate";
+    public static final String TERMINAL_RELEASE = "terminalRelease";
+    public static final String GATE_APPOINTMENT_TIME_PICKUP = "gateAppointmentTimePickUp";
 
     private EventConstants(){}
     public static final String SHIPMENT = "SHIPMENT";
@@ -42,8 +54,28 @@ public class EventConstants {
     public static final String CADE  = "CADE";
     public static final String BOCO  = "BOCO";
     public static final String ECPK  = "ECPK";
+    public static final String COSC = "COSC";
+    public static final String EFLT = "EFLT";
+    public static final String GATO = "GATO";
+    public static final String EFFT = "EFFT";
+    public static final String LORA = "LORA";
+    public static final String RADE = "RADE";
     public static final String FCGI  = "FCGI";
     public static final String CAAW  = "CAAW";
+    public static final String LDVS = "LDVS";
+    public static final String DCVS = "DCVS";
+    public static final String NTDA = "NTDA";
+    public static final String STCD = "STCD";
+    public static final String VGMA = "VGMA";
+    public static final String VBFL = "VBFL";
+    public static final String BADE = "BADE";
+    public static final String BAAR = "BAAR";
+    public static final String UNBA = "UNBA";
+    public static final String VSDT = "VSDT";
+    public static final String ARDT = "ARDT";
+    public static final String LOBA = "LOBA";
+    public static final String UNFR = "UNFR";
+    public static final String RAAR = "RAAR";
     public static final String VSDP  = "VSDP";
     public static final String FHBL  = "FHBL";
     public static final String DHBL =  "DHBL";
@@ -66,6 +98,11 @@ public class EventConstants {
     public static final String PRST  = "PRST";
     public static final String TSHA  = "TSHA";
     public static final String COOD  = "COOD";
+    public static final String DISC = "DISC";
+    public static final String FWBF = "FWBF";
+    public static final String MFST = "MFST";
+    public static final String EMTC = "EMTC";
+    public static final String ONBF = "ONBF";
     public static final String COCR  = "COCR";
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
@@ -74,6 +111,8 @@ public class EventConstants {
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";
     public static final String DORC  = "DORC";
+    public static final String FCAD = "FCAD";
+    public static final String GATP = "GATP";
     public static final String PUED = "PUED";
     public static final String TRED = "TRED";
     public static final String BKAC = "BKAC";
@@ -97,6 +136,7 @@ public class EventConstants {
     public static final String TRCF = "TRCF";
     public static final String TNFD = "TNFD";
     public static final String TRCS = "TRCS";
+    public static final String UNAT = "UNAT";
     public static final List<String> AIR_TRACKING_CODE_LIST = List.of(FLAR, FLDR, TRCF, TNFD, TRCS);
     public static final String VESSEL_DEPARTURE = "Vessel Departure";
     public static final String VESSEL_DEPARTURE_FROM_POL = "Vessel Departure from POL";
@@ -106,6 +146,15 @@ public class EventConstants {
     public static final String VESSEL_ARRIVAL_AT_TS_PORT = "Vessel Arrival at T/S Port";
     public static final String VESSEL_ARRIVAL_AT_POD = "Vessel Arrival at POD";
     public static final String GATE_IN_WITH_CONTAINER_EMPTY = "gateInWithContainerEmpty";
+    public static final String GATE_OUT_WITH_CONTAINER_EMPTY = "gateOutWithContainerEmpty";
+    public static final String GATE_APPOINTMENT_TIME_DROP_OFF = "gateAppointmentTimeDropOff";
+    public static final String LOAD_ON_RAIL = "LoadOnRail";
+    public static final String RAIL_DEPARTURE_WITH_CONTAINER = "railDepartureWithContainer";
+    public static final String RAIL_ARRIVAL_WITH_CONTAINER = "railArrivalWithcontainer";
+    public static final String DISCHARGE_FROM_RAIL = "dischargeFromRail";
+    public static final String STUFFING = "stuffing";
+    public static final String LOAD_ON_TRUCK_CONTAINER_FULL = "loadOnTruckContainerFull";
+    public static final String DISCHARGE_FROM_TRUCK_CONTAINER_FULL = "dischargeFromTruckContainerFull";
     public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
     public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
     public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
@@ -121,6 +170,7 @@ public class EventConstants {
     public static final String DRIVER_APP = "DRIVER_APP";
 
     public static final String DESTINATION = "destination";
+    public static final String OCEAN = "ocean";
     public static final String ORIGIN = "origin";
 
     public static final String SYSTEM_GENERATED = "System Generated";
