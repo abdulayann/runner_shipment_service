@@ -2480,8 +2480,6 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
-// ==================== CONSOLIDATION VALIDATION TEST CASES ====================
-
     @Test
     void testSendConsolidationValidation_AirMode_Success() {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -2547,6 +2545,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Flight Number"));
     }
@@ -2582,6 +2581,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Eta"));
     }
@@ -2617,6 +2617,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Etd"));
     }
@@ -2659,6 +2660,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getConsoleErrorMessage().contains("HAWB number"));
         assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
@@ -2751,6 +2753,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getConsoleErrorMessage().contains("HBL number"));
         assertTrue(validationResponse.getMissingKeys().contains("HBL"));
@@ -2794,6 +2797,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Vessel"));
     }
@@ -2836,6 +2840,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Voyage"));
     }
@@ -2878,6 +2883,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Shipping line"));
     }
@@ -2919,6 +2925,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Origin agent"));
     }
@@ -2960,6 +2967,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Destination agent"));
     }
@@ -2995,6 +3003,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getConsoleErrorMessage().contains("Already transferred CTS file"));
     }
@@ -3091,8 +3100,6 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         assertTrue(response.getConsoleErrorMessage().contains("to re-trigger the transfer"));
     }
 
-    // ==================== SHIPMENT VALIDATION TEST CASES ====================
-
     @Test
     void testSendShipmentValidation_AirMode_DRT_Success() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
@@ -3159,6 +3166,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
     }
@@ -3195,6 +3203,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
     }
@@ -3231,6 +3240,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("MAWB Number"));
     }
@@ -3266,6 +3276,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("House Bill"));
     }
@@ -3304,6 +3315,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getShipmentErrorMessage().contains("Already transferred CTS file"));
     }
@@ -3340,6 +3352,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Eta"));
     }
@@ -3376,6 +3389,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Etd"));
     }
@@ -3553,6 +3567,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
         assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
         assertTrue(validationResponse.getMissingKeys().contains("Eta"));
