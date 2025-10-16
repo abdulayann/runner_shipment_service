@@ -1003,7 +1003,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         for (HaulagePoint haulagePoint : haulagePoints) {
             HaulageParty haulageParty = haulagePoint.getHaulageParty();
             HaulagePartyDto haulagePartyDto = new HaulagePartyDto();
-            if (CarrierBookingConstants.FULL_DROP_OFF.equalsIgnoreCase(haulageParty.getPartyName())) {
+            if (CarrierBookingConstants.FULL_DROP_OFF.equalsIgnoreCase(haulageParty.getPartyRole())) {
                 haulagePartyDto.setHaulageParty(haulageParty);
                 List<HaulageDate> haulageDates = haulagePoint.getDates();
                 Optional<HaulageDate> closingDate = haulageDates.stream()
@@ -1011,7 +1011,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                         .findFirst();
                 closingDate.ifPresent(haulageDate -> haulagePartyDto.setContainerCutOff(commonUtils.convertToLocalDateTimeFromInttra(haulageDate.getDateValue(), haulageDate.getDateFormat())));
                 loadedContainerDropOff.put(CarrierBookingConstants.HAULAGE_PARTY, haulagePartyDto);
-            } else if (CarrierBookingConstants.EMPTY_PICK_UP.equalsIgnoreCase(haulageParty.getPartyName())) {
+            } else if (CarrierBookingConstants.EMPTY_PICK_UP.equalsIgnoreCase(haulageParty.getPartyRole())) {
                 haulagePartyDto.setHaulageParty(haulageParty);
                 List<HaulageDate> haulageDates = haulagePoint.getDates();
                 Optional<HaulageDate> emptyPickupDate = haulageDates.stream()
