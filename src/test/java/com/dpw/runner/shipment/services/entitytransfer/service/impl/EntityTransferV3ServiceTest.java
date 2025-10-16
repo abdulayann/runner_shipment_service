@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -24,6 +25,8 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Conso
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -42,6 +45,7 @@ import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.aspectj.weaver.loadtime.Agent;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +69,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -173,7 +178,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     private static ObjectMapper objectMapperTest;
 
     @BeforeAll
-    static void init(){
+    static void init() {
         try {
             jsonTestUtility = new JsonTestUtility();
             objectMapperTest = JsonTestUtility.getMapper();
@@ -203,7 +208,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
 
         assertThrows(ValidationException.class, () ->
-            entityTransferService.sendShipment(commonRequestModel));
+                entityTransferService.sendShipment(commonRequestModel));
 
     }
 
@@ -228,7 +233,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         int mockTenantId = 10;
 
         SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
-        sendShipmentRequest.setSendToBranch(List.of(1,2,3));
+        sendShipmentRequest.setSendToBranch(List.of(1, 2, 3));
         sendShipmentRequest.setShipId(shipmentId);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
 
@@ -330,7 +335,6 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
 
-
     @Test
     void testSendConsolidationFailureInCaseOfEmptySendToOrg() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
@@ -345,7 +349,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendConsolidationRequest);
 
-        assertThrows(ValidationException.class, ()-> entityTransferService.sendConsolidation(commonRequestModel));
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidation(commonRequestModel));
     }
 
     @Test
@@ -363,7 +367,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendConsolidationRequest);
         when(consolidationDetailsDao.findById(consolidationDetails.getId())).thenReturn(Optional.empty());
 
-        assertThrows(DataRetrievalFailureException.class, ()-> entityTransferService.sendConsolidation(commonRequestModel));
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.sendConsolidation(commonRequestModel));
     }
 
     @Test
@@ -499,7 +503,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
     @Test
-    // change IMP -> EXP || EXP -> IMP if receiving branch == send to branch
+        // change IMP -> EXP || EXP -> IMP if receiving branch == send to branch
     void testConsolidationSuccessReverseDirectionInResponsePayload() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
@@ -559,7 +563,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
     }
 
-//    @Test
+    //    @Test
     void testSendConsolidation_Failure1() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
@@ -581,10 +585,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1Service.tenantByGuid(any())).thenReturn(TenantIdResponse.builder().id(69).build());
         when(v1Service.sendV1ConsolidationTask(any())).thenThrow(new RuntimeException());
 
-        assertThrows(RuntimeException.class, ()-> entityTransferService.sendConsolidation(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> entityTransferService.sendConsolidation(commonRequestModel));
     }
 
-//    @Test
+    //    @Test
     void testSendConsolidation_Failure2() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
@@ -609,7 +613,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1Service.tenantByGuid(any())).thenReturn(TenantIdResponse.builder().id(69).build());
         when(v1Service.sendV1ConsolidationTask(any())).thenReturn(v1ConsoleTaskResponse);
 
-        assertThrows(RuntimeException.class, ()-> entityTransferService.sendConsolidation(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> entityTransferService.sendConsolidation(commonRequestModel));
     }
 
     @Test
@@ -731,7 +735,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDtoList.add(usersDto1);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder().taskId(1L).operation(TaskStatus.REJECTED.getDescription()).rejectRemarks("test rejected").build();
-        assertDoesNotThrow(()->entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest)));
+        assertDoesNotThrow(() -> entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest)));
     }
 
     @Test
@@ -743,7 +747,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder().taskId(1L).operation(TaskStatus.APPROVED.getDescription()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(importShipmentRequest).build();
-        ValidationException ex = assertThrows(ValidationException.class, ()-> entityTransferService.importShipment(commonRequestModel));
+        ValidationException ex = assertThrows(ValidationException.class, () -> entityTransferService.importShipment(commonRequestModel));
         assertEquals("No Shipment payload present please check", ex.getMessage());
     }
 
@@ -884,7 +888,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDtoList.add(usersDto1);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         ImportV3ConsolidationRequest importConsolidationRequest = ImportV3ConsolidationRequest.builder().taskId(1L).operation(TaskStatus.REJECTED.getDescription()).rejectRemarks("test rejected").build();
-        var response =  entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
+        var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -897,7 +901,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         ImportV3ConsolidationRequest importConsolidationRequest = ImportV3ConsolidationRequest.builder().taskId(1L).operation(TaskStatus.APPROVED.getDescription()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(importConsolidationRequest).build();
-        ValidationException ex = assertThrows(ValidationException.class, ()-> entityTransferService.importConsolidation(commonRequestModel));
+        ValidationException ex = assertThrows(ValidationException.class, () -> entityTransferService.importConsolidation(commonRequestModel));
         assertEquals("No consolidation payload present please check", ex.getMessage());
     }
 
@@ -1222,7 +1226,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulation_ErrorLog(){
+    void testImportConsolidation_UpdateTriangulation_ErrorLog() {
         UserContext.getUser().setTenantId(728);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -1321,7 +1325,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendConsolidationEmailNotification_Success() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1339,16 +1343,17 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
     }
+
     @Test
     void testSendConsolidationEmailNotification_Success1() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
 
@@ -1373,7 +1378,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendConsolidationEmailNotification_Success2() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1399,7 +1404,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getConsignee()).thenReturn(parties);
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
@@ -1407,11 +1412,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
 
-
     @Test
     void testSendConsolidationEmailNotification_Success3() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1437,7 +1441,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getConsignee()).thenReturn(parties);
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
@@ -1447,7 +1451,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendConsolidationEmailNotification_Success4() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1470,7 +1474,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getConsignee()).thenReturn(parties);
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
@@ -1509,7 +1513,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getConsignee()).thenReturn(parties);
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
@@ -1519,7 +1523,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendConsolidationEmailNotification_Success6() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1549,7 +1553,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getReceivingBranch()).thenReturn(null);
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
-        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        shipmentGuidSendToBranch.put("1", List.of(1, 2, 3));
         entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
@@ -1558,7 +1562,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
     @Test
     void testSendShipmentEmailNotification_Success() {
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1583,7 +1587,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendShipment2EmailNotification_Success() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1605,7 +1609,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendShipment3EmailNotification_Success() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1632,7 +1636,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendShipment4EmailNotification_Success() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1659,7 +1663,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     @Test
     void testSendShipment5EmailNotification_Success() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        List<Integer> destinationBranches = List.of(1,2,3);
+        List<Integer> destinationBranches = List.of(1, 2, 3);
 
         when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
@@ -1687,7 +1691,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         int mockTenantId = 10;
 
         SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
-        sendShipmentRequest.setSendToBranch(List.of(1,2,3));
+        sendShipmentRequest.setSendToBranch(List.of(1, 2, 3));
         sendShipmentRequest.setShipId(shipmentId);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
 
@@ -1744,7 +1748,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         int mockTenantId = 10;
 
         SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
-        sendShipmentRequest.setSendToBranch(List.of(1,2,3));
+        sendShipmentRequest.setSendToBranch(List.of(1, 2, 3));
         sendShipmentRequest.setShipId(shipmentId);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
 
@@ -1769,7 +1773,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
 
         lenient().when(networkTransferDao.findByEntityAndTenantList(155357L, SHIPMENT,
-            sendShipmentRequest.getSendToBranch())).thenReturn(List.of(mockNetworkTransfer));
+                sendShipmentRequest.getSendToBranch())).thenReturn(List.of(mockNetworkTransfer));
 
         ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
         shipmentSettingsDetails1.setTenantId(10);
@@ -1790,7 +1794,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
 
         List<Integer> response = entityTransferService.sendShipment(
-            commonRequestModel);
+                commonRequestModel);
         assertNotNull(response);
     }
 
@@ -1810,7 +1814,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
-            Map.entry(mockTenantId, mockV1TenantResponse)
+                Map.entry(mockTenantId, mockV1TenantResponse)
         );
 
         NetworkTransfer mockNetworkTransfer = jsonTestUtility.getNetworkTransfer();
@@ -1824,7 +1828,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentService.fetchAllMasterDataByKey(any(), any())).thenReturn(new HashMap<String, Object>());
 
         when(networkTransferDao.findByTenantAndEntity(anyInt(), anyLong(), anyString()))
-            .thenReturn(Optional.of(mockNetworkTransfer));
+                .thenReturn(Optional.of(mockNetworkTransfer));
 
         ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
         shipmentSettingsDetails1.setTenantId(10);
@@ -2139,16 +2143,16 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
         shipAdditionalDocs.put(
-            consolidationDetails1.getShipmentsList().iterator().next().getGuid().toString(),
-            List.of(UUID.randomUUID().toString())
+                consolidationDetails1.getShipmentsList().iterator().next().getGuid().toString(),
+                List.of(UUID.randomUUID().toString())
         );
         SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
-            .sendToBranch(List.of(66, 11))
-            .consolId(consolidationDetails1.getId())
-            .sendToOrg(List.of(organizations.getWhitelistedTenantGUID()))
-            .additionalDocs(List.of(UUID.randomUUID().toString()))
-            .shipAdditionalDocs(shipAdditionalDocs)
-            .build();
+                .sendToBranch(List.of(66, 11))
+                .consolId(consolidationDetails1.getId())
+                .sendToOrg(List.of(organizations.getWhitelistedTenantGUID()))
+                .additionalDocs(List.of(UUID.randomUUID().toString()))
+                .shipAdditionalDocs(shipAdditionalDocs)
+                .build();
 
         EntityTransferV3ConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails1, EntityTransferV3ConsolidationDetails.class);
         ShipmentDetails mockLinkedShipment = new ShipmentDetails();
@@ -2156,7 +2160,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
-            Map.entry(mockTenantId, mockV1TenantResponse)
+                Map.entry(mockTenantId, mockV1TenantResponse)
         );
         NetworkTransfer mockNetworkTransfer = jsonTestUtility.getNetworkTransfer();
         mockNetworkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
@@ -2192,7 +2196,6 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         List<Integer> response = entityTransferService.sendConsolidation(commonRequestModel);
         assertNotNull(response);
     }
-    
 
 
     @Test
@@ -2405,7 +2408,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
-        assertDoesNotThrow(()-> entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest)));
+        assertDoesNotThrow(() -> entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest)));
     }
 
     @Test
@@ -2475,6 +2478,1085 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+// ==================== CONSOLIDATION VALIDATION TEST CASES ====================
+
+    @Test
+    void testSendConsolidationValidation_AirMode_Success() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingFlightNumber() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight Number"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingEta() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(null);
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingEtd() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(null);
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingHAWBInShipment() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setShipmentId("SH001");
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
+        shipment.setJobType(SHIPMENT_TYPE_BCN);
+        shipment.setHouseBill(null);
+        consolidationDetails.setShipmentsList(Set.of(shipment));
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("HAWB number"));
+        assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
+        assertFalse(validationResponse.getShipmentIds().isEmpty());
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_Success() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingHBLInShipment() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setShipmentId("SH001");
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
+        shipment.setJobType(SHIPMENT_TYPE_STD);
+        shipment.setHouseBill(null);
+        consolidationDetails.setShipmentsList(Set.of(shipment));
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("HBL number"));
+        assertTrue(validationResponse.getMissingKeys().contains("HBL"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingVessel() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel(null);
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Vessel"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingVoyage() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage(null);
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Voyage"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingShippingLine() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Shipping line"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingOriginAgent() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        consolidationDetails.setSendingAgent(null);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Origin agent"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingDestinationAgent() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        consolidationDetails.setReceivingAgent(null);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Destination agent"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AlreadyTransferredCTS() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_CTS);
+        consolidationDetails.setSourceGuid(UUID.randomUUID());
+        consolidationDetails.setGuid(UUID.randomUUID());
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_ConsolidationNotFound() {
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            entityTransferService.sendConsolidationValidation(
+                    CommonRequestModel.buildRequest(consolidationRequest)
+            );
+        });
+    }
+
+    @Test
+    void testSendConsolidationValidation_RailTransportMode_ThrowsException() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        assertThrows(ValidationException.class, () -> {
+            entityTransferService.sendConsolidationValidation(
+                    CommonRequestModel.buildRequest(consolidationRequest)
+            );
+        });
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_Success() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        var response = entityTransferService.automaticTransferConsoleValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertFalse(response.getIsError());
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WithErrors() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        var response = entityTransferService.automaticTransferConsoleValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getMissingKeys().contains("Flight Number"));
+        assertTrue(response.getConsoleErrorMessage().contains("to re-trigger the transfer"));
+    }
+
+    // ==================== SHIPMENT VALIDATION TEST CASES ====================
+
+    @Test
+    void testSendShipmentValidation_AirMode_DRT_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingFlightNumber() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingHAWB() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_BCN);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingMAWB() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill(null);
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("MAWB Number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_SeaMode_MissingHBL() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill("MBL123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("House Bill"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AlreadyTransferredCTS() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_CTS);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getShipmentErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MissingEta() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(null);
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MissingEtd() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(null);
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
+    }
+
+    @Test
+    void testSendShipmentValidation_ShipmentNotFound() {
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            entityTransferService.sendShipmentValidation(
+                    CommonRequestModel.buildRequest(shipmentRequest)
+            );
+        });
+    }
+
+    @Test
+    void testSendShipmentValidation_NetworkTransferDisabled_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_IMP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(false);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        var response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertFalse(response.getIsError());
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_WithErrors() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        var response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getMissingKeys().contains("Flight number"));
+        assertTrue(response.getShipmentErrorMessage().contains("to re-trigger the transfer"));
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_AlreadyTransferredCTS() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_CTS);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        var response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getShipmentErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MultipleErrors() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(null);
+        shipmentCarrier.setEtd(null);
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) response.getBody();
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
     }
 
 }
