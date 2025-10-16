@@ -83,6 +83,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 
+@SuppressWarnings({"java:S1854","java:S1481","java:S125"})
 @Slf4j
 @Service
 public class TrackingServiceAdapter implements ITrackingServiceAdapter {
@@ -921,7 +922,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    @SuppressWarnings("java:S125")
 //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
 //        // Toggle this flag to switch between remote call and reading from file
