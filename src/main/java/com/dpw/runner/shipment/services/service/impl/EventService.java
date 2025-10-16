@@ -81,11 +81,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -129,6 +131,21 @@ public class EventService implements IEventService {
     private CommonUtils commonUtils;
     private ICarrierDetailsDao carrierDetailsDao;
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    private static final Set<String> SUPPORTED_TRACKING_EVENT_CODES = Stream.of(
+            EventConstants.ARDP, EventConstants.ARDT, EventConstants.BAAR, EventConstants.BADE,
+            EventConstants.BOCO, EventConstants.CACO, EventConstants.CAFS, EventConstants.COOD,
+            EventConstants.COSC, EventConstants.DCVS, EventConstants.DISC, EventConstants.DORC,
+            EventConstants.ECCC, EventConstants.ECPK, EventConstants.EFFT, EventConstants.EFLT,
+            EventConstants.EMCR, EventConstants.EMTC, EventConstants.FCAD, EventConstants.FCGI,
+            EventConstants.FLAR, EventConstants.FLDR, EventConstants.FUGO, EventConstants.FWBF,
+            EventConstants.GATO, EventConstants.GATP, EventConstants.INTR, EventConstants.LDVS,
+            EventConstants.LOBA, EventConstants.LORA, EventConstants.MFST, EventConstants.NTDA,
+            EventConstants.ONBF, EventConstants.PRDE, EventConstants.RAAR, EventConstants.RADE,
+            EventConstants.STCD, EventConstants.TNFD, EventConstants.TRCF, EventConstants.TRCS,
+            EventConstants.UNAT, EventConstants.UNBA, EventConstants.UNFR, EventConstants.VBFL,
+            EventConstants.VGMA, EventConstants.VSDP, EventConstants.VSDT
+    ).map(String::toLowerCase).collect(Collectors.toUnmodifiableSet());
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -726,78 +743,21 @@ public class EventService implements IEventService {
     }
 
     /**
-     * Determines whether an event should be processed based on its code and shipment details.
-     * <p>
-     * This method evaluates if an event qualifies for processing based on its code and the type or transport mode of the shipment. It follows predefined criteria for various event
-     * codes.
+     * Determines whether a given tracking event should be processed based on its event code.
      *
-     * @param event           the event to be evaluated
-     * @param messageId
-     * @return true if the event should be processed, false otherwise
+     * @param event     the event to be evaluated; may be null
+     * @param messageId the ID of the message associated with the event, used for logging
+     * @return {@code true} if the event should be processed, {@code false} otherwise
      */
     private boolean shouldProcessEvent(Events event, String messageId) {
-        if (event == null) {
-            return false;
-        }
+        if (event == null) return false;
 
-        String eventCode = safeString(event.getEventCode());
-        // Log the input values for debugging
+        String eventCode = safeString(event.getEventCode()).toLowerCase();
         log.info("Evaluating event with code: {} messageId {}", eventCode, messageId);
 
-        if (EventConstants.CACO.contains(eventCode)
-                || EventConstants.FCGI.contains(eventCode)
-                || EventConstants.EMCR.contains(eventCode)
-                || EventConstants.ARDP.contains(eventCode)
-                || EventConstants.BOCO.contains(eventCode)
-                || EventConstants.ECCC.contains(eventCode)
-                || EventConstants.FUGO.contains(eventCode)
-                || EventConstants.COOD.contains(eventCode)
-                || EventConstants.DISC.contains(eventCode)
-                || EventConstants.ECPK.contains(eventCode)
-                || EventConstants.INTR.contains(eventCode)
-                || EventConstants.FLAR.contains(eventCode)
-                || EventConstants.FLDR.contains(eventCode)
-                || EventConstants.VSDP.contains(eventCode)
-                || EventConstants.CAFS.contains(eventCode)
-                || EventConstants.FWBF.contains(eventCode)
-                || EventConstants.MFST.contains(eventCode)
-                || EventConstants.EMTC.contains(eventCode)
-                || EventConstants.ONBF.contains(eventCode)
-                || EventConstants.TRCF.contains(eventCode)
-                || EventConstants.TRCS.contains(eventCode)
-                || EventConstants.TNFD.contains(eventCode)
-                || EventConstants.UNAT.contains(eventCode)
-                || EventConstants.PRDE.contains(eventCode)
-                || EventConstants.RAAR.contains(eventCode)
-                || EventConstants.UNFR.contains(eventCode)
-                || EventConstants.LOBA.contains(eventCode)
-                || EventConstants.ARDT.contains(eventCode)
-                || EventConstants.DCVS.contains(eventCode)
-                || EventConstants.NTDA.contains(eventCode)
-                || EventConstants.STCD.contains(eventCode)
-                || EventConstants.DORC.contains(eventCode)
-                || EventConstants.FCAD.contains(eventCode)
-                || EventConstants.GATP.contains(eventCode)
-                || EventConstants.VSDT.contains(eventCode)
-                || EventConstants.VGMA.contains(eventCode)
-                || EventConstants.VBFL.contains(eventCode)
-                || EventConstants.LDVS.contains(eventCode)
-                || EventConstants.UNBA.contains(eventCode)
-                || EventConstants.BAAR.contains(eventCode)
-                || EventConstants.BADE.contains(eventCode)
-                || EventConstants.LORA.contains(eventCode)
-                || EventConstants.RADE.contains(eventCode)
-                || EventConstants.COSC.contains(eventCode)
-                || EventConstants.GATO.contains(eventCode)
-                || EventConstants.EFFT.contains(eventCode)
-                || EventConstants.EFLT.contains(eventCode)) {
-
-            log.info("Event code {} matches messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
-        return false;
+        boolean isSupported = SUPPORTED_TRACKING_EVENT_CODES.contains(eventCode);
+        log.info("Event code {} {} match criteria. messageId {}", eventCode, isSupported ? "matches" : "does not match", messageId);
+        return isSupported;
     }
 
     private String safeString(String value) {
