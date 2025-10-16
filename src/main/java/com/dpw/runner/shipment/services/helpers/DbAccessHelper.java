@@ -352,15 +352,50 @@ public class DbAccessHelper {
                 else
                     throw new GenericException("Criteria not supported yet");
             case "ISNULL":
-                if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
-                    return criteriaBuilder.isEmpty(path.get(fieldName));
-                return criteriaBuilder.isNull(path.get(fieldName));
+                return processIsNullCriteria(dataType, path, criteriaBuilder, fieldName);
             case "ISNOTNULL":
-                if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
-                    return criteriaBuilder.isNotEmpty(path.get(fieldName));
-                return criteriaBuilder.isNotNull(path.get(fieldName));
+                return processIsNotNullCriteria(dataType, path, criteriaBuilder, fieldName);
+            case "ISEMPTY":
+                return processIsEmptyCriteria(dataType, path, criteriaBuilder, fieldName);
+            case "ISNOTEMPTY":
+                return processIsNotEmptyCriteria(dataType, path, criteriaBuilder, fieldName);
             default:
                 throw new GenericException("Operation not supported yet");
+        }
+    }
+
+    private static<T> Predicate processIsNullCriteria(Class<T> dataType, Path<T> path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
+            return criteriaBuilder.isEmpty(path.get(fieldName));
+        return criteriaBuilder.isNull(path.get(fieldName));
+    }
+
+    private static<T> Predicate processIsNotNullCriteria(Class<T> dataType, Path<T> path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class)) {
+            return criteriaBuilder.isNotEmpty(path.get(fieldName));
+        }
+        return criteriaBuilder.isNotNull(path.get(fieldName));
+    }
+
+    private static<T> Predicate processIsEmptyCriteria(Class<T> dataType, Path<T> path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.or(
+                    criteriaBuilder.isNull(path.get(fieldName)),
+                    criteriaBuilder.equal(criteriaBuilder.trim(path.get(fieldName)), "")
+            );
+        } else {
+            return processIsNullCriteria(dataType, path, criteriaBuilder, fieldName);
+        }
+    }
+
+    private static<T> Predicate processIsNotEmptyCriteria(Class<T> dataType, Path<T> path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.and(
+                    criteriaBuilder.isNotNull(path.get(fieldName)),
+                    criteriaBuilder.notEqual(criteriaBuilder.trim(path.get(fieldName)), "")
+            );
+        } else {
+            return processIsNotNullCriteria(dataType, path, criteriaBuilder, fieldName);
         }
     }
 
