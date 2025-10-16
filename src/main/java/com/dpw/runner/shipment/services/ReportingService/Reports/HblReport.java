@@ -677,6 +677,9 @@ public class HblReport extends IReport {
     }
 
     private String getPackDescription(String packType, Map<String, MasterData> packTypeMap){
+        if(Objects.equals(packType, PackingConstants.PKG)){
+            return ReportConstants.PACKAGE_STRING;
+        }
         if(packTypeMap.containsKey(packType))
             return StringUtility.toUpperCase(packTypeMap.get(packType).getItemDescription()) + "(S)";
         else
