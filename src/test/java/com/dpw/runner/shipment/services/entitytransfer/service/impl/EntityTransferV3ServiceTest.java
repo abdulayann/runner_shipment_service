@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -24,6 +25,8 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Conso
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -65,6 +68,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
 import static org.junit.jupiter.api.Assertions.*;
@@ -2475,6 +2479,1084 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingFlightNumber() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight Number"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingEta() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(null);
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingEtd() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(null);
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AirMode_MissingHAWBInShipment() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setShipmentId("SH001");
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
+        shipment.setJobType(SHIPMENT_TYPE_BCN);
+        shipment.setHouseBill(null);
+        consolidationDetails.setShipmentsList(Set.of(shipment));
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("HAWB number"));
+        assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
+        assertFalse(validationResponse.getShipmentIds().isEmpty());
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_Success() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingHBLInShipment() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setShipmentId("SH001");
+        shipment.setTransportMode(TRANSPORT_MODE_SEA);
+        shipment.setJobType(SHIPMENT_TYPE_STD);
+        shipment.setHouseBill(null);
+        consolidationDetails.setShipmentsList(Set.of(shipment));
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("HBL number"));
+        assertTrue(validationResponse.getMissingKeys().contains("HBL"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingVessel() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel(null);
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Vessel"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingVoyage() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage(null);
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Voyage"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingShippingLine() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Shipping line"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingOriginAgent() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        consolidationDetails.setSendingAgent(null);
+
+        Parties receivingAgent = Parties.builder().orgCode("ORG002").build();
+        consolidationDetails.setReceivingAgent(receivingAgent);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Origin agent"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_SeaMode_MissingDestinationAgent() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setBol("MBL123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setVessel("VESSEL1");
+        consolidationCarrier.setVoyage("V001");
+        consolidationCarrier.setShippingLine("MAERSK");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        Parties sendingAgent = Parties.builder().orgCode("ORG001").build();
+        consolidationDetails.setSendingAgent(sendingAgent);
+
+        consolidationDetails.setReceivingAgent(null);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Destination agent"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_AlreadyTransferredCTS() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_CTS);
+        consolidationDetails.setSourceGuid(UUID.randomUUID());
+        consolidationDetails.setGuid(UUID.randomUUID());
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendConsolidationValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getConsoleErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendConsolidationValidation_ConsolidationNotFound() {
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            entityTransferService.sendConsolidationValidation(
+                    CommonRequestModel.buildRequest(consolidationRequest)
+            );
+        });
+    }
+
+    @Test
+    void testSendConsolidationValidation_RailTransportMode_ThrowsException() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        assertThrows(ValidationException.class, () -> {
+            entityTransferService.sendConsolidationValidation(
+                    CommonRequestModel.buildRequest(consolidationRequest)
+            );
+        });
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_Success() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber("FL123");
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        SendConsoleValidationResponse response = entityTransferService.automaticTransferConsoleValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertFalse(response.getIsError());
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WithErrors() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(DIRECTION_EXP);
+        consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
+        consolidationDetails.setBol("MAWB123");
+        consolidationDetails.setShipmentsList(new HashSet<>());
+
+        CarrierDetails consolidationCarrier = new CarrierDetails();
+        consolidationCarrier.setFlightNumber(null);
+        consolidationCarrier.setEta(LocalDateTime.now().plusDays(1));
+        consolidationCarrier.setEtd(LocalDateTime.now());
+        consolidationDetails.setCarrierDetails(consolidationCarrier);
+
+        ValidateSendConsolidationRequest consolidationRequest = new ValidateSendConsolidationRequest();
+        consolidationRequest.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+
+        SendConsoleValidationResponse response = entityTransferService.automaticTransferConsoleValidation(
+                CommonRequestModel.buildRequest(consolidationRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getMissingKeys().contains("Flight Number"));
+        assertTrue(response.getConsoleErrorMessage().contains("to retrigger the transfer"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_DRT_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingFlightNumber() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingHAWB() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_BCN);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("HAWB Number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AirMode_MissingMAWB() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill(null);
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("MAWB Number"));
+    }
+
+    @Test
+    void testSendShipmentValidation_SeaMode_MissingHBL() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill("MBL123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("House Bill"));
+    }
+
+    @Test
+    void testSendShipmentValidation_AlreadyTransferredCTS() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_CTS);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getShipmentErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MissingEta() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(null);
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MissingEtd() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(null);
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
+    }
+
+    @Test
+    void testSendShipmentValidation_ShipmentNotFound() {
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            entityTransferService.sendShipmentValidation(
+                    CommonRequestModel.buildRequest(shipmentRequest)
+            );
+        });
+    }
+
+    @Test
+    void testSendShipmentValidation_NetworkTransferDisabled_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_IMP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(false);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_Success() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        SendShipmentValidationResponse response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertFalse(response.getIsError());
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_WithErrors() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill("HAWB123");
+        shipmentDetails.setMasterBill("MAWB123");
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        SendShipmentValidationResponse response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getMissingKeys().contains("Flight number"));
+        assertTrue(response.getShipmentErrorMessage().contains("to retrigger the transfer"));
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_AlreadyTransferredCTS() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_CTS);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber("FL456");
+        shipmentCarrier.setEta(LocalDateTime.now().plusDays(1));
+        shipmentCarrier.setEtd(LocalDateTime.now());
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        SendShipmentValidationResponse response = entityTransferService.automaticTransferShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertTrue(response.getIsError());
+        assertTrue(response.getShipmentErrorMessage().contains("Already transferred CTS file"));
+    }
+
+    @Test
+    void testSendShipmentValidation_MultipleErrors() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SH001");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+
+        CarrierDetails shipmentCarrier = new CarrierDetails();
+        shipmentCarrier.setFlightNumber(null);
+        shipmentCarrier.setEta(null);
+        shipmentCarrier.setEtd(null);
+        shipmentDetails.setCarrierDetails(shipmentCarrier);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+        ValidateSendShipmentRequest shipmentRequest = new ValidateSendShipmentRequest();
+        shipmentRequest.setShipId(1L);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        var response = entityTransferService.sendShipmentValidation(
+                CommonRequestModel.buildRequest(shipmentRequest)
+        );
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        SendShipmentValidationResponse validationResponse = (SendShipmentValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendShipmentValidationResponse.class);
+        assertNotNull(validationResponse);
+        assertTrue(validationResponse.getIsError());
+        assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
+        assertTrue(validationResponse.getMissingKeys().contains("Eta"));
+        assertTrue(validationResponse.getMissingKeys().contains("Etd"));
     }
 
 }

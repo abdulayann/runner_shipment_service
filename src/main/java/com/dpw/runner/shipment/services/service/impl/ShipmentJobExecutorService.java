@@ -127,14 +127,28 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     .build();
             ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
             try {
-                var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
-                log.info("Completed Shipment Validation check.");
-                if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
-                    sendShipment(quartzJobInfo, sendShipmentRequest, shipment.get());
+                ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+
+                if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                    var validationResponse = entityTransferV3Service.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
+                    log.info("V3 Shipment Validation check completed.");
+                    if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
+                        sendShipment(quartzJobInfo, sendShipmentRequest, shipment.get());
+                    } else {
+                        quartzJobInfo.setJobStatus(JobState.ERROR);
+                        quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
+                        commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
+                    }
                 } else {
-                    quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
-                    commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
+                    var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
+                    log.info("V2 Shipment Validation check completed.");
+                    if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
+                        sendShipment(quartzJobInfo, sendShipmentRequest, shipment.get());
+                    } else {
+                        quartzJobInfo.setJobStatus(JobState.ERROR);
+                        quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
+                        commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
+                    }
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
             } catch (ValidationException | RunnerException ex) {
@@ -230,15 +244,30 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(quartzJobInfo.getEntityId()).build();
             try {
                 List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
-                var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
-                log.info("Completed Console Validation check.");
-                if(!Boolean.TRUE.equals(response.getIsError())) {
-                    sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation.get(), shipmentIds);
-                }
-                else{
-                    quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
-                    commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
+                ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+
+                if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                    var response = entityTransferV3Service.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
+                    log.info("V3 Console Validation check completed.");
+                    if(!Boolean.TRUE.equals(response.getIsError())) {
+                        sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation.get(), shipmentIds);
+                    }
+                    else{
+                        quartzJobInfo.setJobStatus(JobState.ERROR);
+                        quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
+                        commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
+                    }
+                } else {
+                    var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
+                    log.info("V2 Console Validation check completed.");
+                    if(!Boolean.TRUE.equals(response.getIsError())) {
+                        sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation.get(), shipmentIds);
+                    }
+                    else{
+                        quartzJobInfo.setJobStatus(JobState.ERROR);
+                        quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
+                        commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
+                    }
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
             } catch (ValidationException | RunnerException ex) {
