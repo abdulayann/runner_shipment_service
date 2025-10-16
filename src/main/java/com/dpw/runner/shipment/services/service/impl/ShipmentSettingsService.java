@@ -473,6 +473,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     private void setExistingFieldNotInV1(ShipmentSettingRequest request, ShipmentSettingsDetails oldEntity){
+        if(request.getEnableConsolidationStatus() == null) {
+            request.setEnableConsolidationStatus(oldEntity.getEnableConsolidationStatus());
+        }
         if(request.getIsExternalFileTransferEnabled() == null) {
             request.setIsExternalFileTransferEnabled(oldEntity.getIsExternalFileTransferEnabled());
         }

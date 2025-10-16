@@ -193,4 +193,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isExternalFileTransferEnabled;
     private Boolean enableDomesticMawbMblValidations;
     private Boolean allowUnassignedBlInvGeneration;
+    private Boolean enableConsolidationStatus;
 }

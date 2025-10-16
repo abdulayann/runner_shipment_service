@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
@@ -552,6 +553,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "si_status")
     @Enumerated(EnumType.STRING)
     private ShippingInstructionStatus siStatus;
+
+    @Column(name = "consolidation_status")
+    @Enumerated(EnumType.STRING)
+    private ShipmentStatus consolidationStatus;
 
     @Override
     public boolean equals(Object o) {

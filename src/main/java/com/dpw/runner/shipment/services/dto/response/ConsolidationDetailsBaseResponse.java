@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
@@ -124,5 +125,6 @@ public class ConsolidationDetailsBaseResponse implements IRunnerResponse {
     private Boolean triggerMigrationWarning;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private MigrationStatus migrationStatus;
+    private ShipmentStatus consolidationStatus;
 
 }

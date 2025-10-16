@@ -623,4 +623,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_restore_running")
     private Boolean isRestoreRunning;
 
+    @Column(name = "enable_consolidation_status")
+    private Boolean enableConsolidationStatus;
+
 }
