@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -62,6 +64,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -133,6 +136,9 @@ public class HblService implements IHblService {
 
     @Autowired
     private IHblSync hblSync;
+
+    @Autowired
+    private ShipmentsV3Util shipmentsV3Util;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -223,7 +229,7 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) throws RunnerException {
         var shipmentId = shipment.getId();
         boolean allContainerAssigned = getAllContainerAssigned(containersList);
         Hbl hbl = null;
@@ -258,7 +264,7 @@ public class HblService implements IHblService {
         return allContainerAssigned;
     }
 
-    private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) {
+    private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) throws RunnerException {
         boolean isContainerWithoutNumberOrNoContainer = false;
         if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
             for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
@@ -774,7 +780,7 @@ public class HblService implements IHblService {
         return components;
     }
 
-    private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) {
+    private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) throws RunnerException {
         if(shipment == null)
             return null;
         CompanySettingsResponse companySettingsResponse = v1Service.retrieveCompanySettings();
@@ -832,10 +838,119 @@ public class HblService implements IHblService {
         return volumeUnit;
     }
 
-    private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment) {
+    private void updatedContainersForLCLandLTL(Set<Containers> containers, ShipmentDetails shipmentDetails) throws RunnerException {
+        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
+            updateContainerFromShipmentCargo(containers, shipmentDetails);
+        } else {
+            updateContainersFromAssignedPackings(containers, shipmentDetails);
+        }
+    }
+
+    private void updateContainerFromShipmentCargo(Set<Containers> containers, ShipmentDetails shipmentDetails) {
+        Long containerId = shipmentDetails.getContainerAssignedToShipmentCargo();
+
+        containers.stream()
+                .filter(c -> Objects.equals(c.getId(), containerId))
+                .findFirst()
+                .ifPresent(container -> {
+                    container.setGrossWeight(shipmentDetails.getWeight());
+                    container.setGrossWeightUnit(shipmentDetails.getWeightUnit());
+
+                    container.setNetWeight(shipmentDetails.getWeight());
+                    container.setNetWeightUnit(shipmentDetails.getWeightUnit());
+
+                    container.setGrossVolume(shipmentDetails.getVolume());
+                    container.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
+
+                    if (shipmentDetails.getNoOfPacks() != null) {
+                        container.setPacks(String.valueOf(shipmentDetails.getNoOfPacks()));
+                    }
+                    container.setPacksType(shipmentDetails.getPacksUnit());
+                });
+    }
+
+    private void updateContainersFromAssignedPackings(Set<Containers> containers, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<Packing> packings = shipmentDetails.getPackingList();
+        if (packings == null || packings.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Containers> containerMap = containers.stream()
+                .collect(Collectors.toMap(Containers::getId, c -> c));
+
+        Map<Long, List<Packing>> packingsByContainer = packings.stream()
+                .filter(p -> p.getContainerId() != null)
+                .collect(Collectors.groupingBy(Packing::getContainerId));
+
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        String defaultWeightUnit = resolveDefaultUnit(shipmentSettingsDetails.getWeightChargeableUnit(), Constants.WEIGHT_UNIT_KG);
+        String defaultVolumeUnit = resolveDefaultUnit(shipmentSettingsDetails.getVolumeChargeableUnit(), Constants.VOLUME_UNIT_M3);
+
+        for (Map.Entry<Long, List<Packing>> entry : packingsByContainer.entrySet()) {
+            Long containerId = entry.getKey();
+            List<Packing> containerPackings = entry.getValue();
+            Containers container = containerMap.get(containerId);
+
+            if (container != null) {
+                updateContainerFromPackingList(container, containerPackings, defaultWeightUnit, defaultVolumeUnit);
+            }
+        }
+    }
+
+    private void updateContainerFromPackingList(Containers container, List<Packing> containerPackings, String defaultWeightUnit, String defaultVolumeUnit) throws RunnerException {
+        double totalWeight = 0;
+        double totalVolume = 0;
+        int totalPacks = 0;
+
+        String targetWeightUnit = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getWeightUnit).toList(), defaultWeightUnit);
+        String targetVolumeUnit = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getVolumeUnit).toList(), defaultVolumeUnit);
+        String packType = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getPacksType).toList(), PKG);
+
+        for (Packing packing : containerPackings) {
+            totalWeight += calculateWeight(packing, targetWeightUnit);
+            totalVolume += calculateVolume(packing, targetVolumeUnit);
+            totalPacks += parsePacks(packing);
+        }
+
+        container.setGrossWeight(BigDecimal.valueOf(totalWeight));
+        container.setGrossWeightUnit(targetWeightUnit);
+
+        container.setNetWeight(BigDecimal.valueOf(totalWeight));
+        container.setNetWeightUnit(targetWeightUnit);
+
+        container.setGrossVolume(BigDecimal.valueOf(totalVolume));
+        container.setGrossVolumeUnit(targetVolumeUnit);
+
+        container.setPacks(String.valueOf(totalPacks));
+        container.setPacksType(packType);
+    }
+
+    private String resolveDefaultUnit(String unitFromSettings, String fallback) {
+        return !isStringNullOrEmpty(unitFromSettings) ? unitFromSettings : fallback;
+    }
+
+    private double calculateWeight(Packing packing, String targetWeightUnit) throws RunnerException {
+        if (packing.getWeight() == null) return 0;
+        return convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), targetWeightUnit).doubleValue();
+    }
+
+    private double calculateVolume(Packing packing, String targetVolumeUnit) throws RunnerException {
+        if (packing.getVolume() == null) return 0;
+        return convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), targetVolumeUnit).doubleValue();
+    }
+
+    private int parsePacks(Packing packing) {
+        if (packing.getPacks() == null) return 0;
+        return Integer.parseInt(packing.getPacks());
+    }
+
+    private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment) throws RunnerException {
         var containers = shipment.getContainersList();
         if(Objects.equals(containers, null)) {
             containers = new HashSet<>();
+        }
+        if(List.of(TRANSPORT_MODE_SEA, TRANSPORT_MODE_RAI, TRANSPORT_MODE_ROA).contains(shipment.getTransportMode()) && List.of(SHIPMENT_TYPE_LCL, CARGO_TYPE_LTL).contains(shipment.getShipmentType())) {
+            updatedContainersForLCLandLTL(containers, shipment);
         }
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
