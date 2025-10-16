@@ -1297,30 +1297,34 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    @Transactional
     public ShipmentDetailsV3Response create(CommonRequestModel commonRequestModel) {
         ShipmentV3Request request = (ShipmentV3Request) commonRequestModel.getData();
         this.setColoadingStation(request);
-        return this.createShipment(request, false, false);
+        
+        // Phase 1: Fetch external data (NON-TRANSACTIONAL)
+        ShipmentPreparationData prepData = prepareShipmentCreation(request);
+        
+        // Phase 2: Database operations (TRANSACTIONAL)
+        return self.createShipmentWithPreparedData(request, prepData);
     }
-
-    private ShipmentDetailsV3Response createShipment(ShipmentV3Request request, boolean includeGuid, boolean isFromET) {
-        if (request == null) {
-            log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Request cannot be null");
-        }
-
+    
+    // Phase 1: Non-transactional preparation - Fetch NPM contract and other external data
+    private ShipmentPreparationData prepareShipmentCreation(ShipmentV3Request request) {
         ListContractResponse npmContractResponse = null;
         Boolean hasDestinationContract = null;
         EntityTransferAddress entityTransferAddress = null;
         ShipmentSettingsDetails shipmentSettingsDetails = null;
+        
         try {
             this.setColoadingStation(request);
             if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
                 request.setSlac(null);
             }
+            
             hasDestinationContract = request.getContractId() != null ||
                     (request.getDestinationContractId() != null && !request.getDestinationContractId().isEmpty());
+            
+            // External API call - BEFORE transaction
             if (request.getContractId() != null || request.getDestinationContractId() != null) {
                 npmContractResponse = getNpmContract(request);
             }
@@ -1332,8 +1336,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        return self.createShipment(request, false, false, npmContractResponse, hasDestinationContract,
-                entityTransferAddress, shipmentSettingsDetails);
+        
+        return ShipmentPreparationData.builder()
+                .npmContractResponse(npmContractResponse)
+                .hasDestinationContract(hasDestinationContract)
+                .entityTransferAddress(entityTransferAddress)
+                .shipmentSettingsDetails(shipmentSettingsDetails)
+                .build();
+    }
+    
+    // Phase 2: Transactional shipment creation with pre-fetched data
+    @Transactional
+    public ShipmentDetailsV3Response createShipmentWithPreparedData(ShipmentV3Request request, ShipmentPreparationData prepData) {
+        return self.createShipment(request, false, false, prepData.getNpmContractResponse(),
+                prepData.getHasDestinationContract(), prepData.getEntityTransferAddress(), 
+                prepData.getShipmentSettingsDetails());
     }
 
     private ListContractResponse getNpmContract(ShipmentV3Request request) throws RunnerException {
@@ -5586,5 +5603,20 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 yield notifyParty != null ? notifyParty.getOrgCode() : null;
             }
         };
+    }
+    
+    // ==================== DATA TRANSFER OBJECT FOR PHASE SEPARATION ====================
+    
+    /**
+     * Data holder for shipment preparation phase.
+     * Contains all externally-fetched data needed for transactional shipment creation.
+     */
+    @lombok.Builder
+    @lombok.Getter
+    private static class ShipmentPreparationData {
+        private final ListContractResponse npmContractResponse;
+        private final Boolean hasDestinationContract;
+        private final EntityTransferAddress entityTransferAddress;
+        private final ShipmentSettingsDetails shipmentSettingsDetails;
     }
 }
