@@ -82,9 +82,6 @@ import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DMAWB;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -375,7 +372,6 @@ class AwbServiceTest extends CommonMocks {
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
         mockTenantModel.setDefaultAddressId(2L);
-        mockTenantModel.setIATAAgent(true);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -416,8 +412,6 @@ class AwbServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails)));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
-
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -2691,7 +2685,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setShipmentId(shipmentId);
-        createAwbRequest.setAwbType(DMAWB);
+        createAwbRequest.setAwbType(Constants.DMAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
 
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_TRUE", MawbLockSettings.class);
@@ -2731,7 +2725,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setShipmentId(shipmentId);
-        createAwbRequest.setAwbType(DMAWB);
+        createAwbRequest.setAwbType(Constants.DMAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
 
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
@@ -4341,7 +4335,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {DMAWB, Constants.HAWB})
+    @ValueSource(strings = {Constants.DMAWB, Constants.HAWB})
     void testValidateAwbGivesErrorIfAirMessageNotResubmitted(String entityType) {
         Awb mockAwb = testHawb;
         mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
@@ -4349,7 +4343,7 @@ class AwbServiceTest extends CommonMocks {
         mockAwb.setAirMessageResubmitted(false);
 
         List<String> errors = new ArrayList();
-        errors.add(DMAWB.equalsIgnoreCase(entityType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
+        errors.add(Constants.DMAWB.equalsIgnoreCase(entityType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
 
         try{
             var res = awbService.validateAwb(mockAwb);
@@ -4691,475 +4685,5 @@ class AwbServiceTest extends CommonMocks {
                 alpha2DigitToCountry,
                 addressData
         );
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_notAMREnabled_DMAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(DMAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(false)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_notAMREnabled_MAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(MAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(false)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_notAMREnabled_HAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(HAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(false)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_notAMREnabled_typeSomethingElse_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType("random");
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(false)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-
-    @Test
-    void listShipmentAwb_notIATA_AMREnabled_DMAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(DMAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(true)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_AMREnabled_MAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(MAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(true)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
-    }
-
-    @Test
-    void listShipmentAwb_notIATA_AMREnabled_HAWB_throwError() {
-        List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
-        sph.add(AwbSpecialHandlingCodesMappingInfo.builder().shcId("testShcId").build());
-
-        Awb fakeHawb = jsonTestUtility.getTestHawb();
-        fakeHawb.getAwbShipmentInfo().setEntityType(HAWB);
-        fakeHawb.setAwbSpecialHandlingCodesMappings(sph);
-
-        Parties parties = Parties.builder().type("FAG").orgData(new HashMap<>()).orgId("1").addressId("4543").build();
-        List<Parties> shipmentAddresses = new ArrayList<>(List.of(parties));
-        testShipment.setShipmentAddresses(shipmentAddresses);
-
-        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id" , 1L, "=");
-        listCommonRequest.setFromGenerateAwbButton(true);
-        Page<Awb> resultPage = new PageImpl<>(List.of(fakeHawb));
-        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
-
-        mockShipmentSettings();
-        // Mock V1DataResponse
-        V1DataResponse mockResponse = new V1DataResponse();
-        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
-
-        // Mock location data list
-        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
-        loc1.setLocationsReferenceGUID("OriginGUID");
-        loc1.setName("Origin Airport");
-
-        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
-        loc2.setLocationsReferenceGUID("DestGUID");
-        loc2.setName("Destination Airport");
-
-        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
-
-
-        // Mock JSON conversion
-        TenantModel mockTenantModel = new TenantModel();
-        when(tenantResponse.getEntity()).thenReturn(entityMock);
-
-        testShipment.getConsigner().setAddressId("123");
-        testShipment.getConsignee().setAddressId("456");
-        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
-
-        AddressDataV1 consignerAddressData = new AddressDataV1();
-        consignerAddressData.setId(123L);
-        consignerAddressData.setTaxRegNumber("TAX123");
-
-        AddressDataV1 consigneeAddressData = new AddressDataV1();
-        consigneeAddressData.setId(456L);
-        consigneeAddressData.setTaxRegNumber("TAX456");
-
-        AddressDataV1 notifyAddressData = new AddressDataV1();
-        notifyAddressData.setId(789L);
-        notifyAddressData.setTaxRegNumber("TAX789");
-
-        ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetails.builder()
-                .isRunnerV3Enabled(true)
-                .isAmrAirFreightEnabled(true)
-                .build();
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-
-
-        ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-        assertEquals(HttpStatus.BAD_REQUEST, listResponse.getStatusCode());
     }
 }
