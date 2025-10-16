@@ -27,11 +27,15 @@ import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferRoutings;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -70,6 +74,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -86,6 +91,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.validDirectionForNetworkTransfer;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -96,6 +102,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
     private IShipmentDao shipmentDao;
+    private IAwbDao awbDao;
     private IShipmentServiceV3 shipmentService;
     private IConsolidationV3Service consolidationService;
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -160,6 +167,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         this.consolidationMigrationV3Service = consolidationMigrationV3Service;
         this.shipmentMigrationV3Service = shipmentMigrationV3Service;
         this.networkTransferShipmentsMappingDao = networkTransferShipmentsMappingDao;
+        this.awbDao = awbDao;
     }
 
     @Transactional
@@ -2078,4 +2086,756 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return tenantIds;
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
+        if (shipmentDetails.isEmpty()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && validDirectionForNetworkTransfer.contains(shipmentDetails.get().getDirection())){
+
+            SendShipmentValidationResponse validationResponse = validateNteSendShipmentValidations(shipmentDetails.get());
+            if(Boolean.TRUE.equals(validationResponse.getIsError())) {
+                return ResponseHelper.buildSuccessResponse(validationResponse);
+            }
+        }
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private SendShipmentValidationResponse validateNteSendShipmentValidations(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getSourceGuid() != null
+                && !Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())
+                && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS)) {
+
+            return SendShipmentValidationResponse.builder()
+                    .isError(true)
+                    .shipmentErrorMessage("Already transferred CTS file is not allowed to transfer again")
+                    .build();
+        }
+
+        return this.networkTransferValidationsForShipment(shipmentDetails, false);
+    }
+
+    private SendShipmentValidationResponse networkTransferValidationsForShipment(ShipmentDetails shipmentDetails, boolean isAutomaticTransfer) {
+        String transportMode = shipmentDetails.getTransportMode();
+        String jobType = shipmentDetails.getJobType();
+
+        List<String> missingField = new ArrayList<>();
+
+        checkHouseBillMasterBillFieldsMissing(shipmentDetails, missingField);
+        if(Objects.equals(transportMode, TRANSPORT_MODE_AIR) && Objects.equals(jobType, SHIPMENT_TYPE_DRT)) {
+            List<String> additionalMissingFields = airShipmentFieldValidations(shipmentDetails, isAutomaticTransfer);
+            missingField.addAll(additionalMissingFields);
+        }
+
+        if(!missingField.isEmpty()) {
+            String errorMessage = getResponseErrorMsg(isAutomaticTransfer, missingField);
+            return SendShipmentValidationResponse.builder()
+                    .isError(true)
+                    .shipmentErrorMessage(errorMessage)
+                    .missingKeys(missingField)
+                    .build();
+        }
+        return SendShipmentValidationResponse.builder()
+                .isError(false)
+                .build();
+    }
+
+    private String getResponseErrorMsg(boolean isAutomaticTransfer, List<String> missingField) {
+        String responseErrorMsg = "";
+        String msgSuffix = (isAutomaticTransfer ? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : " to transfer the shipment.");
+
+        if(!missingField.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder("Please enter the ");
+
+            for (int i = 0; i < missingField.size(); i++) {
+                String key = missingField.get(i);
+
+                switch (key) {
+                    case "House Bill":
+                        errorMessage.append("HBL number");
+                        break;
+                    case "MAWB Number":
+                        errorMessage.append("MAWB number");
+                        break;
+                    case "HAWB Number":
+                        errorMessage.append("HAWB number");
+                        break;
+                    case "Flight number":
+                        errorMessage.append("Flight number");
+                        break;
+                    case "Eta":
+                        errorMessage.append("Eta");
+                        break;
+                    case "Etd":
+                        errorMessage.append("Etd");
+                        break;
+                    default:
+                        errorMessage.append(key);
+                }
+
+                if (i < missingField.size() - 1) {
+                    errorMessage.append(", ");
+                }
+            }
+
+            errorMessage.append(msgSuffix);
+            responseErrorMsg = errorMessage.toString();
+        }
+
+        return responseErrorMsg;
+    }
+
+    private List<String> airShipmentFieldValidations(ShipmentDetails shipmentDetails, boolean isAutomaticTransfer) {
+        List<String> missingField = new ArrayList<>();
+        boolean entityTransferDetails = false;
+        if (Strings.isNullOrEmpty(shipmentDetails.getCarrierDetails().getFlightNumber())) {
+            missingField.add("Flight number");
+        }
+        if (shipmentDetails.getCarrierDetails().getEta() == null) {
+            missingField.add("Eta");
+        }
+        if (shipmentDetails.getCarrierDetails().getEtd() == null) {
+            missingField.add("Etd");
+        }
+        if (!isAutomaticTransfer && Objects.isNull(shipmentDetails.getReceivingBranch()) && Objects.isNull(shipmentDetails.getTriangulationPartner())) {
+            entityTransferDetails = ObjectUtils.isEmpty(shipmentDetails.getTriangulationPartnerList());
+        }
+        if (entityTransferDetails) {
+            missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
+        }
+        if(DIRECTION_IMP.equals(shipmentDetails.getDirection()) || DIRECTION_CTS.equals(shipmentDetails.getDirection()))
+            checkHouseBillMasterBillFieldsMissing(shipmentDetails, missingField);
+        return missingField;
+    }
+
+    private void checkHouseBillMasterBillFieldsMissing(ShipmentDetails shipmentDetails, List<String> missingField) {
+        if (Strings.isNullOrEmpty(shipmentDetails.getHouseBill())) {
+            if (Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
+                missingField.add("HAWB Number");
+            }
+            if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+                    && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()))
+                missingField.add("House Bill");
+        }
+        if (Strings.isNullOrEmpty(shipmentDetails.getMasterBill())) {
+            if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                missingField.add("MAWB Number");
+            if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                missingField.add("Master Bill");
+        }
+    }
+
+    @Override
+    public SendShipmentValidationResponse automaticTransferShipmentValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
+        if (shipmentDetails.isEmpty()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ShipmentDetails shipment = shipmentDetails.get();
+
+        if(shipment.getSourceGuid() != null
+                && !Objects.equals(shipment.getSourceGuid(), shipment.getGuid())
+                && Objects.equals(shipment.getDirection(), DIRECTION_CTS)) {
+            return SendShipmentValidationResponse.builder()
+                    .isError(true)
+                    .shipmentErrorMessage("Already transferred CTS file is not allowed to transfer again")
+                    .build();
+        }
+        return this.networkTransferValidationsForShipment(shipment, true);
+    }
+    @Override
+    public ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
+        if (consolidationDetails.isEmpty()) {
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        validateTransportMode(consolidationDetails.get());
+        if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
+
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())
+                && validDirectionForNetworkTransfer.contains(consolidationDetails.get().getShipmentType())) {
+
+            SendConsoleValidationResponse validationResponse = validateNteSendConsolidationValidations(consolidationDetails.get());
+            if(Boolean.TRUE.equals(validationResponse.getIsError())) {
+                return ResponseHelper.buildSuccessResponse(validationResponse);
+            }
+        }
+        else {
+            if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
+                    consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                String flightNumber = getFlightNumber(consolidationDetails.get());
+                String voyage = getVoyage(consolidationDetails.get());
+                String bol = consolidationDetails.get().getBol();
+                LocalDateTime eta = consolidationDetails.get().getCarrierDetails().getEta();
+                LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
+                String polId = consolidationDetails.get().getCarrierDetails().getOriginPort();
+                String podId = consolidationDetails.get().getCarrierDetails().getDestinationPort();
+                List<TriangulationPartner> triangulationPartnerList = consolidationDetails.get().getTriangulationPartnerList();
+                Long triangulationBranch = consolidationDetails.get().getTriangulationPartner();
+                Long receivingBranch = consolidationDetails.get().getReceivingBranch();
+                boolean entityTransferDetails = isShipmentEntityTransferDetails(receivingBranch, triangulationBranch, triangulationPartnerList);
+
+                List<String> missingField = new ArrayList<>();
+
+                if (isAnyRequiredFieldMissing(bol, voyage, flightNumber, eta, etd, polId, podId, entityTransferDetails)) {
+                    getMissingFieldsForSeaAir(bol, consolidationDetails.get(), missingField, voyage, flightNumber, eta, etd, polId, podId, entityTransferDetails);
+                    String joinMissingField = String.join(",", missingField);
+
+                    return ResponseHelper.buildSuccessResponse(
+                            SendConsoleValidationResponse.builder()
+                                    .isError(true)
+                                    .consoleErrorMessage("Please validate these fields before sending consolidation: " + joinMissingField)
+                                    .missingKeys(missingField)
+                                    .build()
+                    );
+                } else {
+                    SendConsoleValidationResponse shipmentValidationResponse = validateConsolidationShipments(
+                            consolidationDetails.get(),
+                            receivingBranch
+                    );
+
+                    if (Boolean.TRUE.equals(shipmentValidationResponse.getIsError())) {
+                        return ResponseHelper.buildSuccessResponse(shipmentValidationResponse);
+                    }
+                }
+            }
+        }
+
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private SendConsoleValidationResponse validateNteSendConsolidationValidations(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getSourceGuid() != null
+                && !Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid())
+                && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) {
+
+            return SendConsoleValidationResponse.builder()
+                    .isError(true)
+                    .consoleErrorMessage("Already transferred CTS file is not allowed to transfer again")
+                    .build();
+        }
+
+        SendConsoleValidationResponse response;
+        if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
+        else if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA))
+            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails, false);
+        else
+            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails, false);
+
+        return response;
+    }
+
+    private SendConsoleValidationResponse validateConsolidationShipments(
+            ConsolidationDetails consolidationDetails,
+            Long receivingBranch) {
+
+        boolean isHblNumberError = false;
+        List<String> errorShipments = new ArrayList<>();
+        List<Long> errorShipIds = new ArrayList<>();
+        List<String> missingShipmentFields = new ArrayList<>();
+
+        String transportMode = consolidationDetails.getTransportMode();
+
+        for (var shipment : consolidationDetails.getShipmentsList()) {
+            boolean isShipmentError = false;
+
+            if (isInterBranchConsoleCase(shipment, consolidationDetails, receivingBranch)) {
+                isHblNumberError = true;
+                isShipmentError = true;
+            }
+
+            if (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
+                    shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+
+                if (Strings.isNullOrEmpty(shipment.getHouseBill())
+                        && !Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
+                    isHblNumberError = true;
+                    isShipmentError = true;
+
+                    if (TRANSPORT_MODE_SEA.equals(transportMode)) {
+                        if (!missingShipmentFields.contains("HBL")) {
+                            missingShipmentFields.add("HBL");
+                        }
+                    } else if (TRANSPORT_MODE_AIR.equals(transportMode)) {
+                        if (!missingShipmentFields.contains("HAWB Number")) {
+                            missingShipmentFields.add("HAWB Number");
+                        }
+                    }
+                }
+
+                if (Strings.isNullOrEmpty(shipment.getMasterBill())) {
+                    isShipmentError = true;
+
+                    if (TRANSPORT_MODE_SEA.equals(transportMode)) {
+                        if (!missingShipmentFields.contains("MBL")) {
+                            missingShipmentFields.add("MBL");
+                        }
+                    } else if (TRANSPORT_MODE_AIR.equals(transportMode)) {
+                        if (!missingShipmentFields.contains("MAWB Number")) {
+                            missingShipmentFields.add("MAWB Number");
+                        }
+                    }
+                }
+
+                String shipVoyage = getShipVoyage(shipment);
+                String shipFlightNumber = getShipFlightNumber(shipment);
+
+                boolean requiredFieldsMissingError = isCarrierDetailsAndFlightDetailsMissing(shipment, shipVoyage, shipFlightNumber);
+                if (requiredFieldsMissingError) {
+                    isShipmentError = true;
+                }
+            }
+
+            if (isShipmentError) {
+                if (!errorShipments.contains(shipment.getShipmentId())) {
+                    errorShipments.add(shipment.getShipmentId());
+                    errorShipIds.add(shipment.getId());
+                }
+            }
+        }
+
+        if (isHblNumberError || !errorShipIds.isEmpty()) {
+            String errorMsg = buildConsolidationErrorMessage(
+                    consolidationDetails,
+                    receivingBranch,
+                    isHblNumberError,
+                    errorShipments
+            );
+
+            String shipErrorMsg = "";
+            if (isHblNumberError) {
+                if (TRANSPORT_MODE_SEA.equals(transportMode)) {
+                    shipErrorMsg = "Please enter the HBL number to retrigger the transfer.";
+                } else if (TRANSPORT_MODE_AIR.equals(transportMode)) {
+                    shipErrorMsg = "Please enter the HAWB number to retrigger the transfer.";
+                }
+            }
+
+            return SendConsoleValidationResponse.builder()
+                    .isError(true)
+                    .consoleErrorMessage(errorMsg)
+                    .shipmentErrorMessage(shipErrorMsg)
+                    .shipmentIds(errorShipIds)
+                    .missingKeys(missingShipmentFields)
+                    .build();
+        }
+
+        return SendConsoleValidationResponse.builder()
+                .isError(false)
+                .build();
+    }
+
+    private String buildConsolidationErrorMessage(
+            ConsolidationDetails consolidationDetails,
+            Long receivingBranch,
+            boolean isHblNumberError,
+            List<String> errorShipments) {
+
+        StringBuilder errorMsg = new StringBuilder();
+        String transportMode = consolidationDetails.getTransportMode();
+
+        String interBranch = "";
+        if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole()) && receivingBranch != null) {
+            interBranch = "Receiving Branch, ";
+        }
+
+        if (isHblNumberError && !errorShipments.isEmpty()) {
+            if (TRANSPORT_MODE_SEA.equals(transportMode)) {
+                errorMsg.append("Please enter the HBL, MBL, ETA, ETD, ")
+                        .append(interBranch)
+                        .append("Vessel & Voyage details in the attached shipments: ")
+                        .append(String.join(", ", errorShipments))
+                        .append(" before sending consolidation");
+            } else if (TRANSPORT_MODE_AIR.equals(transportMode)) {
+                errorMsg.append("Please enter the HAWB, MAWB, ETA, ETD, ")
+                        .append(interBranch)
+                        .append("Airline and Flight number details in the attached shipments: ")
+                        .append(String.join(", ", errorShipments))
+                        .append(" before sending consolidation");
+            }
+        }
+
+        return errorMsg.toString();
+    }
+
+    private SendConsoleValidationResponse networkTransferValidationsForAirConsolidation(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
+        boolean isHawbNumberError = false;
+        List<String> errorShipments = new ArrayList<>();
+        List<Long> errorShipIds = new ArrayList<>();
+
+        List<String> missingField = this.airConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
+        List<String> missingKeys = new ArrayList<>(missingField);
+
+        for (var shipment : consolidationDetails.getShipmentsList()) {
+            if (!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_STD)
+                    && !Objects.equals(shipment.getJobType(), Constants.CONSOLIDATION_TYPE_DRT)
+                    && Strings.isNullOrEmpty(shipment.getHouseBill())) {
+                isHawbNumberError = true;
+                errorShipments.add(shipment.getShipmentId());
+                errorShipIds.add(shipment.getId());
+
+                if (!missingKeys.contains("HAWB Number")) {
+                    missingKeys.add("HAWB Number");
+                }
+            }
+        }
+
+        StringBuilder shipErrorMsg = new StringBuilder();
+
+        String errorMsg = this.errorMsgPreparationForAirConsole(missingField, errorShipments, isHawbNumberError, shipErrorMsg, isAutomaticTransfer);
+
+        if(!errorMsg.isEmpty()){
+            return SendConsoleValidationResponse.builder()
+                    .consoleErrorMessage(errorMsg)
+                    .shipmentErrorMessage(shipErrorMsg.toString())
+                    .shipmentIds(errorShipIds)
+                    .missingKeys(missingKeys)
+                    .isError(Boolean.TRUE)
+                    .build();
+        }
+        return SendConsoleValidationResponse.builder()
+                .isError(Boolean.FALSE)
+                .build();
+    }
+
+    private String errorMsgPreparationForAirConsole(List<String> missingField, List<String> errorShipments, boolean isHawbNumberError, StringBuilder shipErrorMsg, boolean isAutomaticTransfer) {
+        String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
+
+        if(!missingField.isEmpty()) {
+            String missingFieldString = String.join(", ", missingField);
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
+        }
+
+        if(isHawbNumberError) {
+            if (!errorMsg.isEmpty()) {
+                errorMsg = errorMsg + " and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments);
+            } else {
+                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments);
+            }
+            shipErrorMsg.setLength(0);
+            shipErrorMsg.append("Please enter the HAWB number to retrigger the transfer.");
+        }
+
+        if(!errorMsg.isEmpty()) {
+            errorMsg = errorMsg + msgSuffix;
+        }
+        return errorMsg;
+    }
+
+    private SendConsoleValidationResponse networkTransferValidationsForSeaConsolidation(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
+
+        boolean isHblNumberError = false;
+        List<String> errorShipments = new ArrayList<>();
+        List<Long> errorShipIds = new ArrayList<>();
+
+        List<String> missingField = this.seaConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
+        List<String> missingKeys = new ArrayList<>(missingField);
+
+        for (var shipment : consolidationDetails.getShipmentsList()) {
+            if(!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
+                if (Strings.isNullOrEmpty(shipment.getHouseBill())) {
+                    isHblNumberError = true;
+                    errorShipments.add(shipment.getShipmentId());
+                    errorShipIds.add(shipment.getId());
+
+                    if (!missingKeys.contains("HBL")) {
+                        missingKeys.add("HBL");
+                    }
+                }
+            }
+        }
+
+        String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
+
+        if(!missingField.isEmpty()) {
+            String missingFieldString = String.join(", ", missingField);
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
+        }
+
+        String shipErrorMsg = "";
+        if(isHblNumberError) {
+            if (!errorMsg.isEmpty()) {
+                errorMsg = errorMsg + " and enter the HBL number for the shipment/s "+ String.join(", " ,errorShipments);
+            } else {
+                errorMsg = "Please enter the HBL number for the shipment/s " + String.join(", " ,errorShipments);
+            }
+            shipErrorMsg = "Please enter the HBL number to retrigger the transfer.";
+        }
+
+        if(!errorMsg.isEmpty()){
+            errorMsg = errorMsg + msgSuffix;
+            return SendConsoleValidationResponse.builder()
+                    .consoleErrorMessage(errorMsg)
+                    .shipmentErrorMessage(shipErrorMsg)
+                    .shipmentIds(errorShipIds)
+                    .missingKeys(missingKeys)
+                    .isError(Boolean.TRUE)
+                    .build();
+        }
+        return SendConsoleValidationResponse.builder()
+                .isError(Boolean.FALSE)
+                .build();
+    }
+
+    private SendConsoleValidationResponse networkTransferValidationsForOtherTransportConsolidation(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
+        List<String> missingField = new ArrayList<>();
+        if (consolidationDetails.getCarrierDetails().getEta() == null)
+            missingField.add("Eta");
+        if (consolidationDetails.getCarrierDetails().getEtd() == null)
+            missingField.add("Etd");
+        if(Objects.isNull(consolidationDetails.getSendingAgent()) || Strings.isNullOrEmpty(consolidationDetails.getSendingAgent().getOrgCode()))
+            missingField.add("Origin agent");
+        if(Objects.isNull(consolidationDetails.getReceivingAgent()) || Strings.isNullOrEmpty(consolidationDetails.getReceivingAgent().getOrgCode()))
+            missingField.add("Destination agent");
+        if(!isAutomaticTransfer) {
+            boolean entityTransferDetails = false;
+            if (Objects.isNull(consolidationDetails.getReceivingBranch()) && Objects.isNull(consolidationDetails.getTriangulationPartner())) {
+                entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
+            }
+            if (entityTransferDetails){
+                missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
+            }
+        }
+
+        String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
+        if(!missingField.isEmpty()) {
+            String missingFieldString = String.join(", ", missingField);
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
+        }
+        if(!errorMsg.isEmpty()){
+            errorMsg = errorMsg + msgSuffix;
+            return SendConsoleValidationResponse.builder()
+                    .consoleErrorMessage(errorMsg)
+                    .missingKeys(missingField)
+                    .isError(Boolean.TRUE)
+                    .build();
+        }
+        return SendConsoleValidationResponse.builder()
+                .isError(Boolean.FALSE)
+                .build();
+    }
+
+    @Override
+    public SendConsoleValidationResponse automaticTransferConsoleValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
+        if (consolidationDetails.isEmpty()) {
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_RAI)) {
+            throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
+        }
+        if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+            commonUtils.setInterBranchContextForHub();
+
+        SendConsoleValidationResponse response;
+        if(Objects.equals(consolidationDetails.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails.get(), true);
+        else if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_SEA))
+            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails.get(), true);
+        else
+            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails.get(), true);
+        return response;
+    }
+
+    private boolean isShipmentEntityTransferDetails(Long receivingBranch, Long triangulationBranch, List<TriangulationPartner> triangulationPartnerList) {
+        boolean entityTransferDetails = false;
+        if (Objects.isNull(receivingBranch) && Objects.isNull(triangulationBranch)) {
+            entityTransferDetails = ObjectUtils.isEmpty(triangulationPartnerList);
+        }
+        return entityTransferDetails;
+    }
+
+    private String getVoyage(ConsolidationDetails consolidationDetails) {
+        String voyage;
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            voyage = consolidationDetails.getCarrierDetails().getVoyage();
+        } else {
+            voyage = consolidationDetails.getCarrierDetails().getShippingLine();
+        }
+        return voyage;
+    }
+
+    private String getFlightNumber(ConsolidationDetails consolidationDetails) {
+        String flightNumber;
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            flightNumber = consolidationDetails.getCarrierDetails().getVessel();
+        } else {
+            flightNumber = consolidationDetails.getCarrierDetails().getFlightNumber();
+        }
+        return flightNumber;
+    }
+
+    private void validateTransportMode(ConsolidationDetails consolidationDetails) {
+        if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_RAI)) {
+            throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
+        }
+    }
+
+    private String getShipFlightNumber(ShipmentDetails shipment) {
+        String shipFlightNumber = null;
+        if (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            shipFlightNumber = shipment.getCarrierDetails().getVessel();
+        } else {
+            shipFlightNumber = shipment.getCarrierDetails().getFlightNumber();
+        }
+        return shipFlightNumber;
+    }
+
+    private String getShipVoyage(ShipmentDetails shipment) {
+        String shipVoyage = null;
+        if (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            shipVoyage = shipment.getCarrierDetails().getVoyage();
+        } else {
+            shipVoyage = shipment.getCarrierDetails().getShippingLine();
+        }
+        return shipVoyage;
+    }
+
+    private boolean isInterBranchConsoleCase(ShipmentDetails shipment, ConsolidationDetails consolidationDetails, Long receivingBranch) {
+        return Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()) && !Objects.isNull(receivingBranch);
+    }
+
+    private boolean isAnyRequiredFieldMissing(String bol, String voyage, String flightNumber, LocalDateTime eta, LocalDateTime etd, String polId, String podId, boolean entityTransferDetails) {
+        return Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
+                eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) || entityTransferDetails;
+    }
+
+    private boolean isCarrierDetailsAndFlightDetailsMissing(ShipmentDetails shipment, String shipVoyage, String shipFlightNumber) {
+        LocalDateTime shipEta = shipment.getCarrierDetails().getEta();
+        LocalDateTime shipEtd = shipment.getCarrierDetails().getEtd();
+        String shipPolId = shipment.getCarrierDetails().getOriginPort();
+        String shipPodId = shipment.getCarrierDetails().getDestinationPort();
+        return (Strings.isNullOrEmpty(shipment.getHouseBill()) && !Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) || Strings.isNullOrEmpty(shipment.getMasterBill()) ||
+                shipVoyage == null || shipFlightNumber == null || shipEta == null || shipEtd == null ||
+                Strings.isNullOrEmpty(shipPolId) || Strings.isNullOrEmpty(shipPodId);
+    }
+
+    private void getMissingFieldsForSeaAir(String bol, ConsolidationDetails consolidationDetails, List<String> missingField, String voyage, String flightNumber, LocalDateTime eta, LocalDateTime etd, String polId, String podId, boolean entityTransferDetails) {
+        if (Strings.isNullOrEmpty(bol) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            missingField.add("Mawb Number");
+        if (Strings.isNullOrEmpty(bol) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+            missingField.add("Master Bill");
+        if (Strings.isNullOrEmpty(voyage) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            missingField.add("Flight Carrier");
+        if (Strings.isNullOrEmpty(flightNumber) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            missingField.add(EntityTransferConstants.MISSING_FIELD_FLIGHT_NUMBER);
+        if (Strings.isNullOrEmpty(voyage) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+            missingField.add(EntityTransferConstants.MISSING_FIELD_VOYAGE);
+        if (Strings.isNullOrEmpty(flightNumber) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+            missingField.add(EntityTransferConstants.MISSING_FIELD_VESSEL);
+        addEtaEtdMissingFields(missingField, eta, etd);
+        if (Strings.isNullOrEmpty(polId))
+            missingField.add("Origin Port");
+        if (Strings.isNullOrEmpty(podId))
+            missingField.add("Destination Port");
+        if (entityTransferDetails) {
+            missingField.add("Please select one of the branches in the entity transfer details section");
+        }
+    }
+
+    private void addEtaEtdMissingFields(List<String> missingField, LocalDateTime eta, LocalDateTime etd) {
+        if (eta == null)
+            missingField.add("Eta");
+        if (etd == null)
+            missingField.add("Etd");
+    }
+
+    private List<String> airConsoleFieldValidations(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
+        List<String> missingField = new ArrayList<>();
+        if(Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getFlightNumber()))
+            missingField.add("Flight Number");
+        if (consolidationDetails.getCarrierDetails().getEta() == null)
+            missingField.add("Eta");
+        if (consolidationDetails.getCarrierDetails().getEtd() == null)
+            missingField.add("Etd");
+        if(!isAutomaticTransfer) {
+            boolean entityTransferDetails = false;
+            if (Objects.isNull(consolidationDetails.getReceivingBranch()) && Objects.isNull(consolidationDetails.getTriangulationPartner())) {
+                entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
+            }
+            if (entityTransferDetails){
+                missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
+            }
+        }
+        if(!Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)
+                && !Objects.equals(consolidationDetails.getConsolidationType(), Constants.CONSOLIDATION_TYPE_DRT)
+                && Strings.isNullOrEmpty(consolidationDetails.getBol())){
+            missingField.add("MAWB Number");
+        }
+        return missingField;
+    }
+
+    private List<String> seaConsoleFieldValidations(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
+        List<String> missingField = new ArrayList<>();
+        boolean entityTransferDetails = false;
+        if(Strings.isNullOrEmpty(consolidationDetails.getBol()))
+            missingField.add("MBL");
+        if (consolidationDetails.getCarrierDetails().getEta() == null)
+            missingField.add("Eta");
+        if (consolidationDetails.getCarrierDetails().getEtd() == null)
+            missingField.add("Etd");
+        if(Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine()))
+            missingField.add("Shipping line");
+        if(Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getVessel()))
+            missingField.add("Vessel");
+        if(Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getVoyage()))
+            missingField.add("Voyage");
+        if(Objects.isNull(consolidationDetails.getSendingAgent()) || Strings.isNullOrEmpty(consolidationDetails.getSendingAgent().getOrgCode()))
+            missingField.add("Origin agent");
+        if(Objects.isNull(consolidationDetails.getReceivingAgent()) || Strings.isNullOrEmpty(consolidationDetails.getReceivingAgent().getOrgCode()))
+            missingField.add("Destination agent");
+        if (!isAutomaticTransfer && Objects.isNull(consolidationDetails.getReceivingBranch()) && Objects.isNull(consolidationDetails.getTriangulationPartner())) {
+            entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
+        }
+        if (entityTransferDetails){
+            missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
+        }
+        return missingField;
+    }
+
+    public boolean getIsV3TenantPresent(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails){
+        Set<Integer> tenantIds = (consolidationDetails != null)
+                ? extractTenantIds(consolidationDetails.getReceivingBranch(), consolidationDetails.getTriangulationPartnerList(), consolidationDetails.getTenantId())
+                : extractTenantIds(shipmentDetails.getReceivingBranch(), shipmentDetails.getTriangulationPartnerList(), shipmentDetails.getTenantId());
+
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(new ArrayList<>(tenantIds));
+        if (shipmentSettingsDetailsList == null || shipmentSettingsDetailsList.isEmpty()) {
+            return false;
+        }
+
+        boolean isV3TenantPresent= false;
+        boolean isV2TenantPresent= false;
+
+        for(ShipmentSettingsDetails shipmentSettingsDetails: shipmentSettingsDetailsList){
+            if(shipmentSettingsDetails.getIsRunnerV3Enabled().equals(Boolean.TRUE)){
+                isV3TenantPresent = true;
+            }else{
+                isV2TenantPresent = true;
+            }
+            if(isV2TenantPresent && isV3TenantPresent)
+                return true;
+        }
+        return false;
+    }
 }
