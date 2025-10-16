@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -100,7 +101,7 @@ class HblServiceTest extends CommonMocks {
     @Mock
     private IShipmentService shipmentService;
     @Mock
-    private ShipmentsV3Util shipmentsV3Util;
+    private ContainerV3Util containerV3Util;
     @Mock
     private SyncConfig syncConfig;
     @Mock
