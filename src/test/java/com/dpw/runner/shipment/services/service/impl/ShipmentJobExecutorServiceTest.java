@@ -200,7 +200,7 @@ class ShipmentJobExecutorServiceTest {
         when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
-        when(entityTransferService.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
+        when(entityTransferV3Service.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
         List<Integer> list = new ArrayList<>();
         list.add(1);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
@@ -218,7 +218,7 @@ class ShipmentJobExecutorServiceTest {
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
         verify(shipmentDao, times(1)).findById(anyLong());
         verify(documentManagerRestClient, times(1)).multipleEntityFilesWithTenant(any());
-        verify(entityTransferService, times(1)).automaticTransferShipmentValidation(any());
+        verify(entityTransferV3Service, times(1)).automaticTransferShipmentValidation(any());
         verify(entityTransferV3Service, times(1)).sendShipment(any());
         verify(commonErrorLogsDao, times(1)).deleteShipmentErrorsLogs(anyLong());
         verify(quartzJobInfoDao, times(1)).save(any());
@@ -392,7 +392,7 @@ class ShipmentJobExecutorServiceTest {
 
         when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
         when(consolidationDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(entityTransferService.automaticTransferConsoleValidation(any())).thenReturn(sendConsoleValidationResponse);
+        when(entityTransferV3Service.automaticTransferConsoleValidation(any())).thenReturn(sendConsoleValidationResponse);
         when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
         List<Integer> list = new ArrayList<>();
         list.add(1);
@@ -410,7 +410,7 @@ class ShipmentJobExecutorServiceTest {
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
         verify(consolidationDao, times(1)).findById(anyLong());
-        verify(entityTransferService, times(1)).automaticTransferConsoleValidation(any());
+        verify(entityTransferV3Service, times(1)).automaticTransferConsoleValidation(any());
         verify(documentManagerRestClient, times(1)).multipleEntityFilesWithTenant(any());
         verify(entityTransferV3Service, times(1)).sendConsolidation(any());
         verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(anyLong(), anyList());
