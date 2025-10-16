@@ -41,15 +41,15 @@ public class ReferenceNumbersV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
-    private static class MyResponseClass extends RunnerResponse<ReferenceNumbersResponse> {
+    private static class MyReferenceNumberResponseClass extends RunnerResponse<ReferenceNumbersResponse> {
     }
 
-    private static class MyListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {
+    private static class MyReferenceNumberListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {
     }
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull ReferenceNumbersRequest request) {
@@ -58,7 +58,7 @@ public class ReferenceNumbersV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
+            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyReferenceNumberResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull ReferenceNumbersRequest request) {
@@ -83,7 +83,7 @@ public class ReferenceNumbersV3Controller {
         return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.delete(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,
@@ -94,7 +94,7 @@ public class ReferenceNumbersV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST_V3)
     public ResponseEntity<IRunnerResponse> listV3(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,

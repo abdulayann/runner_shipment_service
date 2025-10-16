@@ -33,9 +33,9 @@ public class QuoteContractsController {
         this.quoteContractsService = quoteContractsService;
     }
 
-    private static class MyListResponseClass extends RunnerListResponse<QuoteContractsResponse> {}
+    private static class MyQuoteContractsListResponseClass extends RunnerListResponse<QuoteContractsResponse> {}
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = NPMConstants.QUOTE_CONTRACTS_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation =  QuoteContractsController.MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = NPMConstants.QUOTE_CONTRACTS_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation =  QuoteContractsController.MyQuoteContractsListResponseClass.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return quoteContractsService.list(CommonRequestModel.buildRequest(listCommonRequest));

@@ -57,14 +57,14 @@ public class ShipmentSettingsController {
         this.shipmentSettingsReverseSync = shipmentSettingsReverseSync;
         this.jsonHelper = jsonHelper;
     }
-    private static class MyResponseClass extends RunnerResponse<ShipmentSettingsDetailsResponse>{}
-    private static class MyListResponseClass extends RunnerListResponse<ShipmentSettingsDetailsResponse>{}
+    private static class MyShipmentSettingsDetailsResponseClass extends RunnerResponse<ShipmentSettingsDetailsResponse>{}
+    private static class MyShipmentSettingsDetailsListResponseClass extends RunnerListResponse<ShipmentSettingsDetailsResponse>{}
 
 
     private static class MyProductSequenceConfigDtoClass extends RunnerResponse<ProductSequenceConfigDto>{}
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -80,7 +80,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE_SETTINGS)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid ShipmentSettingRequest request) {
         String responseMsg;
@@ -94,7 +94,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentSettingRequest request) {
         String responseMsg;
@@ -132,7 +132,7 @@ public class ShipmentSettingsController {
     }
 
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_LIST_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyShipmentSettingsDetailsListResponseClass.class))), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_LIST_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return shipmentSettingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
@@ -147,7 +147,7 @@ public class ShipmentSettingsController {
         return shipmentSettingsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsListResponseClass.class)))})
     @PostMapping(ShipmentSettingsConstants.UPLOAD_TEMPLATE)
     public ResponseEntity<IRunnerResponse> uploadTemplate(@RequestParam MultipartFile file, @RequestParam String previousFileId) {
         TemplateUploadRequest templateUploadRequest = TemplateUploadRequest.builder().file(file).previousFileId(previousFileId).build();
@@ -208,7 +208,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_TENANT_ID)
     public ResponseEntity<IRunnerResponse> retrieveByTenantId(@RequestParam Optional<Long> tenantId, @RequestParam(required = false, defaultValue = "false") Boolean sectionRule) {
         String responseMsg;
@@ -223,7 +223,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_LIST_COLOAD_STATION_ID)
     public ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds() {
         String responseMsg;
@@ -237,7 +237,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)), description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_LIST_HUBS_STATION_ID)
     public ResponseEntity<IRunnerResponse> listHubTenantIds() {
         String responseMsg;
@@ -251,7 +251,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE + ApiConstants.HIDE_MANIFEST)
     public ResponseEntity<IRunnerResponse> updateHideManifest(@RequestParam @Valid boolean hideManifest) {
         String responseMsg;
@@ -265,7 +265,7 @@ public class ShipmentSettingsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_PARTIAL_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ShipmentSettingsConstants.SHIPMENT_SETTINGS_PARTIAL_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyShipmentSettingsDetailsResponseClass.class)))})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid ShipmentSettingsPatchRequest shipmentSettingsPatchRequest) {
         String responseMsg;

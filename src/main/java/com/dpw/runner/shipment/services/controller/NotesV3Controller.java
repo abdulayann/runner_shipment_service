@@ -42,7 +42,7 @@ public class NotesV3Controller {
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = NotesConstants.NOTES_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = NotesConstants.NOTES_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNotesResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull NotesRequest request) {
@@ -56,7 +56,7 @@ public class NotesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = NotesConstants.NOTES_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
+            @ApiResponse(responseCode = "200", description = NotesConstants.NOTES_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNotesResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull NotesRequest request) {
@@ -80,7 +80,7 @@ public class NotesV3Controller {
 
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = NotesConstants.NOTES_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = NotesConstants.NOTES_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNotesResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
@@ -88,18 +88,18 @@ public class NotesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = NotesConstants.NOTES_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyNotesListResponseClass.class))), description = NotesConstants.NOTES_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return notesService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    private static class MyResponseClass extends RunnerResponse<NotesResponse> {
+    private static class MyNotesResponseClass extends RunnerResponse<NotesResponse> {
 
     }
 
-    private static class MyListResponseClass extends RunnerListResponse<NotesResponse> {
+    private static class MyNotesListResponseClass extends RunnerListResponse<NotesResponse> {
 
     }
 

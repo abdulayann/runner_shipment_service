@@ -41,8 +41,8 @@ import java.util.Objects;
 public class PackingController {
     private final IPackingService packingService;
 
-    private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
-    private static class MyListResponseClass extends RunnerListResponse<PackingResponse>{}
+    private static class MyPackingResponseClass extends RunnerResponse<PackingResponse>{}
+    private static class MyPackingListResponseClass extends RunnerListResponse<PackingResponse>{}
 
     @Autowired
     public PackingController(IPackingService packingService) {
@@ -80,7 +80,7 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingResponseClass.class))),
             @ApiResponse(responseCode = "404", description = PackingConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(value = ApiConstants.API_CREATE)
@@ -97,13 +97,13 @@ public class PackingController {
         return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingListResponseClass.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return packingService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingResponseClass.class)))})
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody PackingRequest request) {
         String responseMessage;

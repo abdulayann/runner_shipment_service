@@ -36,8 +36,8 @@ import java.util.List;
 public class AirMessagingLogsController {
     private final IAirMessagingLogsService airMessagingLogsService;
 
-    private class MyResponseClass extends RunnerResponse<AirMessagingLogsResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<AirMessagingLogsResponse>{}
+    private class MyAirMessagingResponseClass extends RunnerResponse<AirMessagingLogsResponse>{}
+    private class MyAirMessagingListResponseClass extends RunnerListResponse<AirMessagingLogsResponse>{}
 
     @Autowired
     public AirMessagingLogsController(IAirMessagingLogsService airMessagingLogsService) {
@@ -45,7 +45,7 @@ public class AirMessagingLogsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyAirMessagingResponseClass.class)), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_CREATE_SUCCESSFUL),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -68,19 +68,19 @@ public class AirMessagingLogsController {
         return airMessagingLogsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyAirMessagingListResponseClass.class))), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return airMessagingLogsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyAirMessagingResponseClass.class)), description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_ID, required = true) @RequestParam Long id,@RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return airMessagingLogsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAirMessagingResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid AirMessagingLogsRequest request) {
         String responseMsg;

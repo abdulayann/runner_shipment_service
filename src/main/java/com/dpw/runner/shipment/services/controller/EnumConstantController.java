@@ -27,14 +27,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnumConstantController {
 
     private final IEnumConstantService enumConstantService;
-    private static class MyListResponseClass extends RunnerListResponse<EnumResponse> {}
+    private static class MyEnumListResponseClass extends RunnerListResponse<EnumResponse> {}
 
     @Autowired
     public EnumConstantController(IEnumConstantService enumConstantService) {
         this.enumConstantService = enumConstantService;
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = ShipmentConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyEnumListResponseClass.class))), description = ShipmentConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> list(@RequestParam(required = false, defaultValue = "false") Boolean isFromV3) {

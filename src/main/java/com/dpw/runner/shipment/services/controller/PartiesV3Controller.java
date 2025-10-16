@@ -42,12 +42,12 @@ public class PartiesV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
-    private static class MyResponseClass extends RunnerResponse<PartiesResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<PartiesResponse> {}
+    private static class MyPartiesResponseClass extends RunnerResponse<PartiesResponse> {}
+    private static class MyPartiesListResponseClass extends RunnerListResponse<PartiesResponse> {}
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPartiesResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
@@ -56,7 +56,7 @@ public class PartiesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_UPDATE_SUCCESSFUL , content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
+            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_UPDATE_SUCCESSFUL , content = @Content(schema = @Schema(implementation = MyPartiesResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
@@ -73,7 +73,7 @@ public class PartiesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = PartiesConstants.PARTIES_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyPartiesListResponseClass.class))), description = PartiesConstants.PARTIES_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {

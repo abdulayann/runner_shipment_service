@@ -35,21 +35,21 @@ import java.util.Optional;
 public class NotificationsController {
     private INotificationService notificationService;
 
-    private class MyResponseClass extends RunnerResponse<NotificationResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NotificationListResponse> {}
+    private class MyNotificationResponseClass extends RunnerResponse<NotificationResponse> {}
+    private class MyNotificationListResponseClass extends RunnerListResponse<NotificationListResponse> {}
 
     @Autowired
     public NotificationsController(INotificationService notificationService){
         this.notificationService = notificationService;
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = NotificationsController.MyListResponseClass.class))), description = NotificationConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = NotificationsController.MyNotificationListResponseClass.class))), description = NotificationConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return notificationService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyResponseClass.class)), description = NotificationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyNotificationResponseClass.class)), description = NotificationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = NotificationConstants.NOTIFICATION_ID) @RequestParam Optional<Long> id, @Parameter(description = NotificationConstants.NOTIFICATION_GUID) @RequestParam Optional<String> guid) {
         CommonGetRequest request = CommonGetRequest.builder().build();
@@ -58,7 +58,7 @@ public class NotificationsController {
         return notificationService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyResponseClass.class)), description = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyNotificationResponseClass.class)), description = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)})
     @PostMapping(NotificationConstants.NOTIFICATION_ACCEPT)
     public ResponseEntity<IRunnerResponse> acceptNotification(@Parameter(description = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
         String responseMsg;
@@ -72,7 +72,7 @@ public class NotificationsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyResponseClass.class)), description = NotificationConstants.NOTIFICATION_REJECT_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyNotificationResponseClass.class)), description = NotificationConstants.NOTIFICATION_REJECT_SUCCESSFUL)})
     @PostMapping(NotificationConstants.NOTIFICATION_REJECT)
     public ResponseEntity<IRunnerResponse> rejectNotification(@RequestBody @Valid DeclineNotificationRequest declineNotificationRequest) {
         String responseMsg;
@@ -86,7 +86,7 @@ public class NotificationsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyResponseClass.class)), description = NotificationConstants.NOTIFICATION_CONFIRMATION_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NotificationsController.MyNotificationResponseClass.class)), description = NotificationConstants.NOTIFICATION_CONFIRMATION_SUCCESSFUL)})
     @GetMapping(NotificationConstants.NOTIFICATION_CONFIRMATION_MSG_API)
     public ResponseEntity<IRunnerResponse> confirmationMessage(@Parameter(description = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
         String responseMsg;

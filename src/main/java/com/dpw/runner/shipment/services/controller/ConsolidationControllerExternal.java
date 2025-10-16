@@ -43,10 +43,10 @@ public class ConsolidationControllerExternal {
     @Autowired
     private JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsV3Response> {}
-    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsV3Response> {}
+    private static class MyConsolidationDetailsV3ResponseClass extends RunnerResponse<ConsolidationDetailsV3Response> {}
+    private static class MyConsolidationDetailsV3ListResponseClass extends RunnerListResponse<ConsolidationDetailsV3Response> {}
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationControllerExternal.MyResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationControllerExternal.MyConsolidationDetailsV3ResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT)
     public ResponseEntity<IRunnerResponse> retrieveByIdExternal(@Parameter(description = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam (required = false) Long id,
                                                                 @Parameter(description = ShipmentConstants.SHIPMENT_GUID) @RequestParam (required = false) String guid,
@@ -58,7 +58,7 @@ public class ConsolidationControllerExternal {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationControllerExternal.MyResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationControllerExternal.MyConsolidationDetailsV3ResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @PostMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT_PARTIAL)
     public ResponseEntity<IRunnerResponse> retrieveByIdExternalPartial(@RequestBody @Valid CommonGetRequest request, @RequestHeader(value = SOURCE_SERVICE_TYPE) String source
     ) throws RunnerException, AuthenticationException {
@@ -66,7 +66,7 @@ public class ConsolidationControllerExternal {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternalPartial(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = ConsolidationControllerExternal.MyListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = ConsolidationControllerExternal.MyConsolidationDetailsV3ListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST_EXT)
     public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         log.info("Received Consolidation list External request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));

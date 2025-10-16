@@ -47,8 +47,8 @@ public class CustomerBookingController {
     private JsonHelper jsonHelper;
     private ICustomerBookingService customerBookingService;
 
-    private class MyResponseClass extends RunnerResponse<CustomerBookingResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<CustomerBookingResponse> {}
+    private class MyCustomerBookingResponseClass extends RunnerResponse<CustomerBookingResponse> {}
+    private class MyCustomerBookingListResponseClass extends RunnerListResponse<CustomerBookingResponse> {}
     private class MyCreditLimitResponseClass extends RunnerResponse<CreditLimitResponse> {}
 
     @Autowired
@@ -60,7 +60,7 @@ public class CustomerBookingController {
 
     @PostMapping(CustomerBookingConstants.PLATFORM_CREATE_BOOKING)
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = CustomerBookingConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = CustomerBookingConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyCustomerBookingResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> platformCreateBooking(@RequestBody @Valid PlatformToRunnerCustomerBookingRequest request) {
@@ -116,7 +116,7 @@ public class CustomerBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = CustomerBookingConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = CustomerBookingConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyCustomerBookingResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -141,14 +141,14 @@ public class CustomerBookingController {
         return customerBookingService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = CustomerBookingConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyCustomerBookingListResponseClass.class))), description = CustomerBookingConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return customerBookingService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyCustomerBookingResponseClass.class, description = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = CustomerBookingConstants.BOOKING_ID) @RequestParam Optional<Long> id, @Parameter(description = CustomerBookingConstants.BOOKING_GUID) @RequestParam Optional<String> guid) {
@@ -158,7 +158,7 @@ public class CustomerBookingController {
         return customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CustomerBookingConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CustomerBookingConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyCustomerBookingResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CustomerBookingRequest request) {
@@ -173,7 +173,7 @@ public class CustomerBookingController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CustomerBookingConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CustomerBookingConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyCustomerBookingResponseClass.class)))})
     @PutMapping(ApiConstants.API_CANCEL_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_CANCEL + "')")
     public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingRequest request) {

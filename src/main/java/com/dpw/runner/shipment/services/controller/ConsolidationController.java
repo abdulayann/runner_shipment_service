@@ -59,8 +59,8 @@ public class ConsolidationController {
     private final IShipmentService shipmentService;
     private final JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
+    private static class MyConsolidationDetailsResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
+    private static class MyConsolidationDetailsListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
     private static class MblCheckResponseClass extends RunnerResponse<MblCheckResponse> {}
     @Autowired
     public ConsolidationController(IConsolidationService consolidationService,
@@ -75,7 +75,7 @@ public class ConsolidationController {
         this.jsonHelper = jsonHelper;
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Successful Consolidation Details Data List Retrieval", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Successful Consolidation Details Data List Retrieval", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyConsolidationDetailsListResponseClass.class))))})
     @PostMapping(value = "/list-consolidation")
     public ResponseEntity<IRunnerResponse> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
@@ -83,7 +83,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -108,7 +108,7 @@ public class ConsolidationController {
         return consolidationService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyConsolidationDetailsListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
@@ -131,7 +131,7 @@ public class ConsolidationController {
         return consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id, @Parameter(description = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         CommonGetRequest request = CommonGetRequest.builder().build();
@@ -141,7 +141,7 @@ public class ConsolidationController {
         return consolidationService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.API_COMPLETE_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> completeRetrieveById(@Parameter(description = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) throws ExecutionException, InterruptedException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
@@ -149,7 +149,7 @@ public class ConsolidationController {
         return consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid ConsolidationDetailsRequest request) {
         log.info("Received Consolidation update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -164,7 +164,7 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsRequest request) {
         log.info("Received Consolidation update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -179,7 +179,7 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class)))})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
@@ -340,7 +340,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
@@ -467,7 +467,7 @@ public class ConsolidationController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyConsolidationDetailsResponseClass.class, description = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)))})
     @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
         return consolidationService.getDefaultConsolidation();

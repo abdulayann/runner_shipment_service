@@ -40,8 +40,8 @@ public class EventsController {
     private final IEventService eventService;
     private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
-    private class MyResponseClass extends RunnerResponse<EventsResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
+    private class MyEventsResponseClass extends RunnerResponse<EventsResponse> {}
+    private class MyEventsListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
     public EventsController(IEventService eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
@@ -51,7 +51,7 @@ public class EventsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_CREATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_CREATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyEventsResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -74,20 +74,20 @@ public class EventsController {
         return eventService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyEventsListResponseClass.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return eventService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyEventsResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = EventConstants.EVENT_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return eventService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyEventsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid EventsRequest request) {
         String responseMsg;
@@ -112,7 +112,7 @@ public class EventsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyEventsListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @GetMapping(EventConstants.TRACK_EVENT_DETAILS)
@@ -131,7 +131,7 @@ public class EventsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyEventsListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(EventConstants.TRACK_EVENT_DETAILS_V2)
@@ -147,7 +147,7 @@ public class EventsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Push Tracking Events", content = @Content(schema = @Schema(implementation = MyListResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = "Push Tracking Events", content = @Content(schema = @Schema(implementation = MyEventsListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/push-tracking-events")
@@ -166,7 +166,7 @@ public class EventsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyListResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyEventsListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(EventConstants.LIST_EVENT_DETAILS_V2)

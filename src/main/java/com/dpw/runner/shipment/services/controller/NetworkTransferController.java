@@ -41,22 +41,22 @@ import java.util.Optional;
 public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
 
-    private static class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
+    private static class MyNetworkTransferResponseClass extends RunnerResponse<NetworkTransferResponse> {}
+    private static class MyNetworkTransferListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
 
     @Autowired
     public NetworkTransferController(INetworkTransferService networkTransferService){
         this.networkTransferService = networkTransferService;
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = NetworkTransferController.MyListResponseClass.class))), description = NetworkTransferConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = NetworkTransferController.MyNetworkTransferListResponseClass.class))), description = NetworkTransferConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     @PreAuthorize("hasAuthority('" + PermissionConstants.SHIPMENT_IN_PIPELINE_VIEW + "')")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return networkTransferService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyResponseClass.class)), description = NetworkTransferConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyNetworkTransferResponseClass.class)), description = NetworkTransferConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + PermissionConstants.SHIPMENT_IN_PIPELINE_VIEW + "')")
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = NetworkTransferConstants.NETWORK_TRANSFER_ID) @RequestParam Optional<Long> id, @Parameter(description = NetworkTransferConstants.NETWORK_TRANSFER_GUID) @RequestParam Optional<String> guid) {
@@ -66,7 +66,7 @@ public class NetworkTransferController {
         return networkTransferService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyResponseClass.class)), description = NetworkTransferConstants.REQUEST_FOR_TRANSFER_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyNetworkTransferResponseClass.class)), description = NetworkTransferConstants.REQUEST_FOR_TRANSFER_SUCCESSFUL)})
     @PostMapping(NetworkTransferConstants.NETWORK_REQUEST_FOR_TRANSFER)
     @PreAuthorize("hasAuthority('" + PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY + "')")
     public ResponseEntity<IRunnerResponse> requestForTransfer(@RequestBody @Valid RequestForTransferRequest requestForTransferRequest) {
@@ -81,7 +81,7 @@ public class NetworkTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyResponseClass.class)), description = NetworkTransferConstants.REQUEST_FOR_REASSIGNED_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyNetworkTransferResponseClass.class)), description = NetworkTransferConstants.REQUEST_FOR_REASSIGNED_SUCCESSFUL)})
     @PostMapping(NetworkTransferConstants.NETWORK_REASSIGNED)
     @PreAuthorize("hasAuthority('" + PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY + "')")
     public ResponseEntity<IRunnerResponse> requestForReassign(@RequestBody @Valid ReassignRequest reassignRequest) {
@@ -96,7 +96,7 @@ public class NetworkTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyResponseClass.class)), description = NetworkTransferConstants.FETCH_ENTITY_STATUS_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = NetworkTransferController.MyNetworkTransferResponseClass.class)), description = NetworkTransferConstants.FETCH_ENTITY_STATUS_SUCCESSFUL)})
     @GetMapping(NetworkTransferConstants.SHIPMENT_ENTITY_STATUS)
     public ResponseEntity<IRunnerResponse> fetchEntityStatus(@Parameter(description = NetworkTransferConstants.ENTITY_GUID) @RequestParam(required = true) String guid) {
         CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
@@ -104,7 +104,7 @@ public class NetworkTransferController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNetworkTransferResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_CREATE_EXTERNAL)
@@ -121,7 +121,7 @@ public class NetworkTransferController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyNetworkTransferResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @RequireApiKey

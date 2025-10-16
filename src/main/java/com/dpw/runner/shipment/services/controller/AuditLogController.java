@@ -36,9 +36,9 @@ public class AuditLogController {
         this.auditLogService = auditLogService;
     }
 
-    private class MyListResponseClass extends RunnerListResponse<AllocationsResponse>{}
+    private class MyAllocationsListResponseClass extends RunnerListResponse<AllocationsResponse>{}
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, content = @Content( schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = MyAllocationsListResponseClass.class))))})
     @PostMapping("/list")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                 @RequestHeader(value = "x-source", required = false) String xSource) {

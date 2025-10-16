@@ -30,10 +30,10 @@ public class RoutingController {
     @Autowired
     private IRoutingsService routingsService;
 
-    private class MyListResponseClass extends RunnerListResponse<RoutingsResponse> {}
+    private class MyRoutingsListResponseClass extends RunnerListResponse<RoutingsResponse> {}
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyListResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyRoutingsListResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/update-routings")

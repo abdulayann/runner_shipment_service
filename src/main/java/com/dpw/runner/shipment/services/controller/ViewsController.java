@@ -35,15 +35,15 @@ import java.util.List;
 public class ViewsController {
     private final IViewsService viewsService;
 
-    private class MyResponseClass extends RunnerResponse<ViewsResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<ViewsResponse>{}
+    private class MyViewsResponseClass extends RunnerResponse<ViewsResponse>{}
+    private class MyViewsListResponseClass extends RunnerListResponse<ViewsResponse>{}
     @Autowired
     public ViewsController(IViewsService viewsService) {
         this.viewsService = viewsService;
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ViewsConstants.VIEW_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ViewsConstants.VIEW_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyViewsResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -66,13 +66,13 @@ public class ViewsController {
         return viewsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = ViewsConstants.VIEW_LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyViewsListResponseClass.class))), description = ViewsConstants.VIEW_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return viewsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyViewsResponseClass.class)), description = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = ViewsConstants.VIEW_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
@@ -80,7 +80,7 @@ public class ViewsController {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyViewsResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid ViewsRequest request) {
         String responseMsg;

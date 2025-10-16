@@ -26,7 +26,7 @@ public class HblReleaseTypeMappingController {
     private final IHblReleaseTypeMappingService hblReleaseTypeMappingService;
 
 
-    private static class MyListResponseClass extends RunnerListResponse<HblReleaseTypeMappingResponse> {}
+    private static class MyHblReleaseListResponseClass extends RunnerListResponse<HblReleaseTypeMappingResponse> {}
 
     @Autowired
     public HblReleaseTypeMappingController(IHblReleaseTypeMappingService hblReleaseTypeMappingService) {
@@ -34,7 +34,7 @@ public class HblReleaseTypeMappingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyListResponseClass.class)), description = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyHblReleaseListResponseClass.class)), description = HblReleaseTypeMappingConstants.HBL_RELEASE_TYPE_MAPPING_LIST_SUCCESSFUL)
     })
     @PostMapping(HblReleaseTypeMappingConstants.FETCH_BY_HBL_AND_RELEASE_TYPE)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid HblReleaseTypeMappingListRequest request) {

@@ -60,8 +60,8 @@ public class ContainerController {
 
     private final IContainerService containerService;
 
-    private class MyResponseClass extends RunnerResponse<ContainerResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
+    private class MyContainerResponseClass extends RunnerResponse<ContainerResponse> {}
+    private class MyContainerListResponseClass extends RunnerListResponse<ContainerResponse> {}
     private class CheckAllocatedDataChangeResponseClass extends RunnerResponse<CheckAllocatedDataChangeResponse> {}
     private class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
 
@@ -72,7 +72,7 @@ public class ContainerController {
     }
 
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Successful", content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = "Successful", content = @Content(schema = @Schema(implementation = MyContainerResponseClass.class))),
             @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping(ApiConstants.API_UPLOAD)
@@ -143,7 +143,7 @@ public class ContainerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode ="200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode ="200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerResponseClass.class))),
             @ApiResponse(responseCode = "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(value = ApiConstants.API_CREATE)
@@ -160,20 +160,20 @@ public class ContainerController {
         return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerListResponseClass.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestParam Long shipmentId) {
         CommonGetRequest request = CommonGetRequest.builder().id(shipmentId).build();
         return containerService.list(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class) ))})
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerListResponseClass.class) ))})
     @PostMapping(ApiConstants.API_LIST_CONTAINERS_TO_ASSIGN)
     public ResponseEntity<IRunnerResponse> getContainersForSelection(@RequestBody ContainerAssignListRequest containerAssignRequest) {
         return containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CALCULATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class))) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CALCULATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerListResponseClass.class))) })
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
     public ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
         return containerService.calculateAchievedAllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
@@ -198,7 +198,7 @@ public class ContainerController {
         return containerService.validateContainerNumber(containerNumber);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerResponseClass.class)))})
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody ContainerRequest request) {
         String responseMessage;
@@ -258,13 +258,13 @@ public class ContainerController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerListResponseClass.class)))})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyListResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS, content = @Content(schema = @Schema(implementation = MyContainerListResponseClass.class)))})
     @PostMapping(ContainerConstants.LIST_BY_MODULE_GUID_AND_MODULE_TYPE)
     public ResponseEntity<IRunnerResponse> listByModuleGuidAndModuleType(@RequestParam String moduleGuid, @RequestParam String moduleType) {
         return containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);

@@ -49,8 +49,8 @@ public class ConsolidationV3Controller {
     private final IConsolidationV3Service consolidationV3Service;
     private final JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsV3Response> {}
-    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsV3Response> {}
+    private static class MyConsolidationDetailsV3ResponseClass extends RunnerResponse<ConsolidationDetailsV3Response> {}
+    private static class MyConsolidationDetailsV3ListResponseClass extends RunnerListResponse<ConsolidationDetailsV3Response> {}
 
     @Autowired
     public ConsolidationV3Controller(IConsolidationV3Service consolidationV3Service,
@@ -60,7 +60,7 @@ public class ConsolidationV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
@@ -69,14 +69,14 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.create(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ConsolidationConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class)))})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsV3Request request) throws RunnerException {
         log.info("Received Consolidation update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.completeUpdate(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class, description = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam (required = false) Long id,
                                                         @Parameter(description = ShipmentConstants.SHIPMENT_GUID) @RequestParam (required = false) String guid,
@@ -134,7 +134,7 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationPendingNotificationResponse);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyConsolidationDetailsV3ListResponseClass.class))), description = ConsolidationConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST_V3)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
@@ -221,7 +221,7 @@ public class ConsolidationV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class, description = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)))
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class, description = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)))
     })
     @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
@@ -229,7 +229,7 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(defaultConsolidation);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class, description = ConsolidationConstants.CONSOLE_DETAILS_FETCHED_SUCCESSFULLY)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class, description = ConsolidationConstants.CONSOLE_DETAILS_FETCHED_SUCCESSFULLY)))})
     @GetMapping(ApiConstants.API_CONSOLE_FROM_SHIPMENT)
     public ResponseEntity<IRunnerResponse> getNewConsoleDataFromShipmentId(@Parameter(description = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException, AuthenticationException {
         log.info("Received getNewConsoleDataFromShipmentId: {}" , id);
@@ -238,7 +238,7 @@ public class ConsolidationV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = ConsolidationConstants.CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationV3Controller.MyConsolidationDetailsV3ResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE_CONSOLE_ATTACH_SHIPMENT)

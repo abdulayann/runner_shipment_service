@@ -42,8 +42,8 @@ import java.util.Optional;
 public class AwbController {
     private final IAwbService awbService;
 
-    private class MyResponseClass extends RunnerResponse<AwbResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<AwbResponse>{}
+    private class MyAwbResponseClass extends RunnerResponse<AwbResponse>{}
+    private class MyAwbListResponseClass extends RunnerListResponse<AwbResponse>{}
     private class AwbCalculationResponseClass extends RunnerResponse<AwbCalculationResponse>{}
     private class FnmStatusMessageResponseClass extends RunnerResponse<FnmStatusMessageResponse>{}
 
@@ -54,7 +54,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyListResponseClass.class))), description = AwbConstants.AWB_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyAwbListResponseClass.class))), description = AwbConstants.AWB_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid FetchAwbListRequest listCommonRequest) {
@@ -69,7 +69,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/create")
@@ -86,7 +86,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))
+            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class)))
     })
     @PutMapping("/update")
     public ResponseEntity<IRunnerResponse> updateAwbDetails(@RequestBody @Valid AwbRequest request) {
@@ -101,7 +101,7 @@ public class AwbController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class, description = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class, description = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping("/retrieve/id")
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = AwbConstants.AWB_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
@@ -115,7 +115,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = AwbConstants.MAWB_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = AwbConstants.MAWB_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/mawb/create")
@@ -132,7 +132,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = AwbConstants.MAWB_GOODS_AND_PACKS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = AwbConstants.MAWB_GOODS_AND_PACKS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping("/mawb/goods_and_packs/update")
@@ -184,7 +184,7 @@ public class AwbController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "200", description = AwbConstants.AWB_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyAwbResponseClass.class))),
             @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/partial-update-awb")
@@ -249,7 +249,7 @@ public class AwbController {
     }
 
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyListResponseClass.class, description = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyAwbListResponseClass.class, description = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)))})
     @GetMapping(ApiConstants.RETIEVE_BY_MAWB_ID)
     public ResponseEntity<IRunnerResponse> retrieveByAwbByMawb(@Parameter(description = AwbConstants.MAWB, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
