@@ -202,8 +202,12 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (consolidationDetails.getCarrierDetails() != null) {
                 sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+                sailingInformation.setOriginPortLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
+                sailingInformation.setDestinationPortLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+                sailingInformation.setCarrierReceiptLocCode(consolidationDetails.getCarrierDetails().getOriginLocCode());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+                sailingInformation.setCarrierDeliveryLocCode(consolidationDetails.getCarrierDetails().getDestinationLocCode());
             }
             carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
@@ -345,6 +349,10 @@ public class CarrierBookingService implements ICarrierBookingService {
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+                sailingInformation.setOriginPortLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
+                sailingInformation.setDestinationPortLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
+                sailingInformation.setCarrierReceiptLocCode(consolidationDetails.getCarrierDetails().getOriginLocCode());
+                sailingInformation.setCarrierDeliveryLocCode(consolidationDetails.getCarrierDetails().getDestinationLocCode());
             }
             carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
@@ -401,6 +409,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setStatus(CarrierBookingStatus.Cancelled);
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
+        //call to bridge
         sendNotification(carrierBooking);
     }
 
