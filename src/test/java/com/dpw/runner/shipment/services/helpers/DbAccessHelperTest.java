@@ -809,4 +809,40 @@ class DbAccessHelperTest {
         Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
         assertNull(predicate);
     }
+
+    @Test
+    void fetchDataTableNamesEmptyISNOTEQUALORNULLPredicateLongClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest16();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(Long.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesEmptyISNOTEQUALORNULLPredicateStringClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest16();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
 }
