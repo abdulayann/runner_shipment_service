@@ -142,6 +142,48 @@ public class ShippingInstructionsConstants {
                     .fieldName("shipInstructionCutoff")
                     .isContainsText(false)
                     .build()),
+            Map.entry("voyageNo", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("voyageNo")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("emptyContainerPickupCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("emptyContainerPickupCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("loadedContainerGateInCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("loadedContainerGateInCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("eta", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("eta")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("etd", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("etd")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("carrierReceiptPlace", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierReceiptPlace")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("carrierDeliveryPlace", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierDeliveryPlace")
+                    .isContainsText(true)
+                    .build()),
             Map.entry("vgmCutoff", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
                     .dataType(LocalDateTime.class)

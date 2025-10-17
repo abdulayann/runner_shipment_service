@@ -198,7 +198,7 @@ public class ShippingInstructionsServiceImpl implements IShippingInstructionsSer
         ShippingInstructionResponseMapper mapper = new ShippingInstructionResponseMapper();
         mapper.setShippingInstruction(shippingInstruction);
         if (EntityType.CONSOLIDATION == shippingInstruction.getEntityType()) {
-            List<CarrierBookingInfoProjection> cbInfoProjection = repository.findBookingByConsolId(shippingInstruction.getEntityNumber());
+            List<CarrierBookingInfoProjection> cbInfoProjection = repository.findBookingByConsolId(shippingInstruction.getEntityId());
             if (!cbInfoProjection.isEmpty()) {
                 throw new ValidationException("SI creation not allowed. Consolidation linked with a Booking already!!");
             }

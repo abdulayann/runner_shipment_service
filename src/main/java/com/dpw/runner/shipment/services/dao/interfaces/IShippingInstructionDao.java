@@ -38,7 +38,7 @@ public interface IShippingInstructionDao {
 
     List<ShippingConsoleIdProjection>   findByCarrierBookingConsolId(List<Long> allConsolNumbers);
 
-    List<CarrierBookingInfoProjection> findBookingByConsolId(String consolidationNumber);
+    List<CarrierBookingInfoProjection> findBookingByConsolId(Long entityId);
 
     List<CarrierBookingInfoProjection> findConfimedBookingByConsolId(String consolidationNumber);
 
