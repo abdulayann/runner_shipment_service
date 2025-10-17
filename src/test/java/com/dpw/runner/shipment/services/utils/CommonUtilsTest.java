@@ -2420,14 +2420,18 @@ class CommonUtilsTest {
     @Test
     void sendEmailForPullPushRequestStatus_withV3FlagEnabled() throws Exception {
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
         commonUtils.sendEmailForPullPushRequestStatus(
-                ShipmentDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .build(),
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                shipmentDetails1,
+                consolidationDetails1,
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{

@@ -4814,8 +4814,10 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendImportShipmentPullAttachmentEmail() {
     // setup
     shipmentDetails = ShipmentDetails.builder().build();
+    shipmentDetails.setAssignedTo("assignedUser");
     consolidationDetails = ConsolidationDetails.builder().build();
     consolidationDetails.setAssignedTo("assignedToUser");
+    consolidationDetails.setCreatedBy("createdBy");
     List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
@@ -4835,6 +4837,14 @@ if (unitConversionUtilityMockedStatic != null) {
     // method under test
     assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
   }
+
+    @Test
+    void testSendEmailForPullRequested_WithNoTenantId() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        // method under test
+        assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
+    }
 
   @Test
   void testGetSummaryDgPacks() {
