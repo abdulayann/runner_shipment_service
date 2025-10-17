@@ -4505,8 +4505,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
-        toEmailList.addAll(toEmailIds);
+        ccEmailsList.addAll(toEmailIds);
         ccEmailsList.addAll(ccEmailIds);
+        toEmailList.addAll(toEmailIds);
         commonUtils.setCurrentUserEmail(ccEmailsList);
 
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carriersMap, locationsMap);

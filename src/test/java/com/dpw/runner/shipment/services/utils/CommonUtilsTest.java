@@ -1518,6 +1518,21 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 "username", null, false);
         assertFalse(shipmentRequestedTypes.isEmpty());
+        //with v3FlagEnabled.
+        shipmentRequestedTypes.clear(); // Clear for second test
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder().build(),
+                ConsolidationDetails.builder().build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                shipmentRequestedTypes,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                "username", null, true);
+        assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
     @Test
@@ -2201,6 +2216,25 @@ class CommonUtilsTest {
                 }},
                 "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With V3 Flag enabled
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -2225,6 +2259,31 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatus_withV3FlagEnabled() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 

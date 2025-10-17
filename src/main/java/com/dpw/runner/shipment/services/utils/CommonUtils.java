@@ -1054,7 +1054,7 @@ public class CommonUtils {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             setRequestedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
-            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
                 getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
             }
         } else {
