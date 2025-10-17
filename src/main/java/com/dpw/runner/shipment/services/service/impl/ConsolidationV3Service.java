@@ -1822,9 +1822,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (consolidationDetails.getAssignedTo() != null) {
             usernamesList.add(consolidationDetails.getAssignedTo());
         }
-        if(Objects.nonNull(consolidationDetails) && Objects.nonNull(consolidationDetails.getTenantId())) {
-            tenantIds.add(consolidationDetails.getTenantId());
-        }
+        tenantIds.add(consolidationDetails.getTenantId());
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(
             Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
