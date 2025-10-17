@@ -234,4 +234,17 @@ class HblControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void createHblApprovalTask() throws RunnerException {
+        // Given
+        when(hblService.createHblTaskForApproval(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        //When
+        var responseEntity = hblController.createHblApprovalTask(112L);
+
+        // Then
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+    }
+
 }
