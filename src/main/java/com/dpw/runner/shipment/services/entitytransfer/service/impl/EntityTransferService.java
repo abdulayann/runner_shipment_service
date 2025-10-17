@@ -651,18 +651,18 @@ public class EntityTransferService implements IEntityTransferService {
         networkTransfer.setTransportMode(transportMode);
         networkTransfer.setJobType(jobType);
 
-        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByEntityNumber(entityNumber);
-        if (optionalNetworkTransfer.isPresent()) {
-            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
-                NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
-                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
-                oldNetworkTransfer.setEntityPayload(entityPayload);
-                oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
-                oldNetworkTransfer.setTransferredDate(LocalDateTime.now());
-                networkTransferDao.save(oldNetworkTransfer);
+        Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findByEntityNumber(entityNumber);
+        if (networkTransferOptional.isPresent()) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(networkTransferOptional.get().getStatus())) {
+                NetworkTransfer oldNetworkTransferRecord = networkTransferOptional.get();
+                oldNetworkTransferRecord.setStatus(NetworkTransferStatus.RETRANSFERRED);
+                oldNetworkTransferRecord.setEntityPayload(entityPayload);
+                oldNetworkTransferRecord.setUpdatedBy(UserContext.getUser().Username);
+                oldNetworkTransferRecord.setTransferredDate(LocalDateTime.now());
+                networkTransferDao.save(oldNetworkTransferRecord);
             } else {
                 networkTransferService.updateNetworkTransferTransferred(
-                        optionalNetworkTransfer.get(),
+                        networkTransferOptional.get(),
                         entityPayload);
             }
         }
@@ -681,14 +681,14 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
-        networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+    private void createNetworkTransfer(NetworkTransfer networkTransferPayload, Map<String, Object> entityPayload){
+        networkTransferPayload.setStatus(NetworkTransferStatus.SCHEDULED);
         if(entityPayload != null){
-            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
-            networkTransfer.setEntityPayload(entityPayload);
-            networkTransfer.setTransferredDate(LocalDateTime.now());
+            networkTransferPayload.setStatus(NetworkTransferStatus.TRANSFERRED);
+            networkTransferPayload.setEntityPayload(entityPayload);
+            networkTransferPayload.setTransferredDate(LocalDateTime.now());
         }
-        networkTransferDao.save(networkTransfer);
+        networkTransferDao.save(networkTransferPayload);
     }
 
     private boolean shouldSaveShipment(ShipmentDetails shipment) {
