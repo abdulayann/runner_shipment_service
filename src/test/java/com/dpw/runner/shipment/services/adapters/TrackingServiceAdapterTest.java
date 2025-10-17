@@ -680,4 +680,190 @@ class TrackingServiceAdapterTest {
         assertNull(trackingPayload.getBookingReferenceNumber());
     }
 
+    @Test
+    void convertTrackingEventCodeToShortCode_FWBF() {
+        Event event = new Event();
+        event.setDescription("FWB Received from Forwarder");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.FWBF, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_DISC_Discrepancy() {
+        Event event = new Event();
+        event.setDescription("Discrepancy");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.DISC, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_DISC_Missing() {
+        Event event = new Event();
+        event.setDescription("Missing");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.DISC, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_COOD() {
+        Event event = new Event();
+        event.setDescription("Delivered");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.COOD, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_BOCO_Booked() {
+        Event event = new Event();
+        event.setDescription("Booked");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.BOCO, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_BOCO_BookingGenerated() {
+        Event event = new Event();
+        event.setDescription("Booking Generated");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.BOCO, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_COSC() {
+        Event event = new Event();
+        event.setEventType(EventConstants.STUFFING);
+        event.setLocationRole("originWarehouse");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.COSC, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_EFLT() {
+        Event event = new Event();
+        event.setEventType(EventConstants.LOAD_ON_TRUCK_CONTAINER_FULL);
+        event.setLocationRole("originPort");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.EFLT, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_EFFT() {
+        Event event = new Event();
+        event.setEventType(EventConstants.DISCHARGE_FROM_TRUCK_CONTAINER_FULL);
+        event.setLocationRole("originPort");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.EFFT, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_LORA_Origin() {
+        Event event = new Event();
+        event.setEventType(EventConstants.LOAD_ON_RAIL);
+        event.setLocationRole("originYard");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.LORA, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_LORA_Ocean() {
+        Event event = new Event();
+        event.setEventType(EventConstants.LOAD_ON_RAIL);
+        event.setLocationRole("oceanTerminal");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.LORA, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_UNAT() {
+        Event event = new Event();
+        event.setDescription("Unloaded from arrival truck");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.UNAT, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_UNAT_IgnoresCase() {
+        Event event = new Event();
+        event.setDescription("unloaded FROM Arrival Truck");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.UNAT, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_EMTC() {
+        Event event = new Event();
+        event.setDescription("Pre-Manifested");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.EMTC, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_MFST() {
+        Event event = new Event();
+        event.setDescription("Manifested");
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+        assertEquals(EventConstants.MFST, result);
+    }
+
+
 }
