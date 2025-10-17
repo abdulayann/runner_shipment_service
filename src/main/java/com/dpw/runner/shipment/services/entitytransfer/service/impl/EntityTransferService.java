@@ -151,9 +151,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -586,7 +586,7 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferConsolePayload.setPackingVsContainerGuid(etPackingContainerGuidMap);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
         SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
         if(sendFileToExternalRequest.getTransportMode().equals("AIR"))
@@ -613,7 +613,8 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferPayload.setDirection(Constants.IMP);
         entityTransferPayload.setAdditionalDocs(sendFileToExternalRequest.getAdditionalDocs());
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
-        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
+        Pair<Long, String> entityMetaData = Pair.of(shipment.getId(), SHIPMENT);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), shipment.getReceivingBranch().intValue(), sendFileToExternalRequest);
 
     }
     private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
@@ -628,6 +629,7 @@ public class EntityTransferService implements IEntityTransferService {
         SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
                 .additionalDocs(sendFileToExternalRequest.getAdditionalDocs())
                 .shipAdditionalDocs(sendFileToExternalRequest.getShipAdditionalDocs())
+                .sendToBranch(List.of(console.getReceivingBranch().intValue()))
                 .build();
 
         EntityTransferV3ConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, sendConsolidationRequest, false);
@@ -639,20 +641,23 @@ public class EntityTransferService implements IEntityTransferService {
         }
         Map<String, Object> entityPayload = new HashMap<>(getNetworkTransferEntityPayload(entityTransferPayload));
         entityPayload.put("TransferInitiatedUser", UserContext.getUser().getWorkEmail());
-        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
+        Pair<Long, String> entityMetaData = Pair.of(console.getId(), CONSOLIDATION);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), console.getReceivingBranch().intValue(), sendFileToExternalRequest);
     }
 
-    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
+    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, Pair<Long, String> entityMetaData, String transportMode, String jobType, Integer receivingTenantId, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
-        networkTransfer.setEntityType(entityType);
+        networkTransfer.setEntityType(entityMetaData.getRight());
         networkTransfer.setEntityNumber(entityNumber);
         networkTransfer.setTransportMode(transportMode);
         networkTransfer.setJobType(jobType);
-        networkTransfer.setTenantId(TenantContext.getCurrentTenant());
+        networkTransfer.setTenantId(receivingTenantId);
 
-        Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findByEntityNumber(entityNumber);
+        Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(receivingTenantId), entityMetaData.getLeft(), entityMetaData.getRight());
+
         if (networkTransferOptional.isPresent()) {
             if (EntityTransferConstants.RETRANSFER_SET.contains(networkTransferOptional.get().getStatus())) {
                 NetworkTransfer oldNetworkTransferRecord = networkTransferOptional.get();

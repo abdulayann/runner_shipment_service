@@ -3662,7 +3662,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .transportMode("AIR")
                 .build();
 
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(ShipmentDetails.builder().receivingBranch(12345L).build()));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(entityTransferShipmentDetails);
         when(jsonHelper.convertToJson(any())).thenReturn("Example");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
@@ -3700,6 +3700,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         var console = ConsolidationDetails.builder()
                 .shipmentsList(Set.of())
+                .receivingBranch(123456L)
                 .build();
         console.setTenantId(12);
 
@@ -3708,13 +3709,13 @@ class EntityTransferServiceTest extends CommonMocks {
                 Map.entry(12, mockV1TenantResponse)
         );
 
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.empty());
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
         when(jsonHelper.convertToJson(any())).thenReturn("Example");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
-        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build()));
         var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -3735,6 +3736,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         var console = ConsolidationDetails.builder()
                 .shipmentsList(Set.of())
+                .receivingBranch(12345L)
                 .build();
         console.setTenantId(12);
 
@@ -3743,13 +3745,13 @@ class EntityTransferServiceTest extends CommonMocks {
                 Map.entry(12, mockV1TenantResponse)
         );
 
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build()));
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
         when(jsonHelper.convertToJson(any())).thenReturn("Example");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
-        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build()));
         var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -3770,6 +3772,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         var console = ConsolidationDetails.builder()
                 .shipmentsList(Set.of())
+                .receivingBranch(12345L)
                 .build();
         console.setTenantId(12);
 
@@ -3778,13 +3781,13 @@ class EntityTransferServiceTest extends CommonMocks {
                 Map.entry(12, mockV1TenantResponse)
         );
 
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build()));
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
         when(jsonHelper.convertToJson(any())).thenReturn("Example");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
-        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.empty());
         var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
