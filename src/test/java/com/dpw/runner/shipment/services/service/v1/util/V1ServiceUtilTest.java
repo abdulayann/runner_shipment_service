@@ -327,7 +327,7 @@ class V1ServiceUtilTest {
     /**
      * Method under test:
      * {@link V1ServiceUtil#fetchEmailIdsForConsolidation(ConsolidationDetails)}
-//     */
+     //     */
     @Test
     void testFetchEmailIdsForConsolidation() {
 
@@ -888,4 +888,3 @@ class V1ServiceUtilTest {
     }
 
 }
-

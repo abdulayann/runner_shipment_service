@@ -366,13 +366,13 @@ public class V1ServiceUtil {
         try {
             var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
             return v1Response.getEntities()
-                .stream()
-                .collect(Collectors.groupingBy(
-                    TenantDetailsByListResponse.TenantDetails::getTenantId,
-                    Collectors.collectingAndThen(
-                        Collectors.toList(),
-                        list ->  modelMapper.map(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
-                    )));
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            TenantDetailsByListResponse.TenantDetails::getTenantId,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list ->  modelMapper.map(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
+                            )));
         }
         catch (Exception ex) {
             log.error(ex.getMessage());

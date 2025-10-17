@@ -156,11 +156,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerListRes
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
-import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -362,7 +358,7 @@ public class ReportService implements IReportService {
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
     private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
     @Autowired
-    private ReportService self;
+    public ReportService self;
 
     @Autowired
     private ITransportInstructionLegsService transportInstructionLegsService;
@@ -373,32 +369,62 @@ public class ReportService implements IReportService {
     private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @Override
-    @Transactional
-    public ReportResponse getDocumentData(CommonRequestModel request)
-            throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
+    public ReportResponse getDocumentData(CommonRequestModel request) throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
+
+        // Phase 1: Pre-PDF Database Operations (Transactional)
+        ReportPreparationData prepData = self.prepareReportGeneration(reportRequest);
+
+        // Handle combined reports early (already have bytes from Phase 1)
+        if (prepData.isCombinedReport()) {
+            var documentMasterResponse = pushFileToDocumentMaster(
+                    reportRequest, prepData.getCombinedReportBytes(), new HashMap<>());
+            return ReportResponse.builder()
+                    .content(prepData.getCombinedReportBytes())
+                    .documentServiceMap(documentMasterResponse)
+                    .build();
+        }
+
+        // Phase 2: PDF Generation (Non-Transactional, I/O heavy)
+        byte[] pdfByteContent = generatePdfDocument(prepData);
+
+        // Phase 3: Post-PDF Database Operations (Transactional)
+        self.finalizeReportGeneration(reportRequest, pdfByteContent, prepData);
+
+        // Phase 4: Document Upload
+        var documentMasterResponse = pushFileToDocumentMaster(
+                reportRequest, pdfByteContent, prepData.getDataRetrieved());
+
+        return ReportResponse.builder()
+                .content(pdfByteContent)
+                .documentServiceMap(documentMasterResponse)
+                .build();
+    }
+
+    @Transactional
+    public ReportPreparationData prepareReportGeneration(ReportRequest reportRequest)
+            throws RunnerException, DocumentException, IOException, ExecutionException, InterruptedException {
 
         // set fromConsole or fromShipment flag true from entity Name
         setFromConsoleOrShipment(reportRequest);
 
-        // Generate combined shipment report via consolidation
+        // Handle combined reports early
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
         if (dataForCombinedReport != null) {
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataForCombinedReport, new HashMap<>());
-            return ReportResponse.builder().content(dataForCombinedReport).documentServiceMap(documentMasterResponse).build();
+            return ReportPreparationData.forCombinedReport(dataForCombinedReport);
         }
 
-        // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
+        // Validate AWB
         validateOriginalAwbPrintForLinkedShipment(reportRequest);
 
         byte[] dataByteList = getCombinedDataForCargoManifestAir(reportRequest);
-
         if (dataByteList != null) {
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>());
-            return ReportResponse.builder().content(dataByteList).documentServiceMap(documentMasterResponse).build();
+            return ReportPreparationData.forCombinedReport(dataByteList);
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao
+                .findByTenantId(TenantContext.getCurrentTenant())
+                .orElse(ShipmentSettingsDetails.builder().build());
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
@@ -411,81 +437,251 @@ public class ReportService implements IReportService {
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         validateForInvalidReport(report);
-
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
-        Map<String, Object> dataRetrived;
         setReportParametersFromRequest(report, reportRequest);
-        // Update Original Printed Date in AWB
+
+        // DB WRITE: Update AWB print type (BEFORE PDF)
         Awb awb = this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
-        //LATER - Need to handle for new flow
-        dataRetrived = getDocumentDataForReports(report, reportRequest);
 
-        String hbltype = (String) dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
-        String objectType = getObjectType(reportRequest, dataRetrived);
+        // Fetch all data needed for PDF generation
+        Map<String, Object> dataRetrieved = getDocumentDataForReports(report, reportRequest);
 
+        // DB WRITE: Update date and status for HAWB/MAWB (BEFORE PDF)
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            updateDateAndStatusForHawbPrint(reportRequest, dataRetrieved, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
+        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)
+                && (isOriginalPrint || isSurrenderPrint)
+                && reportRequest.getReportKey() != null
+                && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID)) {
+            shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()),
+                    LocalDate.now().atStartOfDay(), null);
+        }
+
+        String hbltype = (String) dataRetrieved.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
+        String objectType = getObjectType(reportRequest, dataRetrieved);
+
+        return ReportPreparationData.builder()
+                .reportRequest(reportRequest)
+                .tenantSettingsRow(tenantSettingsRow)
+                .isOriginalPrint(isOriginalPrint)
+                .isSurrenderPrint(isSurrenderPrint)
+                .isNeutralPrint(isNeutralPrint)
+                .report(report)
+                .awb(awb)
+                .dataRetrieved(dataRetrieved)
+                .hbltype(hbltype)
+                .objectType(objectType)
+                .build();
+    }
+
+    private byte[] generatePdfDocument(ReportPreparationData prepData)
+            throws DocumentException, IOException, ExecutionException, InterruptedException, RunnerException {
+
+        // Handle early returns for combined reports
+        if (prepData.isCombinedReport()) {
+            return prepData.getCombinedReportBytes();
+        }
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        updateDocumentPrintType(reportRequest, dataRetrieved);
+
+        // Handle AWB Labels
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)) {
             List<byte[]> pdfBytes = new ArrayList<>();
-            DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), null, false);
-            generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-            var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
-            return ReportResponse.builder().content(byteContent).documentServiceMap(documentMasterResponse).build() ;
-        } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
-            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
-            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
-            return getBytesForBookingOrderReport(dataRetrived, reportRequest);
+            DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null,
+                    reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                    reportRequest.getBackTemplateCode(), null, false);
+            generatePdfBytes(reportRequest, pages, dataRetrieved, pdfBytes);
+            return CommonUtils.concatAndAddContent(pdfBytes);
         }
 
-        updateDocumentPrintType(reportRequest, dataRetrived);
+        // Handle MAWB
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+            return generatePdfForMawb(prepData);
+        }
 
-        if (dataRetrived.containsKey(ReportConstants.TRANSPORT_MODE)) {
-            objectType = dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString();
+        // Handle HAWB
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            return generatePdfForHawb(prepData);
         }
-        var transportInstructionsResponse = getBytesForTransportInstructions(reportRequest, tenantSettingsRow, dataRetrived, objectType);
-        if (transportInstructionsResponse != null) {
-            return transportInstructionsResponse;
+
+        // Handle Booking Order
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
+            return generatePdfForBookingOrder(prepData);
         }
-        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(), StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
+
+        // Handle Transport Instructions
+        String objectType = prepData.getObjectType();
+        if (dataRetrieved.containsKey(ReportConstants.TRANSPORT_MODE)) {
+            objectType = dataRetrieved.get(ReportConstants.TRANSPORT_MODE).toString();
+        }
+
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
+            return generatePdfForTransportInstruction(prepData, objectType);
+        }
+
+        // Default PDF generation flow
+        return generateStandardPdfDocument(prepData, objectType);
+    }
+
+    @Transactional
+    public void finalizeReportGeneration(ReportRequest reportRequest,
+                                          byte[] pdfByteContent,
+                                          ReportPreparationData prepData) {
+
+        ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        // DB WRITE: Add HBL to repository for Seaway Bill
+        addHBLToRepoForSeawayBill(reportRequest, pdfByteContent, tenantSettingsRow);
+
+        // DB WRITE: Create events for report
+        createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrieved, tenantSettingsRow);
+
+        // DB WRITE: Update FCR number
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
+            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
+        }
+
+        // Process pre-alert (might have DB operations)
+        processPreAlert(reportRequest, pdfByteContent, dataRetrieved);
+
+        // Trigger automatic transfer (async, but coordinated)
+        triggerAutomaticTransfer(prepData.getReport(), reportRequest);
+    }
+
+    private byte[] generatePdfForMawb(ReportPreparationData prepData)
+            throws DocumentException, IOException, RunnerException {
+        ReportRequest reportRequest = prepData.getReportRequest();
+        ReportResponse response = getBytesForMawb(reportRequest, prepData.getDataRetrieved(),
+                prepData.getIsOriginalPrint(), prepData.getIsSurrenderPrint(),
+                prepData.getReport(), prepData.getAwb());
+        return response.getContent();
+    }
+
+    private byte[] generatePdfForHawb(ReportPreparationData prepData)
+            throws DocumentException, IOException, ExecutionException, InterruptedException, RunnerException {
+        ReportResponse response = getBytesForHawb(prepData);
+        return response.getContent();
+    }
+
+    private byte[] generatePdfForBookingOrder(ReportPreparationData prepData) {
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+        ReportRequest reportRequest = prepData.getReportRequest();
+
+        String consolidationType = dataRetrieved.get(ReportConstants.SHIPMENT_TYPE) != null ?
+                dataRetrieved.get(ReportConstants.SHIPMENT_TYPE).toString() : null;
+        String transportMode = ReportConstants.SEA;
+
+        if (dataRetrieved.containsKey(ReportConstants.TRANSPORT_MODE)) {
+            transportMode = dataRetrieved.get(ReportConstants.TRANSPORT_MODE).toString();
+        }
+
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), consolidationType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), transportMode, false);
+
+        byte[] pdfByteContent = getFromDocumentService(dataRetrieved, pages.getMainPageId());
+        if (pdfByteContent == null) {
+            throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+        }
+
+        return pdfByteContent;
+    }
+
+    private byte[] generatePdfForTransportInstruction(ReportPreparationData prepData, String objectType)
+            throws DocumentException, IOException {
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+
+        validateReportRequest(reportRequest);
+
+        List<TiLegs> tiLegsList;
+        if (!CommonUtils.setIsNullOrEmpty(reportRequest.getTiLegs())) {
+            tiLegsList = transportInstructionLegsService.retrieveByIdIn(reportRequest.getTiLegs());
+            if (CommonUtils.listIsNullOrEmpty(tiLegsList) || reportRequest.getTiLegs().size() != tiLegsList.size()) {
+                throw new ValidationException("Please provides the valid ti legs id");
+            }
+            Optional<TiLegs> optionalTiLegs = tiLegsList.stream()
+                    .filter(tiLegs -> !Objects.equals(tiLegs.getPickupDeliveryDetailsId(),
+                            Long.valueOf(reportRequest.getTransportInstructionId())))
+                    .findAny();
+            if (optionalTiLegs.isPresent()) {
+                throw new ValidationException("Please provide the valid ti legs id respective to transport instruction");
+            }
+        } else {
+            tiLegsList = transportInstructionLegsService.findByTransportInstructionId(
+                    Long.valueOf(reportRequest.getTransportInstructionId()));
+        }
+
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(),
+                StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
+
+        if (pages == null) {
+            return new byte[0];
+        }
+
+        return printTransportInstructionLegsData(tiLegsList, reportRequest, dataRetrieved, pages);
+    }
+
+    private byte[] generateStandardPdfDocument(ReportPreparationData prepData, String objectType)
+            throws DocumentException, IOException, ExecutionException, InterruptedException {
+
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrieved = prepData.getDataRetrieved();
+        ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
+        String hbltype = prepData.getHbltype();
+
+        DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), objectType,
+                reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(),
+                reportRequest.getBackTemplateCode(), reportRequest.getTransportMode(),
+                StringUtility.isNotEmpty(reportRequest.getTransportInstructionId()));
+
         if (pages == null) {
             return null;
         }
-        Map<String, Object> retrived = dataRetrived;
-        var mainDocFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getMainPageId()), executorService);
-        var firstPageFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getFirstPageId()), executorService);
-        var backPrintFuture = CompletableFuture.supplyAsync(() -> getFromDocumentService(retrived, pages.getBackPrintId()), executorService);
+
+        var mainDocFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getMainPageId()), executorService);
+        var firstPageFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getFirstPageId()), executorService);
+        var backPrintFuture = CompletableFuture.supplyAsync(
+                () -> getFromDocumentService(dataRetrieved, pages.getBackPrintId()), executorService);
+
         CompletableFuture.allOf(mainDocFuture, firstPageFuture, backPrintFuture).join();
 
         byte[] mainDoc = mainDocFuture.get();
         byte[] firstpage = firstPageFuture.get();
         byte[] backprint = backPrintFuture.get();
-        byte[] pdfByteContent;
+
         if (mainDoc == null) {
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         }
 
-        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
-        boolean waterMarkRequired = getWaterMarkRequired(reportRequest);
+        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc,
+                firstpage, backprint, dataRetrieved, hbltype, tenantSettingsRow,
+                reportRequest.getNoOfCopies(), reportRequest);
 
-        pdfByteContent = CommonUtils.concatAndAddContent(pdfBytes);
+        boolean waterMarkRequired = getWaterMarkRequired(reportRequest);
+        byte[] pdfByteContent = CommonUtils.concatAndAddContent(pdfBytes);
+
         BaseFont font = BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
 
-        pdfByteContent = getPdfBytesForHouseBill(reportRequest, dataRetrived, waterMarkRequired, pdfByteContent, font, isOriginalPrint, isSurrenderPrint, isNeutralPrint, tenantSettingsRow);
+        pdfByteContent = getPdfBytesForHouseBill(reportRequest, dataRetrieved, waterMarkRequired,
+                pdfByteContent, font, prepData.getIsOriginalPrint(), prepData.getIsSurrenderPrint(),
+                prepData.getIsNeutralPrint(), tenantSettingsRow);
+
         pdfByteContent = addWaterMarkForDraftSeawayBill(reportRequest, pdfByteContent, font);
-        addHBLToRepoForSeawayBill(reportRequest, pdfByteContent, tenantSettingsRow);
-        createEventsForReportInfo(reportRequest, pdfByteContent, dataRetrived, tenantSettingsRow);
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
-            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
-        }
 
-        processPreAlert(reportRequest, pdfByteContent, dataRetrived);
-
-        triggerAutomaticTransfer(report, reportRequest);
-        // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
-        return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
+        return pdfByteContent;
     }
 
     // Add Watermark for draft Seaway Bill
@@ -719,7 +915,7 @@ public class ReportService implements IReportService {
             throw new ValidationException(INVALID_REPORT_KEY);
     }
 
-    private void processPreAlert(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived) {
+    public void processPreAlert(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived) {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getPreAlertEmailAndLogs()) &&
                 reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT)) {
             DocUploadRequest docUploadRequest = new DocUploadRequest();
@@ -799,7 +995,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private ReportResponse getBytesForBookingOrderReport(Map<String, Object> dataRetrived, ReportRequest reportRequest) {
+    public ReportResponse getBytesForBookingOrderReport(Map<String, Object> dataRetrived, ReportRequest reportRequest) {
         String consolidationType = dataRetrived.get(ReportConstants.SHIPMENT_TYPE) != null ?
                 dataRetrived.get(ReportConstants.SHIPMENT_TYPE).toString() : null;
         String transportMode = ReportConstants.SEA;
@@ -819,7 +1015,18 @@ public class ReportService implements IReportService {
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
     }
 
-    private ReportResponse getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report, Awb awb) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
+    public ReportResponse getBytesForHawb(ReportPreparationData prepData) throws DocumentException, IOException, ExecutionException, InterruptedException, RunnerException {
+        ReportRequest reportRequest = prepData.getReportRequest();
+        Map<String, Object> dataRetrived = prepData.getDataRetrieved();
+        Boolean isOriginalPrint = prepData.getIsOriginalPrint();
+        Boolean isSurrenderPrint = prepData.getIsSurrenderPrint();
+        Boolean isNeutralPrint = prepData.getIsNeutralPrint();
+        String hbltype = prepData.getHbltype();
+        String objectType = prepData.getObjectType();
+        ShipmentSettingsDetails tenantSettingsRow = prepData.getTenantSettingsRow();
+        IReport report = prepData.getReport();
+        Awb awb = prepData.getAwb();
+        
         updateCustomDataInDataRetrivedForHawb(reportRequest, dataRetrived);
 
         updateDateAndStatusForHawbPrint(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
@@ -910,7 +1117,7 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
-    private void updateDateAndStatusForHawbPrint(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint) throws RunnerException {
+    public void updateDateAndStatusForHawbPrint(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint) throws RunnerException {
         if (isOriginalPrint || isSurrenderPrint || Boolean.TRUE.equals(isNeutralPrint)) {
             LocalDateTime issueDate = null;
             ShipmentStatus status = null;
@@ -928,7 +1135,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private ReportResponse getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report, Awb awb) throws DocumentException, IOException, RunnerException {
+    public ReportResponse getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report, Awb awb) throws DocumentException, IOException, RunnerException {
         updateCustomDataInDataRetrivedForMawb(reportRequest, dataRetrived);
         List<byte[]> pdfBytes = new ArrayList<>();
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
@@ -1328,7 +1535,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void addHBLToRepoForSeawayBill(ReportRequest reportRequest, byte[] pdfByteContent, ShipmentSettingsDetails tenantSettingsRow) {
+    public void addHBLToRepoForSeawayBill(ReportRequest reportRequest, byte[] pdfByteContent, ShipmentSettingsDetails tenantSettingsRow) {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null) {
             Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
             ShipmentDetails shipmentDetails = null;
@@ -1350,7 +1557,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void createEventsForReportInfo(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived, ShipmentSettingsDetails tenantSettingsRow) {
+    public void createEventsForReportInfo(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived, ShipmentSettingsDetails tenantSettingsRow) {
         createEventsForShippingRequest(reportRequest, pdfByteContent, dataRetrived, tenantSettingsRow);
 
         if (ObjectUtils.isNotEmpty(reportRequest.getReportInfo())) {
@@ -1408,7 +1615,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] getCombinedDataForCargoManifestAir(ReportRequest reportRequest) throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
+    public byte[] getCombinedDataForCargoManifestAir(ReportRequest reportRequest) throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         if ((Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION)
                 || Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION))
                 && reportRequest.isFromConsolidation()) {
@@ -1448,7 +1655,7 @@ public class ReportService implements IReportService {
         return dataByteList;
     }
 
-    private void validateOriginalAwbPrintForLinkedShipment(ReportRequest reportRequest) throws RunnerException {
+    public void validateOriginalAwbPrintForLinkedShipment(ReportRequest reportRequest) throws RunnerException {
         if (Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)) {
             Long consolidationId = Long.valueOf(reportRequest.getReportId());
             var awbList = awbDao.findByConsolidationId(consolidationId);
@@ -1463,7 +1670,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] getDataForCombinedReport(ReportRequest reportRequest) throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
+    public byte[] getDataForCombinedReport(ReportRequest reportRequest) throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.CARGO_MANIFEST) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_INSTRUCTION)) && reportRequest.isFromConsolidation()) {
             Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
             if (optionalConsolidationDetails.isPresent()) {
@@ -2593,7 +2800,7 @@ public class ReportService implements IReportService {
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
 
-    private Awb setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
+    public Awb setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
         var originalPrintedAt = LocalDateTime.now();
         Awb awb = null;
         if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
@@ -2865,21 +3072,18 @@ public class ReportService implements IReportService {
         if (!notifyPartyName.isEmpty()) {
             map.put(NOTIFY_PARTY, notifyPartyName);
         }
+        // Origin Agent - using utility to eliminate duplication
         try {
-            map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
-            map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
-            map.put(OA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getExportBroker(), "OA_", modelMapper));
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent - using utility to eliminate duplication
         try {
-            map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
-            map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
-            map.put(DA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getImportBroker(), "DA_", modelMapper));
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
@@ -2889,10 +3093,8 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
-                shipmentDetails.getCarrierDetails().getDestinationPort(),
-                shipmentDetails.getCarrierDetails().getOrigin(),
-                shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(shipmentDetails.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var tenantsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getTenantDataFromCache(Set.of(UserContext.getUser().getTenantId().toString()),tenantModelMap )), executorService);
         var vesselsFuture = Optional.ofNullable(shipmentDetails.getCarrierDetails())
@@ -2908,12 +3110,12 @@ public class ReportService implements IReportService {
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture, userEmailsFuture).join();
-        if (tenantModelMap.get(UserContext.getUser().getTenantId().toString()) != null) {
-            map.put(SALES_BRANCH, tenantModelMap.get(UserContext.getUser().getTenantId().toString()).tenantName);
-        }
-        if (vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()) != null) {
-            map.put(VESSEL, vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()).Name);
-        }
+        
+        // Populate tenant and vessel data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, SALES_BRANCH, tenantModelMap, 
+            UserContext.getUser().getTenantId().toString(), tenant -> tenant.tenantName);
+        AsyncDataFetcher.putFromMapIfPresent(map, VESSEL, vesselMap, 
+            shipmentDetails.getCarrierDetails().getVessel(), vessel -> vessel.Name);
 
         processUnlocationData(shipmentDetails, map, unLocMap);
 
@@ -2924,14 +3126,20 @@ public class ReportService implements IReportService {
     }
 
     private static void processUnlocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, Map<String, EntityTransferUnLocations> unLocMap) {
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(shipmentDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(shipmentDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
+        CarrierDetails carrier = shipmentDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Put location into map if present (shared between methods)
+    private static void putLocationIfPresent(Map<String, Object> map, String key, String locationCode, 
+                                      Map<String, EntityTransferUnLocations> unLocMap) {
+        if (!CommonUtils.isStringNullOrEmpty(locationCode) && unLocMap.containsKey(locationCode)) {
+            map.put(key, unLocMap.get(locationCode).getName());
+        }
     }
 
     public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
@@ -2957,21 +3165,19 @@ public class ReportService implements IReportService {
         map.put(VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume());
         map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
         map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        
+        // Origin Agent (Sending Agent) - using utility to eliminate duplication
         try {
-            map.put(OA_BRANCH, consolidationDetails.getSendingAgent().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getSendingAgent(), PartiesModel.class))));
-            map.put(OA_NAME, consolidationDetails.getSendingAgent().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, consolidationDetails.getSendingAgent().getOrgData().get(PHONE));
-            map.put(OA_EMAIL_CAPS, consolidationDetails.getSendingAgent().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                consolidationDetails.getSendingAgent(), "OA_", modelMapper));
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent (Receiving Agent) - using utility to eliminate duplication
         try {
-            map.put(DA_BRANCH, consolidationDetails.getReceivingAgent().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getReceivingAgent(), PartiesModel.class))));
-            map.put(DA_NAME, consolidationDetails.getReceivingAgent().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, consolidationDetails.getReceivingAgent().getOrgData().get(PHONE));
-            map.put(DA_EMAIL_CAPS, consolidationDetails.getReceivingAgent().getOrgData().get(EMAIL));
+            map.putAll(PartyDataMapper.buildFlatPartyMap(
+                consolidationDetails.getReceivingAgent(), "DA_", modelMapper));
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
@@ -2980,10 +3186,8 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getConsolUsernamesList(consolidationDetails);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
-                consolidationDetails.getCarrierDetails().getDestinationPort(),
-                consolidationDetails.getCarrierDetails().getOrigin(),
-                consolidationDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(consolidationDetails.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var vesselsFuture = Optional.ofNullable(consolidationDetails.getCarrierDetails())
                 .map(CarrierDetails::getVessel)
@@ -2998,23 +3202,40 @@ public class ReportService implements IReportService {
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
 
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture, userEmailsFuture).join();
-        if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
-            map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
+        
+        // Populate vessel data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, VESSEL, vesselMap, 
+            consolidationDetails.getCarrierDetails().getVessel(), vessel -> vessel.Name);
+
+        // Populate location data using shared helper
+        populateConsolLocationData(consolidationDetails, map, unLocMap);
+        
+        // Add user emails to CC using shared helper
+        addConsolUserEmailsToCC(consolidationDetails, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Populate consolidation location data
+    private void populateConsolLocationData(ConsolidationDetails consolidationDetails, Map<String, Object> map, 
+                                             Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = consolidationDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add consolidation user emails to CC
+    private void addConsolUserEmailsToCC(ConsolidationDetails consolidationDetails, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = consolidationDetails.getCreatedBy();
+        String assignedTo = consolidationDetails.getAssignedTo();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
         }
-
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(consolidationDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(consolidationDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()) && usernameEmailsMap.containsKey(consolidationDetails.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(consolidationDetails.getCreatedBy()));
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()) && usernameEmailsMap.containsKey(consolidationDetails.getAssignedTo()))
-            cc.add(usernameEmailsMap.get(consolidationDetails.getAssignedTo()));
-
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo) && usernameEmailsMap.containsKey(assignedTo)) {
+            cc.add(usernameEmailsMap.get(assignedTo));
+        }
     }
 
     public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
@@ -3055,29 +3276,42 @@ public class ReportService implements IReportService {
         Set<String> usernamesList = getBookingUsernamesList(booking);
 
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
-                booking.getCarrierDetails().getDestinationPort(),
-                booking.getCarrierDetails().getOrigin(),
-                booking.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> 
+            masterDataUtils.getLocationDataFromCache(AsyncDataFetcher.extractLocationCodes(booking.getCarrierDetails()), unLocMap)));
         var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture, userEmailsFuture).join();
-        if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
-            map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
+        
+        // Populate carrier/airline data using utility
+        AsyncDataFetcher.putFromMapIfPresent(map, AIRLINE, carrierMap, 
+            booking.getCarrierDetails().getShippingLine(), carrier -> carrier.getItemValue());
+
+        // Populate location data using shared helper
+        populateBookingLocationData(booking, map, unLocMap);
+        
+        // Add user emails to CC
+        addBookingUserEmailsToCC(booking, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Populate booking location data
+    private void populateBookingLocationData(CustomerBooking booking, Map<String, Object> map, 
+                                              Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = booking.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DST, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add booking user email to CC
+    private void addBookingUserEmailsToCC(CustomerBooking booking, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = booking.getCreatedBy();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
         }
-
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOrigin()) && unLocMap.containsKey(booking.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(booking.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestination()) && unLocMap.containsKey(booking.getCarrierDetails().getDestination()))
-            map.put(DST, unLocMap.get(booking.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(booking.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(booking.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(booking.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(booking.getCarrierDetails().getDestinationPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()) && usernameEmailsMap.containsKey(booking.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(booking.getCreatedBy()));
-
     }
 
     @Override
@@ -3190,11 +3424,30 @@ public class ReportService implements IReportService {
     }
 
     public void populateTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, Long emailTemplateId, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> to, Set<String> cc) {
+        // Step 1: Add destination agent email to recipients
+        addDestinationAgentEmail(shipmentDetails, to);
+        
+        // Step 2: Populate basic shipment fields
+        populateBasicShipmentFields(shipmentDetails, map);
+        
+        // Step 3: Populate agent details (OA & DA)
+        populateAgentDetails(shipmentDetails, map);
+        
+        // Step 4: Fetch and populate master data (locations, templates, users)
+        fetchAndPopulateMasterData(shipmentDetails, emailTemplateId, map, emailTemplatesRequests, cc);
+    }
+    
+    // Helper: Add destination agent email to recipients
+    private void addDestinationAgentEmail(ShipmentDetails shipmentDetails, Set<String> to) {
         try {
             to.add(shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get("Email").toString());
         } catch (Exception ignored) {
             log.error("Email not available for DA for Pre Alert Email");
         }
+    }
+    
+    // Helper: Populate basic shipment fields
+    private void populateBasicShipmentFields(ShipmentDetails shipmentDetails, Map<String, Object> map) {
         map.put(CBN_NUMBER, shipmentDetails.getBookingReference());
         map.put(MODE, shipmentDetails.getTransportMode());
         map.put(LOAD, shipmentDetails.getShipmentType());
@@ -3209,73 +3462,117 @@ public class ReportService implements IReportService {
         map.put(CBR, shipmentDetails.getBookingNumber());
         map.put(COMMODITY, shipmentDetails.getCommodity());
         map.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+    }
+    
+    // Helper: Populate agent details (OA & DA) with email key correction
+    private void populateAgentDetails(ShipmentDetails shipmentDetails, Map<String, Object> map) {
+        // Origin Agent
         try {
-            map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
-            map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
-            map.put(OA_EMAIL, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
+            Map<String, Object> oaMap = PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getExportBroker(), "OA_", modelMapper);
+            // Pre-alert uses OA_EMAIL not OA_EMAIL_CAPS
+            if (oaMap.containsKey("OA_EMAIL_CAPS")) {
+                oaMap.put("OA_EMAIL", oaMap.remove("OA_EMAIL_CAPS"));
+            }
+            map.putAll(oaMap);
         } catch (Exception e) {
             log.error(ORIGIN_ERROR);
         }
+        
+        // Destination Agent
         try {
-            map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
-            map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
-            map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
-            map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
+            Map<String, Object> daMap = PartyDataMapper.buildFlatPartyMap(
+                shipmentDetails.getAdditionalDetails().getImportBroker(), "DA_", modelMapper);
+            // Pre-alert uses DA_EMAIL not DA_EMAIL_CAPS
+            if (daMap.containsKey("DA_EMAIL_CAPS")) {
+                daMap.put("DA_EMAIL", daMap.remove("DA_EMAIL_CAPS"));
+            }
+            map.putAll(daMap);
         } catch (Exception e) {
             log.error(DSTN_ERROR);
         }
+    }
+    
+    // Helper: Fetch and populate all master data asynchronously
+    private void fetchAndPopulateMasterData(ShipmentDetails shipmentDetails, Long emailTemplateId, 
+                                            Map<String, Object> map, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
+        // Prepare data containers
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
-
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
-                shipmentDetails.getCarrierDetails().getDestinationPort(),
-                shipmentDetails.getCarrierDetails().getOrigin(),
-                shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
-        var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplateId, emailTemplatesRequests)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
-
+        
+        // Fetch all master data in parallel
+        CompletableFuture<Void> unlocationsFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> fetchLocationData(shipmentDetails, unLocMap)));
+        CompletableFuture<Void> templatesFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplateId, emailTemplatesRequests)), executorService);
+        CompletableFuture<Void> userEmailsFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        
+        // Wait for all async operations
         CompletableFuture.allOf(unlocationsFuture, templatesFuture, userEmailsFuture).join();
-
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
-            map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
-            map.put(DSTN, unLocMap.get(shipmentDetails.getCarrierDetails().getDestination()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort()))
-            map.put(POL, unLocMap.get(shipmentDetails.getCarrierDetails().getOriginPort()).getName());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestinationPort()))
-            map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
-
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()) && usernameEmailsMap.containsKey(shipmentDetails.getCreatedBy()))
-            cc.add(usernameEmailsMap.get(shipmentDetails.getCreatedBy()));
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()) && usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
-            cc.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+        
+        // Populate location data from fetched results
+        populateLocationData(shipmentDetails, map, unLocMap);
+        
+        // Add user emails to CC
+        addUserEmailsToCC(shipmentDetails, cc, usernameEmailsMap);
+    }
+    
+    // Helper: Fetch location data
+    private void fetchLocationData(ShipmentDetails shipmentDetails, Map<String, EntityTransferUnLocations> unLocMap) {
+        Set<String> locations = AsyncDataFetcher.extractLocationCodes(shipmentDetails.getCarrierDetails());
+        masterDataUtils.getLocationDataFromCache(locations, unLocMap);
+    }
+    
+    // Helper: Populate location data into map
+    private void populateLocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, 
+                                      Map<String, EntityTransferUnLocations> unLocMap) {
+        CarrierDetails carrier = shipmentDetails.getCarrierDetails();
+        
+        putLocationIfPresent(map, ORIGIN, carrier.getOrigin(), unLocMap);
+        putLocationIfPresent(map, DSTN, carrier.getDestination(), unLocMap);
+        putLocationIfPresent(map, POL, carrier.getOriginPort(), unLocMap);
+        putLocationIfPresent(map, POD, carrier.getDestinationPort(), unLocMap);
+    }
+    
+    // Helper: Add user emails to CC list
+    private void addUserEmailsToCC(ShipmentDetails shipmentDetails, Set<String> cc, Map<String, String> usernameEmailsMap) {
+        String createdBy = shipmentDetails.getCreatedBy();
+        String assignedTo = shipmentDetails.getAssignedTo();
+        
+        if (!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy)) {
+            cc.add(usernameEmailsMap.get(createdBy));
+        }
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo) && usernameEmailsMap.containsKey(assignedTo)) {
+            cc.add(usernameEmailsMap.get(assignedTo));
+        }
     }
 
+    // Helper: Extract usernames from shipment (createdBy, assignedTo)
     private Set<String> getUsernamesList(ShipmentDetails shipmentDetails) {
-        Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()))
-            usernamesList.add(shipmentDetails.getCreatedBy());
-        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()))
-            usernamesList.add(shipmentDetails.getAssignedTo());
-        return usernamesList;
+        return extractUsernames(shipmentDetails.getCreatedBy(), shipmentDetails.getAssignedTo());
     }
+    
+    // Helper: Extract usernames from consolidation
     private Set<String> getConsolUsernamesList(ConsolidationDetails consolidationDetails) {
-        Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()))
-            usernamesList.add(consolidationDetails.getCreatedBy());
-        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()))
-            usernamesList.add(consolidationDetails.getAssignedTo());
-        return usernamesList;
+        return extractUsernames(consolidationDetails.getCreatedBy(), consolidationDetails.getAssignedTo());
     }
 
+    // Helper: Extract usernames from booking
     private Set<String> getBookingUsernamesList(CustomerBooking booking) {
+        return extractUsernames(booking.getCreatedBy(), null);
+    }
+    
+    // Shared utility: Extract non-empty usernames
+    private Set<String> extractUsernames(String createdBy, String assignedTo) {
         Set<String> usernamesList = new HashSet<>();
-        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()))
-            usernamesList.add(booking.getCreatedBy());
+        if (!CommonUtils.isStringNullOrEmpty(createdBy)) {
+            usernamesList.add(createdBy);
+        }
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo)) {
+            usernamesList.add(assignedTo);
+        }
         return usernamesList;
     }
 
@@ -3692,29 +3989,7 @@ public class ReportService implements IReportService {
 
     // Converts a Parties object into a consistent map of address/organization values
     private List<Map<String, Object>> buildPartyMap(Parties party) {
-
-        if(party == null) {
-            return List.of();
-        }
-
-        Map<String, Object> map = new HashMap<>();
-
-        // Add organization name if available
-        if (party.getOrgData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, party.getOrgData().get(PartiesConstants.FULLNAME));
-        }
-
-        // Add address lines if available
-        if (party.getAddressData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, party.getAddressData().get(PartiesConstants.ADDRESS1));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, party.getAddressData().get(PartiesConstants.ADDRESS2));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, party.getAddressData().get(PartiesConstants.CITY));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, party.getAddressData().get(PartiesConstants.STATE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, party.getAddressData().get(PartiesConstants.COUNTRY));
-        }
-
-        return List.of(map); // wrap in list as required by caller
+        return PartyDataMapper.buildNestedPartyMap(party, "C_");
     }
 
     // Adds origin/receiving branches and triangulated partner branch info
@@ -3739,9 +4014,8 @@ public class ReportService implements IReportService {
                     .collect(Collectors.toSet()));
         }
 
-        // Fetch full tenant data in bulk
-        Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
-        masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+        // Fetch and cache full tenant data in bulk
+        Map<String, TenantModel> tenantData = TenantDataMapper.fetchAndCacheTenantData(tenantIds, masterDataUtils);
 
         // Add origin & destination branches
         dict.put("C_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
@@ -3761,33 +4035,170 @@ public class ReportService implements IReportService {
 
     // Builds a map from a tenant's address and name info
     private List<Map<String, Object>> buildTenantMap(TenantModel tenant) {
-        if (tenant == null) {
-            return List.of();
-        }
-
-        Map<String, Object> map = new HashMap<>();
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, tenant.getDisplayName());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, tenant.getAddress1());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, tenant.getAddress2());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, tenant.getCity());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, tenant.getState());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, tenant.getCountry());
-
-        return List.of(map); // wrap in list
+        return TenantDataMapper.buildNestedTenantMap(tenant, "C_");
     }
 
-    private void putUpperCaseIfNotNullString(Map<String, Object> map, String key, Object value) {
-        if (value == null) {
-            return;
+    // ==================== UTILITY CLASSES FOR ELIMINATING CODE DUPLICATION ====================
+    
+    /**
+     * Utility class for async master data fetching operations.
+     * Eliminates duplicate async patterns across email template methods.
+     */
+    private static class AsyncDataFetcher {
+        
+        /**
+         * Fetches location data for a set of location codes
+         */
+        public static Set<String> extractLocationCodes(CarrierDetails carrier) {
+            return Stream.of(
+                carrier.getOriginPort(),
+                carrier.getDestinationPort(),
+                carrier.getOrigin(),
+                carrier.getDestination()
+            ).filter(Objects::nonNull).collect(Collectors.toSet());
         }
-
-        if (value instanceof String) {
-            map.put(key, ((String) value).toUpperCase());
-        } else {
-            map.put(key, value);
+        
+        /**
+         * Adds a value from a map to another map if the key exists
+         */
+        public static <K, V> void putFromMapIfPresent(Map<String, Object> targetMap, String targetKey, 
+                                                       Map<K, V> sourceMap, K sourceKey, 
+                                                       java.util.function.Function<V, Object> valueExtractor) {
+            if (sourceMap != null && sourceMap.containsKey(sourceKey)) {
+                V value = sourceMap.get(sourceKey);
+                if (value != null) {
+                    targetMap.put(targetKey, valueExtractor.apply(value));
+                }
+            }
         }
     }
-
+    
+    /**
+     * Utility class for mapping party/organization data to dictionaries.
+     * Centralizes all party data mapping logic to eliminate duplication.
+     */
+    private static class PartyDataMapper {
+        
+        /**
+         * Builds a flat party map for email templates
+         * @param party The party to map
+         * @param prefix Key prefix (e.g., "OA_", "DA_")
+         * @param modelMapper ModelMapper instance for converting party objects
+         * @return Map with party details (name, phone, email, address)
+         */
+        public static Map<String, Object> buildFlatPartyMap(Parties party, String prefix, ModelMapper modelMapper) {
+            if (party == null) return Map.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            
+            // Organization data
+            if (party.getOrgData() != null) {
+                putIfPresent(map, prefix + "BRANCH", party.getOrgData().get(FULL_NAME));
+                putIfPresent(map, prefix + "PHONE", party.getOrgData().get(PHONE));
+                putIfPresent(map, prefix + "EMAIL_CAPS", party.getOrgData().get(EMAIL));
+            }
+            
+            // Address data
+            if (party.getAddressData() != null) {
+                putIfPresent(map, prefix + "NAME", party.getAddressData().get(CONTACT_PERSON));
+                try {
+                    PartiesModel partiesModel = modelMapper.map(party, PartiesModel.class);
+                    String address = String.join(", ", IReport.getPartyAddress(partiesModel));
+                    if (!address.isEmpty()) {
+                        map.put(prefix + "BRANCH_ADD", address);
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not build address for party with prefix: {}", prefix);
+                }
+            }
+            
+            return map;
+        }
+        
+        /**
+         * Builds a nested party map for consolidation reports (with uppercase values)
+         * @param party The party to map
+         * @param prefix Key prefix (e.g., "C_")
+         * @return List containing party map
+         */
+        public static List<Map<String, Object>> buildNestedPartyMap(Parties party, String prefix) {
+            if (party == null) return List.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            
+            if (party.getOrgData() != null) {
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.FULLNAME, 
+                                     party.getOrgData().get(PartiesConstants.FULLNAME));
+            }
+            
+            if (party.getAddressData() != null) {
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS1, 
+                                     party.getAddressData().get(PartiesConstants.ADDRESS1));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS2, 
+                                     party.getAddressData().get(PartiesConstants.ADDRESS2));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.CITY, 
+                                     party.getAddressData().get(PartiesConstants.CITY));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.STATE, 
+                                     party.getAddressData().get(PartiesConstants.STATE));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.ZIP_POST_CODE, 
+                                     party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
+                putUpperCaseIfNotNull(map, prefix + PartiesConstants.COUNTRY, 
+                                     party.getAddressData().get(PartiesConstants.COUNTRY));
+            }
+            
+            return List.of(map);
+        }
+        
+        private static void putIfPresent(Map<String, Object> map, String key, Object value) {
+            if (value != null) {
+                map.put(key, value);
+            }
+        }
+        
+        static void putUpperCaseIfNotNull(Map<String, Object> map, String key, Object value) {
+            if (value == null) return;
+            map.put(key, value instanceof String ? ((String) value).toUpperCase() : value);
+        }
+    }
+    
+    /**
+     * Utility class for mapping tenant/branch data to dictionaries.
+     */
+    private static class TenantDataMapper {
+        
+        /**
+         * Builds a nested tenant map for consolidation reports
+         * @param tenant The tenant to map
+         * @param prefix Key prefix (e.g., "C_")
+         * @return List containing tenant map
+         */
+        public static List<Map<String, Object>> buildNestedTenantMap(TenantModel tenant, String prefix) {
+            if (tenant == null) return List.of();
+            
+            Map<String, Object> map = new HashMap<>();
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.FULLNAME, tenant.getDisplayName());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS1, tenant.getAddress1());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ADDRESS2, tenant.getAddress2());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.CITY, tenant.getCity());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.STATE, tenant.getState());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
+            PartyDataMapper.putUpperCaseIfNotNull(map, prefix + PartiesConstants.COUNTRY, tenant.getCountry());
+            
+            return List.of(map);
+        }
+        
+        /**
+         * Fetches and caches tenant data for multiple tenant IDs
+         * @param tenantIds Set of tenant IDs to fetch
+         * @param masterDataUtils Master data utility for fetching and caching
+         * @return Map of tenant ID to TenantModel
+         */
+        public static Map<String, TenantModel> fetchAndCacheTenantData(
+                Set<String> tenantIds, MasterDataUtils masterDataUtils) {
+            Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
+            masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+            return tenantData;
+        }
+    }
 
 }

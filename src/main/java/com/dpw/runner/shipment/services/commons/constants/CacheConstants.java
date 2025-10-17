@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class CacheConstants {
+
     private CacheConstants(){}
     public static final String CACHE = "Cache";
     public static final String CACHE_KEY = "Shipment_Service";

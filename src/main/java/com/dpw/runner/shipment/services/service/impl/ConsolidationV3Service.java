@@ -905,20 +905,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
         }
     }
-
     private CompletableFuture<Void> getPopulateUnlocCodeFuture(ConsolidationDetails entity, ConsolidationDetails oldEntity) {
-        CarrierDetails finalOldCarrierDetails = Optional.ofNullable(oldEntity).map(ConsolidationDetails::getCarrierDetails).orElse(null);
+        CarrierDetails finalOldCarrierDetails = Optional.ofNullable(oldEntity)
+                .map(ConsolidationDetails::getCarrierDetails)
+                .orElse(null);
 
         /* Set to extract the unlocations from entities whose unloc code needs to be saved */
         Set<String> unlocationsSet = Collections.synchronizedSet(new HashSet<>());
         Map<String, EntityTransferUnLocations> unLocationsMap = new ConcurrentHashMap<>();
 
-        CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService)
-        ).join();
-        return CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
-                .thenCompose(v -> CompletableFuture.allOf(
-                        CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService)
+        // Step 1: Get changed unlocation fields
+        return CompletableFuture.runAsync(
+                        () -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet),
+                        executorService
+                )
+                // Step 2: Fetch location data from cache
+                .thenCompose(v -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)),
+                        executorService
+                ))
+                // Step 3: Update carrier with unloc data
+                .thenCompose(v -> CompletableFuture.runAsync(
+                        () -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap),
+                        executorService
                 ));
     }
 
