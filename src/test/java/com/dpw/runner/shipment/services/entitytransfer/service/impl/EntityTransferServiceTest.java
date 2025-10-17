@@ -3714,6 +3714,77 @@ class EntityTransferServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
         when(jsonHelper.convertToJson(any())).thenReturn("Example");
         when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
+        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build()));
+        var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Consolidation1() throws RunnerException {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.CONSOLIDATION)
+                .sendToBranch("XYZ")
+                .transportMode("SEA")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = EntityTransferV3ConsolidationDetails.builder()
+                .consolidationNumber("CONS233")
+                .transportMode("SEA")
+                .build();
+
+        var console = ConsolidationDetails.builder()
+                .shipmentsList(Set.of())
+                .build();
+        console.setTenantId(12);
+
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(12, mockV1TenantResponse)
+        );
+
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
+        when(jsonHelper.convertToJson(any())).thenReturn("Example");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
+        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build()));
+        var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Consolidation2() throws RunnerException {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.CONSOLIDATION)
+                .sendToBranch("XYZ")
+                .transportMode("SEA")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = EntityTransferV3ConsolidationDetails.builder()
+                .consolidationNumber("CONS233")
+                .transportMode("SEA")
+                .build();
+
+        var console = ConsolidationDetails.builder()
+                .shipmentsList(Set.of())
+                .build();
+        console.setTenantId(12);
+
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(12, mockV1TenantResponse)
+        );
+
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
+        when(jsonHelper.convertToJson(any())).thenReturn("Example");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
+        when(networkTransferDao.findByEntityNumber(any())).thenReturn(Optional.empty());
         var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

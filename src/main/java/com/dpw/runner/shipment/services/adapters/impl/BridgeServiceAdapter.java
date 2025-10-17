@@ -110,7 +110,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
                     : e.getMessage();
 
             throw new RunnerException(
-                    request.getRequestCode().equalsIgnoreCase("GBLCS")
+                    (request.getRequestCode().equalsIgnoreCase("GBLCS") || request.getRequestCode().equalsIgnoreCase("EWLAIREXP"))
                             ? extractErrorDescription(errorBody)
                             : errorBody
             );
