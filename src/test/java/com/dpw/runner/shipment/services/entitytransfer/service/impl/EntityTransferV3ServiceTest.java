@@ -8,6 +8,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -28,6 +30,9 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Shipm
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -35,6 +40,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3Service;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
 import com.dpw.runner.shipment.services.service.impl.PackingV3Service;
@@ -64,12 +70,16 @@ import org.slf4j.MDC;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.TRIANGULATION_BRANCH_AGENTS_SECTION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
@@ -3593,5 +3603,264 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         assertTrue(validationResponse.getMissingKeys().contains("Eta"));
         assertTrue(validationResponse.getMissingKeys().contains("Etd"));
     }
+
+    @Test
+    void sendShipmentValidation_WhenShipmentNotFound_ShouldThrowException() {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        ValidateSendShipmentRequest validateRequest = mock(ValidateSendShipmentRequest.class);
+
+        when(commonRequestModel.getData()).thenReturn(validateRequest);
+        when(validateRequest.getShipId()).thenReturn(123L);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException exception = assertThrows(
+                DataRetrievalFailureException.class,
+                () -> entityTransferService.sendShipmentValidation(commonRequestModel)
+        );
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+
+        verify(shipmentDao).findById(123L);
+    }
+
+
+
+    @Test
+    void sendShipmentValidation_WhenNetworkTransferDisabled_ShouldReturnSuccess() {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        ValidateSendShipmentRequest validateRequest = mock(ValidateSendShipmentRequest.class);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(false);
+        when(commonRequestModel.getData()).thenReturn(validateRequest);
+        when(validateRequest.getShipId()).thenReturn(123L);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = entityTransferService.sendShipmentValidation(commonRequestModel);
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertEquals(RunnerResponse.class, response.getBody().getClass());
+
+        // Now check the data inside the RunnerResponse
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+        assertNotNull(runnerResponse.getData());
+
+        // The actual ValidationResponse should be in the data field
+        assertTrue(runnerResponse.getData() instanceof ValidationResponse);
+        ValidationResponse validationResponse = (ValidationResponse) runnerResponse.getData();
+        assertTrue(validationResponse.getSuccess());
+
+        verify(shipmentDao).findById(123L);
+        verify(commonUtils).getShipmentSettingFromContext();
+    }
+
+    @Test
+    void sendShipmentValidation_WhenNetworkTransferEnabledButInvalidDirection_ShouldReturnSuccess() {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        ValidateSendShipmentRequest validateRequest = mock(ValidateSendShipmentRequest.class);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        shipmentDetails.setDirection("INVALID_DIRECTION");
+
+        when(commonRequestModel.getData()).thenReturn(validateRequest);
+        when(validateRequest.getShipId()).thenReturn(123L);
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = entityTransferService.sendShipmentValidation(commonRequestModel);
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertEquals(RunnerResponse.class, response.getBody().getClass());
+
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+        assertNotNull(runnerResponse.getData());
+        assertTrue(runnerResponse.getData() instanceof ValidationResponse);
+
+        ValidationResponse validationResponse = (ValidationResponse) runnerResponse.getData();
+        assertTrue(validationResponse.getSuccess());
+
+        verify(shipmentDao).findById(123L);
+        verify(commonUtils).getShipmentSettingFromContext();
+    }
+
+
+    @Test
+    void testSendConsolidationValidation_WhenConsolidationNotFound_ShouldThrowException() {
+        // Arrange
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+
+        // Instead of new CommonRequestModel(), just mock it:
+        CommonRequestModel mockModel = mock(CommonRequestModel.class);
+        when(mockModel.getData()).thenReturn(request);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThrows(DataRetrievalFailureException.class, () ->
+                entityTransferService.sendConsolidationValidation(mockModel));
+
+        verify(consolidationDetailsDao, times(1)).findById(1L);
+    }
+
+    @Test
+    void testAirShipmentFieldValidations_WhenFieldsMissing_ShouldReturnAllMissingFields() throws Exception {
+        // Arrange
+        EntityTransferV3Service service = new EntityTransferV3Service();
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setDirection("EXP"); // Export direction
+
+        CarrierDetails carrier = new CarrierDetails();
+        // flightNumber, eta, etd all null
+        shipment.setCarrierDetails(carrier);
+
+        // receivingBranch and triangulationPartner both null → triggers "Select Branch"
+        shipment.setReceivingBranch(null);
+        shipment.setTriangulationPartner(null);
+        shipment.setTriangulationPartnerList(null);
+
+        // Access private method via reflection
+        Method method = EntityTransferV3Service.class
+                .getDeclaredMethod("airShipmentFieldValidations", ShipmentDetails.class, boolean.class);
+        method.setAccessible(true);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        List<String> missingFields = (List<String>) method.invoke(service, shipment, false);
+
+        // Assert
+        assertTrue(missingFields.contains("Flight number"));
+        assertTrue(missingFields.contains("Eta"));
+        assertTrue(missingFields.contains("Etd"));
+        assertTrue(missingFields.contains(EntityTransferConstants.SELECT_BRANCH_FOR_ET_V3));
+        assertEquals(4, missingFields.size(), "Expected 4 missing fields for Export direction with no values");
+    }
+
+    @Test
+    void testAirShipmentFieldValidations_WhenAllFieldsPresent_ShouldReturnEmptyList() throws Exception {
+        // Arrange
+        EntityTransferV3Service service = new EntityTransferV3Service();
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setDirection("IMP");             // Import direction
+        shipment.setTransportMode("AIR");         //  to avoid NPE
+        shipment.setReceivingBranch(1L);          //  Long value (branch id)
+        shipment.setTriangulationPartner(null);
+        shipment.setTriangulationPartnerList(null);
+        shipment.setHouseBill("H123");            //  Required for IMP
+        shipment.setMasterBill("M123");           //  Required for IMP
+
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setFlightNumber("AI123");         //  non-null
+        carrier.setEta(LocalDateTime.now());
+        carrier.setEtd(LocalDateTime.now().minusHours(3));
+        shipment.setCarrierDetails(carrier);
+
+        // Access the private method via reflection
+        Method method = EntityTransferV3Service.class
+                .getDeclaredMethod("airShipmentFieldValidations", ShipmentDetails.class, boolean.class);
+        method.setAccessible(true);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        List<String> missingFields = (List<String>) method.invoke(service, shipment, false);
+
+        // Assert
+        assertTrue(missingFields.isEmpty(),
+                "Expected no missing fields when all values are present, but got: " + missingFields);
+    }
+
+    @Test
+    void testAirShipmentFieldValidations_ShouldIncludeTriangulationBranchAgentsSection_ForIMPWhenEntityTransferDetailsMissing()
+            throws Exception {
+        // Arrange
+        EntityTransferV3Service service = new EntityTransferV3Service();
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setDirection("IMP");              // Import -> imOrCts true
+        shipment.setTransportMode("AIR");          // avoid NPE on transport mode checks
+
+        // Ensure carrier details are present so the test focuses only on triangulation field:
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setFlightNumber("AI123");
+        carrier.setEta(LocalDateTime.now());
+        carrier.setEtd(LocalDateTime.now().minusHours(2));
+        shipment.setCarrierDetails(carrier);
+
+        // Set house/master to avoid their missing-field additions for IMP
+        shipment.setHouseBill("H001");
+        shipment.setMasterBill("M001");
+
+        // Make receivingBranch and triangulationPartner null so the entityTransferDetails logic runs
+        shipment.setReceivingBranch(null);
+        shipment.setTriangulationPartner(null);
+
+        // Make triangulationPartnerList empty -> ObjectUtils.isEmpty(...) should be true
+        shipment.setTriangulationPartnerList(new ArrayList<>());
+
+        // Access private method via reflection
+        Method method = EntityTransferV3Service.class
+                .getDeclaredMethod("airShipmentFieldValidations", ShipmentDetails.class, boolean.class);
+        method.setAccessible(true);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        List<String> missingFields = (List<String>) method.invoke(service, shipment, false);
+
+        // Assert
+        assertNotNull(missingFields);
+        assertTrue(missingFields.contains(TRIANGULATION_BRANCH_AGENTS_SECTION),
+                "Expected TRIANGULATION_BRANCH_AGENTS_SECTION to be present");
+        // expecting only that one missing field (carrier and HBL/MBL provided above)
+        assertEquals(1, missingFields.size(),
+                "Expected exactly 1 missing field (triangulation branch agents)");
+    }
+
+    @Test
+    void testAirConsoleFieldValidations_WhenAllFieldsPresent_ShouldReturnEmptyList() throws Exception {
+        // Arrange
+        EntityTransferV3Service service = new EntityTransferV3Service();
+
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setReceivingBranch(100L);
+        consolidation.setTriangulationPartner(200L);
+        consolidation.setTriangulationPartnerList(new ArrayList<>());
+        consolidation.setConsolidationType("STD");
+        consolidation.setBol("MAWB123");
+
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setFlightNumber("AI123");
+        carrier.setEta(LocalDateTime.now().plusDays(1));
+        carrier.setEtd(LocalDateTime.now());
+        consolidation.setCarrierDetails(carrier);
+
+        // Access private method via reflection
+        Method method = EntityTransferV3Service.class
+                .getDeclaredMethod("airConsoleFieldValidations", ConsolidationDetails.class, boolean.class);
+        method.setAccessible(true);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        List<String> missingFields = (List<String>) method.invoke(service, consolidation, false);
+
+        // Assert
+        assertNotNull(missingFields);
+        assertTrue(missingFields.isEmpty(), "Expected no missing fields when all fields are provided");
+    }
+
 
 }
