@@ -4820,7 +4820,7 @@ if (unitConversionUtilityMockedStatic != null) {
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    // method under test
+      // method under test
     ResponseEntity<IRunnerResponse> result = consolidationV3Service.sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
 
     // assertions
@@ -4831,6 +4831,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendEmailForPullRequested() {
     when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    testConsol.setTenantId(101);
     // method under test
     assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
   }

@@ -1546,6 +1546,31 @@ class CommonUtilsTest {
                 }},
                 "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -1608,6 +1633,35 @@ class CommonUtilsTest {
     }
 
     @Test
+    void sendEmailForPullPushRequestStatusPullReject_withV3FlagEnabled() throws Exception {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
     void sendEmailForPullPushRequestStatusPullRejectNoTemplate() throws Exception {
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
@@ -1626,6 +1680,30 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+               shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1665,6 +1743,31 @@ class CommonUtilsTest {
                     put(56, v1TenantSettingsResponse);
                 }},
                 "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1798,6 +1901,32 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+        //When v2 flag is enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -2067,6 +2196,32 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3flagEnabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -2219,16 +2374,18 @@ class CommonUtilsTest {
                 .assignedTo("assigned")
                 .carrierDetails(CarrierDetails.builder().build())
                 .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails.setTenantId(94);
         shipmentDetails.setCreatedBy("created");
         shipmentDetails.setTenantId(56);
         V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                consolidationDetails,
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
@@ -2858,6 +3015,34 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusDetach_withV3Enabled() throws Exception {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails.setTenantId(100);
+        consolidationDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails,
+                SHIPMENT_DETACH,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_DETACH, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
