@@ -87,10 +87,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.CONSOLIDATION_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.CONSOLIDATION_INITIATE_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.PLEASE_ENTER_THE;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.SELECT_BRANCH_FOR_ET_V3;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.SHIPMENT_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.SHIPMENT_INITIATE_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.TRIANGULATION_BRANCH_AGENTS_SECTION;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.validDirectionForNetworkTransfer;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -2087,7 +2087,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
     private String getResponseErrorMsg(boolean isAutomaticTransfer, List<String> missingField) {
         String responseErrorMsg = "";
-        String msgSuffix = (isAutomaticTransfer ? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : SHIPMENT_NAME);
+        String msgSuffix = (isAutomaticTransfer ? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : SHIPMENT_INITIATE_TRANSFER);
 
         if(!missingField.isEmpty()) {
             StringBuilder errorMessage = new StringBuilder(PLEASE_ENTER_THE);
@@ -2147,7 +2147,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             entityTransferDetails = ObjectUtils.isEmpty(shipmentDetails.getTriangulationPartnerList());
         }
         if (entityTransferDetails) {
-            if (imOrCts && !DIRECTION_EXP.equals(shipmentDetails.getDirection())) {
+            if (imOrCts) {
                 // For Import and CTS
                 missingField.add(TRIANGULATION_BRANCH_AGENTS_SECTION);
             } else {
@@ -2244,7 +2244,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                     return ResponseHelper.buildSuccessResponse(
                             SendConsoleValidationResponse.builder()
                                     .isError(true)
-                                    .consoleErrorMessage(PLEASE_ENTER_THE + joinMissingField + CONSOLIDATION_NAME)
+                                    .consoleErrorMessage(PLEASE_ENTER_THE + joinMissingField + CONSOLIDATION_INITIATE_TRANSFER)
                                     .missingKeys(missingField)
                                     .build()
                     );
@@ -2467,7 +2467,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
-            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.CONSOLIDATION_NAME;
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + CONSOLIDATION_INITIATE_TRANSFER;
         }
 
         if(isHawbNumberError) {
@@ -2515,7 +2515,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
-            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.CONSOLIDATION_NAME;
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + CONSOLIDATION_INITIATE_TRANSFER;
         }
 
         String shipErrorMsg = "";
@@ -2564,10 +2564,10 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
 
         String errorMsg = "";
-        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : CONSOLIDATION_INITIATE_TRANSFER);
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
-            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.CONSOLIDATION_NAME;
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString;
         }
         if(!errorMsg.isEmpty()){
             errorMsg = errorMsg + msgSuffix;

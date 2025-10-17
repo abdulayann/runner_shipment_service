@@ -79,8 +79,8 @@ public class EntityTransferConstants {
     public static final String TO_TRANSFER_THE_FILES = " to transfer the files.";
     public static final String SELECT_BRANCH_FOR_ET = "one of the branches in the entity transfer details section";
     public static final String SELECT_BRANCH_FOR_ET_V3 = "destination or triangulation branches in the agents section";
-    public static final String SHIPMENT_NAME = " of shipment to initiate the transfer.";
-    public static final String CONSOLIDATION_NAME = " of consolidation to initiate the transfer.";
+    public static final String SHIPMENT_INITIATE_TRANSFER = " of shipment to initiate the transfer.";
+    public static final String CONSOLIDATION_INITIATE_TRANSFER = " of consolidation to initiate the transfer.";
     public static final String TRIANGULATION_BRANCH_AGENTS_SECTION = "triangulation branch in the agents section";
 
     public static final String SHIPMENT_REJECTION_EMAIL_SUBJECT = "{#SHIPMENT_NUMBER} Retransfer Cancellation Notification";
