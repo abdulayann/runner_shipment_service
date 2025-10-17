@@ -1002,7 +1002,7 @@ public class HblService implements IHblService {
         Long shipmentId = commonRequestModel.getId();
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id" + shipmentId.toString()));
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id " + shipmentId.toString()));
 
         List<Map<String, Object>> existingTaskPending = fetchExistingTaskPending(shipmentDetails);
 
