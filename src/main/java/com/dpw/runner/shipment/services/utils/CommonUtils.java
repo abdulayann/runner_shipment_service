@@ -1054,6 +1054,9 @@ public class CommonUtils {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             setRequestedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
         }
@@ -1091,7 +1094,7 @@ public class CommonUtils {
             template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
-    public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PULL_ACCEPTED)) {
@@ -1108,7 +1111,14 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+        if (isV3FlagEnabled) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            }
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1225,6 +1235,9 @@ public class CommonUtils {
         if (isV3FlagEnabled) {
             // fetching to and cc from master lists
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
         }
@@ -1233,7 +1246,7 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PUSH_REQUESTED)) {
@@ -1249,8 +1262,14 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
-
+        if(isV3FlagEnabled) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            }
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        }
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
@@ -1273,6 +1292,9 @@ public class CommonUtils {
         if(isV3FlagEnabled) {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
         }
@@ -1300,6 +1322,9 @@ public class CommonUtils {
         if (isV3FlagEnabled) {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if(Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
         }
@@ -1309,7 +1334,7 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentDetach(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentDetach(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_DETACH)) {
@@ -1325,7 +1350,14 @@ public class CommonUtils {
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        if (isV3FlagEnabled) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1434,12 +1466,12 @@ public class CommonUtils {
     public void sendEmailForPullPushRequestStatus(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) throws Exception {
         switch (sendEmailDto.getType()) {
             case SHIPMENT_PULL_REQUESTED -> sendEmailShipmentPullRequest(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_PULL_ACCEPTED -> sendEmailShipmentPullAccept(sendEmailDto);
+            case SHIPMENT_PULL_ACCEPTED -> sendEmailShipmentPullAccept(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PULL_REJECTED -> sendEmailShipmentPullReject(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto);
+            case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PUSH_ACCEPTED -> sendEmailShipmentPushAccept(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PUSH_REJECTED -> sendEmailShipmentPushReject(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
+            case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PULL_WITHDRAW -> sendEmailShipmentPullWithdraw(sendEmailDto);
             case SHIPMENT_PUSH_WITHDRAW -> sendEmailShipmentPushWithdraw(sendEmailDto);
             default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType(), isV3FlagEnabled);
