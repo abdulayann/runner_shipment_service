@@ -64,6 +64,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -81,6 +83,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 
+@SuppressWarnings({"java:S1854","java:S1481","java:S125"})
 @Slf4j
 @Service
 public class TrackingServiceAdapter implements ITrackingServiceAdapter {
@@ -529,20 +532,19 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     // IGNORE THE COMMENTED SECTION
 
     @Nullable
-    private static String getFldrEventCode(String safeEventType, String safeDescription) {
-        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventType)
-                && safeDescription.equalsIgnoreCase("Flight Departure")) {
-            log.info("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
+    private static String getFldrEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Flight Departure")
+                || safeDescription.equalsIgnoreCase("Planned Flight Departure")) {
+            log.info("Matched FLDR and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
             return EventConstants.FLDR;
         }
         return null;
     }
 
     @Nullable
-    private static String getFlarEventCode(String safeEventType, String safeDescription) {
-        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventType)
-                && safeDescription.equalsIgnoreCase("Flight Arrival")) {
-            log.info("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
+    private static String getFlarEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Flight Arrival")) {
+            log.info("Matched FLAR and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
             return EventConstants.FLAR;
         }
         return null;
@@ -588,7 +590,338 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    @SuppressWarnings("java:S125")
+    private static String getFWBFEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("FWB Received from Forwarder")) {
+            log.info("Matched FWBF and Description. Returning short code: {}", EventConstants.FWBF);
+            return EventConstants.FWBF;
+        }
+        return null;
+    }
+
+    private static String getDISCEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Discrepancy")
+                || safeDescription.equalsIgnoreCase("Missing")) {
+            log.info("Matched DISC and Description. Returning short code: {}", EventConstants.DISC);
+            return EventConstants.DISC;
+        }
+        return null;
+    }
+
+    private static String getCOODEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Delivered")) {
+            log.info("Matched COOD and Description. Returning short code: {}", EventConstants.COOD);
+            return EventConstants.COOD;
+        }
+        return null;
+    }
+
+    private static String getBOCOEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Booked")
+                || safeDescription.equalsIgnoreCase("Booking Generated")) {
+            log.info("Matched BOCO and Description. Returning short code: {}", EventConstants.BOCO);
+            return EventConstants.BOCO;
+        }
+        return null;
+    }
+
+    private static String getECPKEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched GATE_OUT_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            return EventConstants.ECPK;
+        }
+        return null;
+    }
+
+    private static String getCOSCEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.STUFFING.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched STUFFING and ORIGIN. Returning short code: {}", EventConstants.COSC);
+            return EventConstants.COSC;
+        }
+        return null;
+    }
+
+    private static String getEFLTEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.LOAD_ON_TRUCK_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched LOAD_ON_TRUCK_CONTAINER_FULL and ORIGIN. Returning short code: {}", EventConstants.EFLT);
+            return EventConstants.EFLT;
+        }
+        return null;
+    }
+
+    private static String getEFFTEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.DISCHARGE_FROM_TRUCK_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched DISCHARGE_FROM_TRUCK_CONTAINER_FULL and ORIGIN. Returning short code: {}", EventConstants.EFFT);
+            return EventConstants.EFFT;
+        }
+        return null;
+    }
+
+    private static String getGATOEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_APPOINTMENT_TIME_DROP_OFF.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched GATE_APPOINTMENT_TIME_DROP_OFF and ORIGIN or DESTINATION. Returning short code: {}", EventConstants.GATO);
+            return EventConstants.GATO;
+        }
+        return null;
+    }
+
+    private static String getLORAEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.LOAD_ON_RAIL.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+        )) {
+            log.info("Matched LOAD_ON_RAIL and ORIGIN or DESTINATION or OCEAN. Returning short code: {}", EventConstants.LORA);
+            return EventConstants.LORA;
+        }
+        return null;
+    }
+
+    private static String getRADEEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.RAIL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+        )) {
+            log.info("Matched RAIL_DEPARTURE_WITH_CONTAINER and ORIGIN or DESTINATION or OCEAN. Returning short code: {}", EventConstants.RADE);
+            return EventConstants.RADE;
+        }
+        return null;
+    }
+
+    private static String getRAAREventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.RAIL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+        )) {
+            log.info("Matched RAIL_ARRIVAL_WITH_CONTAINER and ORIGIN or DESTINATION or OCEAN. Returning short code: {}", EventConstants.RAAR);
+            return EventConstants.RAAR;
+        }
+        return null;
+    }
+
+    private static String getUNFREventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.DISCHARGE_FROM_RAIL.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+        )) {
+            log.info("Matched DISCHARGE_FROM_RAIL and ORIGIN or DESTINATION or OCEAN. Returning short code: {}", EventConstants.UNFR);
+            return EventConstants.UNFR;
+        }
+        return null;
+    }
+
+    private static String getLOBAEventCode(String safeEventCode, String safeLocationRole) {
+        if ((EventConstants.LOAD_ON_BARGE.equalsIgnoreCase(safeEventCode)
+                || EventConstants.BARGE_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode))
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched LOADED ON BARGE and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.LOBA);
+            return EventConstants.LOBA;
+        }
+        return null;
+    }
+
+    private static String getUNBAEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.DISCHARGE_FROM_BARGE.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched UNLOADED FROM BARGE and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.UNBA);
+            return EventConstants.UNBA;
+        }
+        return null;
+    }
+
+    private static String getBAAREventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.BARGE_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched BARGE ARRIVAL and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.BAAR);
+            return EventConstants.BAAR;
+        }
+        return null;
+    }
+
+    private static String getBADEEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.BARGE_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched BARGE DEPARTURE and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.BADE);
+            return EventConstants.BADE;
+        }
+        return null;
+    }
+
+    private static String getFCGIEventCode(String safeEventCode, String safeLocationRole, String safeDescription) {
+        if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched FULL CONTAINER GATE-IN and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.FCGI);
+            return EventConstants.FCGI;
+        }
+
+        if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeEventCode)
+                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
+            log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
+            return EventConstants.FCGI;
+        }
+
+        return null;
+    }
+
+    private static String getVGMAEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.VGM_VERIFICATION.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched VGM ACCEPTED BY CARRIER and ORIGIN. Returning short code: {}", EventConstants.VGMA);
+            return EventConstants.VGMA;
+        }
+        return null;
+    }
+
+    private static String getVBFLEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.VESSEL_ARRIVAL_FOR_LOADING.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase()))) {
+            log.info("Matched VESSEL BERTHE FOR LOADING and ORIGIN/OCEAN. Returning short code: {}", EventConstants.VBFL);
+            return EventConstants.VBFL;
+        }
+        return null;
+    }
+
+    private static String getLDVSEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched LOADED ON VESSEL and ORIGIN/OCEAN/DESTINATION. Returning short code: {}", EventConstants.LDVS);
+            return EventConstants.LDVS;
+        }
+        return null;
+    }
+
+    private static String getVSDPEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())) {
+            log.info("Matched VESSEL DEPARTURE and ORIGIN. Returning short code: {}", EventConstants.VSDP);
+            return EventConstants.VSDP;
+        }
+        return null;
+    }
+
+    private static String getVSDTEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())) {
+            log.info("Matched VESSEL DEPARTURE - TRANSHIPMENT PORT and OCEAN. Returning short code: {}", EventConstants.VSDT);
+            return EventConstants.VSDT;
+        }
+        return null;
+    }
+
+    private static String getARDTEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())) {
+            log.info("Matched VESSEL ARRIVAL - TRANSHIPMENT PORT and OCEAN. Returning short code: {}", EventConstants.ARDT);
+            return EventConstants.ARDT;
+        }
+        return null;
+    }
+
+    private static String getARDPEventCode(String safeEventCode, String safeLocationRole) {
+        if ((EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                || EventConstants.BERTHING_WITH_CONTAINER.equalsIgnoreCase(safeEventCode))
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched ARRIVAL AT DESTINATION PORT and DESTINATION. Returning short code: {}", EventConstants.ARDP);
+            return EventConstants.ARDP;
+        }
+        return null;
+    }
+
+    private static String getDCVSEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.DISCHARGE_FROM_VESSEL.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.OCEAN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched DISCHARGE FROM VESSEL and OCEAN/DESTINATION. Returning short code: {}", EventConstants.DCVS);
+            return EventConstants.DCVS;
+        }
+        return null;
+    }
+
+    private static String getNTDAEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.AVAILABLE_FOR_DELIVERY_FULL.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched NOTICE OF DELIVERY/AVAILABILITY and DESTINATION. Returning short code: {}", EventConstants.NTDA);
+            return EventConstants.NTDA;
+        }
+        return null;
+    }
+
+    private static String getSTCDEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.STORAGE_COMMENCE_DATE.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched STORAGE COMMENCEMENT DATE and DESTINATION. Returning short code: {}", EventConstants.STCD);
+            return EventConstants.STCD;
+        }
+        return null;
+    }
+
+    private static String getDORCEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.TERMINAL_RELEASE.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched RELEASE OF DELIVERY ORDER BY CARRIER and DESTINATION. Returning short code: {}", EventConstants.DORC);
+            return EventConstants.DORC;
+        }
+        return null;
+    }
+
+    private static String getFCADEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.AVAILABLE_FOR_DELIVERY_FULL.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched FULL CONTAINER AVAILABLE FOR DELIVERY and DESTINATION. Returning short code: {}", EventConstants.FCAD);
+            return EventConstants.FCAD;
+        }
+        return null;
+    }
+
+    private static String getGATPEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_APPOINTMENT_TIME_PICKUP.equalsIgnoreCase(safeEventCode)
+                && (safeLocationRole.toLowerCase().startsWith(EventConstants.ORIGIN.toLowerCase())
+                || safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase()))) {
+            log.info("Matched GATE APPOINTMENT TIME PICK UP and ORIGIN/DESTINATION. Returning short code: {}", EventConstants.GATP);
+            return EventConstants.GATP;
+        }
+        return null;
+    }
+
+    private static String getFUGOEventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched FULL CONTAINER GATE-OUT and DESTINATION. Returning short code: {}", EventConstants.FUGO);
+            return EventConstants.FUGO;
+        }
+        return null;
+    }
+
+    private static String getEMCREventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.toLowerCase().startsWith(EventConstants.DESTINATION.toLowerCase())) {
+            log.info("Matched RETURN OF EMPTY CONTAINER and DESTINATION. Returning short code: {}", EventConstants.EMCR);
+            return EventConstants.EMCR;
+        }
+        return null;
+    }
+
 //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
 //        // Toggle this flag to switch between remote call and reading from file
@@ -639,180 +972,158 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     @Override
     public String convertTrackingEventCodeToShortCode(Event event, Container container) {
-
         String safeEventType = StringUtils.defaultString(event.getEventType());
         String safeLocationRole = StringUtils.defaultString(event.getLocationRole());
         String safeDescription = StringUtils.defaultString(event.getDescription());
         String safeDescriptionFromSource = StringUtils.defaultString(event.getDescriptionFromSource());
-        String safeJourneyScacCode = StringUtils.defaultString(Optional.ofNullable(container.getJourney()).map(Journey::getScacCode).orElse(""));
+        String safeJourneyScacCode = StringUtils.defaultString(
+                Optional.ofNullable(container.getJourney())
+                        .map(Journey::getScacCode)
+                        .orElse("")
+        );
 
         log.info("Converting event code '{}' with location role '{}'", safeEventType, safeLocationRole);
 
-        String prde = getPRDEEventCode(safeEventType, safeDescription);
-        if (prde != null) {
-            return prde;
-        }
-
-        String cafs = getCafsEventCode(safeEventType, safeDescription);
-        if (cafs != null) {
-            return cafs;
-        }
-
-        String intr = getIntrEventCode(safeEventType, safeDescription);
-        if (intr != null) {
-            return intr;
-        }
-
-        String caco = getCacoEventCode(safeEventType, safeDescription);
-        if (caco != null) {
-            return caco;
-        }
-
-        String flar = getFlarEventCode(safeEventType, safeDescription);
-        if (flar != null) {
-            return flar;
-        }
-
-        String fldr = getFldrEventCode(safeEventType, safeDescription);
-        if (fldr != null) {
-            return fldr;
-        }
-
-        String trcfTnfdTrcsEventCode = getTrcfTnfdTrcsEventCode(safeEventType, safeDescription);
-        if (trcfTnfdTrcsEventCode != null) {
-            return trcfTnfdTrcsEventCode;
-        }
-
-        String ecpk = getECPKEventCode(safeEventType, safeLocationRole);
-        if (ecpk != null) {
-            return ecpk;
-        }
-
-        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole, safeDescription);
-        if (fcgi != null) {
-            return fcgi;
-        }
-
-        String vsdp = getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource, safeJourneyScacCode);
-        if (vsdp != null) {
-            return vsdp;
-        }
-
-        String ardp = getADRPEventCode(safeEventType, safeLocationRole);
-        if (ardp != null) {
-            return ardp;
-        }
-
-        String fugo = getFUGOEventCode(safeEventType, safeLocationRole);
-        if (fugo != null) {
-            return fugo;
-        }
-
-        String emcr = getEMCREventCode(safeEventType, safeLocationRole);
-        if (emcr != null) {
-            return emcr;
-        }
-
-        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventType, safeLocationRole);
-        return safeEventType;
+        return Stream.<Supplier<String>>of(
+                        () -> getBOCOEventCode(safeDescription),
+                        () -> getCOODEventCode(safeDescription),
+                        () -> getDISCEventCode(safeDescription),
+                        () -> getFWBFEventCode(safeDescription),
+                        () -> getMFSTEventCode(safeDescription),
+                        () -> getEMTCEventCode(safeDescription),
+                        () -> getONBFEventCode(safeDescription),
+                        () -> getTRCFEventCode(safeDescription),
+                        () -> getTRCSEventCode(safeDescription),
+                        () -> getTNFDEventCode(safeDescription),
+                        () -> getUNATEventCode(safeDescription),
+                        () -> getPRDEEventCode(safeEventType, safeDescription),
+                        () -> getCafsEventCode(safeEventType, safeDescription),
+                        () -> getIntrEventCode(safeEventType, safeDescription),
+                        () -> getCacoEventCode(safeEventType, safeDescription),
+                        () -> getFlarEventCode(safeDescription),
+                        () -> getFldrEventCode(safeDescription),
+                        () -> getECPKEventCode(safeEventType, safeLocationRole),
+                        () -> getRAAREventCode(safeEventType, safeLocationRole),
+                        () -> getUNFREventCode(safeEventType, safeLocationRole),
+                        () -> getLOBAEventCode(safeEventType, safeLocationRole),
+                        () -> getFCGIEventCode(safeEventType, safeLocationRole, safeDescription),
+                        () -> getVSDPEventCode(safeEventType, safeLocationRole),
+                        () -> getARDTEventCode(safeEventType, safeLocationRole),
+                        () -> getARDPEventCode(safeEventType, safeLocationRole),
+                        () -> getDCVSEventCode(safeEventType, safeLocationRole),
+                        () -> getNTDAEventCode(safeEventType, safeLocationRole),
+                        () -> getSTCDEventCode(safeEventType, safeLocationRole),
+                        () -> getDORCEventCode(safeEventType, safeLocationRole),
+                        () -> getFCADEventCode(safeEventType, safeLocationRole),
+                        () -> getGATPEventCode(safeEventType, safeLocationRole),
+                        () -> getVSDTEventCode(safeEventType, safeLocationRole),
+                        () -> getVGMAEventCode(safeEventType, safeLocationRole),
+                        () -> getVBFLEventCode(safeEventType, safeLocationRole),
+                        () -> getLDVSEventCode(safeEventType, safeLocationRole),
+                        () -> getUNBAEventCode(safeEventType, safeLocationRole),
+                        () -> getBAAREventCode(safeEventType, safeLocationRole),
+                        () -> getBADEEventCode(safeEventType, safeLocationRole),
+                        () -> getLORAEventCode(safeEventType, safeLocationRole),
+                        () -> getRADEEventCode(safeEventType, safeLocationRole),
+                        () -> getCOSCEventCode(safeEventType, safeLocationRole),
+                        () -> getGATOEventCode(safeEventType, safeLocationRole),
+                        () -> getEFFTEventCode(safeEventType, safeLocationRole),
+                        () -> getEFLTEventCode(safeEventType, safeLocationRole),
+//                        () -> getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource, safeJourneyScacCode),
+                        () -> getFUGOEventCode(safeEventType, safeLocationRole),
+                        () -> getEMCREventCode(safeEventType, safeLocationRole)
+                ).map(Supplier::get).filter(Objects::nonNull).findFirst()
+                .orElseGet(() -> {
+                    log.info("No match found for event code '{}' with location role '{}'. Returning original event code.",
+                            safeEventType, safeLocationRole);
+                    return safeEventType;
+                });
     }
 
-    private String getTrcfTnfdTrcsEventCode(String safeEventCode, String safeDescription) {
-        if (EventConstants.LITERAL.equalsIgnoreCase(safeEventCode)) {
-            String shortCode = null;
-
-            if (safeDescription.equalsIgnoreCase("Received from Flight")) {
-                shortCode = EventConstants.TRCF;
-            } else if (safeDescription.equalsIgnoreCase("Consignee notified")) {
-                shortCode = EventConstants.TNFD;
-            } else if (safeDescription.equalsIgnoreCase("Received from Shipper")) {
-                shortCode = EventConstants.TRCS;
-            }
-
-            if (shortCode != null) {
-                log.info("Matched LITERAL and DESCRIPTION. Returning short code: {}", shortCode);
-                return shortCode;
-            }
+    private String getONBFEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Prepared for Loading")
+                || safeDescription.equalsIgnoreCase("Ready to board aircraft")) {
+            log.info("Matched ONBF and Description. Returning short code: {}", EventConstants.ONBF);
+            return EventConstants.ONBF;
         }
         return null;
     }
 
-    private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
-                && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
-            return EventConstants.ECPK;
+    private String getTNFDEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Shipment notified for delivery")
+                || safeDescription.equalsIgnoreCase("Consignee notified")) {
+            log.info("Matched TNFD and Description. Returning short code: {}", EventConstants.TNFD);
+            return EventConstants.TNFD;
         }
         return null;
     }
 
-    private String getFCGIEventCode(String safeEventCode, String safeLocationRole, String safeDescription) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
-                && "originPort".equalsIgnoreCase(safeLocationRole)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
-            return EventConstants.FCGI;
-        }
-
-        if (EventConstants.DEPARTED_ORIGIN_PICKUP.equalsIgnoreCase(safeEventCode)
-                && safeDescription.startsWith(EventConstants.TESLA_HYPHEN_PREFIX)) {
-            log.info("Matched DEPARTED_ORIGIN_PICKUP and DESCRIPTION starts with TESLA -. Returning short code: {}", EventConstants.FCGI);
-            return EventConstants.FCGI;
-        }
-
-        return null;
-    }
-
-    private String getVSDPEventCode(String safeEventType, String safeLocationRole, String safeDescriptionFromSource, String safeJourneyScacCode) {
-        boolean isMscuScac = EventConstants.MSCU.equalsIgnoreCase(safeJourneyScacCode);
-
-        if (isMscuScac) {
-            boolean isExportLoadOnVessel = EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType)
-                    && EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource)
-                    && EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
-
-            if (isExportLoadOnVessel) {
-                log.info("Matched condition: Export Load On Vessel (MSCU). Returning short code: {}", EventConstants.VSDP);
-                return EventConstants.VSDP;
-            }
-        } else {
-            boolean isVesselDepartureFromOrigin = EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType) &&
-                    EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
-
-            if (isVesselDepartureFromOrigin) {
-                log.info("Matched condition: Vessel Departure From Origin (Non-MSCU). Returning short code: {}", EventConstants.VSDP);
-                return EventConstants.VSDP;
-            }
-        }
-
-        return null;
-    }
-
-    private String getADRPEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
-                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.info("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
-            return EventConstants.ARDP;
+    private String getTRCFEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Received from Flight")
+                || safeDescription.equalsIgnoreCase("Received from Airline")
+                || safeDescription.equalsIgnoreCase("Received from another airline")) {
+            log.info("Matched TRCF and Description. Returning short code: {}", EventConstants.TRCF);
+            return EventConstants.TRCF;
         }
         return null;
     }
 
-    private String getFUGOEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
-                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.info("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
-            return EventConstants.FUGO;
+    private String getTRCSEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Received from Shipper")) {
+            log.info("Matched TRCS and Description. Returning short code: {}", EventConstants.TRCS);
+            return EventConstants.TRCS;
         }
         return null;
     }
 
-    private String getEMCREventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
-                && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
-            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
-            return EventConstants.EMCR;
+    private String getUNATEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Unloaded from arrival truck")) {
+            log.info("Matched UNAT and Description. Returning short code: {}", EventConstants.UNAT);
+            return EventConstants.UNAT;
         }
         return null;
     }
+
+    private String getEMTCEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Pre-Manifested")) {
+            log.info("Matched EMTC and Description. Returning short code: {}", EventConstants.EMTC);
+            return EventConstants.EMTC;
+        }
+        return null;
+    }
+
+    private String getMFSTEventCode(String safeDescription) {
+        if (safeDescription.equalsIgnoreCase("Manifested")) {
+            log.info("Matched MFST and Description. Returning short code: {}", EventConstants.MFST);
+            return EventConstants.MFST;
+        }
+        return null;
+    }
+
+//    private String getVSDPEventCode(String safeEventType, String safeLocationRole, String safeDescriptionFromSource, String safeJourneyScacCode) {
+//        boolean isMscuScac = EventConstants.MSCU.equalsIgnoreCase(safeJourneyScacCode);
+//
+//        if (isMscuScac) {
+//            boolean isExportLoadOnVessel = EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType)
+//                    && EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource)
+//                    && EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
+//
+//            if (isExportLoadOnVessel) {
+//                log.info("Matched condition: Export Load On Vessel (MSCU). Returning short code: {}", EventConstants.VSDP);
+//                return EventConstants.VSDP;
+//            }
+//        } else {
+//            boolean isVesselDepartureFromOrigin = EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType) &&
+//                    EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
+//
+//            if (isVesselDepartureFromOrigin) {
+//                log.info("Matched condition: Vessel Departure From Origin (Non-MSCU). Returning short code: {}", EventConstants.VSDP);
+//                return EventConstants.VSDP;
+//            }
+//        }
+//
+//        return null;
+//    }
 
     @Override
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {

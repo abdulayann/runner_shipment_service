@@ -81,11 +81,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -129,6 +131,21 @@ public class EventService implements IEventService {
     private CommonUtils commonUtils;
     private ICarrierDetailsDao carrierDetailsDao;
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    private static final Set<String> SUPPORTED_TRACKING_EVENT_CODES = Stream.of(
+            EventConstants.ARDP, EventConstants.ARDT, EventConstants.BAAR, EventConstants.BADE,
+            EventConstants.BOCO, EventConstants.CACO, EventConstants.CAFS, EventConstants.COOD,
+            EventConstants.COSC, EventConstants.DCVS, EventConstants.DISC, EventConstants.DORC,
+            EventConstants.ECCC, EventConstants.ECPK, EventConstants.EFFT, EventConstants.EFLT,
+            EventConstants.EMCR, EventConstants.EMTC, EventConstants.FCAD, EventConstants.FCGI,
+            EventConstants.FLAR, EventConstants.FLDR, EventConstants.FUGO, EventConstants.FWBF,
+            EventConstants.GATO, EventConstants.GATP, EventConstants.INTR, EventConstants.LDVS,
+            EventConstants.LOBA, EventConstants.LORA, EventConstants.MFST, EventConstants.NTDA,
+            EventConstants.ONBF, EventConstants.PRDE, EventConstants.RAAR, EventConstants.RADE,
+            EventConstants.STCD, EventConstants.TNFD, EventConstants.TRCF, EventConstants.TRCS,
+            EventConstants.UNAT, EventConstants.UNBA, EventConstants.UNFR, EventConstants.VBFL,
+            EventConstants.VGMA, EventConstants.VSDP, EventConstants.VSDT
+    ).map(String::toLowerCase).collect(Collectors.toUnmodifiableSet());
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -706,7 +723,7 @@ public class EventService implements IEventService {
         log.info("Mapping and filtering tracking events. messageId {}", messageId);
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
-                .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails, messageId))
+                .filter(trackingEvent -> shouldProcessEvent(trackingEvent, messageId))
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, shipmentDetails.getId(), entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId(),
                         messageId, shipmentDetails.getTenantId()))
                 .toList();
@@ -726,89 +743,21 @@ public class EventService implements IEventService {
     }
 
     /**
-     * Determines whether an event should be processed based on its code and shipment details.
-     * <p>
-     * This method evaluates if an event qualifies for processing based on its code and the type or transport mode of the shipment. It follows predefined criteria for various event
-     * codes.
+     * Determines whether a given tracking event should be processed based on its event code.
      *
-     * @param event           the event to be evaluated
-     * @param shipmentDetails the details of the shipment
-     * @param messageId
-     * @return true if the event should be processed, false otherwise
+     * @param event     the event to be evaluated; may be null
+     * @param messageId the ID of the message associated with the event, used for logging
+     * @return {@code true} if the event should be processed, {@code false} otherwise
      */
-    private boolean shouldProcessEvent(Events event, ShipmentDetails shipmentDetails, String messageId) {
-        if (requiredParametersMissing(event, shipmentDetails)) {
-            return false;
-        }
+    private boolean shouldProcessEvent(Events event, String messageId) {
+        if (event == null) return false;
 
-        String eventCode = safeString(event.getEventCode());
-        String shipmentType = shipmentDetails.getShipmentType();
-        String transportMode = shipmentDetails.getTransportMode();
-        // Log the input values for debugging
-        log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
+        String eventCode = safeString(event.getEventCode()).toLowerCase();
+        log.info("Evaluating event with code: {} messageId {}", eventCode, messageId);
 
-        if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.VSDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.ARDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
-            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
-            log.info("Event code {} matches air transport shipment criteria. messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        if (EventConstants.CACO.contains(eventCode)
-                || EventConstants.FCGI.contains(eventCode)
-                || EventConstants.INTR.contains(eventCode)
-                || EventConstants.CAFS.contains(eventCode)
-                || EventConstants.PRDE.contains(eventCode)) {
-
-            log.info("Event code {} matches messageId {}", eventCode, messageId);
-            return true;
-        }
-
-        log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
-        return false;
-    }
-
-    private boolean requiredParametersMissing(Events event, ShipmentDetails shipmentDetails) {
-        return event == null || shipmentDetails == null;
-    }
-
-    private boolean matchCommonCriteria(String shipmentType, String transportMode) {
-        return isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode);
-    }
-
-    private boolean isFclShipment(String shipmentType) {
-        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(safeString(shipmentType));
-    }
-
-    private boolean isLclShipment(String shipmentType) {
-        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(safeString(shipmentType));
-    }
-
-    private boolean isAirShipment(String transportMode) {
-        return Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(safeString(transportMode));
+        boolean isSupported = SUPPORTED_TRACKING_EVENT_CODES.contains(eventCode);
+        log.info("Event code {} {} match criteria. messageId {}", eventCode, isSupported ? "matches" : "does not match", messageId);
+        return isSupported;
     }
 
     private String safeString(String value) {
