@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3Shipm
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -2500,6 +2501,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         consolidationDetails.setConsolidationType(SHIPMENT_TYPE_STD);
         consolidationDetails.setBol("MAWB123");
         consolidationDetails.setShipmentsList(new HashSet<>());
+        consolidationDetails.setReceivingBranch(100L);
 
         CarrierDetails consolidationCarrier = new CarrierDetails();
         consolidationCarrier.setFlightNumber(null);
@@ -2525,7 +2527,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         SendConsoleValidationResponse validationResponse = (SendConsoleValidationResponse) ((RunnerResponse<?>) response.getBody()).getData(SendConsoleValidationResponse.class);
         assertNotNull(validationResponse);
         assertTrue(validationResponse.getIsError());
-        assertTrue(validationResponse.getMissingKeys().contains("Flight Number"));
+        assertTrue(validationResponse.getMissingKeys().contains("Flight number"));
     }
 
     @Test
@@ -3003,11 +3005,9 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            entityTransferService.sendConsolidationValidation(
-                    CommonRequestModel.buildRequest(consolidationRequest)
-            );
-        });
+        assertThrows(DataRetrievalFailureException.class, () ->
+                entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(consolidationRequest))
+        );
     }
 
     @Test
@@ -3021,11 +3021,9 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
 
-        assertThrows(ValidationException.class, () -> {
-            entityTransferService.sendConsolidationValidation(
-                    CommonRequestModel.buildRequest(consolidationRequest)
-            );
-        });
+        assertThrows(ValidationException.class, () ->
+                entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(consolidationRequest))
+        );
     }
 
     @Test
@@ -3084,7 +3082,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         assertNotNull(response);
         assertTrue(response.getIsError());
-        assertTrue(response.getMissingKeys().contains("Flight Number"));
+        assertTrue(response.getMissingKeys().contains("Flight number"));
         assertTrue(response.getConsoleErrorMessage().contains("to retrigger the transfer"));
     }
 
@@ -3396,11 +3394,9 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            entityTransferService.sendShipmentValidation(
-                    CommonRequestModel.buildRequest(shipmentRequest)
-            );
-        });
+        assertThrows(DataRetrievalFailureException.class, () ->
+                entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(shipmentRequest))
+        );
     }
 
     @Test
