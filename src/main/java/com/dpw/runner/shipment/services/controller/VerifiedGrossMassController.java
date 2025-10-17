@@ -185,8 +185,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.CANCELLED),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.CANCELLED),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.CANCEL)
     public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid VgmCancelRequest vgmCancelRequest ) {

@@ -132,8 +132,8 @@ public class NPMController {
 
     @PostMapping(NPMConstants.GET_OFFERS_WITH_FILTERS)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = NPMConstants.LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> getNPMOffersWithFilters(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {

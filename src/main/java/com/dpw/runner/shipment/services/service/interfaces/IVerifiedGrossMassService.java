@@ -16,7 +16,7 @@ import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 public interface IVerifiedGrossMassService {
