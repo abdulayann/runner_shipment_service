@@ -2485,8 +2485,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
 
         shipmentListResponses.forEach(response -> {
+            int interBranchRequestCount = map.getOrDefault(response.getId(), 0);
+            int transferRequestCount = notificationMap.getOrDefault(response.getId(), 0);
             int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
             response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+            response.setInterBranchRequestCount(interBranchRequestCount);
+            response.setTransferRequestCount(transferRequestCount);
         });
     }
 

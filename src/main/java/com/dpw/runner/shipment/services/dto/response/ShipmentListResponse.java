@@ -151,6 +151,8 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private Integer pendingActionCount;
+    private Integer interBranchRequestCount;
+    private Integer transferRequestCount;
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
     private String department;
