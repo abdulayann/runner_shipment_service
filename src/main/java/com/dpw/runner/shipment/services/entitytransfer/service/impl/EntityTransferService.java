@@ -586,6 +586,7 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferConsolePayload.setPackingVsContainerGuid(etPackingContainerGuidMap);
     }
 
+      @Transactional
     public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
         SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
         if(sendFileToExternalRequest.getTransportMode().equals("AIR"))
@@ -650,6 +651,24 @@ public class EntityTransferService implements IEntityTransferService {
         networkTransfer.setTransportMode(transportMode);
         networkTransfer.setJobType(jobType);
 
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByEntityNumber(entityNumber);
+        if (optionalNetworkTransfer.isPresent()) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
+                NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
+                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
+                oldNetworkTransfer.setEntityPayload(entityPayload);
+                oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
+                oldNetworkTransfer.setTransferredDate(LocalDateTime.now());
+                networkTransferDao.save(oldNetworkTransfer);
+            } else {
+                networkTransferService.updateNetworkTransferTransferred(
+                        optionalNetworkTransfer.get(),
+                        entityPayload);
+            }
+        }
+        else {
+            createNetworkTransfer(networkTransfer, entityPayload);
+        }
         BridgeRequest request = BridgeRequest.builder()
                 .requestCode(sendFileToExternalRequest.getSendToBranch())
                 .transactionId(UUID.randomUUID().toString())
@@ -659,6 +678,17 @@ public class EntityTransferService implements IEntityTransferService {
         log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestOutBoundFileTransfer(CommonRequestModel.buildRequest(request));
         log.info("OutBound File Transfer Bridge Service Response: {}", jsonHelper.convertToJson(bridgeServiceResponse));
+    }
+
+
+    private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
+        networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+        if(entityPayload != null){
+            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+            networkTransfer.setEntityPayload(entityPayload);
+            networkTransfer.setTransferredDate(LocalDateTime.now());
+        }
+        networkTransferDao.save(networkTransfer);
     }
 
     private boolean shouldSaveShipment(ShipmentDetails shipment) {
