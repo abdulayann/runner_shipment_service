@@ -2315,8 +2315,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
 
         shipmentListResponses.forEach(response -> {
+            int interBranchRequestCount   = map.getOrDefault(response.getId(), 0);
+            int transferRequestCount = notificationMap.getOrDefault(response.getId(), 0);
             int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
             response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+            response.setInterBranchRequestCount((interBranchRequestCount == 0) ? null : interBranchRequestCount);
+            response.setTransferRequestCount((transferRequestCount == 0) ? null : transferRequestCount);
         });
     }
 
@@ -4622,6 +4626,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         try {
             ListCommonRequest listRequest = constructListCommonRequest("shipmentId", request.getId(), Constants.EQ);
             listRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, Constants.EQ, listRequest);
+            listRequest.setPageSize(request.getPageSize());
+            listRequest.setPageNo(request.getPageNo());
             Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 

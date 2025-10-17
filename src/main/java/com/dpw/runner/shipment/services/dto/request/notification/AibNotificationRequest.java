@@ -15,4 +15,8 @@ public class AibNotificationRequest implements IRunnerRequest {
     private Long id;
     private String containsText;
     private transient SortRequest sortRequest;
+    @Builder.Default
+    private Integer pageNo = 1;
+    @Builder.Default
+    private Integer pageSize = Integer.MAX_VALUE;
 }
