@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS sailing_information (
     carrier_receipt_loc_code VARCHAR(100),
     carrier_delivery_loc_code VARCHAR(100),
     origin_port_loc_code VARCHAR(100),
-    destination_port_loc_code VARCHAR(100)
+    destination_port_loc_code VARCHAR(100),
     carrier VARCHAR(100),
     vessel_name VARCHAR(2048),
     voyage_no VARCHAR(100),

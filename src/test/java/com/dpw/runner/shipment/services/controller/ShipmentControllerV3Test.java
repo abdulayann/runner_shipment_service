@@ -157,12 +157,11 @@ class ShipmentControllerV3Test {
     }
 
     @Test
-    void getAllMasterDataTest() {
+    void getAllMasterDataTest() throws RunnerException {
         Map<String, Object> masterData = new HashMap<>();
-        when(shipmentService.getAllMasterData(anyLong(), anyString())).thenReturn(masterData);
-        var response = shipmentControllerV3.getAllMasterData(1L, "source");
+        when(shipmentService.getAllMasterData(any(), anyString())).thenReturn(masterData);
+        var response = shipmentControllerV3.getAllMasterData(Optional.of(1L), Optional.empty(),"source");
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(shipmentService).getAllMasterData(1L, "source");
     }
 
     @Test

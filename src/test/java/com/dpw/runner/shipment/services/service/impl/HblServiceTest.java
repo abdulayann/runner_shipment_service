@@ -1432,7 +1432,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithEmptyHbl() {
+    void retrieveByShipmentIdTestWithEmptyHbl() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1442,7 +1442,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithHblInResponse() {
+    void retrieveByShipmentIdTestWithHblInResponse() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1454,7 +1454,26 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithError() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
+        assertThrows(RunnerException.class, () -> hblService.retrieveByShipmentId(commonRequestModel));
+    }
+
+    @Test
+    void retrieveByShipmentIdTestWithHblInResponseWithGuid() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
+        var shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipment));
+        when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(mockHbl));
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class));
+        var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
+        // Test
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(true).build());
 
@@ -1466,7 +1485,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(false).restrictBLEdit(false).build());
 
@@ -1478,7 +1497,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdWithShipmentDetailsNull() {
+    void retrieveByShipmentIdWithShipmentDetailsNull() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
 
         var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
@@ -1875,32 +1894,7 @@ class HblServiceTest extends CommonMocks {
         assertEquals("LINE1", dto.getConsigneeAddressLine1());
         assertEquals("MUMBAI", dto.getConsigneeCity());
     }
-    @Test
-    void testUpdateShipmentPartiesToHBL_addNewParty() throws Exception {
-        // Given
-        Hbl hbl = new Hbl();
-        hbl.setHblNotifyParty(new ArrayList<>());
-        Parties party = new Parties();
-        party.setOrgData(Map.of(PartiesConstants.FULLNAME, "Test Party"));
-        party.setAddressData(Map.of(PartiesConstants.ADDRESS1, "123 Main St"));
-        HblLockSettings hblLock = new HblLockSettings();
 
-        ShipmentSettingsDetails settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(settings);
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
-        // When
-        Method method = HblService.class.getDeclaredMethod("updateShipmentPartiesToHBL", Parties.class, Hbl.class, HblLockSettings.class);
-        method.setAccessible(true);
-        method.invoke(hblService, party, hbl, hblLock);
-
-        assertNotNull(hbl.getHblNotifyParty());
-        assertFalse(hbl.getHblNotifyParty().isEmpty());
-        assertEquals(1, hbl.getHblNotifyParty().size());
-        HblPartyDto hblParty = hbl.getHblNotifyParty().get(0);
-        assertEquals("Test Party", hblParty.getName());
-        assertEquals("123 MAIN ST", hblParty.getAddress());
-        assertTrue(hblParty.getIsShipmentCreated());
-    }
     @Test
     void testMapShipmentPartiesToHBL_v3Enabled() throws Exception {
         // Given

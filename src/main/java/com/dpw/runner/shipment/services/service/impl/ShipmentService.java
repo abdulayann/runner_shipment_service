@@ -4605,7 +4605,6 @@ public class ShipmentService implements IShipmentService {
         itemRow.createCell(headerMap.get("20s Count")).setCellValue(String.valueOf(shipment.getContainer20Count()));
         itemRow.createCell(headerMap.get("40s Count")).setCellValue(String.valueOf(shipment.getContainer40Count()));
         itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount() != null ? shipment.getTeuCount().toString() : null);
-        itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
         itemRow.createCell(headerMap.get("POL")).setCellValue(originPort);
         itemRow.createCell(headerMap.get("POD")).setCellValue(destinationPort);
         itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(String.valueOf(shipment.getWayBillNumber()));
@@ -8259,11 +8258,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateAgentDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker().getOrgId())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_ORIGIN_AGENT);
         }
 
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker().getOrgId())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_DESTINATION_AGENT);
         }
     }
