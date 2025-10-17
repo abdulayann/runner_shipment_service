@@ -614,7 +614,7 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferPayload.setAdditionalDocs(sendFileToExternalRequest.getAdditionalDocs());
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
         Pair<Long, String> entityMetaData = Pair.of(shipment.getId(), SHIPMENT);
-        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), shipment.getReceivingBranch().intValue(), sendFileToExternalRequest);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), Math.toIntExact(shipment.getReceivingBranch()), sendFileToExternalRequest);
 
     }
     private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
@@ -642,7 +642,7 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, Object> entityPayload = new HashMap<>(getNetworkTransferEntityPayload(entityTransferPayload));
         entityPayload.put("TransferInitiatedUser", UserContext.getUser().getWorkEmail());
         Pair<Long, String> entityMetaData = Pair.of(console.getId(), CONSOLIDATION);
-        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), console.getReceivingBranch().intValue(), sendFileToExternalRequest);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), entityMetaData, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), Math.toIntExact(console.getReceivingBranch()), sendFileToExternalRequest);
     }
 
     private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, Pair<Long, String> entityMetaData, String transportMode, String jobType, Integer receivingTenantId, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
