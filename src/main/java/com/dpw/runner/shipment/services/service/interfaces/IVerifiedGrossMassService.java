@@ -8,12 +8,15 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGross
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.VgmCancelRequest;
 import com.dpw.runner.shipment.services.entity.VerifiedGrossMass;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.inttra.VgmEventDto;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+
+import javax.validation.Valid;
 import java.util.List;
 
 public interface IVerifiedGrossMassService {
@@ -77,5 +80,7 @@ public interface IVerifiedGrossMassService {
      * @return list of CommonContainerResponse
      */
     List<CommonContainerResponse> syncContainersByIds(List<Long> commonContainerIds);
+
+    void cancelVerifiedGrossMass(@Valid VgmCancelRequest id);
 }
 

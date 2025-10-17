@@ -28,4 +28,5 @@ public class CommonPackageResponse implements IRunnerResponse {
     private Long shippingInstructionId;
     private String commodityCode;
     private String commodityGroup;
+    private String marksnNums;
 }

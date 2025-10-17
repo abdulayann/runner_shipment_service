@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGros
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassInttraResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.VgmCancelRequest;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CommonContainers;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -72,6 +73,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -88,6 +90,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_EMAIL_TEMPLATE;
+import static com.dpw.runner.shipment.services.entity.enums.VerifiedGrossMassStatus.CancelledRequested;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
@@ -790,6 +793,46 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         return commonContainersList.stream()
                 .map(container -> jsonHelper.convertValue(container, CommonContainerResponse.class))
                 .toList();
+    }
+
+    @Override
+    public void cancelVerifiedGrossMass(@Valid VgmCancelRequest vgmCancelRequest) {
+        List<Long> cancelContainerIds = vgmCancelRequest.getContainersIds();
+
+        List<CommonContainers> commonContainers = commonContainersRepository.findAllByIdIn(cancelContainerIds);
+        if (CollectionUtils.isEmpty(commonContainers)) {
+            throw new ValidationException("Invalid containers id: " + cancelContainerIds);
+        }
+        if (cancelContainerIds.size() != commonContainers.size()) {
+            throw new ValidationException("Some of the invalid containers id : " + cancelContainerIds);
+        }
+        List<String> cancelledContainerNumbers = commonContainers.stream()
+                .filter(container -> Objects.equals(container.getVgmStatus(), VerifiedGrossMassStatus.Cancelled.name()))
+                .map(CommonContainers::getContainerNo)
+                .toList();
+        if (!CollectionUtils.isEmpty(cancelledContainerNumbers)) {
+            throw new ValidationException("Some containers are already cancelled/CancelledRequested." + String.join(",", cancelledContainerNumbers));
+        }
+
+        Long verifiedGrossMassId = commonContainers.get(0).getVerifiedGrossMassId();
+        VerifiedGrossMass verifiedGrossMass = verifiedGrossMassDao.findById(verifiedGrossMassId)
+                .orElseThrow(() -> new ValidationException("Invalid verified gross mass id: " + verifiedGrossMassId));
+        commonContainers
+                .forEach(container -> container.setVgmStatus(CancelledRequested.name()));
+        List<CommonContainers> containersList = verifiedGrossMass.getContainersList();
+        containersList.stream()
+                .filter(container -> cancelContainerIds.contains(container.getId()))
+                .forEach(container -> container.setVgmStatus(CancelledRequested.name()));
+        boolean allCancelled = containersList.stream()
+                .allMatch(c -> Objects.equals(c.getVgmStatus(), VerifiedGrossMassStatus.Cancelled.name()));
+
+        if (allCancelled) {
+            verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Cancelled);
+        }
+        VerifiedGrossMass verifiedGrossMassEntity = verifiedGrossMassDao.save(verifiedGrossMass);
+
+        log.info("Vgm with id :{} cancelled ", verifiedGrossMassEntity.getId());
+        commonContainers.forEach(containers -> carrierBookingInttraUtil.createTransactionHistory(CancelledRequested.getDescription(), FlowType.Inbound, CancelledRequested.getDescription() + "by: " + UserContext.getUser().getUsername() + " for container no: " + containers.getContainerNo() + " Container Code: " + containers.getContainerCode(), SourceSystem.CargoRunner, containers.getId(), EntityTypeTransactionHistory.VGM));
     }
 }
 

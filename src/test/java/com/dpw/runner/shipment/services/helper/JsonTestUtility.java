@@ -464,6 +464,12 @@ public class JsonTestUtility {
     public ListCommonRequest getListRequest13() {
         return objectMapper.convertValue(payload.get("LIST_REQUEST_13"), ListCommonRequest.class);
     }
+    public ListCommonRequest getListRequest14() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_14"), ListCommonRequest.class);
+    }
+    public ListCommonRequest getListRequest15() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_15"), ListCommonRequest.class);
+    }
 
     public QuoteContracts getQuoteContracts() {
         return objectMapper.convertValue(payload.get("QUOTE_CONTRACTS"), QuoteContracts.class);

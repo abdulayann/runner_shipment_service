@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGross
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.VgmCancelRequest;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -163,7 +164,7 @@ public class VerifiedGrossMassController {
             verifiedGrossMassService.submitOrAmendVerifiedGrossMass(submitAmendInttraRequest);
             log.info("Verified Gross Mass successful with RequestId: {}, OperationType: {} and response: {}",
                     LoggerHelper.getRequestIdFromMDC(), submitAmendInttraRequest.getOperationType(), jsonHelper.convertToJson(submitAmendInttraRequest));
-            return ResponseHelper.buildSuccessResponse(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL+ submitAmendInttraRequest.getOperationType());
+            return ResponseHelper.buildSuccessResponse(VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL + submitAmendInttraRequest.getOperationType());
         } catch (Exception ex) {
             String responseMsg = ex.getMessage() != null ? ex.getMessage() : "Error submit/Amend Verified Gross Mass";
             log.error(responseMsg, ex);
@@ -181,5 +182,17 @@ public class VerifiedGrossMassController {
         List<CommonContainerResponse> response = verifiedGrossMassService.syncContainersByIds(commonContainerIds);
         log.info("Verified Gross Mass SYNC CONTAINERS successful with RequestId: {} and response: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.CANCELLED),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PutMapping(ApiConstants.CANCEL)
+    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid VgmCancelRequest vgmCancelRequest ) {
+        log.info("Received verified gross mass Cancel request with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), vgmCancelRequest.getContainersIds());
+        verifiedGrossMassService.cancelVerifiedGrossMass(vgmCancelRequest);
+        log.info("Verified Gross Mass Cancel successful with RequestId: {} and id: {}", LoggerHelper.getRequestIdFromMDC(), vgmCancelRequest.getContainersIds());
+        return ResponseHelper.buildSuccessResponse();
     }
 }

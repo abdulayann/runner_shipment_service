@@ -15,8 +15,6 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
-//import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
-//import org.hibernate.query.criteria.internal.CriteriaQueryImpl;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
@@ -83,10 +81,6 @@ class DbAccessHelperTest {
 
     @Mock
     private Join<ShipmentDetails, ShipmentDetails> mockJoin;
-
-//    @Mock
-//    private CriteriaBuilderImpl criteriaBuilderImpl;
-
     @Mock
     private Path<?> path;
 
@@ -223,11 +217,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
@@ -246,11 +235,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
@@ -262,15 +246,10 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIsEnum, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
-    void testFetchData_WithSortAndFilter() {
+     void testFetchData_WithSortAndFilter() {
         when(request.getSortRequest()).thenReturn(sortRequest);
         when(request.getFilterCriteria()).thenReturn(new ArrayList<>());
         when(request.getPageNo()).thenReturn(1);
@@ -339,26 +318,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest6, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-////        when(root.getJoins()).thenReturn(Set.of(join));
-//        when(root.getFetches()).thenReturn(Collections.emptySet());
-//        Predicate mockPredicate = mock(Predicate.class);
-//        when(criteriaBuilder.equal(any(), any())).thenReturn(mockPredicate);
-//        when(criteriaBuilder.and(any(Predicate.class), any(Predicate.class))).thenReturn(mockPredicate);
-//        when(criteriaBuilder.or(any(Predicate.class), any(Predicate.class))).thenReturn(mockPredicate);
-//
-//        // Mock Path methods
-//        when(root.get("status")).thenReturn((Path) path);
-//        when(root.get("guid")).thenReturn((Path) path);
-//        when(path.as(any())).thenReturn((Path) path);
-//
-//
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
@@ -464,36 +423,23 @@ class DbAccessHelperTest {
     }
 
     @Test
-    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesser() {
+    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesser () {
         ListCommonRequest listCommonRequest11 = jsonTestUtility.getListRequest11();
         listCommonRequest11.getFilterCriteria().get(0).getInnerFilter().get(1).getCriteria()
                 .setValue(LocalDateTime.now());
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("eta", RunnerEntityMapping.builder()
-                .tableName("shipment_details").isContainsText(true)
-                .dataType(LocalDateTime.class).build());
-        tableNames.put("etd", RunnerEntityMapping.builder()
-                .tableName("shipment_details").isContainsText(true)
-                .dataType(LocalDateTime.class).build());
-        tableNames.put("status", RunnerEntityMapping.builder()
-                .tableName("shipment_details").isContainsText(true)
-                .dataType(Long.class).build());
+        tableNames.put("eta", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
+        tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
 
-        Pair<Specification<ShipmentDetails>, Pageable> pair =
-                dbAccessHelper.fetchData(listCommonRequest11, ShipmentDetails.class, tableNames);
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest11, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-
-        // Setup mocks for toPredicate execution
-//        setupMocksForPredicateExecution(tableNames);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNotNull(predicate);
     }
 
     @Test
-    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesserEqual() {
+    void fetchDataTableNamesLocalDateTimeGreaterOtherFormatLesserEqual () {
         ListCommonRequest listCommonRequest12 = jsonTestUtility.getListRequest12();
         listCommonRequest12.getFilterCriteria().get(0).getInnerFilter().get(1).getCriteria().setValue(LocalDateTime.now());
 
@@ -505,11 +451,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest12, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
@@ -525,11 +466,6 @@ class DbAccessHelperTest {
         Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest13, ShipmentDetails.class, tableNames);
         Specification<ShipmentDetails> specification = pair.getLeft();
         assertNotNull(specification);
-//        when(criteriaQuery.getResultType()).thenReturn(ShipmentDetails.class);
-//        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
-//
-//        Predicate predicate = specification.toPredicate((Root<ShipmentDetails>) root, criteriaQuery, criteriaBuilder);
-//        assertNull(predicate);
     }
 
     @Test
@@ -760,8 +696,153 @@ class DbAccessHelperTest {
         when(criteriaBuilder.notEqual(any(Path.class), any()))
                 .thenReturn(mockPredicate);
 
+
         // Setup order operations
         when(criteriaBuilder.asc(any())).thenReturn(mock(Order.class));
         when(criteriaBuilder.desc(any())).thenReturn(mock(Order.class));
+    }
+
+    @Test
+    void fetchDataTableNamesNotEmptyPredicateLongClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest14();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(Long.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesNotEmptyPredicateStringClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest14();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesNotEmptyPredicateListClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest14();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(List.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesNotEmptyPredicateSetClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest14();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(Set.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesEmptyPredicateLongClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest15();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(Long.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesEmptyPredicateStringClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest15();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesEmptyPredicateListClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest15();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(List.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
+    }
+
+    @Test
+    void fetchDataTableNamesEmptyPredicateSetClass() {
+        Root<ShipmentDetails> root1 = mock(Root.class);
+        CriteriaQuery criteriaQuery = new CriteriaQueryImpl<String>(criteriaBuilderImpl, String.class);
+        ListCommonRequest listCommonRequest = jsonTestUtility.getListRequest15();
+        listCommonRequest.setIncludeTbls(Arrays.asList("status"));
+
+        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(Set.class).build());
+
+        Pair<Specification<ShipmentDetails>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> specification = pair.getLeft();
+        assertNotNull(specification);
+
+        Predicate predicate = specification.toPredicate(root1, criteriaQuery, criteriaBuilder);
+        assertNull(predicate);
     }
 }

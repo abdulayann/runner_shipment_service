@@ -105,7 +105,7 @@ public class BookingIntegrationsUtility {
     private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IIntegrationResponseDao integrationResponseDao;
-    @Autowired
+    @Autowired @Lazy
     private IShipmentService shipmentService;
     @Autowired @Lazy
     private IShipmentServiceV3 shipmentServiceV3;

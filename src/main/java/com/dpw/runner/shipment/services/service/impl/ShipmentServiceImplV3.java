@@ -3332,7 +3332,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return updatedPackings;
     }
 
-    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) throws RunnerException {
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
             hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
         }
