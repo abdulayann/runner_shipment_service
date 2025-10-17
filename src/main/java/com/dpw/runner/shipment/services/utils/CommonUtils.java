@@ -1003,16 +1003,20 @@ public class CommonUtils {
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
         if (isV3FlagEnabled) {
-            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
-            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
-                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
-            }
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
         }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+    }
+
+    private void getToAndCcEmailMasterListsForHubAndRegion(SendEmailDto sendEmailDto, Set<String> toEmailIds, Set<String> ccEmailIds) {
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+        if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        }
     }
 
     public void populateShipmentImportPullAttachmentTemplate(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, UnlocationsResponse> unLocMap) {
@@ -1125,10 +1129,7 @@ public class CommonUtils {
         setCurrentUserEmail(ccEmailIds);
         if (isV3FlagEnabled) {
             // fetching to and cc from master lists
-            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
-            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
-                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
-            }
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
         }
@@ -1154,10 +1155,7 @@ public class CommonUtils {
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
         if(isV3FlagEnabled) {
-            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
-            if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
-                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
-            }
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
         }
