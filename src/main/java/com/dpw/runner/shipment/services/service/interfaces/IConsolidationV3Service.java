@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
@@ -88,4 +89,5 @@ public interface IConsolidationV3Service {
     ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException;
     CheckDGShipmentV3 getDGShipment(Long consoleId);
     ConsolidationDetailsV3Response getDefaultConsolidation();
+    BulkContainerResponse cloneContainers(BulkCloneLineItemRequest request) throws RunnerException;
 }

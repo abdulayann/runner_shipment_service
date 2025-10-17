@@ -13,10 +13,9 @@ import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Req
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -256,6 +255,12 @@ public class ConsolidationV3Controller {
     public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
         ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
         return ResponseHelper.buildSuccessResponse(defaultConsolidation);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> cloneConsolidationContainers(@RequestBody @Valid @NonNull BulkCloneLineItemRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.cloneContainers(request));
     }
 
 }

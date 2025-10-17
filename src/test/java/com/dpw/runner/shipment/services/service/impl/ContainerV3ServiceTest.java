@@ -403,7 +403,6 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         doNothing().when(containerValidationUtil).validateCreateBulkRequest(containerRequests);
         doNothing().when(containerValidationUtil).validateContainerNumberUniquenessForCreateBulk(containerRequests);
-        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), anyString());
         when(jsonHelper.convertValueToList(containerRequests, Containers.class)).thenReturn(containers);
         when(containerDao.saveAll(containers)).thenReturn(containers);
         doNothing().when(auditLogService).addAuditLog(any());

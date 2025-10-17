@@ -1388,7 +1388,7 @@ class ContainerServiceTest extends CommonMocks {
                     return List.of(testContainer);
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1426,7 +1426,7 @@ class ContainerServiceTest extends CommonMocks {
                     return List.of(testContainer);
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1464,7 +1464,7 @@ class ContainerServiceTest extends CommonMocks {
                 });
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1731,7 +1731,7 @@ class ContainerServiceTest extends CommonMocks {
 
                     return List.of(testContainer);
                 });
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1767,7 +1767,7 @@ class ContainerServiceTest extends CommonMocks {
 
                     return List.of(testContainer);
                 });
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1843,7 +1843,7 @@ class ContainerServiceTest extends CommonMocks {
                     return List.of(testContainer);
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(testShipment));
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1915,7 +1915,7 @@ class ContainerServiceTest extends CommonMocks {
                 });
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1950,7 +1950,7 @@ class ContainerServiceTest extends CommonMocks {
                     return List.of(testContainer);
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -2101,7 +2101,7 @@ class ContainerServiceTest extends CommonMocks {
 
                     return List.of(testContainer);
                 });
-        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        when(containerDao.saveAllContainers(any())).thenReturn(List.of(testContainer));
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 

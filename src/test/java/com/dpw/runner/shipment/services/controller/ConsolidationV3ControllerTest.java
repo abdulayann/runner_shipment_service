@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,8 +16,10 @@ import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueReques
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3ExternalResponse;
@@ -308,6 +309,49 @@ class ConsolidationV3ControllerTest {
       assertNotNull(response);
       assertEquals(HttpStatus.OK, response.getStatusCode());
       verify(consolidationV3Service).getDefaultConsolidation();
+  }
+
+  @Test
+  void testCloneContainers_shouldReturnSuccessResponse() throws RunnerException {
+    // Arrange
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(1L)
+            .containerId(100L)
+            .numberOfClones(5)
+            .build();
+    BulkContainerResponse mockResponse = new BulkContainerResponse();
+
+    when(consolidationV3Service.cloneContainers(request)).thenReturn(mockResponse);
+
+    // Act
+    ResponseEntity<IRunnerResponse> response = controller.cloneConsolidationContainers(request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).cloneContainers(request);
+  }
+
+  @Test
+  void testCloneContainers_shouldThrowRunnerException() throws RunnerException {
+    // Arrange
+    BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+            .moduleId(1L)
+            .containerId(100L)
+            .numberOfClones(5)
+            .build();
+
+    when(consolidationV3Service.cloneContainers(request))
+            .thenThrow(new RunnerException("Error cloning containers"));
+
+    // Act & Assert
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> controller.cloneConsolidationContainers(request)
+    );
+
+    assertEquals("Error cloning containers", ex.getMessage());
+    verify(consolidationV3Service).cloneContainers(request);
   }
 
 }

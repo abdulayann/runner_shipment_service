@@ -26,7 +26,9 @@ import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -161,6 +163,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
     @Mock
     private INotesDao notesDao;
+
+    @Mock
+    private IPackingV3Service packingV3Service;
+
+    @Mock
+    private IContainerV3Service containerV3Service;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -3793,4 +3801,205 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
     }
 
+    @Test
+    void testCloneBookingPackages_Success() throws RunnerException {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(50L)
+                .numberOfClones(2)
+                .build();
+
+
+        Packing originalPacking = new Packing();
+        originalPacking.setId(50L);
+        originalPacking.setWeight(BigDecimal.valueOf(50));
+        originalPacking.setWeightUnit("KG");
+        originalPacking.setPacks("5");
+
+        PackingV3Request basePackage = new PackingV3Request();
+        basePackage.setWeight(BigDecimal.valueOf(50));
+        basePackage.setWeightUnit("KG");
+        basePackage.setPacks("5");
+
+        PackingV3Request clone1 = new PackingV3Request();
+        clone1.setWeight(BigDecimal.valueOf(50));
+        clone1.setBookingId(1L);
+
+        PackingV3Request clone2 = new PackingV3Request();
+        clone2.setWeight(BigDecimal.valueOf(50));
+        clone2.setBookingId(1L);
+
+        List<PackingResponse> packingResponses = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            PackingResponse packingResponse = new PackingResponse();
+            packingResponse.setId((long) (51 + i));
+            packingResponses.add(packingResponse);
+        }
+
+        BulkPackingResponse expectedResponse = new BulkPackingResponse();
+        expectedResponse.setPackingResponseList(packingResponses);
+
+        when(packingDao.findById(50L)).thenReturn(Optional.of(originalPacking));
+        when(jsonHelper.convertValue(originalPacking, PackingV3Request.class)).thenReturn(basePackage);
+        when(jsonHelper.convertValue(any(PackingV3Request.class), eq(PackingV3Request.class)))
+                .thenReturn(clone1, clone2);
+        when(packingV3Service.updateBulk(anyList(), eq(Constants.BOOKING), eq(false))).thenReturn(expectedResponse);
+
+        // Execute
+        BulkPackingResponse result = customerBookingService.cloneBookingPackages(request);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(2, result.getPackingResponseList().size());
+        verify(packingDao).findById(50L);
+        verify(jsonHelper).convertValue(originalPacking, PackingV3Request.class);
+        verify(jsonHelper, times(2)).convertValue(any(PackingV3Request.class), eq(PackingV3Request.class));
+        verify(packingV3Service).updateBulk(anyList(), eq(Constants.BOOKING), eq(false));
+    }
+
+    @Test
+    void testCloneBookingPackages_PackageNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(999L)
+                .numberOfClones(2)
+                .build();
+
+        when(packingDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> customerBookingService.cloneBookingPackages(request));
+        verify(packingDao).findById(999L);
+    }
+
+    @Test
+    void testCloneBookingPackages_MissingPackageId() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .numberOfClones(2)
+                .build();
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> customerBookingService.cloneBookingPackages(request));
+    }
+
+    @Test
+    void testCloneBookingContainers_Success() throws RunnerException {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(60L)
+                .numberOfClones(4)
+                .build();
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setId(1L);
+        customerBooking.setBookingNumber("BK001");
+
+        Containers originalContainer = new Containers();
+        originalContainer.setId(60L);
+        originalContainer.setContainerNumber("CONT001");
+        originalContainer.setContainerCode("40GP");
+
+        ContainerV3Request baseContainer = new ContainerV3Request();
+        baseContainer.setContainerNumber("CONT001");
+        baseContainer.setContainerCode("40GP");
+
+        ContainerV3Request clone1 = new ContainerV3Request();
+        clone1.setContainerNumber("CONT001");
+        clone1.setBookingId(1L);
+
+        ContainerV3Request clone2 = new ContainerV3Request();
+        clone2.setContainerNumber("CONT001");
+        clone2.setBookingId(1L);
+
+        ContainerV3Request clone3 = new ContainerV3Request();
+        clone3.setContainerNumber("CONT001");
+        clone3.setBookingId(1L);
+
+        ContainerV3Request clone4 = new ContainerV3Request();
+        clone4.setContainerNumber("CONT001");
+        clone4.setBookingId(1L);
+
+        List<ContainerResponse> containerResponses = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            ContainerResponse containerResponse = new ContainerResponse();
+            containerResponse.setId((long) (61 + i));
+            containerResponses.add(containerResponse);
+        }
+
+        BulkContainerResponse expectedResponse = new BulkContainerResponse();
+        expectedResponse.setContainerResponseList(containerResponses);
+
+        when(containerDao.findById(60L)).thenReturn(Optional.of(originalContainer));
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
+        when(jsonHelper.convertValue(originalContainer, ContainerV3Request.class)).thenReturn(baseContainer);
+        when(jsonHelper.convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class)))
+                .thenReturn(clone1, clone2, clone3, clone4);
+        when(containerV3Service.createBulk(anyList(), eq(Constants.BOOKING))).thenReturn(expectedResponse);
+
+        // Execute
+        BulkContainerResponse result = customerBookingService.cloneBookingContainers(request);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(4, result.getContainerResponseList().size());
+        verify(containerDao).findById(60L);
+        verify(customerBookingDao).findById(1L);
+        verify(jsonHelper).convertValue(originalContainer, ContainerV3Request.class);
+        verify(jsonHelper, times(4)).convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class));
+        verify(containerV3Service).createBulk(anyList(), eq(Constants.BOOKING));
+    }
+
+    @Test
+    void testCloneBookingContainers_ContainerNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(999L)
+                .numberOfClones(2)
+                .build();
+
+        when(containerDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> customerBookingService.cloneBookingContainers(request));
+        verify(containerDao).findById(999L);
+    }
+
+    @Test
+    void testCloneBookingContainers_BookingNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(999L)
+                .containerId(60L)
+                .numberOfClones(2)
+                .build();
+
+        Containers originalContainer = new Containers();
+        originalContainer.setId(60L);
+
+        when(containerDao.findById(60L)).thenReturn(Optional.of(originalContainer));
+        when(customerBookingDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> customerBookingService.cloneBookingContainers(request));
+        verify(containerDao).findById(60L);
+        verify(customerBookingDao).findById(999L);
+    }
+
+    @Test
+    void testCloneBookingContainers_MissingContainerId() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .numberOfClones(2)
+                .build();
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> customerBookingService.cloneBookingContainers(request));
+    }
 }

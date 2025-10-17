@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -310,5 +311,17 @@ public class CustomerBookingV3Controller {
     @GetMapping(ApiConstants.API_DEFAULT_BOOKING)
     public ResponseEntity<IRunnerResponse> getDefaultBooking() {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getDefaultBooking());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_PACKAGES)
+    public ResponseEntity<IRunnerResponse> cloneBookingPackages(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingPackages(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> cloneBookingContainers(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingContainers(request));
     }
 }

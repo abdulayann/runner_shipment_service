@@ -6,14 +6,13 @@ import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
@@ -358,6 +357,80 @@ class ShipmentControllerV3Test {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(shipmentService).getDefaultShipment();
+    }
+
+    @Test
+    void testCloneShipmentPackages_Success() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(500L)
+                .numberOfClones(2)
+                .build();
+        BulkPackingResponse mockResponse = new BulkPackingResponse();
+
+        when(shipmentService.cloneShipmentPackages(request)).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.cloneShipmentPackages(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentService).cloneShipmentPackages(request);
+    }
+
+    @Test
+    void testCloneShipmentPackages_ThrowsException() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(500L)
+                .numberOfClones(2)
+                .build();
+
+        when(shipmentService.cloneShipmentPackages(request))
+                .thenThrow(new RunnerException("Error cloning shipment packages"));
+
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> shipmentControllerV3.cloneShipmentPackages(request));
+        verify(shipmentService).cloneShipmentPackages(request);
+    }
+
+    @Test
+    void testCloneShipmentContainers_Success() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(600L)
+                .numberOfClones(3)
+                .build();
+        BulkContainerResponse mockResponse = new BulkContainerResponse();
+
+        when(shipmentService.cloneShipmentContainers(request)).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.cloneShipmentContainers(request);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(shipmentService).cloneShipmentContainers(request);
+    }
+
+    @Test
+    void testCloneShipmentContainers_ThrowsException() throws RunnerException {
+        // Arrange
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(600L)
+                .numberOfClones(3)
+                .build();
+
+        when(shipmentService.cloneShipmentContainers(request))
+                .thenThrow(new RunnerException("Error cloning shipment containers"));
+
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> shipmentControllerV3.cloneShipmentContainers(request));
+        verify(shipmentService).cloneShipmentContainers(request);
     }
 
 }

@@ -467,7 +467,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // Save the updated containers to the database
-        List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
+        List<Containers> updatedContainers = containerDao.saveAllContainers(originalContainers);
 
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
@@ -943,7 +943,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private void deleteContainerAndAssociations(List<Long> containerIds, List<Containers> containersToDelete) {
         log.info("Starting deleteContainerAndAssociations with containerIds: {}", containerIds);
         for(Containers containers : containersToDelete) containers.setShipmentsList(new HashSet<>());
-        containerDao.saveAll(containersToDelete);
+        containerDao.saveAllContainers(containersToDelete);
 
         containerDao.deleteByIdIn(containerIds);
         log.info("Successfully deleted {} containers.", containerIds.size());
@@ -1644,7 +1644,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     containers.forEach(container -> container.setConsolidationId(consolidationId));
 
                     // Save updated containers
-                    List<Containers> saved = containerDao.saveAll(containers);
+                    List<Containers> saved = containerDao.saveAllContainers(containers);
 
                     // Perform post-save actions
                     afterSaveList(saved, false);
@@ -2098,7 +2098,7 @@ public class ContainerV3Service implements IContainerV3Service {
         for(Containers containers1: containers) {
             containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
         }
-        containerDao.saveAll(containers.stream().toList());
+        containerDao.saveAllContainers(containers.stream().toList());
     }
 
     public void pushContainersToDependentServices(List<Containers> containersList) {

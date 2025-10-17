@@ -10,6 +10,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.dto.v3.request.BulkCloneLineItemRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 
@@ -34,4 +36,6 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3Response findByBookingNumber(String bookingNumber) throws RunnerException;
     CustomerBookingV3Response getDefaultBooking();
     void updatePackingInfoInBooking(Long bookingId) throws RunnerException;
+    BulkPackingResponse cloneBookingPackages(BulkCloneLineItemRequest request) throws RunnerException;
+    BulkContainerResponse cloneBookingContainers(BulkCloneLineItemRequest request) throws RunnerException;
 }

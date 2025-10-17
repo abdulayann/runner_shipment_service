@@ -33,6 +33,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -247,7 +248,7 @@ class ContainerDaoTest {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
-        doReturn(containersList).when(spyService).saveAll(anyList());
+        doReturn(containersList).when(spyService).saveAllContainers(anyList());
         List<Containers> containers = spyService.updateEntityFromShipmentConsole(containersList, 1L, 2L, true);
         assertNotNull(containers);
         assertEquals(containersList, containers);
@@ -258,7 +259,7 @@ class ContainerDaoTest {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
-        doReturn(containersList).when(spyService).saveAll(anyList());
+        doReturn(containersList).when(spyService).saveAllContainers(anyList());
         List<Containers> containers = spyService.updateEntityFromConsolidationV1(containersList, 1L, containersList);
         assertNotNull(containers);
         assertEquals(containersList, containers);
@@ -269,7 +270,7 @@ class ContainerDaoTest {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
-        doThrow(new RuntimeException()).when(spyService).saveAll(anyList());
+        doThrow(new RuntimeException()).when(spyService).saveAllContainers(anyList());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsolidationV1(containersList, 1L, containersList));
     }
 
@@ -278,7 +279,7 @@ class ContainerDaoTest {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
-        doReturn(containersList).when(spyService).saveAll(anyList());
+        doReturn(containersList).when(spyService).saveAllContainers(anyList());
         List<Containers> containers = spyService.updateEntityFromShipmentV1(containersList, containersList);
         assertNotNull(containers);
         assertEquals(containersList, containers);
@@ -289,7 +290,7 @@ class ContainerDaoTest {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
         ContainerDao spyService = spy(containerDao);
-        doThrow(new RuntimeException()).when(spyService).saveAll(anyList());
+        doThrow(new RuntimeException()).when(spyService).saveAllContainers(anyList());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipmentV1(containersList, containersList));
     }
 
@@ -354,7 +355,7 @@ class ContainerDaoTest {
         List<Containers> containersList = List.of(testContainer);
         ContainerDao spyService = spy(containerDao);
         doReturn(testContainer).when(spyService).save(any());
-        List<Containers> containers = spyService.saveAll(containersList);
+        List<Containers> containers = spyService.saveAllContainers(containersList);
         assertNotNull(containers);
         assertEquals(containersList, containers);
     }
@@ -434,5 +435,121 @@ class ContainerDaoTest {
         containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
         verify(containerRepository, times(1))
                 .revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
+    }
+
+    @Test
+    void testSaveAll_Success_NewContainers() {
+        Containers container = Containers.builder().build();
+        container.setHazardous(false);
+        Set<ShipmentDetails> shipmentsList = new HashSet<>();
+        shipmentsList.add(new ShipmentDetails());
+        container.setShipmentsList(shipmentsList);
+        List<Containers> containersList = Collections.singletonList(container);
+
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(containerRepository.saveAll(anyList())).thenReturn(containersList);
+
+        List<Containers> result = containerDao.saveAll(containersList);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).getIsAttached());
+        verify(containerRepository).saveAll(anyList());
+    }
+
+    @Test
+    void testSaveAll_Success_ExistingContainersPreservesData() {
+        List<TruckDriverDetails> truckingDetails = new ArrayList<>();
+        truckingDetails.add(new TruckDriverDetails());
+        LocalDateTime createdAt = LocalDateTime.now();
+        Containers existingContainer = Containers.builder().build();
+        existingContainer.setId(1L);
+        existingContainer.setCreatedAt(createdAt);
+        existingContainer.setCreatedBy("user1");
+        existingContainer.setTruckingDetails(truckingDetails);
+
+        Containers updateContainer = Containers.builder().build();
+        updateContainer.setId(1L);
+        updateContainer.setHazardous(false);
+        updateContainer.setTruckingDetails(null);
+
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(containerRepository.findByIdIn(Collections.singletonList(1L))).thenReturn(Collections.singletonList(existingContainer));
+        when(containerRepository.saveAll(anyList())).thenAnswer(inv -> {
+            Containers saved = ((List<Containers>) inv.getArgument(0)).get(0);
+            assertEquals(createdAt, saved.getCreatedAt());
+            assertEquals("user1", saved.getCreatedBy());
+            assertEquals(truckingDetails, saved.getTruckingDetails());
+            return Collections.singletonList(saved);
+        });
+
+        List<Containers> result = containerDao.saveAll(Collections.singletonList(updateContainer));
+
+        assertNotNull(result);
+        verify(containerRepository).findByIdIn(Collections.singletonList(1L));
+    }
+
+    @Test
+    void testSaveAll_ValidationException_EmptyList() {
+        List<Containers> dummyContainers = new ArrayList<>();
+        // Act
+        ValidationException exception = assertThrows(ValidationException.class, () -> containerDao.saveAll(dummyContainers));
+
+        // Assert
+        assertEquals("Container list cannot be empty", exception.getMessage());
+        verify(containerRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSaveAll_ValidationException_HazardousWithoutDgClass() {
+        Containers container = Containers.builder().build();
+        container.setHazardous(true);
+        container.setDgClass(null);
+        List<Containers> containersList = Collections.singletonList(container);
+
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerDao.saveAll(containersList));
+
+        assertTrue(exception.getMessage().contains("DG class is mandatory"));
+        verify(containerRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSaveAll_ValidationException_ValidatorErrors() {
+        Containers container = Containers.builder().build();
+        Set<String> errors = new HashSet<>();
+        List<Containers> containersList = Collections.singletonList(container);
+        errors.add("Validation error");
+
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(errors);
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        assertThrows(ValidationException.class,
+                () -> containerDao.saveAll(containersList));
+        verify(containerRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSaveAll_DataRetrievalFailure_MissingContainer() {
+        Containers updateContainer = Containers.builder().build();
+        updateContainer.setId(2L);
+        updateContainer.setHazardous(false);
+
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(containerRepository.findByIdIn(Collections.singletonList(2L))).thenReturn(new ArrayList<>());
+
+        List<Containers> updatedContainers = Collections.singletonList(updateContainer);
+
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+                () -> containerDao.saveAll(updatedContainers));
+
+        assertTrue(exception.getMessage().contains("Missing IDs: [2]"));
+        verify(containerRepository, never()).saveAll(anyList());
     }
 }

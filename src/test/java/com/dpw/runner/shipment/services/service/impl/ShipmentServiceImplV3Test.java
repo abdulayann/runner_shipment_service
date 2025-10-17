@@ -51,19 +51,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -80,10 +68,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -8086,5 +8071,218 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         // Verify that the failing method was indeed called.
         verify(v1Service).retrieveTenant();
     }
+
+    @Test
+    void testCloneShipmentPackages_Success() throws RunnerException {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(100L)
+                .numberOfClones(5)
+                .build();
+
+        Packing originalPacking = new Packing();
+        originalPacking.setId(100L);
+        originalPacking.setWeight(BigDecimal.valueOf(100));
+        originalPacking.setPacks("10");
+
+        PackingV3Request basePackage = new PackingV3Request();
+        basePackage.setWeight(BigDecimal.valueOf(100));
+        basePackage.setPacks("10");
+
+        PackingV3Request clone1 = new PackingV3Request();
+        clone1.setPacks("10");
+        clone1.setShipmentId(1L);
+        clone1.setGuid(UUID.randomUUID());
+
+        PackingV3Request clone2 = new PackingV3Request();
+        clone2.setPacks("10");
+        clone2.setShipmentId(1L);
+        clone2.setGuid(UUID.randomUUID());
+
+        PackingV3Request clone3 = new PackingV3Request();
+        clone3.setPacks("10");
+        clone3.setShipmentId(1L);
+        clone3.setGuid(UUID.randomUUID());
+
+        PackingV3Request clone4 = new PackingV3Request();
+        clone4.setPacks("10");
+        clone4.setShipmentId(1L);
+        clone4.setGuid(UUID.randomUUID());
+
+        PackingV3Request clone5 = new PackingV3Request();
+        clone5.setPacks("10");
+        clone5.setShipmentId(1L);
+        clone5.setGuid(UUID.randomUUID());
+
+        List<PackingResponse> packingResponses = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            PackingResponse packingResponse = new PackingResponse();
+            packingResponse.setId((long) (101 + i));
+            packingResponses.add(packingResponse);
+        }
+
+        BulkPackingResponse expectedResponse = new BulkPackingResponse();
+        expectedResponse.setPackingResponseList(packingResponses);
+
+        when(packingDao.findById(100L)).thenReturn(Optional.of(originalPacking));
+        when(jsonHelper.convertValue(eq(originalPacking), eq(PackingV3Request.class))).thenReturn(basePackage);
+        when(jsonHelper.convertValue(any(PackingV3Request.class), eq(PackingV3Request.class)))
+                .thenReturn(clone1, clone2, clone3, clone4, clone5);
+        when(packingV3Service.updateBulk(anyList(), eq(Constants.SHIPMENT), eq(false))).thenReturn(expectedResponse);
+
+        // Execute
+        BulkPackingResponse result = shipmentServiceImplV3.cloneShipmentPackages(request);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(5, result.getPackingResponseList().size());
+        verify(packingDao).findById(100L);
+        verify(jsonHelper).convertValue(eq(originalPacking), eq(PackingV3Request.class));
+        verify(jsonHelper, times(5)).convertValue(any(PackingV3Request.class), eq(PackingV3Request.class));
+        verify(packingV3Service).updateBulk(anyList(), eq(Constants.SHIPMENT), eq(false));
+    }
+
+    @Test
+    void testCloneShipmentPackages_PackageNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .packageId(999L)
+                .numberOfClones(5)
+                .build();
+
+        when(packingDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cloneShipmentPackages(request));
+        verify(packingDao).findById(999L);
+    }
+
+    @Test
+    void testCloneShipmentPackages_MissingPackageId() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .numberOfClones(5)
+                .build();
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cloneShipmentPackages(request));
+    }
+
+    @Test
+    void testCloneShipmentContainers_Success() throws RunnerException {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(200L)
+                .numberOfClones(3)
+                .build();
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentId("SHP001");
+
+        Containers originalContainer = new Containers();
+        originalContainer.setId(200L);
+        originalContainer.setContainerNumber("CONT001");
+        originalContainer.setContainerCode("20GP");
+
+        ContainerV3Request baseRequest = new ContainerV3Request();
+        baseRequest.setContainerNumber("CONT001");
+        baseRequest.setContainerCode("20GP");
+
+        ContainerV3Request clone1 = new ContainerV3Request();
+        clone1.setContainerNumber("CONT001");
+        clone1.setShipmentId(1L);
+
+        ContainerV3Request clone2 = new ContainerV3Request();
+        clone2.setContainerNumber("CONT001");
+        clone2.setShipmentId(1L);
+
+        ContainerV3Request clone3 = new ContainerV3Request();
+        clone3.setContainerNumber("CONT001");
+        clone3.setShipmentId(1L);
+
+        List<ContainerResponse> containerResponses = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            ContainerResponse containerResponse = new ContainerResponse();
+            containerResponse.setId((long) (201 + i));
+            containerResponses.add(containerResponse);
+        }
+
+        BulkContainerResponse expectedResponse = new BulkContainerResponse();
+        expectedResponse.setContainerResponseList(containerResponses);
+
+        when(containerDao.findById(200L)).thenReturn(Optional.of(originalContainer));
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValue(eq(originalContainer), eq(ContainerV3Request.class))).thenReturn(baseRequest);
+        when(jsonHelper.convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class)))
+                .thenReturn(clone1, clone2, clone3);
+        when(containerV3Service.createBulk(anyList(), eq(Constants.SHIPMENT))).thenReturn(expectedResponse);
+
+        // Execute
+        BulkContainerResponse result = shipmentServiceImplV3.cloneShipmentContainers(request);
+
+        // Verify
+        assertNotNull(result);
+        assertEquals(3, result.getContainerResponseList().size());
+        verify(containerDao).findById(200L);
+        verify(shipmentDao).findById(1L);
+        verify(jsonHelper).convertValue(eq(originalContainer), eq(ContainerV3Request.class));
+        verify(jsonHelper, times(3)).convertValue(any(ContainerV3Request.class), eq(ContainerV3Request.class));
+        verify(containerV3Service).createBulk(anyList(), eq(Constants.SHIPMENT));
+    }
+
+    @Test
+    void testCloneShipmentContainers_ContainerNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .containerId(999L)
+                .numberOfClones(3)
+                .build();
+
+        when(containerDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cloneShipmentContainers(request));
+        verify(containerDao).findById(999L);
+    }
+
+    @Test
+    void testCloneShipmentContainers_ShipmentNotFound() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(999L)
+                .containerId(200L)
+                .numberOfClones(3)
+                .build();
+
+        Containers originalContainer = new Containers();
+        originalContainer.setId(200L);
+
+        when(containerDao.findById(200L)).thenReturn(Optional.of(originalContainer));
+        when(shipmentDao.findById(999L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cloneShipmentContainers(request));
+        verify(containerDao).findById(200L);
+        verify(shipmentDao).findById(999L);
+    }
+
+    @Test
+    void testCloneShipmentContainers_MissingContainerId() {
+        // Setup
+        BulkCloneLineItemRequest request = BulkCloneLineItemRequest.builder()
+                .moduleId(1L)
+                .numberOfClones(3)
+                .build();
+
+        // Execute & Verify
+        assertThrows(RunnerException.class, () -> shipmentServiceImplV3.cloneShipmentContainers(request));
+    }
+
 
 }

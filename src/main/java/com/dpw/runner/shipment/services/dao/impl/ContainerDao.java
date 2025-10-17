@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -34,14 +33,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -289,7 +281,7 @@ public class ContainerDao implements IContainerDao {
                         addAuditLogInShipmentConsole(shipmentId, container);
                     }
                 }
-                responseContainers = saveAll(containerList);
+                responseContainers = saveAllContainers(containerList);
             }
             return responseContainers;
         } catch (Exception e) {
@@ -368,7 +360,7 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> saveAll(List<Containers> containers) {
+    public List<Containers> saveAllContainers(List<Containers> containers) {
         List<Containers> res = new ArrayList<>();
         for (Containers req : containers) {
             req = save(req);
@@ -398,7 +390,7 @@ public class ContainerDao implements IContainerDao {
                     }
                     containers.setConsolidationId(consolidationId);
                 }
-                responseContainers = saveAll(containerList);
+                responseContainers = saveAllContainers(containerList);
             }
             if(!deleteContIds.isEmpty()) {
                 deleteByIds(deleteContIds);
@@ -446,7 +438,7 @@ public class ContainerDao implements IContainerDao {
                         containers.setId(null);
                     }
                 }
-                responseContainers = saveAll(containerList);
+                responseContainers = saveAllContainers(containerList);
             }
             return responseContainers;
         } catch (Exception e) {
@@ -552,5 +544,99 @@ public class ContainerDao implements IContainerDao {
     public void revertSoftDeleteByContainersIdsAndBookingId(List<Long> containersIds, Long consolidationId) {
         containerRepository.revertSoftDeleteByContainersIdsAndBookingId(containersIds, consolidationId);
     }
+
+    @Override
+    public List<Containers> saveAll(List<Containers> containersList){
+        List<Containers> processedContainers = validateBeforeSaveAll(containersList);
+        updateExistingContainerDataBatch(processedContainers);
+
+        List<Containers> savedContainers = containerRepository.saveAll(processedContainers);
+        log.info("Saved {} containers successfully", savedContainers.size());
+        return savedContainers;
+    }
+
+    private List<Containers> validateBeforeSaveAll(List<Containers> containersList) {
+        if (listIsNullOrEmpty(containersList)) {
+            throw new ValidationException("Container list cannot be empty");
+        }
+
+        List<Containers> processedContainers = new ArrayList<>();
+        Set<String> allErrors = new HashSet<>();
+
+        for (Containers container : containersList) {
+
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(container), Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
+
+            if (Boolean.TRUE.equals(container.getHazardous()) && isStringNullOrEmpty(container.getDgClass())) {
+                errors.add("DG class is mandatory for Hazardous Goods Containers");
+            }
+
+            if (!errors.isEmpty()) {
+                allErrors.addAll(errors);
+                continue; // Skip invalid container but continue processing others
+            }
+
+            if (container.getEventsList() != null && !container.getEventsList().isEmpty()) {
+                for (Events events : container.getEventsList()) {
+                    events.setEntityType(Constants.CONTAINER);
+                }
+            }
+
+            container.setIsAttached(container.getShipmentsList() != null && !container.getShipmentsList().isEmpty());
+
+            processedContainers.add(container);
+        }
+
+        // if validation failed for any container, abort
+        if (!allErrors.isEmpty()) {
+            throw new ValidationException(String.join(",", allErrors));
+        }
+
+        return processedContainers;
+    }
+
+    private void updateExistingContainerDataBatch(List<Containers> containersList) {
+        List<Long> existingIds = containersList.stream()
+                .map(Containers::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (existingIds.isEmpty()) return;
+
+        // fetch all containers
+        Map<Long, Containers> containersMap = containerRepository.findByIdIn(existingIds)
+                .stream()
+                .collect(Collectors.toMap(Containers::getId, c -> c));
+
+        // throw error if any container is missing
+        if (containersMap.size() < existingIds.size()) {
+            Set<Long> missingIds = new HashSet<>(existingIds);
+            missingIds.removeAll(containersMap.keySet());
+
+            log.error("Data retrieval failure. Missing container(s) for ID(s): {} | Request ID: {}",
+                    missingIds, LoggerHelper.getRequestIdFromMDC());
+
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE
+                    + " | Missing IDs: " + missingIds);
+        }
+
+        containersList.forEach(container -> {
+            Containers oldEntity = containersMap.get(container.getId());
+
+            container.setCreatedAt(oldEntity.getCreatedAt());
+            container.setCreatedBy(oldEntity.getCreatedBy());
+
+            if (container.getShipmentsList() == null) {
+                container.setShipmentsList(oldEntity.getShipmentsList());
+            }
+            if (container.getEventsList() == null) {
+                container.setEventsList(oldEntity.getEventsList());
+            }
+            if (container.getTruckingDetails() == null) {
+                container.setTruckingDetails(oldEntity.getTruckingDetails());
+            }
+        });
+    }
+
 
 }

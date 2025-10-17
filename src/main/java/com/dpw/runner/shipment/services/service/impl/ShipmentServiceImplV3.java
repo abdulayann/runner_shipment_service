@@ -113,40 +113,12 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -157,12 +129,9 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummar
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -1256,7 +1225,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private void setContainersInV3Console(List<Containers> containersV3, Long id, ConsolidationDetails consolidationDetailsV3) {
         if (containersV3 != null && !containersV3.isEmpty()) {
             containersV3 = containersV3.stream().map(e -> e.setConsolidationId(id)).toList();
-            containersV3 = containerDao.saveAll(containersV3);
+            containersV3 = containerDao.saveAllContainers(containersV3);
         }
         consolidationDetailsV3.setContainersList(containersV3);
     }
@@ -4848,5 +4817,89 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } catch (Exception e) {
             log.error("Failed in fetching the tenant data from V1 with error : {}", e);
         }
+    }
+
+    @Override
+    public BulkPackingResponse cloneShipmentPackages(BulkCloneLineItemRequest request) throws RunnerException{
+        try{
+            Long shipmentId = request.getModuleId();
+            Long packageId = request.getPackageId();
+            Integer numberOfClones = request.getNumberOfClones();
+            if (packageId == null) {
+                throw new ValidationException("packageId is required for cloning packages");
+            }
+
+            Packing originalPacking = packingDao.findById(packageId)
+                    .orElseThrow(() -> new DataRetrievalFailureException("Package not found with ID: " + packageId));
+
+            PackingV3Request basePackage = jsonHelper.convertValue(originalPacking, PackingV3Request.class);
+            basePackage.setId(null);
+            basePackage.setShipmentId(shipmentId);
+
+            List<PackingV3Request> clonedRequests = new ArrayList<>(numberOfClones);
+
+            for (int i = 0; i < numberOfClones; i++) {
+                PackingV3Request packageClone = jsonHelper.convertValue(basePackage, PackingV3Request.class);
+                packageClone.setGuid(UUID.randomUUID());
+                clonedRequests.add(packageClone);
+            }
+
+            BulkPackingResponse response = packingV3Service.updateBulk(clonedRequests, SHIPMENT, false);
+            log.info("Created Clone Packages for Shipment ID: {}, Number of Clones: {}", shipmentId, numberOfClones);
+            return response;
+        }
+        catch (Exception e){
+            String responseMsg = e.getMessage() != null
+                    ? e.getMessage() : ("Error in Cloning Packages for shipment: " + request.getModuleId());
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    @Override
+    public BulkContainerResponse cloneShipmentContainers(BulkCloneLineItemRequest request) throws RunnerException{
+        try {
+            Long shipmentId = request.getModuleId();
+            Long containerId = request.getContainerId();
+            Integer numberOfClones = request.getNumberOfClones();
+            if (containerId == null) {
+                throw new ValidationException("containerId is required for cloning containers");
+            }
+
+            Containers originalContainer = containerDao.findById(containerId)
+                    .orElseThrow(() -> new DataRetrievalFailureException("Container not found with ID: " + containerId));
+
+            validateShipmentExists(shipmentId);
+
+            // convert base request once then clone it
+            ContainerV3Request baseRequest = jsonHelper.convertValue(originalContainer, ContainerV3Request.class);
+            baseRequest.setId(null);
+            baseRequest.setGuid(null);
+            baseRequest.setContainerNumber(null);
+            baseRequest.setShipmentId(shipmentId);
+
+            List<ContainerV3Request> clonedRequests = new ArrayList<>(numberOfClones);
+
+            for (int i = 0; i < numberOfClones; i++) {
+                ContainerV3Request clone = jsonHelper.convertValue(baseRequest, ContainerV3Request.class);
+                clonedRequests.add(clone);
+            }
+
+            BulkContainerResponse response = containerV3Service.createBulk(clonedRequests, SHIPMENT);
+            log.info("Created Clone Containers for Shipment ID: {}, Number of Clones: {}", shipmentId, numberOfClones);
+            return response;
+        }
+        catch (Exception exception) {
+            String responseMsg = exception.getMessage() != null ? exception.getMessage() : ("Error in Cloning Containers for shipment: " + request.getModuleId());
+            log.error(responseMsg, exception);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void validateShipmentExists(long shipmentId){
+        // fetch shipment just for validation
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        if(shipmentDetails.isEmpty())
+            throw new DataRetrievalFailureException("Shipment not found with ID: " + shipmentId);
     }
 }

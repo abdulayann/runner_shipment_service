@@ -216,4 +216,6 @@ public class ApiConstants {
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
     public static final String API_UPDATE_PARTIES = "/update/parties";
+    public static final String API_CLONE_PACKAGES = "/clone/packages";
+    public static final String API_CLONE_CONTAINERS = "/clone/containers";
 }
