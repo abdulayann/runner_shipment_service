@@ -650,6 +650,7 @@ public class EntityTransferService implements IEntityTransferService {
         networkTransfer.setEntityNumber(entityNumber);
         networkTransfer.setTransportMode(transportMode);
         networkTransfer.setJobType(jobType);
+        networkTransfer.setTenantId(TenantContext.getCurrentTenant());
 
         Optional<NetworkTransfer> networkTransferOptional = networkTransferDao.findByEntityNumber(entityNumber);
         if (networkTransferOptional.isPresent()) {
