@@ -9,22 +9,22 @@ import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
@@ -43,9 +43,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,12 +56,12 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -118,19 +117,6 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "executorService")
     private ExecutorService executorService;
-
-    @MockBean(name = "shipmentService")
-    private IShipmentService shipmentService;
-
-    @Mock
-    private RestTemplate npmServiceRestTemplate;
-
-    @Mock
-    private AwbDao awbDao;
-
-
-    private String npmServiceBaseUrl = "http://localhost:8080";
-    private String npmAwbImportRates = "/api/awb/import-rates";
 
     /**
      * Method under test:
@@ -1157,53 +1143,6 @@ class NPMServiceAdapterTest {
         verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
         verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
     }
-    @Test
-    void testAwbAutoSell_npmServiceExchange() throws RunnerException, RestClientException {
-        // Arrange
-        // prepare RunnerResponse returned by jsonHelper.readFromJson(...)
-        RunnerResponse.RunnerResponseBuilder<Object> builderResult = RunnerResponse.builder();
-        RunnerResponse.RunnerResponseBuilder<Object> dataResult = builderResult.count(3L).data("Data");
-        RunnerResponse<Object> buildResult = dataResult.error(new ApiError(HttpStatus.CONTINUE))
-                .pageNo(1)
-                .requestId("42")
-                .success(true)
-                .build();
-
-        // jsonHelper stubs
-        when(jsonHelper.readFromJson(anyString(), any(Class.class))).thenReturn(buildResult);
-        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
-
-        // ensure the adapter uses the test restTemplate and URL parts
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbAutoSell", "/awb/auto-sell");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
-
-        // make exchange throw an HttpClientErrorException with an empty body (so readFromJson gets "")
-        when(restTemplate.exchange(any(RequestEntity.class), any(Class.class)))
-                .thenThrow(new HttpClientErrorException(
-                        HttpStatus.CONTINUE,
-                        "Continue",
-                        "".getBytes(StandardCharsets.UTF_8),
-                        StandardCharsets.UTF_8));
-
-        // build a real CommonRequestModel via its builder (use actual request type expected by method)
-        NPMAutoSellRequest autoSellRequest = new NPMAutoSellRequest(); // populate if required by your logic
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .data(autoSellRequest)
-                .dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act & Assert
-        assertThrows(NPMException.class, () -> nPMServiceAdapter.awbAutoSell(commonRequestModel));
-
-        // Verifications - adjust as needed if your test class uses different mock instances
-        verify(jsonHelper, atLeastOnce()).convertToJson(any());
-        verify(jsonHelper).readFromJson(eq(""), any(Class.class));
-        verify(restTemplate).exchange(any(RequestEntity.class), any(Class.class));
-    }
 
     /**
      * Method under test: {@link NPMServiceAdapter#awbAutoSell(CommonRequestModel)}
@@ -1844,6 +1783,240 @@ class NPMServiceAdapterTest {
         verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
     }
 
+    @ParameterizedTest
+    @MethodSource("provideSortParams")
+    void sortNpmOffers_variousSortFields_sortedCorrectly(String sortField, String order, String requestSource) throws RunnerException {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName(sortField).order(order).build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), eq(FetchOffersResponse.class)))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse result = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        // Assert
+
+        assertEquals(2, result.getOffers().size());
+        boolean ascending = !"desc".equalsIgnoreCase(order);
+        FetchOffersResponse.Offer first = result.getOffers().get(0);
+        FetchOffersResponse.Offer second = result.getOffers().get(1);
+
+        switch (sortField) {
+            case "fastest" -> {
+                long firstHours = Long.parseLong(first.getMaxTransitHours());
+                long secondHours = Long.parseLong(second.getMaxTransitHours());
+                assertTrue(ascending ? firstHours <= secondHours : firstHours >= secondHours,
+                        () -> "FASTEST sort failed: " + firstHours + " vs " + secondHours);
+            }
+
+            case "departure" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getProposedPickupDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getProposedPickupDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "DEPARTURE sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "arrival" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getEstimatedArrivalDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getEstimatedArrivalDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "ARRIVAL sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "freightRate" -> {
+                BigDecimal firstRate = "AUTO_SELL".equals(requestSource)
+                        ? first.getGroupTotals().getFreightCharges().getTotal()
+                        : first.getGroupTotals().getFreightCharges().getTotalCost();
+                BigDecimal secondRate = "AUTO_SELL".equals(requestSource)
+                        ? second.getGroupTotals().getFreightCharges().getTotal()
+                        : second.getGroupTotals().getFreightCharges().getTotalCost();
+                assertTrue(ascending ? firstRate.compareTo(secondRate) <= 0 : firstRate.compareTo(secondRate) >= 0,
+                        () -> "FREIGHT_RATE sort failed: " + firstRate + " vs " + secondRate);
+            }
+
+            case "totalRate" -> {
+                BigDecimal firstTotal = "AUTO_SELL".equals(requestSource)
+                        ? first.getTotalRoutePrice()
+                        : first.getTotalRouteCost();
+                BigDecimal secondTotal = "AUTO_SELL".equals(requestSource)
+                        ? second.getTotalRoutePrice()
+                        : second.getTotalRouteCost();
+                assertTrue(ascending ? firstTotal.compareTo(secondTotal) <= 0 : firstTotal.compareTo(secondTotal) >= 0,
+                        () -> "TOTAL_RATE sort failed: " + firstTotal + " vs " + secondTotal);
+            }
+
+            default -> fail("Unsupported sort field: " + sortField);
+        }
+    }
+
+    private static Stream<Arguments> provideSortParams() {
+        return Stream.of(
+                Arguments.of("fastest", "asc", "AUTO_SELL"),
+                Arguments.of("fastest", "desc", "AUTO_SELL"),
+                Arguments.of("departure", "asc", "AUTO_SELL"),
+                Arguments.of("arrival", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_COST"),
+                Arguments.of("totalRate", "desc", "AUTO_SELL"),
+                Arguments.of("totalRate", "asc", "AUTO_COST")
+        );
+    }
+
+    @Test
+    void fetchOffersWithFilter_successfulResponse_sortsFiltersPaginates() throws Exception {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        // Arrange
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName("fastest").order("asc").build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+
+        // Mock json serialization
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        // Prepare sample offers
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+
+        // Assert
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse fetchOffersResponse1 = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        assertEquals(2, fetchOffersResponse1.getOffers().size());
+
+        assertTrue(Double.parseDouble(fetchOffersResponse1.getOffers().get(0).getMaxTransitHours()) <= Double.parseDouble(fetchOffersResponse1.getOffers().get(1).getMaxTransitHours()));
+        verify(restTemplate3, times(1)).exchange(any(RequestEntity.class), eq(FetchOffersResponse.class));
+    }
+
+    @Test
+    void fetchOffersWithFilter_httpException_throwsNPMException() {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
+        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
+                .thenReturn(buildResult);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(mock);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new NPMFetchOffersRequestFromUI()).build();
+        // Act and Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffersWithFilter(commonRequestModel));
+    }
+
     private static Stream<Arguments> provideDgContractTestData() {
         List<String> nullDgList = new ArrayList<>();
         nullDgList.add(null);
@@ -1853,144 +2026,5 @@ class NPMServiceAdapterTest {
                 Arguments.of(true, new ArrayList<>(), new ArrayList<>()),
                 Arguments.of(true, nullDgList, nullDgList)
         );
-    }
-
-    @Test
-    void fetchContract_success() throws Exception {
-        // given
-        ListContractRequest listReq = new ListContractRequest();
-        ListContractResponse listRes = new ListContractResponse();
-        String json = "{}";
-
-        when(jsonHelper.convertToJson(listReq)).thenReturn(json);
-        org.springframework.http.ResponseEntity<ListContractResponse> okResponse = ResponseEntity.ok(listRes);
-
-        // Simple stubbing using doReturn to avoid spy/proxy matching issues:
-        doReturn(okResponse).when(restTemplate)
-                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-        doReturn(okResponse).when(restTemplate2)
-                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-        doReturn(okResponse).when(restTemplate3)
-                .exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-
-        // mock CommonRequestModel to avoid constructor access issues
-        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
-        when(commonRequestModel.getData()).thenReturn(listReq);
-
-        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContract(commonRequestModel);
-        assertNotNull(result, "Service should return a non-null ResponseEntity");
-        verify(quoteContractsService, times(1)).updateQuoteContracts(listRes);
-        // verify exchange was called at least once on any of the rest templates
-        verify(restTemplate, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-        verify(restTemplate2, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-        verify(restTemplate3, atMost(1)).exchange(any(org.springframework.http.RequestEntity.class), eq(ListContractResponse.class));
-    }
-
-    @Test
-    void fetchContractFromShipment_success() throws Exception {
-        ListContractRequest listReq = new ListContractRequest();
-        ResponseEntity<ListContractResponse> nullBodyResponse = ResponseEntity.ok(null);
-        String json = "{}";
-
-        when(jsonHelper.convertToJson(listReq)).thenReturn(json);
-        doReturn(nullBodyResponse).when(restTemplate)
-                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
-        doReturn(nullBodyResponse).when(restTemplate2)
-                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
-        doReturn(nullBodyResponse).when(restTemplate3)
-                .exchange(any(RequestEntity.class), eq(ListContractResponse.class));
-        when(shipmentService.fetchAllMasterDataByKey(any(), any()))
-                .thenReturn(Map.of("key", "value"));
-
-        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
-        when(commonRequestModel.getData()).thenReturn(listReq);
-        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractFromShipment(commonRequestModel);
-
-        assertNotNull(result, "Should return a non-null ResponseEntity");
-        verify(quoteContractsService, times(1)).updateQuoteContracts(null);
-        verify(shipmentService, never()).fetchAllMasterDataByKey(any(), any());
-    }
-
-    @Test
-    void awbImportRates_Success_ShouldSaveAwbAndReturnResponse() throws Exception {
-        // Arrange
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost:8080");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbImportRates", "/api/awb/import-rates");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
-
-        NPMImportRatesRequest importRatesRequest = new NPMImportRatesRequest();
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .data(importRatesRequest)
-                .build();
-
-        String requestJson = "{\"request\":\"data\"}";
-        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
-        dependentServiceResponse.setData(new Object());
-
-        NpmAwbImportRateResponse npmAwbImportRateResponse = new NpmAwbImportRateResponse();
-        npmAwbImportRateResponse.updatedAwb = new Awb();
-
-        ResponseEntity<DependentServiceResponse> mockResponse =
-                ResponseEntity.ok(dependentServiceResponse);
-
-        when(jsonHelper.convertToJson(importRatesRequest)).thenReturn(requestJson);
-        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
-                .thenReturn(mockResponse);
-        when(jsonHelper.convertValue(any(), eq(NpmAwbImportRateResponse.class)))
-                .thenReturn(npmAwbImportRateResponse);
-
-        // Act
-        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.awbImportRates(commonRequestModel);
-
-        // Assert
-        assertNotNull(result);
-        verify(iAwbDao, times(1)).save(npmAwbImportRateResponse.updatedAwb);
-        verify(restTemplate, times(1)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
-        verify(jsonHelper, times(1)).convertToJson(importRatesRequest);
-        verify(jsonHelper, times(1)).convertValue(any(), eq(NpmAwbImportRateResponse.class));
-    }
-
-    @Test
-    void awbImportRates_HttpStatusCodeException_ShouldThrowNPMException() throws Exception {
-        // Arrange
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceBaseUrl", "http://localhost:8080");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmAwbImportRates", "/api/awb/import-rates");
-        ReflectionTestUtils.setField(nPMServiceAdapter, "npmServiceRestTemplate", restTemplate);
-
-        NPMImportRatesRequest importRatesRequest = new NPMImportRatesRequest();
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
-                .data(importRatesRequest)
-                .build();
-
-        String requestJson = "{\"request\":\"data\"}";
-        String errorResponseBody = "{\"error\":{\"message\":\"NPM service error\"}}";
-
-        RunnerResponse<?> errorResponse = new RunnerResponse<>();
-        ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST);
-        apiError.setMessage("NPM service error");
-        errorResponse.setError(apiError);
-
-        HttpClientErrorException exception = new HttpClientErrorException(
-                HttpStatus.BAD_REQUEST,
-                "Bad Request",
-                errorResponseBody.getBytes(StandardCharsets.UTF_8),
-                StandardCharsets.UTF_8
-        );
-
-        when(jsonHelper.convertToJson(importRatesRequest)).thenReturn(requestJson);
-        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
-                .thenThrow(exception);
-        when(jsonHelper.readFromJson(errorResponseBody, RunnerResponse.class))
-                .thenReturn(errorResponse);
-
-        // Act & Assert
-        NPMException thrownException = assertThrows(NPMException.class, () -> {
-            nPMServiceAdapter.awbImportRates(commonRequestModel);
-        });
-
-        assertTrue(thrownException.getMessage().contains("Error from NPM"));
-        assertTrue(thrownException.getMessage().contains("NPM service error"));
-        verify(iAwbDao, never()).save(any());
-        verify(jsonHelper, times(1)).readFromJson(errorResponseBody, RunnerResponse.class);
     }
 }

@@ -218,6 +218,36 @@ class NPMControllerTest {
     }
 
     @Test
+    void getNPMOffersWithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getNPMOffers2WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getNPMOffers3WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void getAwbAutoSell() throws RunnerException {
         // Mock
         when(npmService.awbAutoSell(any())).thenReturn(ResponseHelper.buildSuccessResponse());

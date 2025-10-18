@@ -299,7 +299,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -1101,7 +1100,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
     }
 
-    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) throws RunnerException {
         if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
             hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
         }
@@ -3124,7 +3123,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private Hbl getHblInAfterSave(ShipmentDetails shipmentDetails, Set<Containers> updatedContainers, List<Packing> updatedPackings) {
+    private Hbl getHblInAfterSave(ShipmentDetails shipmentDetails, Set<Containers> updatedContainers, List<Packing> updatedPackings) throws RunnerException {
         Hbl hbl = null;
         if(updatedContainers != null && !updatedContainers.isEmpty()) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
@@ -4987,7 +4986,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void postContainerAssignmentUpdates(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails, Set<Containers> oldContainers) {
+    private void postContainerAssignmentUpdates(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails, Set<Containers> oldContainers) throws RunnerException {
         Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
         log.info("shipment assignShipmentContainers hblService.checkAllContainerAssigned..... ");
         ConsolidationDetails consolidationDetails = null;
@@ -8258,11 +8257,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateAgentDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getExportBroker().getOrgId())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_ORIGIN_AGENT);
         }
 
-        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker())) {
+        if (ObjectUtils.isEmpty(shipment.getAdditionalDetails()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker()) || ObjectUtils.isEmpty(shipment.getAdditionalDetails().getImportBroker().getOrgId())) {
             missingFields.add(ModuleValidationFieldType.SHIPMENT_DESTINATION_AGENT);
         }
     }
@@ -9480,7 +9479,7 @@ public class ShipmentService implements IShipmentService {
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
     }
 
-    private void checkAllContainerAssigned(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+    private void checkAllContainerAssigned(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) throws RunnerException {
         if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
             hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
         }

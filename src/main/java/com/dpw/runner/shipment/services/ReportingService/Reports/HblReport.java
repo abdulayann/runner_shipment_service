@@ -514,7 +514,7 @@ public class HblReport extends IReport {
     private void addIssueDateField(Map<String, Object> dictionary, HblModel hblModel) {
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
         if(hblModel.shipment.getAdditionalDetails() != null)
-            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MMM/yyyy", true));
+            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(LocalDateTime.now(), "dd/MMM/yyyy", true));
     }
 
     public String getContainerSummary(List<ContainerModel> containers) {

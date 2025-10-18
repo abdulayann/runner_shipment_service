@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -52,6 +53,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -61,6 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
@@ -151,7 +154,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG), LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
             this.setCarrierMasterData(response.getBody());
@@ -159,7 +162,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -169,9 +172,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
             if(response.getBody() != null)
@@ -184,8 +185,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -196,9 +196,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
             ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
             String url = npmBaseUrl + npmContracts;
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_CONTRACT_FETCH),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(listContractRequest)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
             List<NPMContractsResponse.NPMContractResponse> filteredContracts = filterContracts(npmContractsResponse, listContractsWithFilterRequest);
@@ -210,8 +208,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -233,7 +230,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             }
 
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
-            return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
+            return paginateGetContractsResponse(listContractsWithFilterRequest, listResponse);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -246,14 +243,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_UPDATE_UTILISATION),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(updateContractRequest)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(updateContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Update contract failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException("Error from NPM while updating utilisation: " + npmErrorResponse.getErrorMessage());
         }
     }
@@ -262,19 +257,44 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel req) throws RunnerException {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        var request = createNPMOffersRequest(fetchOffersRequest);
+        var request = createNPMOffersRequest(fetchOffersRequest, CHEAPEST_OFFER_TYPE);
         try {
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_OFFER_FETCH_V2),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
             ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
             this.setMeasurementBasis(response.getBody());
             this.modifyOffersAPIData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM fetch offer failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
-            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
+            log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(NPM_FETCH_OFFER_ERROR_MESSAGE + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchOffersWithFilter(CommonRequestModel req) throws RunnerException {
+        String url = npmBaseUrl + npmOffersUrl;
+        NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+        var request = createNPMOffersRequest(fetchOffersRequest, ANY);
+        try {
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
+            FetchOffersResponse fetchOffersResponse = response.getBody();
+            this.setMeasurementBasis(fetchOffersResponse);
+            this.modifyOffersAPIData(fetchOffersResponse);
+            this.filterOffers(fetchOffersRequest, fetchOffersResponse);
+            this.updateRouteMarginInOffers(fetchOffersResponse);
+            List<FetchOffersResponse.Offer> sortedOffers;
+            if(!Objects.isNull(fetchOffersResponse) && !Objects.isNull(fetchOffersResponse.getOffers()) && !Objects.isNull(fetchOffersRequest.getSortRequest())) {
+                sortedOffers = this.sortNpmOffers(fetchOffersRequest, fetchOffersResponse);
+                fetchOffersResponse.setOffers(sortedOffers);
+            }
+
+            return paginateFetchOffersResponse(fetchOffersRequest ,fetchOffersResponse);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(NPM_FETCH_OFFER_ERROR_MESSAGE + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -284,15 +304,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
             var request = createNPMOffersV8Request(fetchOffersRequest);
-            log.info(LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_OFFER_FETCH_V8),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
+            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM fetch offers v8/offers failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
-            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
+            log.error("NPM fetch offers v8/offers failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(NPM_FETCH_OFFER_ERROR_MESSAGE + npmErrorResponse.getErrorMessage());
         }
 
     }
@@ -307,7 +325,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb auto sell failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse.getError())));
+            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
@@ -320,12 +338,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             var req = jsonHelper.convertToJson(importRatesRequest);
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
             NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
-            log.info("Updated AWB from npm service : {}", LoggerHelper.sanitizeForLogs(npmAwbImportRateResponse.updatedAwb));
+            log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
             awbDao.save(npmAwbImportRateResponse.updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
             RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb import rates failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse.getError())));
+            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
@@ -366,7 +384,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private void setCarrierMasterData(ListContractResponse response) {
         Set<String> carrier = new HashSet<>();
-        log.info("List Contract Response to fetch carrier data {}", LoggerHelper.sanitizeForLogs(response));
+        log.info("List Contract Response to fetch carrier data {}", response);
         if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
             response.getContracts().forEach(cont -> {
                 if(cont.getCarrier_codes() != null) {
@@ -375,7 +393,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     cont.getCarrier_codes().remove(null);
                     if(!cont.getCarrier_codes().isEmpty()) {
                         carrier.add(cont.getCarrier_codes().get(0));
-                        log.info("Carrier data from npm {}", LoggerHelper.sanitizeForLogs(carrier));
+                        log.info("Carrier data from npm {}", carrier);
                         response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriersBySCACCode(carrier.stream().toList()));
                         if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
                             EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
@@ -598,7 +616,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
     }
 
-    private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
+    private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request, String offerType) {
         Optional<CustomerBooking> customerBooking = Optional.empty();
         if(request.getBookingId() != null){
             customerBooking = customerBookingDao.findById(request.getBookingId());
@@ -624,7 +642,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             }
             catch(Exception e)
             {
-                log.error("Error in converting preferred date: {} to UTC", LoggerHelper.sanitizeForLogs(request.getPreferredDate()));
+                log.error("Error in converting preferred date: {} to UTC", request.getPreferredDate());
                 throw e;
             }
         }
@@ -650,7 +668,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .service_category(null)
                 .customer_category(null)
                 .is_alteration(isAlteration)
-                .offer_type(NPMConstants.CHEAPEST_OFFER_TYPE)
+                .offer_type(offerType)
                 .build();
     }
 
@@ -788,13 +806,16 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
         String dgCode = isDangerous ? dgClassList.iterator().next() : null;
         String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+        String commodity = p.getCommodity() != null
+                ? p.getCommodity()
+                : "FAK";
 
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(p.getPackageType())
-                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)?p.getCommodity():null)
-                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)?p.getCommodity():null)
+                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? commodity:null)
+                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)? commodity:null)
                         .is_dangerous(isDangerous)
                         .code(dgCode)
                         .un_number(unNumber)
@@ -822,13 +843,16 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
         String dgCode = isDangerous ? dgClassList.iterator().next() : null;
         String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+        String commodityCode = containerFromRequest.getCommodityCode() != null
+                ? containerFromRequest.getCommodityCode()
+                : "FAK";
 
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(containerFromRequest.getContainerType())
-                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? containerFromRequest.getCommodityCode() : null)
-                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)? containerFromRequest.getCommodityCode() : null)
+                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? commodityCode : null)
+                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)? commodityCode : null)
                         .is_dangerous(isDangerous)
                         .code(dgCode)
                         .un_number(unNumber)
@@ -842,24 +866,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         .build())
                 .build();
     }
+
     @Override
     public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
             NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmMultiLangChargeCode;
-            log.info("{}" + LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE),
-                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(request)));
+            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
             ResponseEntity<NPMFetchLangChargeCodeResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), NPMFetchLangChargeCodeResponse.class);
-            log.info("{}" + LoggerHelper.sanitizeForLogs(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG),
-                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
-                    LoggerHelper.sanitizeForLogs(IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE),
-                    jsonHelper.convertToJson(LoggerHelper.sanitizeForLogs(response.getBody())));
+            log.info("{}" + PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, LoggerHelper.getRequestIdFromMDC(), IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(response.getBody()));
             return response.getBody();
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM Fetch MultiLang Charge Code failed due to: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error("NPM Fetch MultiLang Charge Code failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException("Error from NPM while fetching MultiLang Charge Code: " + npmErrorResponse.getErrorMessage());
         }
     }
@@ -935,8 +954,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(LoggerHelper.sanitizeForLogs(NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG),
-                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(npmErrorResponse)));
+            log.error(NPM_FETCH_CONTRACT_FAILED_FOR_PARTY_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
             throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
         }
     }
@@ -1173,7 +1191,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private List<NPMContractsResponse.NPMContractResponse> sortNpmContracts(List<NPMContractsResponse.NPMContractResponse> contracts, SortRequest sortRequest) {
-        if (sortRequest == null || sortRequest.getFieldName() == null) {
+        if (sortRequest == null || StringUtils.isBlank(sortRequest.getFieldName())) {
             return contracts;
         }
 
@@ -1213,16 +1231,225 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if (!asc) {
             comparator = comparator.reversed();
         }
-        return contracts.stream()
+        return contracts.stream().sorted(comparator).collect(Collectors.toList());
+    }
+
+    private Double parseDoubleSafe(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private List<FetchOffersResponse.Offer> sortNpmOffers(
+            NPMFetchOffersRequestFromUI fetchOffersRequest, FetchOffersResponse fetchOffersResponse) {
+
+        if (fetchOffersRequest.getSortRequest() == null
+                || StringUtils.isBlank(fetchOffersRequest.getSortRequest().getFieldName())) {
+            return fetchOffersResponse.getOffers();
+        }
+
+        String field = fetchOffersRequest.getSortRequest().getFieldName();
+        boolean asc = !"desc".equalsIgnoreCase(fetchOffersRequest.getSortRequest().getOrder());
+
+        Comparator<FetchOffersResponse.Offer> comparator = getComparator(field, fetchOffersRequest);
+
+        if (!asc) {
+            comparator = comparator.reversed();
+        }
+
+        return fetchOffersResponse.getOffers().stream()
                 .sorted(comparator)
                 .collect(Collectors.toList());
     }
 
-    private static Double parseDoubleSafe(String value) {
+    private Comparator<FetchOffersResponse.Offer> getComparator(
+            String field, NPMFetchOffersRequestFromUI fetchOffersRequest) {
+
+        return switch (field) {
+            case FASTEST -> Comparator.comparing(
+                    o -> parseDoubleSafe(o.getMaxTransitHours()),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case DEPARTURE -> Comparator.comparing(
+                    o -> parseLocalDateSafe(getProposedPickupDate(o)),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case ARRIVAL -> Comparator.comparing(
+                    o -> parseLocalDateSafe(getEstimatedArrivalDate(o)),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case FREIGHT_RATE -> Comparator.comparing(
+                    o -> getFreightRate(fetchOffersRequest, o),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            case TOTAL_RATE -> Comparator.comparing(
+                    o -> getTotalRate(fetchOffersRequest, o),
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            );
+            default -> throw new IllegalArgumentException("Unsupported sort field: " + field);
+        };
+    }
+
+    private String getProposedPickupDate(FetchOffersResponse.Offer offer) {
+        return offer.getScheduleInfo() != null ? offer.getScheduleInfo().getProposedPickupDate() : null;
+    }
+
+    private String getEstimatedArrivalDate(FetchOffersResponse.Offer offer) {
+        return offer.getScheduleInfo() != null ? offer.getScheduleInfo().getEstimatedArrivalDate() : null;
+    }
+
+    private BigDecimal getFreightRate(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
+        if (offer.getGroupTotals() == null || offer.getGroupTotals().getFreightCharges() == null) return null;
+
+        return switch (request.getRequestSource()) {
+            case AUTO_SELL -> offer.getGroupTotals().getFreightCharges().getTotal();
+            case AUTO_COST -> offer.getGroupTotals().getFreightCharges().getTotalCost();
+            default -> null;
+        };
+    }
+
+    private BigDecimal getTotalRate(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
+        return switch (request.getRequestSource()) {
+            case AUTO_SELL -> offer != null ? offer.getTotalRoutePrice() : null;
+            case AUTO_COST -> offer != null ? offer.getTotalRouteCost() : null;
+            default -> null;
+        };
+    }
+
+    private LocalDate parseLocalDateSafe(String date) {
         try {
-            return value != null ? Double.parseDouble(value) : null;
-        } catch (NumberFormatException e) {
+            if (date == null) return null;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            return LocalDate.parse(date, formatter);
+        } catch (Exception e) {
             return null;
         }
+    }
+
+    private void filterOffers(NPMFetchOffersRequestFromUI request, FetchOffersResponse fetchOffersResponse) {
+        if (fetchOffersResponse == null || fetchOffersResponse.getOffers() == null) {
+            return;
+        }
+
+        List<FetchOffersResponse.Offer> filteredOffers = fetchOffersResponse.getOffers().stream()
+                .filter(offer -> matchesCarrier(request, offer))
+                .filter(offer -> matchesMinTransit(request, offer))
+                .filter(offer -> matchesMaxTransit(request, offer))
+                .collect(Collectors.toList());
+
+        fetchOffersResponse.setOffers(filteredOffers);
+    }
+
+    private boolean matchesCarrier(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
+        if (StringUtils.isBlank(request.getCarrier())) {
+            return true;
+        }
+        return offer.getCarrier() == null || request.getCarrier().equalsIgnoreCase(offer.getCarrier());
+    }
+
+    private boolean matchesMinTransit(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
+        if (request.getMinTransitDays() == null) {
+            return true;
+        }
+        Long offerMinTransitHours = parseTransitHours(offer.getMinTransitHours(), offer);
+        if (offerMinTransitHours == null) {
+            return true;
+        }
+        long minTransitHours = request.getMinTransitDays() * 24L;
+        return offerMinTransitHours >= minTransitHours;
+    }
+
+    private boolean matchesMaxTransit(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
+        if (request.getMaxTransitDays() == null) {
+            return true;
+        }
+        Long offerMaxTransitHours = parseTransitHours(offer.getMaxTransitHours(), offer);
+        if (offerMaxTransitHours == null) {
+            return true;
+        }
+        long maxTransitHours = request.getMaxTransitDays() * 24L;
+        return offerMaxTransitHours <= maxTransitHours;
+    }
+
+    private Long parseTransitHours(String transitHours, FetchOffersResponse.Offer offer) {
+        if (StringUtils.isBlank(transitHours)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(transitHours);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid transit hour value for offer: {}", offer, e);
+            return null;
+        }
+    }
+
+    private ResponseEntity<IRunnerResponse> paginateFetchOffersResponse(NPMFetchOffersRequestFromUI npmFetchOffersRequestFromUI, FetchOffersResponse fetchOffersResponse) {
+        int totalElements = 0;
+        int totalPages = 0;
+
+        if (fetchOffersResponse != null && fetchOffersResponse.getOffers() != null && !fetchOffersResponse.getOffers().isEmpty()) {
+            int pageNo = npmFetchOffersRequestFromUI.getPageNo();
+            int pageSize = npmFetchOffersRequestFromUI.getPageSize();
+            totalElements = fetchOffersResponse.getOffers().size();
+            int fromIndex = (pageNo - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalElements);
+
+            List<FetchOffersResponse.Offer> paginatedFetchOffersResponseList = new ArrayList<>();
+            if (fromIndex < totalElements) {
+                paginatedFetchOffersResponseList = fetchOffersResponse.getOffers().subList(fromIndex, toIndex);
+            }
+            fetchOffersResponse.setOffers(paginatedFetchOffersResponseList);
+            totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        } else {
+            if (fetchOffersResponse == null) {
+                fetchOffersResponse = new FetchOffersResponse();
+            }
+            fetchOffersResponse.setOffers(Collections.emptyList());
+        }
+        return ResponseHelper.buildDependentServiceResponse(fetchOffersResponse, totalElements, totalPages);
+    }
+
+
+    private ResponseEntity<IRunnerResponse> paginateGetContractsResponse(ListContractsWithFilterRequest listContractsWithFilterRequest, List<NPMContractsRunnerResponse> npmContractsRunnerResponseList) {
+        int totalElements = 0;
+        int totalPages = 0;
+        List<NPMContractsRunnerResponse> paginatedGetContractResponseList;
+
+        if (npmContractsRunnerResponseList != null && !npmContractsRunnerResponseList.isEmpty()) {
+            int pageNo = listContractsWithFilterRequest.getPageNo();
+            int pageSize = listContractsWithFilterRequest.getPageSize();
+            totalElements = npmContractsRunnerResponseList.size();
+            int fromIndex = (pageNo - 1) * pageSize;
+            int toIndex = Math.min(fromIndex + pageSize, totalElements);
+
+            if (fromIndex < totalElements) {
+                paginatedGetContractResponseList = npmContractsRunnerResponseList.subList(fromIndex, toIndex);
+            } else {
+                paginatedGetContractResponseList = new ArrayList<>();
+            }
+            totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        } else {
+            paginatedGetContractResponseList = new ArrayList<>();
+        }
+        return ResponseHelper.buildDependentServiceResponse(paginatedGetContractResponseList, totalElements, totalPages);
+    }
+
+    private void updateRouteMarginInOffers(FetchOffersResponse fetchOffersResponse) {
+        if (fetchOffersResponse == null || fetchOffersResponse.getOffers() == null) {
+            return;
+        }
+
+        fetchOffersResponse.getOffers().forEach(offer -> {
+            if (offer.getTotalRoutePrice() != null && offer.getTotalRouteCost() != null) {
+                offer.setTotalRouteMargin(offer.getTotalRoutePrice().subtract(offer.getTotalRouteCost()));
+            } else {
+                offer.setTotalRouteMargin(null);
+            }
+        });
     }
 }

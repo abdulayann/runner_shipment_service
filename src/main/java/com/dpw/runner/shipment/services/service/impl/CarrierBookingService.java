@@ -202,8 +202,12 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (consolidationDetails.getCarrierDetails() != null) {
                 sailingInformation.setPol(consolidationDetails.getCarrierDetails().getOriginPort());
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
+                sailingInformation.setOriginPortLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
+                sailingInformation.setDestinationPortLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
+                sailingInformation.setCarrierReceiptLocCode(consolidationDetails.getCarrierDetails().getOriginLocCode());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+                sailingInformation.setCarrierDeliveryLocCode(consolidationDetails.getCarrierDetails().getDestinationLocCode());
             }
             carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
@@ -345,6 +349,10 @@ public class CarrierBookingService implements ICarrierBookingService {
                 sailingInformation.setPod(consolidationDetails.getCarrierDetails().getDestinationPort());
                 sailingInformation.setCarrierReceiptPlace(consolidationDetails.getCarrierDetails().getOrigin());
                 sailingInformation.setCarrierDeliveryPlace(consolidationDetails.getCarrierDetails().getDestination());
+                sailingInformation.setOriginPortLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
+                sailingInformation.setDestinationPortLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
+                sailingInformation.setCarrierReceiptLocCode(consolidationDetails.getCarrierDetails().getOriginLocCode());
+                sailingInformation.setCarrierDeliveryLocCode(consolidationDetails.getCarrierDetails().getDestinationLocCode());
             }
             carrierBookingUtil.mapConsolidationToSailing(consolidationDetails, sailingInformation);
             carrierBookingEntity.setSailingInformation(sailingInformation);
@@ -401,6 +409,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setStatus(CarrierBookingStatus.Cancelled);
         CarrierBooking savedCarrierBooking = carrierBookingDao.save(carrierBooking);
         saveTransactionHistory(savedCarrierBooking, FlowType.Inbound, SourceSystem.Carrier);
+        //call to bridge
         sendNotification(carrierBooking);
     }
 
@@ -994,7 +1003,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         for (HaulagePoint haulagePoint : haulagePoints) {
             HaulageParty haulageParty = haulagePoint.getHaulageParty();
             HaulagePartyDto haulagePartyDto = new HaulagePartyDto();
-            if (CarrierBookingConstants.FULL_DROP_OFF.equalsIgnoreCase(haulageParty.getPartyName())) {
+            if (CarrierBookingConstants.FULL_DROP_OFF.equalsIgnoreCase(haulageParty.getPartyRole())) {
                 haulagePartyDto.setHaulageParty(haulageParty);
                 List<HaulageDate> haulageDates = haulagePoint.getDates();
                 Optional<HaulageDate> closingDate = haulageDates.stream()
@@ -1002,7 +1011,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                         .findFirst();
                 closingDate.ifPresent(haulageDate -> haulagePartyDto.setContainerCutOff(commonUtils.convertToLocalDateTimeFromInttra(haulageDate.getDateValue(), haulageDate.getDateFormat())));
                 loadedContainerDropOff.put(CarrierBookingConstants.HAULAGE_PARTY, haulagePartyDto);
-            } else if (CarrierBookingConstants.EMPTY_PICK_UP.equalsIgnoreCase(haulageParty.getPartyName())) {
+            } else if (CarrierBookingConstants.EMPTY_PICK_UP.equalsIgnoreCase(haulageParty.getPartyRole())) {
                 haulagePartyDto.setHaulageParty(haulageParty);
                 List<HaulageDate> haulageDates = haulagePoint.getDates();
                 Optional<HaulageDate> emptyPickupDate = haulageDates.stream()

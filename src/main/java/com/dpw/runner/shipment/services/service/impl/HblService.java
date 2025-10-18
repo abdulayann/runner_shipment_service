@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -29,6 +28,7 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -53,7 +53,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -133,6 +132,9 @@ public class HblService implements IHblService {
 
     @Autowired
     private IHblSync hblSync;
+
+    @Autowired
+    private ContainerV3Util containerV3Util;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -223,7 +225,7 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) throws RunnerException {
         var shipmentId = shipment.getId();
         boolean allContainerAssigned = getAllContainerAssigned(containersList);
         Hbl hbl = null;
@@ -258,7 +260,7 @@ public class HblService implements IHblService {
         return allContainerAssigned;
     }
 
-    private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) {
+    private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) throws RunnerException {
         boolean isContainerWithoutNumberOrNoContainer = false;
         if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
             for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
@@ -774,7 +776,7 @@ public class HblService implements IHblService {
         return components;
     }
 
-    private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) {
+    private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) throws RunnerException {
         if(shipment == null)
             return null;
         CompanySettingsResponse companySettingsResponse = v1Service.retrieveCompanySettings();
@@ -832,10 +834,15 @@ public class HblService implements IHblService {
         return volumeUnit;
     }
 
-    private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment) {
+    private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment) throws RunnerException {
         var containers = shipment.getContainersList();
         if(Objects.equals(containers, null)) {
             containers = new HashSet<>();
+        }
+        if(List.of(TRANSPORT_MODE_SEA, TRANSPORT_MODE_RAI, TRANSPORT_MODE_ROA).contains(shipment.getTransportMode()) && List.of(SHIPMENT_TYPE_LCL, CARGO_TYPE_LTL).contains(shipment.getShipmentType())) {
+            List<ContainerBaseResponse> containerBaseResponseList = jsonHelper.convertValueToList(containers, ContainerBaseResponse.class);
+            containerV3Util.updatedContainerResponseForLCLandLTL(containerBaseResponseList, shipment);
+            containers = jsonHelper.convertValueToSet(containerBaseResponseList, Containers.class);
         }
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
@@ -844,6 +851,7 @@ public class HblService implements IHblService {
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
             hblContainer.setNoOfPackages(isStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
+            hblContainer.setPacksType(isStringNullOrEmpty(container.getPacksType()) ? null: container.getPacksType());
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
