@@ -61,4 +61,5 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String branch;
     private String referenceNumber;
     private String direction;
+    private Integer sequenceNumber;
 }

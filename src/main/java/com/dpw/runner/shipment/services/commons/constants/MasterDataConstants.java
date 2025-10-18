@@ -47,6 +47,8 @@ public class MasterDataConstants {
     public static final String MULTIPLE_MASTER_DATA= "/multiple-master-data";
 
     public static final String ITEM_TYPE = "ItemType";
+    public static final String DEFAULT_EVENT_FLAG = "DefaultEventFlag";
+    public static final String IDENTIFIER_4 = "Identifier4";
     public static final String ITEM_VALUE = "ItemValue";
     public static final String ITEM_DESCRIPTION = "ItemDescription";
     public static final String VALUE_N_DESC = "ValuenDesc";
