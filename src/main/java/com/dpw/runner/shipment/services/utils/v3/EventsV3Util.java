@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 

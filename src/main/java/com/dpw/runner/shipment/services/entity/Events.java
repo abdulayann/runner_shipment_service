@@ -148,4 +148,7 @@ public class Events extends MultiTenancy {
     @Column(name = "reference_number")
     private String referenceNumber;
 
+    @Column(name = "sequence_number")
+    private Integer sequenceNumber;
+
 }
