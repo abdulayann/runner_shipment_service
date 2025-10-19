@@ -1695,12 +1695,12 @@ public class ReportService implements IReportService {
             if (Objects.isNull(templateId)) return null;
             DocumentRequest documentRequest = new DocumentRequest();
             documentRequest.setData(json);
-            log.info("RequestId: {} | Event: {} | Template: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(documentRequest));
+            log.info("RequestId: {} | Event: {} | Template: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(documentRequest)));
             var response = documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId);
-            log.info("RequestId: {} | Event: {} | Template: {} | Response: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(response));
+            log.info("RequestId: {} | Event: {} | Template: {} | Response: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(response)));
             return response.getBody();
         } catch (Exception e) {
-            log.error("RequestId: {} | Event: {} Error | Template: {} | Error: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, e.getMessage());
+            log.error("RequestId: {} | Event: {} Error | Template: {} | Error: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, LoggerHelper.sanitizeForLogs(templateId), LoggerHelper.sanitizeForLogs(e.getMessage()));
             log.error(e.getMessage());
             return null;
         }
@@ -2681,7 +2681,9 @@ public class ReportService implements IReportService {
                 }
             }
         } catch (Exception e) {
-            log.error("Error while triggering automatic transfer for report {}, errorMsg: {}", reportRequest.getReportInfo(), e.getMessage());
+            log.error("Error while triggering automatic transfer for report {}, errorMsg: {}",
+                    LoggerHelper.sanitizeForLogs(reportRequest.getReportInfo()),
+                    e.getMessage());
         }
     }
 
@@ -3322,13 +3324,13 @@ public class ReportService implements IReportService {
     }
 
     public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
-        log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
+        log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(reportRequest)));
         double start = System.currentTimeMillis();
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
-        log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
+        log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(TenantContext.getCurrentTenant()), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
         if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
-            log.info("{} | {} Processing pushFileToDocumentMaster process as Shipment3.0Flag enabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE);
+            log.info("{} | {} Processing pushFileToDocumentMaster process as Shipment3.0Flag enabled.... ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE);
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
@@ -3373,28 +3375,28 @@ public class ReportService implements IReportService {
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
                 var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
-                log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(System.currentTimeMillis() - start));
                 saveDocDetailsAfterPushToDocumentMaster(reportRequest, response);
                 return response;
             } catch (Exception e) {
-                log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
+                log.error("{} | {} : {} : Exception: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", LoggerHelper.sanitizeForLogs(e.getMessage()));
                 throw new ValidationException("Failed to generate the document. Kindly retry.");
             }
         } else {
-            log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
+            log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(TenantContext.getCurrentTenant()));
         }
         return null;
     }
 
     public void saveDocDetailsAfterPushToDocumentMaster(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
-        log.info("Save doc details in DB after push to Document Master with request ID {}", LoggerHelper.getRequestIdFromMDC());
+        log.info("Save doc details in DB after push to Document Master with request ID {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         if (reportRequest.getReportInfo().equals(HOUSE_BILL) || reportRequest.getReportInfo().equals(SEAWAY_BILL)) {
             saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
         }
     }
 
     private void saveDocDetailsIfHblOrSeawayBill(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
-        log.info("Save doc details when reportInfo is {} with request ID {}", reportRequest.getReportInfo(), LoggerHelper.getRequestIdFromMDC());
+        log.info("Save doc details when reportInfo is {} with request ID {}", LoggerHelper.sanitizeForLogs(reportRequest.getReportInfo()), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         if (documentServiceResponse.get("fileId") == null) {
             log.info("Did not save file id is null with request ID {}", LoggerHelper.getRequestIdFromMDC());
             return;
@@ -3404,10 +3406,13 @@ public class ReportService implements IReportService {
     }
 
     private void saveDocDetailsWithFileIdAndShipmentBLCheck(Long reportId, String fileId, String reportInfo) {
-        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", reportId, fileId, reportInfo, LoggerHelper.getRequestIdFromMDC());
+        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", LoggerHelper.sanitizeForLogs(reportId),
+                LoggerHelper.sanitizeForLogs(fileId), LoggerHelper.sanitizeForLogs(reportInfo),
+                LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         Optional<ShipmentDetails> shipmentDetailsOpt = shipmentDao.findById(reportId);
         if (shipmentDetailsOpt.isEmpty()) {
-            log.info("Shipment details not found for reportId: {} with request ID {}", reportId, LoggerHelper.getRequestIdFromMDC());
+            log.info("Shipment details not found for reportId: {} with request ID {}", LoggerHelper.sanitizeForLogs(reportId),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             return;
         }
         ShipmentDetails shipmentDetails = shipmentDetailsOpt.get();
@@ -3417,7 +3422,8 @@ public class ReportService implements IReportService {
         DocDetails docDetail = docDetailsDao.findByFileId(fileId);
 
         if (docDetail != null) {
-            log.info("Doc detail for fileId: {} exists in DB with request ID {}", fileId, LoggerHelper.getRequestIdFromMDC());
+            log.info("Doc detail for fileId: {} exists in DB with request ID {}", LoggerHelper.sanitizeForLogs(fileId),
+                    LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
             docDetail.setType(docDetailsType);
         } else {
             docDetail = DocDetails.builder()
@@ -3426,7 +3432,8 @@ public class ReportService implements IReportService {
                     .fileId(fileId)
                     .build();
         }
-        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", fileId, docDetailsType, LoggerHelper.getRequestIdFromMDC());
+        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", LoggerHelper.sanitizeForLogs(fileId),
+                LoggerHelper.sanitizeForLogs(docDetailsType), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()));
         docDetailsDao.save(docDetail);
     }
 
@@ -3480,10 +3487,10 @@ public class ReportService implements IReportService {
                     customFileName = baseDocName + "_" + identifier + suffix + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
-                log.info("Custom file name generated: {}", customFileName);
+                log.info("Custom file name generated: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.sanitizeForLogs(customFileName)));
             }
         } catch (Exception e) {
-            log.error("Error generating custom document filename: {}", e.getMessage(), e);
+            log.error("Error generating custom document filename: {}",LoggerHelper.sanitizeForLogs( e.getMessage()), e);
         }
         return customFileName;
     }
@@ -3512,7 +3519,7 @@ public class ReportService implements IReportService {
                 return data != null && data.getCount() != null ? data.getCount() : 0;
             }
         } catch (Exception e) {
-            log.error("{} | Error counting documents for entity {}: {}", LoggerHelper.getRequestIdFromMDC(), entityGuid, e.getMessage());
+            log.error("{} | Error counting documents for entity {}: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(entityGuid), LoggerHelper.sanitizeForLogs(e.getMessage()));
         }
         return 0;
     }
@@ -3527,7 +3534,7 @@ public class ReportService implements IReportService {
         if (StringUtility.isEmpty(reportRequest.getEntityName())) {
             return new HashMap<>();
         }
-        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
+        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docUploadRequest)));
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
@@ -3551,7 +3558,7 @@ public class ReportService implements IReportService {
                 break;
 
             default:
-                log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.getRequestIdFromMDC(), "setDocumentServiceParameters", reportRequest.getEntityName());
+                log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), "setDocumentServiceParameters",LoggerHelper.sanitizeForLogs( reportRequest.getEntityName()));
                 throw new IllegalArgumentException("Invalid Module Type: " + reportRequest.getEntityName());
         }
         docUploadRequest.setEntityType(entityType);
@@ -3566,9 +3573,9 @@ public class ReportService implements IReportService {
                 docUploadRequest.setFileName(customFileName); // override default
             }
         } catch (Exception e) {
-            log.error("{} | Error generating custom file name: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+            log.error("{} | Error generating custom file name: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(e.getMessage()), e);
         }
-        log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
+        log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docUploadRequest)));
         var response = documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
         Map<String, Object> result = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
         result.put("fileName", docUploadRequest.getFileName());
@@ -3788,6 +3795,4 @@ public class ReportService implements IReportService {
             map.put(key, value);
         }
     }
-
-
 }

@@ -2607,7 +2607,7 @@ public class CommonUtils {
                 Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
                 setter.invoke(shipmentDetailsResponse, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e.getMessage());
+                log.error("No such field: {}", LoggerHelper.sanitizeForLogs(field), LoggerHelper.sanitizeForLogs(e.getMessage()));
             }
         });
         return shipmentDetailsResponse;
@@ -3052,7 +3052,7 @@ public class CommonUtils {
             Object dtoValue = mapToDTO(value, response, field);
             setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
         } catch (Exception e) {
-            log.error("Failed to process regular field: {}", field, e);
+            log.error("Failed to process regular field: {}", LoggerHelper.sanitizeForLogs(field), e);
         }
     }
 
@@ -3069,7 +3069,7 @@ public class CommonUtils {
             Object dtoValue = createCollectionDTO(value, rootField, subFields);
             setNestedFieldValue(response, rootField, dtoValue != null ? dtoValue : value);
         } catch (Exception e) {
-            log.error("Failed to process collection field: {}", rootField, e);
+            log.error("Failed to process collection field: {}", LoggerHelper.sanitizeForLogs(rootField), e);
         }
     }
 
@@ -3179,7 +3179,7 @@ public class CommonUtils {
                     partialObject.put(field, fieldValue);
                 }
             } catch (Exception e) {
-                log.debug("Could not extract field {} from object: {}", field, e.getMessage());
+                log.debug("Could not extract field {} from object: {}", LoggerHelper.sanitizeForLogs(field), e.getMessage());
             }
         }
     }
@@ -3256,7 +3256,7 @@ public class CommonUtils {
                 return setter.getParameterTypes()[0];
             }
         } catch (Exception e) {
-            log.debug("Could not determine expected field type for path: {}", fieldPath);
+            log.debug("Could not determine expected field type for path: {}", LoggerHelper.sanitizeForLogs(fieldPath));
         }
         return null;
     }
@@ -3325,7 +3325,7 @@ public class CommonUtils {
 
     private Object getFieldValue(Object value, String field, String fullPath, boolean isLastField) throws NoSuchMethodException, RunnerException {
         if (value == null) {
-            log.debug("Null value encountered at field: {} in path: {}", field, fullPath);
+            log.debug("Null value encountered at field: {} in path: {}", LoggerHelper.sanitizeForLogs(field), LoggerHelper.sanitizeForLogs(fullPath));
             return null;
         }
 
@@ -3338,7 +3338,7 @@ public class CommonUtils {
                 return handleObjectAccess(value, field);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            log.error("Error accessing field: {} in path: {}", field, fullPath, e);
+            log.error("Error accessing field: {} in path: {}", LoggerHelper.sanitizeForLogs(field), LoggerHelper.sanitizeForLogs(fullPath), e);
             throw new RunnerException(String.format("Error accessing field:  %s. Error: %s",
                     field, e.getMessage()));
         }
@@ -3350,7 +3350,7 @@ public class CommonUtils {
         } else if (isLastField) {
             return list; // Return entire list for final field
         } else {
-            log.debug("Unexpected nested access on List at field: {} in path: {}", field, fullPath);
+            log.debug("Unexpected nested access on List at field: {} in path: {}", LoggerHelper.sanitizeForLogs(field), LoggerHelper.sanitizeForLogs(fullPath));
             return null;
         }
     }
@@ -3360,7 +3360,7 @@ public class CommonUtils {
         if (index >= 0 && index < list.size()) {
             return list.get(index);
         } else {
-            log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), fullPath);
+            log.debug("Index {} out of bounds for list of size {} in path: {}", index, list.size(), LoggerHelper.sanitizeForLogs(fullPath));
             return null;
         }
     }
@@ -4274,9 +4274,9 @@ public class CommonUtils {
                 Map<String, Object> updatedRequestedColumns = new HashMap<>(requestedColumns);
                 updatedRequestedColumns.put(rootEntityKey, new ArrayList<>(rootEntityColumns));
                 requestedColumns = updatedRequestedColumns;
-                log.debug("Auto-included sort field '{}' for entity '{}'", sortField, rootEntityKey);
+                log.debug("Auto-included sort field '{}' for entity '{}'", LoggerHelper.sanitizeForLogs(sortField), LoggerHelper.sanitizeForLogs(rootEntityKey));
             } else {
-                log.warn("Invalid sort field '{}' for entity type '{}'. Field does not exist in entity.", sortField, rootEntityKey);
+                log.warn("Invalid sort field '{}' for entity type '{}'. Field does not exist in entity.", LoggerHelper.sanitizeForLogs(sortField), LoggerHelper.sanitizeForLogs(rootEntityKey));
                 throw new RunnerException("Invalid sort field " + sortField);
             }
         }
@@ -4408,7 +4408,7 @@ public class CommonUtils {
             return true;
         } catch (IllegalArgumentException e) {
             // Field doesn't exist in the entity
-            log.debug("Field '{}' does not exist in entity type '{}'", fieldName, root.getJavaType().getSimpleName());
+            log.debug("Field '{}' does not exist in entity type '{}'", LoggerHelper.sanitizeForLogs(fieldName), root.getJavaType().getSimpleName());
             return false;
         }
     }

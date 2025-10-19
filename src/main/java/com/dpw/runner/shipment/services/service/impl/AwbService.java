@@ -4156,7 +4156,7 @@ public class AwbService implements IAwbService {
             case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, fnmStatusMessageResponse);
             case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
             case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
-            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, entityType);
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, LoggerHelper.sanitizeForLogs(entityType));
         }
 
         return ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse);

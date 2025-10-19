@@ -1294,7 +1294,7 @@ public class AwbUtility {
     public static String getScreenersName(Awb awb) {
         String screenersName = isScreenersNameNeeded(awb) ? AwbUtility.getScreenerName(UserContext.getUser().getDisplayName()) :
                 Optional.ofNullable(awb.getAwbCargoInfo().getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING);
-        log.info("{} | Screener's Name : {}", LoggerHelper.getRequestIdFromMDC(), screenersName);
+        log.info("{} | Screener's Name : {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(screenersName));
         return screenersName;
     }
 }

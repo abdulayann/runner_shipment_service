@@ -1,20 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -26,12 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -45,12 +25,6 @@ import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.v3.ShippingInstructionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +36,21 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_OMS_SYNC;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING_TO_PLATFORM_SYNC;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -109,6 +98,9 @@ class PushToDownstreamServiceTest {
     @Mock
     private ShippingInstructionUtil shippingInstructionUtil;
 
+    @Mock
+    private LogsHistoryService logsHistoryService;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
     private static Containers testContainer;
@@ -129,12 +121,22 @@ class PushToDownstreamServiceTest {
     void setUp() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
+
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
-        MockitoAnnotations.initMocks(this);
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder()
+                        .multipleShipmentEnabled(true)
+                        .mergeContainers(false)
+                        .volumeChargeableUnit("M3")
+                        .weightChargeableUnit("KG")
+                        .build());
+
+        MockitoAnnotations.openMocks(this);
+
         testContainer = jsonTestUtility.getTestContainer();
         testConsolidation = jsonTestUtility.getTestConsolidation();
         testShipment = jsonTestUtility.getTestShipment();
@@ -541,5 +543,227 @@ class PushToDownstreamServiceTest {
 
         assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
         verify(producer).produceToKafka(any(), any(), any());
+    }
+
+    private PushToDownstreamEventDto createDtoWithSource(String source) {
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(source);
+        dto.setMeta(meta);
+        dto.setParentEntityId(123L);
+        return dto;
+    }
+
+    @Test
+    void whenSourceIsAfterSave_shouldCallPushAndAsyncSync() throws Exception {
+        PushToDownstreamEventDto message = createDtoWithSource(Constants.CONSOLIDATION_AFTER_SAVE);
+        String txId = "tx-1";
+
+        // spy the real instance that has @InjectMocks dependencies initialized
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+
+        // stub the synchronous push to do nothing (so it won't throw)
+        doNothing().when(spyService).pushConsolidationData(message, txId);
+
+        // for the async sync method, count down latch when called
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return null;
+        }).when(spyService).syncContainerWithCommonContainer(message, txId);
+
+        spyService.pushConsolidationDataToService(message, txId);
+        boolean asyncRan = latch.await(2, TimeUnit.SECONDS);
+
+        assertTrue(asyncRan, "Expected syncContainerWithCommonContainer to be invoked asynchronously");
+        verify(spyService, times(1)).pushConsolidationData(message, txId);
+        verify(spyService, times(1)).syncContainerWithCommonContainer(message, txId);
+    }
+
+    @Test
+    void whenSourceIsAfterSaveToTracking_shouldCallPushToTrackingOnly() {
+        PushToDownstreamEventDto message = createDtoWithSource(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+        String txId = "tx-2";
+
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+        doNothing().when(spyService).pushConsolidationDataToTracking(message, txId);
+        spyService.pushConsolidationDataToService(message, txId);
+        verify(spyService, times(1)).pushConsolidationDataToTracking(message, txId);
+        verify(spyService, never()).pushConsolidationData(any(), anyString());
+        verify(spyService, never()).syncContainerWithCommonContainer(any(), anyString());
+    }
+
+    @Test
+    void pushCustomerBookingDataToPlatform_shouldThrow_whenCustomerBookingNotFound() {
+        Long bookingId = 1L;
+        String txId = "TXN-CB-1";
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(100);
+        dto.setMeta(meta);
+        dto.setParentEntityId(bookingId);
+
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.empty());
+
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> pushToDownstreamService.pushCustomerBookingDataToPlatform(dto, txId));
+        assertTrue(ex.getMessage().contains("Customer Booking: " + bookingId));
+        verify(customerBookingDao).findById(bookingId);
+        verifyNoInteractions(bookingIntegrationsUtility);
+    }
+
+    @Test
+    void pushCustomerBookingDataToPlatform_shouldCallCreateBookingInPlatform_whenCustomerBookingExists() {
+        Long bookingId = 2L;
+        String txId = "TXN-CB-2";
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setTenantId(200);
+        dto.setMeta(meta);
+        dto.setParentEntityId(bookingId);
+
+        CustomerBooking fakeBooking = new CustomerBooking();
+        fakeBooking.setTenantId(200);
+        fakeBooking.setId(bookingId);
+
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(fakeBooking));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
+
+        assertDoesNotThrow(() -> pushToDownstreamService.pushCustomerBookingDataToPlatform(dto, txId));
+
+        verify(customerBookingDao).findById(bookingId);
+        verify(bookingIntegrationsUtility, times(1)).createBookingInPlatform(fakeBooking);
+    }
+
+    @Test
+    void createLogHistoryForShipment_shouldCallLogsHistoryService() {
+        String payload = "{ \"shipment\": \"data\" }";
+        Long shipmentId = 10L;
+        UUID guid = UUID.randomUUID();
+
+        doNothing().when(logsHistoryService)
+                .createLogHistory(any());
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.createLogHistoryForShipment(payload, shipmentId, guid));
+
+        verify(logsHistoryService, times(1)).createLogHistory(argThat(req ->
+                req.getEntityId() == shipmentId.longValue()
+                        && Objects.equals(req.getEntityGuid(), guid)
+                        && Objects.equals(req.getEntityType(), Constants.SHIPMENT)
+                        && Objects.equals(req.getEntityPayload(), payload)
+        ));
+    }
+
+    @Test
+    void createLogHistoryForShipment_shouldHandleExceptionGracefully() {
+        String payload = "{ \"shipment\": \"data\" }";
+        Long shipmentId = 20L;
+        UUID guid = UUID.randomUUID();
+
+        doThrow(new RuntimeException("DB connection failed"))
+                .when(logsHistoryService)
+                .createLogHistory(any());
+
+        assertDoesNotThrow(() ->
+                pushToDownstreamService.createLogHistoryForShipment(payload, shipmentId, guid));
+
+        verify(logsHistoryService).createLogHistory(any());
+    }
+
+    @Test
+    void processContainerData_noTriggers_callsPushContainerOnly() {
+        // Arrange
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(111L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+        dto.setTriggers(null);
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+
+        doNothing().when(spyService).pushContainerData(dto, "tx-100");
+        spyService.process(dto, "tx-100");
+        verify(spyService, times(1)).pushContainerData(dto, "tx-100");
+    }
+
+    @Test
+    void processContainer_withCustomerBookingTrigger_invokesPushCustomerBookingDataToPlatform() {
+        // arrange: container payload with a CUSTOMER_BOOKING trigger
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(222L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+
+        PushToDownstreamEventDto.Triggers bookingTrigger =
+                new PushToDownstreamEventDto.Triggers(555L, Constants.CUSTOMER_BOOKING, "");
+        dto.setTriggers(List.of(bookingTrigger));
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+        doNothing().when(spyService).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        doNothing().when(spyService).pushCustomerBookingDataToPlatform(any(), anyString());
+        spyService.process(dto, "tx-200");
+
+        verify(spyService, times(1)).pushCustomerBookingDataToPlatform(any(), anyString());
+    }
+
+    @Test
+    void processContainerData_withCustomerBookingTrigger_callsBookingToPlatform() {
+        // Another short variant: verify both container push and booking push were invoked (matchers)
+        PushToDownstreamEventDto dto = new PushToDownstreamEventDto();
+        dto.setParentEntityName(Constants.CONTAINER);
+        dto.setParentEntityId(222L);
+        PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
+        meta.setSourceInfo(Constants.CONTAINER_AFTER_SAVE);
+        meta.setTenantId(1);
+        dto.setMeta(meta);
+
+        PushToDownstreamEventDto.Triggers bookingTrigger =
+                new PushToDownstreamEventDto.Triggers(555L, Constants.CUSTOMER_BOOKING, "");
+        dto.setTriggers(List.of(bookingTrigger));
+
+        PushToDownstreamService spyService = Mockito.spy(pushToDownstreamService);
+
+        doNothing().when(spyService).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        doNothing().when(spyService).pushCustomerBookingDataToPlatform(any(), anyString());
+
+        spyService.process(dto, "tx-200");
+
+        verify(spyService, times(1)).pushContainerData(any(PushToDownstreamEventDto.class), anyString());
+        verify(spyService, times(1)).pushCustomerBookingDataToPlatform(any(), anyString());
+    }
+
+    @Test
+    void process_withTransportInstruction_notFoundThrows_and_foundInvokesProcessing() {
+        // not-found case
+        PushToDownstreamEventDto dtoNotFound = new PushToDownstreamEventDto();
+        dtoNotFound.setParentEntityId(999L);
+        dtoNotFound.setParentEntityName(Constants.TRANSPORT_INSTRUCTION);
+        when(pickupDeliveryDetailsService.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(ValidationException.class, () -> pushToDownstreamService.process(dtoNotFound, "tx-400"));
+
+        // found case
+        PushToDownstreamEventDto dtoFound = new PushToDownstreamEventDto();
+        dtoFound.setParentEntityId(1000L);
+        dtoFound.setParentEntityName(Constants.TRANSPORT_INSTRUCTION);
+
+        PickupDeliveryDetails pd = new PickupDeliveryDetails();
+        pd.setId(1000L);
+        pd.setShipmentId(42L);
+
+        List<PickupDeliveryDetails> pdList = List.of(pd);
+
+        when(pickupDeliveryDetailsService.findById(1000L)).thenReturn(Optional.of(pd));
+        when(pickupDeliveryDetailsService.findByShipmentId(42L)).thenReturn(pdList);
+        doNothing().when(pickupDeliveryDetailsService).processDownStreamConsumerData(pdList, 42L, dtoFound, "tx-401");
+        assertDoesNotThrow(() -> pushToDownstreamService.process(dtoFound, "tx-401"));
+
+        verify(pickupDeliveryDetailsService, times(1))
+                .processDownStreamConsumerData(pdList, 42L, dtoFound, "tx-401");
     }
 }

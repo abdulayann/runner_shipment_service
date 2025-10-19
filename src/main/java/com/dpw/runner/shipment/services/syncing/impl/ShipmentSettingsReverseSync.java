@@ -46,7 +46,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
     public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMessage;
         ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
-        log.info("CR-ID {} || Shipment Settings sync request received from V1 with payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(req));
+        log.info("CR-ID {} || Shipment Settings sync request received from V1 with payload: {}", LoggerHelper.getRequestIdFromMDC(), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(req)));
         try {
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
             TenantContext.setCurrentTenant(dest.getTenantId().intValue());

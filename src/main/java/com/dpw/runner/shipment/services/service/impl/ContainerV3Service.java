@@ -272,7 +272,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Transactional(rollbackFor = Exception.class)
     public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
-        log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
+        log.info("Starting container creation | Request ID: {} | Request Body: {}", LoggerHelper.sanitizeForLogs(requestId), LoggerHelper.sanitizeForLogs(containerRequest));
 
         // Validate request parameters
         validateContainerRequest(containerRequest);
@@ -1801,13 +1801,13 @@ public class ContainerV3Service implements IContainerV3Service {
             List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIds);
 
             if (shipments == null || shipments.isEmpty()) {
-                log.info("No shipments found for IDs: {}", shipmentIds);
+                log.info("No shipments found for IDs: {}", LoggerHelper.sanitizeForLogs(shipmentIds));
                 return;
             }
 
             for (ShipmentDetails shipment : shipments) {
                 if (shipment == null) {
-                    log.info("Encountered null shipment while processing IDs: {}", shipmentIds);
+                    log.info("Encountered null shipment while processing IDs: {}", LoggerHelper.sanitizeForLogs(shipmentIds));
                     continue;
                 }
                 shipmentService.triggerPushToDownStream(shipment, shipment, false);
@@ -1815,7 +1815,9 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         } catch (Exception ex) {
             log.error("Unexpected error while fetching shipments for Pushing to Internal queue for IDs {}: {}",
-                    shipmentIds, ex.getMessage(), ex);
+                    LoggerHelper.sanitizeForLogs(shipmentIds),
+                    LoggerHelper.sanitizeForLogs(ex.getMessage()),
+                    ex);
         }
     }
 
@@ -2520,9 +2522,9 @@ public class ContainerV3Service implements IContainerV3Service {
             for (ShipmentDetails shipment : shipments) {
                 String bookingRef = shipment.getBookingReference();
                 if (StringUtility.isNotEmpty(bookingRef)) {
-                    log.info("Platform Booking reference obtained: {}", bookingRef);
+                    log.info("Platform Booking reference obtained: {}", LoggerHelper.sanitizeForLogs(bookingRef));
                     log.info("Preparing platform payload for container ID: {} with container number: {}",
-                            container.getId(), container.getContainerNumber());
+                            LoggerHelper.sanitizeForLogs(container.getId()), LoggerHelper.sanitizeForLogs(container.getContainerNumber()));
 
                     ContainerPayloadDetails detail = prepareQueuePayload(container, bookingRef);
                     payloadDetails.add(detail);

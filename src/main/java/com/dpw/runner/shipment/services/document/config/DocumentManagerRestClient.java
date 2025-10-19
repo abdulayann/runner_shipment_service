@@ -145,7 +145,7 @@ public class DocumentManagerRestClient {
             HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
             String url = baseUrl + "/files-management/v2/saveFile";
-            log.info("{} | {} URL: {} | saveFile request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(requestEntity));
+            log.info("{} | {} URL: {} | saveFile request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(url), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestEntity)));
 
             ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
                     url,
@@ -154,7 +154,7 @@ public class DocumentManagerRestClient {
                     new ParameterizedTypeReference<>() {
                     }
             );
-            log.info("{} | {} URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(),LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(responseEntity.getBody()));
+            log.info("{} | {} URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(),LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, LoggerHelper.sanitizeForLogs(url), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(responseEntity.getBody())));
             return responseEntity.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("saveFile", request, ex);
@@ -205,7 +205,7 @@ public class DocumentManagerRestClient {
     public CompletableFuture<ResponseEntity<Object>> copyDocuments(CommonRequestModel commonRequestModel, String authToken) {
         try {
             var request = (CopyDocumentsRequest) commonRequestModel.getData();
-            log.info("Copy Document Request {}", jsonHelper.convertToJson(request));
+            log.info("Copy Document Request {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(request)));
 
             HttpHeaders headers = getHttpHeaders(authToken);
             HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
@@ -268,7 +268,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDelete, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentDelete), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentDelete,
                     HttpMethod.PUT,
@@ -287,20 +288,22 @@ public class DocumentManagerRestClient {
 
     }
 
-    public DocumentManagerResponse<T> getFileHistory(Object object) {
+    public DocumentManagerResponse<T> getFileHistory(Long docId) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentHistory + "/" + object, jsonHelper.convertToJson(object));
+            HttpEntity<Long> httpEntity = new HttpEntity<>(docId, headers);
+            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentHistory) + "/" + LoggerHelper.sanitizeForLogs(docId),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docId)));
             var response  = restTemplate.exchange(
-                    this.documentHistory + "/" + object,
+                    this.documentHistory + "/" + docId,
                     HttpMethod.GET,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("getFileHistory", object, ex);
+            this.logError("getFileHistory", docId, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -310,21 +313,23 @@ public class DocumentManagerRestClient {
 
     }
 
-    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Object object) {
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Long docId) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            HttpEntity<Long> httpEntity = new HttpEntity<>(docId, headers);
 
-            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDownload + "?id=" + object, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentDownload )+ "?id=" + LoggerHelper.sanitizeForLogs(docId),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(docId)));
             var response  = restTemplate.exchange(
-                    this.documentDownload + "?id=" + object,
+                    this.documentDownload + "?id=" + docId,
                     HttpMethod.GET,
                     httpEntity,
                     byte[].class
             );
             return ResponseEntity.ok(DocumentDownloadResponse.builder().content(response.getBody()).headers(response.getHeaders()).build());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("downloadDocument", object, ex);
+            this.logError("downloadDocument", docId, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -338,7 +343,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentBulkSave, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentBulkSave), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentBulkSave,
                     HttpMethod.POST,
@@ -361,7 +367,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeadersForBooking(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(obj, headers);
-            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentStore, jsonHelper.convertToJson(obj));
+            log.info("{} | URL: {} | storeFiles request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()), LoggerHelper.sanitizeForLogs(this.documentStore),
+                    LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(obj)));
             var response  = restTemplate.exchange(
                     this.documentStore,
                     HttpMethod.POST,
@@ -384,7 +391,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | temporaryUpload request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentTemporaryUpload, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | temporaryUpload request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.documentTemporaryUpload), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.documentTemporaryUpload,
                     HttpMethod.POST,
@@ -410,7 +418,8 @@ public class DocumentManagerRestClient {
             if (Objects.nonNull(page) && Objects.nonNull(size))
                 url += "?page=" + page + "&size=" + size;
 
-            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(url), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
@@ -432,7 +441,8 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.docTypeList), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
             var response  = restTemplate.exchange(
                     this.docTypeList,
                     HttpMethod.POST,
@@ -451,7 +461,9 @@ public class DocumentManagerRestClient {
     }
 
     private void logError(String method, Object object, Exception ex) {
-        log.error(LOG_ERROR, LoggerHelper.getRequestIdFromMDC(), method, ex.getMessage(), jsonHelper.convertToJson(object));
+        log.error(LoggerHelper.sanitizeForLogs(LOG_ERROR), LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                LoggerHelper.sanitizeForLogs(method), LoggerHelper.sanitizeForLogs(ex.getMessage()),
+                LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(object)));
     }
 
     public DocumentManagerResponse<T> searchDocuments(Object requestBody) {
@@ -459,8 +471,8 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
 
-            log.info("{} | Calling Document Manager API: {} | Request: {}",
-                    LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(requestBody));
+            log.info("{} | Calling Document Manager API: {} | Request: {}", LoggerHelper.sanitizeForLogs(LoggerHelper.getRequestIdFromMDC()),
+                    LoggerHelper.sanitizeForLogs(this.docTypeList), LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(requestBody)));
 
             var response = restTemplate.exchange(
                     this.docTypeList,

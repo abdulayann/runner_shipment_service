@@ -439,7 +439,7 @@ public class V1ServiceUtil {
         V1DataResponse v1OrgResponse = v1Service.fetchOrganization(orgRequest);
         List<EntityTransferOrganizations> organizationsList = jsonHelper.convertValueToList(v1OrgResponse.getEntities(), EntityTransferOrganizations.class);
         if (CommonUtils.listIsNullOrEmpty(organizationsList)) {
-            log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
+            log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,LoggerHelper.sanitizeForLogs(orgCode));
             throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
         }
         Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(organizationsList.get(0)));

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.producer;
 
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -27,7 +28,7 @@ public class KafkaProducer {
     public <T> void produceToKafka(T payload, String senderQueue, String transactionId) {
         log.info("Processing result to kafka queue - " + senderQueue);
         try {
-            log.info("request payload to kafka: with transactionId {} and payload {}" , transactionId,  objectMapper.writeValueAsString(payload));
+            log.info("request payload to kafka: with transactionId {} and payload {}" , LoggerHelper.sanitizeForLogs(transactionId),  LoggerHelper.sanitizeForLogs(objectMapper.writeValueAsString(payload)));
         } catch (JsonProcessingException e) {
             log.error("Error while converting data, unable to convert object to json due to: "+ e.getMessage());
         }

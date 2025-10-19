@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.response.mdm.MDMTaskRetrieveResponse;
 import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
@@ -683,4 +684,61 @@ class MDMServiceAdapterTest {
         assertTrue(exception.getMessage().contains("Error while fetching container type list"));
         assertTrue(exception.getMessage().contains(errorMessage));
     }
+
+    @Test
+    void getTask_whenResponseDataIsList_returnsFirstElementConverted() throws Exception {
+        // given
+        String taskUuid = "task-uuid";
+        Long id = 11L;
+
+        DependentServiceResponse depResp = mock(DependentServiceResponse.class);
+        // simulate the body data being a non-empty list
+        Object firstElement = Map.of("someKey", "someValue");
+        List<Object> dataList = List.of(firstElement);
+        when(depResp.getData()).thenReturn(dataList);
+
+        ResponseEntity<DependentServiceResponse> responseEntity = ResponseEntity.ok(depResp);
+        when(restTemplate.getForEntity(anyString(), eq(DependentServiceResponse.class))).thenReturn(responseEntity);
+
+        MDMTaskRetrieveResponse converted = new MDMTaskRetrieveResponse();
+        when(jsonHelper.convertValue(firstElement, MDMTaskRetrieveResponse.class)).thenReturn(converted);
+
+        // when
+        MDMTaskRetrieveResponse result = mdmServiceAdapter.getTask(taskUuid, id);
+
+        // then
+        assertNotNull(result);
+        assertSame(converted, result);
+        verify(restTemplate).getForEntity(contains("uuid="), eq(DependentServiceResponse.class));
+        verify(jsonHelper).convertValue(firstElement, MDMTaskRetrieveResponse.class);
+    }
+
+    @Test
+    void getTask_whenResponseDataIsSingleObject_convertsAndReturnsIt() throws Exception {
+        // given
+        String taskUuid = ""; // empty -> method will use id param path
+        Long id = 22L;
+
+        DependentServiceResponse depResp = mock(DependentServiceResponse.class);
+        // simulate the body data being a single object (not a list)
+        Object bodyData = Map.of("field", "value");
+        when(depResp.getData()).thenReturn(bodyData);
+
+        ResponseEntity<DependentServiceResponse> responseEntity = ResponseEntity.ok(depResp);
+        when(restTemplate.getForEntity(anyString(), eq(DependentServiceResponse.class))).thenReturn(responseEntity);
+
+        MDMTaskRetrieveResponse converted = new MDMTaskRetrieveResponse();
+        when(jsonHelper.convertValue(bodyData, MDMTaskRetrieveResponse.class)).thenReturn(converted);
+
+        // when
+        MDMTaskRetrieveResponse result = mdmServiceAdapter.getTask(taskUuid, id);
+
+        // then
+        assertNotNull(result);
+        assertSame(converted, result);
+        // because taskUuid is empty your implementation will call URL with "?id="
+        verify(restTemplate).getForEntity(contains("?id="), eq(DependentServiceResponse.class));
+        verify(jsonHelper).convertValue(bodyData, MDMTaskRetrieveResponse.class);
+    }
+
 }

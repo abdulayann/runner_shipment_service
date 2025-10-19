@@ -1,24 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -26,38 +7,19 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.SortRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -75,17 +37,6 @@ import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -103,11 +54,28 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import javax.persistence.criteria.*;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -1525,5 +1493,270 @@ class EventServiceTest extends CommonMocks {
         assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
     }
 
+    @Test
+    void shouldProcessEvent_returnsTrue_forECPK_andFclShipment() throws Exception {
+        Events event = new Events();
+        event.setEventCode(EventConstants.ECPK);
 
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL); // FCL
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-1");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsTrue_forVSDP_whenCommonCriteriaMatched() throws Exception {
+        Events event = new Events();
+        event.setEventCode(EventConstants.VSDP);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        // choose values that satisfy matchCommonCriteria (sea + FCL is safe)
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-2");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsTrue_forAirTrackingCode_whenTransportModeIsAir() throws Exception {
+        Events event = new Events();
+        // use the first code from AIR_TRACKING_CODE_LIST
+        String airCode = EventConstants.AIR_TRACKING_CODE_LIST.get(0);
+        event.setEventCode(airCode);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType("ANY");
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-3");
+
+        assertTrue(result);
+    }
+
+    @Test
+    void shouldProcessEvent_returnsFalse_forNonMatchingEvent() throws Exception {
+        Events event = new Events();
+        event.setEventCode("NON_EXISTENT_CODE");
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        Method m = EventService.class.getDeclaredMethod("shouldProcessEvent", Events.class, ShipmentDetails.class, String.class);
+        m.setAccessible(true);
+        Boolean result = (Boolean) m.invoke(eventService, event, shipmentDetails, "msg-4");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void listV2_withConsolidationId_revampEnabled_appliesGroupingAndReturns() {
+        // Arrange
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setConsolidationId(99L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(jsonHelper.convertValue(request, ListCommonRequest.class)).thenReturn(new ListCommonRequest());
+
+        // stub dao to return events
+        Events e1 = new Events();
+        Events e2 = new Events();
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(e1, e2)));
+
+        // prepare event responses
+        EventsResponse r1 = new EventsResponse();
+        r1.setEventCode("EVT");
+        r1.setShipmentNumber("S2");
+        r1.setActual(LocalDateTime.now().minusHours(1));
+
+        EventsResponse r2 = new EventsResponse();
+        r2.setEventCode("EVT");
+        r2.setShipmentNumber("S1");
+        r2.setActual(LocalDateTime.now());
+
+        List<EventsResponse> converted = List.of(r1, r2);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(converted);
+        ShipmentSettingsDetails s = new ShipmentSettingsDetails();
+        s.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(s);
+        ResponseEntity<IRunnerResponse> result = eventService.listV2(commonRequestModel);
+        assertNotNull(result);
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertNotNull(result.getBody());
+    }
+
+    @Test
+    void saveAllEvent_withEmptyList_doesNothing() {
+        // empty list should simply return without invoking DAOs or common utils
+        List<EventsRequest> empty = Collections.emptyList();
+
+        // Use the real injected eventService
+        assertDoesNotThrow(() -> eventService.saveAllEvent(empty));
+
+        // Nothing should be called on DAO or common utils for empty input
+        verifyNoInteractions(eventDao, commonUtils);
+    }
+
+    @Test
+    void saveAllEvent_withNonEmptyList_invokesConversion_and_savesEntities() {
+        // Arrange
+        EventsRequest req = new EventsRequest(); // minimal request
+        List<EventsRequest> reqList = List.of(req);
+
+        Events entity = new Events();
+        entity.setId(101L);
+        List<Events> entities = List.of(entity);
+
+        // Spy the injected service so we can stub conversion
+        EventService spyService = Mockito.spy(eventService);
+
+        // Stub conversion -> return our prepared entities
+        Mockito.lenient().doReturn(entities).when(spyService).convertRequestListToEntityList(anyList());
+
+        // commonUtils.updateEventWithMasterData(...) is void -> doNothing is valid
+        Mockito.lenient().doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+
+        // eventDao.updateAllEventDetails(...) likely void -> doNothing
+        Mockito.lenient().doNothing().when(eventDao).updateAllEventDetails(anyList());
+
+        // eventDao.saveAll(...) returns List<Events> -> use when(...).thenReturn(...)
+        Mockito.lenient().when(eventDao.saveAll(anyList())).thenReturn(entities);
+
+        // handle duplication logic may call some find method; stub to safe value
+        Mockito.lenient().when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(Page.empty());
+
+        // Act & Assert (no exception)
+        assertDoesNotThrow(() -> spyService.saveAllEvent(reqList));
+
+        // Verify interactions
+        verify(spyService, times(1)).convertRequestListToEntityList(reqList);
+        verify(commonUtils, times(1)).updateEventWithMasterData(entities);
+        verify(eventDao, times(1)).updateAllEventDetails(entities);
+        verify(eventDao, times(1)).saveAll(entities);
+    }
+
+    @Test
+    void buildDuplicateEventSpecification_executesAllBranches() {
+        Events event = new Events();
+        event.setEventCode("EVCODE");
+        event.setShipmentNumber("SHP123");
+        event.setContainerNumber("CONT001");
+        event.setSource("SRC");
+        event.setPlaceName("DUBAI");
+        event.setEntityType(Constants.CONSOLIDATION);
+        event.setEntityId(99L);
+
+        // Mock JPA criteria pieces
+        Root<Events> root = mock(Root.class);
+        CriteriaQuery<?> query = mock(CriteriaQuery.class);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Predicate predicate = mock(Predicate.class);
+
+        // lenient stubbing to avoid strict stubbing complaints
+        Mockito.lenient().when(cb.conjunction()).thenReturn(predicate);
+        Mockito.lenient().when(cb.and(any(), any())).thenReturn(predicate);
+        Mockito.lenient().when(cb.equal(any(), any())).thenReturn(predicate);
+        Mockito.lenient().when(cb.isNull(any())).thenReturn(predicate);
+
+        // root.get(...) returns Path mocks (typed generics not necessary for test)
+        Path<Object> pathMock = mock(Path.class);
+        Mockito.lenient().when(root.get(anyString())).thenReturn(pathMock);
+
+        // Build and execute the specification
+        Specification<Events> spec = eventService.buildDuplicateEventSpecification(event);
+        Predicate result = spec.toPredicate(root, query, cb);
+
+        // We only assert that result is non-null (method executed and used provided mocks)
+        assertNotNull(result);
+    }
+
+    @Test
+    void getPredicateForPlaceName_handlesNullAndNonNull() throws Exception {
+        Events event = new Events();
+        event.setPlaceName("Mumbai");
+
+        Root<Events> root = mock(Root.class);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Predicate base = mock(Predicate.class);
+        Predicate eq = mock(Predicate.class);
+
+        // use lenient to avoid strict stubbing problems
+        Mockito.lenient().when(cb.equal(any(), any())).thenReturn(eq);
+        Mockito.lenient().when(cb.isNull(any())).thenReturn(eq);
+        Mockito.lenient().when(cb.and(any(), any())).thenReturn(eq);
+
+        Method method = EventService.class.getDeclaredMethod("getPredicateForPlaceName", Events.class, Root.class, CriteriaBuilder.class, Predicate.class);
+        method.setAccessible(true);
+
+        Predicate result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+
+        // Now test null case
+        event.setPlaceName(null);
+        result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+    }
+
+    @Test
+    void getPredicateForEntityId_handlesNullAndNonNull() throws Exception {
+        Events event = new Events();
+        event.setEntityId(123L);
+
+        Root<Events> root = mock(Root.class);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Predicate base = mock(Predicate.class);
+        Predicate eq = mock(Predicate.class);
+
+        Mockito.lenient().when(cb.equal(any(), any())).thenReturn(eq);
+        Mockito.lenient().when(cb.isNull(any())).thenReturn(eq);
+        Mockito.lenient().when(cb.and(any(), any())).thenReturn(eq);
+
+        Method method = EventService.class.getDeclaredMethod("getPredicateForEntityId", Events.class, Root.class, CriteriaBuilder.class, Predicate.class);
+        method.setAccessible(true);
+
+        Predicate result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+
+        // Null case
+        event.setEntityId(null);
+        result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+    }
+
+    @Test
+    void getPredicateForEventType_handlesNullAndNonNull() throws Exception {
+        Events event = new Events();
+        event.setEntityType("SHIPMENT");
+
+        Root<Events> root = mock(Root.class);
+        CriteriaBuilder cb = mock(CriteriaBuilder.class);
+        Predicate base = mock(Predicate.class);
+        Predicate eq = mock(Predicate.class);
+
+        Mockito.lenient().when(cb.equal(any(), any())).thenReturn(eq);
+        Mockito.lenient().when(cb.isNull(any())).thenReturn(eq);
+        Mockito.lenient().when(cb.and(any(), any())).thenReturn(eq);
+
+        Method method = EventService.class.getDeclaredMethod("getPredicateForEventType", Events.class, Root.class, CriteriaBuilder.class, Predicate.class);
+        method.setAccessible(true);
+
+        Predicate result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+
+        // Null case
+        event.setEntityType(null);
+        result = (Predicate) method.invoke(eventService, event, root, cb, base);
+        assertNotNull(result);
+    }
 }

@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
@@ -119,7 +120,7 @@ public class DpsEventService implements IDpsEventService {
             DpsWorkflowState newState = dpsEvent.getState();
 
             log.info("Saving DPS event for shipment GUID: {}, state: {}",
-                    dpsEvent.getEntityId(), newState);
+                    LoggerHelper.sanitizeForLogs(dpsEvent.getEntityId()), LoggerHelper.sanitizeForLogs(newState));
 
             // Update the non movement state if permanent blocked state
             if (DpsWorkflowState.PER_BLOCKED.equals(newState)) {
@@ -255,7 +256,7 @@ public class DpsEventService implements IDpsEventService {
 
             auditLogService.addAuditLog(auditLogMetaData);
 
-            log.info("Audit log created successfully for shipment GUID: {}", dpsEvent.getEntityId());
+            log.info("Audit log created successfully for shipment GUID: {}", LoggerHelper.sanitizeForLogs(dpsEvent.getEntityId()));
         } catch (Exception e) {
             throw new DpsException("DPS EVENT LOG ERROR -- " + e.getMessage(), e);
         }
@@ -295,7 +296,7 @@ public class DpsEventService implements IDpsEventService {
         List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
+            log.warn("No DPS Event found with provided entity id {}", LoggerHelper.sanitizeForLogs(shipmentGuid));
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
@@ -311,7 +312,7 @@ public class DpsEventService implements IDpsEventService {
         }
         List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionStateIn(getMatchingRulesRequest.getShipmentGuid(), getMatchingRulesRequest.getDpsExecutionStatusList());
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid());
+            log.warn("No DPS Event found with provided entity id {}", LoggerHelper.sanitizeForLogs(getMatchingRulesRequest.getShipmentGuid()));
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()

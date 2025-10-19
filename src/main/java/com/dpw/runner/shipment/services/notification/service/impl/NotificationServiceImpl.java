@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
 import com.dpw.runner.shipment.services.notification.config.NotificationRestClient;
@@ -13,7 +14,6 @@ import com.dpw.runner.shipment.services.notification.request.*;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
@@ -76,7 +76,7 @@ public class NotificationServiceImpl implements INotificationService {
         }
 
         try {
-            log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
+            log.info("Notification Service Response: {}", LoggerHelper.sanitizeForLogs(jsonHelper.convertToJson(response)));
         } catch (JsonParseException e) {
             throw new NotificationException(e);
         }

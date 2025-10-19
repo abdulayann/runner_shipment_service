@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.esapi.StringUtilities;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -84,6 +85,14 @@ public class LoggerHelper {
     }
     public static void trace(String msg){
         log.trace(msg+WITH_REQUEST_ID_MSG, getRequestIdFromMDC());
+    }
+
+    public static String sanitizeForLogs(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String stringValue = String.valueOf(value);
+        return StringUtilities.stripControls(stringValue);
     }
 
 }
