@@ -4216,6 +4216,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                                                       List<ConsoleShipmentMapping> consoleShipMappings, List<ConsolidationDetails> otherConsoles) {
         // fetching shipment and console
         tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.add(shipmentDetails.getTenantId());
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
@@ -4273,6 +4274,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
+        tenantIds.add(shipmentDetails.getTenantId());
 
         Map<Long, String> consoleRequestUserMap = new HashMap<>();
         for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipMappings) {
@@ -4447,6 +4449,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             userNames.add(consolidationDetails.getAssignedTo());
         }
         tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.add(shipmentDetails.getTenantId());
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(shipmentDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carriersMap)), executorService);
@@ -4501,15 +4504,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(carrierFuture, locationsFuture, toAndCcEmailIdsFuture).join();
 
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
         ccEmailsList.addAll(toEmailIds);
         ccEmailsList.addAll(ccEmailIds);
+        toEmailList.addAll(toEmailIds);
         commonUtils.setCurrentUserEmail(ccEmailsList);
-        if (consolidationDetails.getCreatedBy() == null) {
-            toEmailIds.clear();
-            ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
-            toEmailList.addAll(new ArrayList<>(toEmailIds));
-        }
 
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carriersMap, locationsMap);
         commonUtils.sendEmailNotification(dictionary, emailTemplateModel, new ArrayList<>(toEmailList), new ArrayList<>(ccEmailsList));
