@@ -198,6 +198,73 @@ class EventServiceTest extends CommonMocks {
         testEventsRequestV2 = jsonTestUtility.getTestEventsRequestV2();
     }
 
+    @Test
+    void createBulkEventsSuccess() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request.setReferenceNumbersList(List.of("ref1", "ref2"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        List<EventsResponse> responses = List.of(
+                objectMapperTest.convertValue(testData, EventsResponse.class),
+                objectMapperTest.convertValue(testData, EventsResponse.class)
+        );
+        EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
+
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(EventsRequest.class))).thenReturn(request);
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
+        when(eventDao.save(any())).thenReturn(testData);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
+
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(ResponseHelper.buildSuccessResponse(responses), responseEntity);
+    }
+
+    @Test
+    void createBulkEventsEmptyRequest() {
+        EventsRequest request = objectMapperTest.convertValue(null, EventsRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
+
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("Empty request received", runnerResponse.getError().getMessage());
+    }
+
+    @Test
+    void createBulkEventsNoReferences() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request.setReferenceNumbersList(Collections.emptyList());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
+
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("No reference numbers provided for bulk event creation.", runnerResponse.getError().getMessage());
+    }
+
+    @Test
+    void createBulkEventsThrowsException() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request.setReferenceNumbersList(List.of("ref1"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        String errorMessage = "Custom error message";
+
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(EventsRequest.class))).thenReturn(request);
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
+        when(eventDao.save(any())).thenThrow(new RuntimeException(errorMessage));
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
+
+        Assertions.assertNotNull(responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+    }
+
 
     @Test
     void create() {

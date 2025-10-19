@@ -102,6 +102,36 @@ class EventsV3ControllerTest {
     }
 
     @Test
+    void createBulkEvents() {
+        // Mock
+        when(eventService.createBulkEvents(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = eventsController.createBulkEvents(EventsRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBulkEvents2() {
+        // Mock
+        when(eventService.createBulkEvents(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = eventsController.createBulkEvents(EventsRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBulkEvents3() {
+        // Mock
+        when(eventService.createBulkEvents(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = eventsController.createBulkEvents(EventsRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void update() throws RunnerException {
         // Mock
         when(eventService.update(any())).thenReturn(ResponseHelper.buildSuccessResponse());

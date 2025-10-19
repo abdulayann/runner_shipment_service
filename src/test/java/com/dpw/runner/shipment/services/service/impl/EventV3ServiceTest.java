@@ -341,6 +341,25 @@ class EventV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCreateBulkEvents_success() {
+        // Arrange
+        EventsRequest request1 = objectMapperTest.convertValue(testData, EventsRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request1);
+
+        IRunnerResponse mockRunnerResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(mockRunnerResponse);
+
+        when(eventV2Service.createBulkEvents(commonRequestModel)).thenReturn(expectedResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> actualResponse = eventV3Service.createBulkEvents(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, actualResponse);
+        verify(eventV2Service, times(1)).createBulkEvents(commonRequestModel);
+    }
+
+    @Test
     void testUpdate_success() throws RunnerException {
         CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);

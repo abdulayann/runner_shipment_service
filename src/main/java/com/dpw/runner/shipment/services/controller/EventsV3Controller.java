@@ -80,6 +80,23 @@ public class EventsV3Controller {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_BULK)
+    public ResponseEntity<IRunnerResponse> createBulkEvents(@RequestBody @Valid EventsRequest request) {
+        String responseMsg;
+        try {
+            return eventService.createBulkEvents(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_DELETE_SUCCESS)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {

@@ -206,6 +206,46 @@ public class EventService implements IEventService {
     }
 
     @Transactional
+    public ResponseEntity<IRunnerResponse> createBulkEvents(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        EventsRequest request = null;
+        request = (EventsRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Empty request received");
+        }
+        if (request.getReferenceNumbersList() == null || request.getReferenceNumbersList().isEmpty()) {
+            return ResponseHelper.buildFailedResponse("No reference numbers provided for bulk event creation.");
+        }
+        List<Events> createdEvents = new ArrayList<>();
+        for (String refNo : request.getReferenceNumbersList()) {
+            try {
+                EventsRequest singleRequest = createSingleReferenceRequest(request, refNo);
+                Events event = convertRequestToEntity(singleRequest);
+                createdEvents.add(event);
+                saveEventUtil(singleRequest);
+
+                // audit logs
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                .newData(event)
+                                .prevData(null)
+                                .parent(Events.class.getSimpleName())
+                                .parentId(event.getId())
+                                .operation(DBOperationType.CREATE.name()).build()
+                );
+            } catch (Exception e) {
+                responseMsg = e.getMessage() != null ? e.getMessage()
+                        : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+                log.error(responseMsg, e);
+                return ResponseHelper.buildFailedResponse(responseMsg);
+            }
+        }
+        return ResponseHelper.buildSuccessResponse(convertEntityListToDtoList(createdEvents));
+    }
+
+    @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
@@ -1495,6 +1535,12 @@ public class EventService implements IEventService {
                 eventDao.saveAll(eventsToDelete);
             }
         }
+    }
+
+    private EventsRequest createSingleReferenceRequest(EventsRequest request, String refNo) {
+        EventsRequest singleRequest = jsonHelper.convertValue(request, EventsRequest.class);
+        singleRequest.setReferenceNumber(refNo);
+        return singleRequest;
     }
 
 }

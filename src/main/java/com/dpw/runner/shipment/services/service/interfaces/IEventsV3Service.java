@@ -28,6 +28,8 @@ public interface IEventsV3Service {
 
     ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel);
 
+    ResponseEntity<IRunnerResponse> createBulkEvents(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException;

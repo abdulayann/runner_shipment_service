@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -60,5 +62,6 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String userEmail;
     private String branch;
     private String referenceNumber;
+    private List<String> referenceNumbersList;
     private String direction;
 }

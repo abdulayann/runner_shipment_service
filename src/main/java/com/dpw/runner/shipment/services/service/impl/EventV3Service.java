@@ -414,6 +414,11 @@ public class EventV3Service implements IEventsV3Service {
     }
 
     @Transactional
+    public ResponseEntity<IRunnerResponse> createBulkEvents(CommonRequestModel commonRequestModel) {
+        return eventV2Service.createBulkEvents(commonRequestModel);
+    }
+
+    @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         return eventV2Service.update(commonRequestModel);
     }
