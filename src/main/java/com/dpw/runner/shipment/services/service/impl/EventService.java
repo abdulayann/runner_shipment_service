@@ -220,13 +220,13 @@ public class EventService implements IEventService {
 
         try {
             EventsRequest finalRequest = request;
-            List<EventsRequest> individualRequests = request.getReferenceNumbersList().stream()
+            List<EventsRequest> updatedEventRequests = request.getReferenceNumbersList().stream()
                     .map(refNo -> createSingleReferenceRequest(finalRequest, refNo))
                     .collect(Collectors.toList());
-            List<Events> eventsList = convertRequestListToEntityList(individualRequests);
+            List<Events> eventsList = convertRequestListToEntityList(updatedEventRequests);
 
             // Save all events
-            saveAllEvent(individualRequests);
+            saveAllEventsUtil(updatedEventRequests);
 
             // audit logs
             for (Events event : eventsList) {
@@ -1440,6 +1440,10 @@ public class EventService implements IEventService {
     @Override
     @Transactional
     public void saveAllEvent(List<EventsRequest> eventsRequests) {
+        saveAllEventsUtil(eventsRequests);
+    }
+
+    public void saveAllEventsUtil(List<EventsRequest> eventsRequests) {
         if (CommonUtils.listIsNullOrEmpty(eventsRequests))
             return;
         List<Events> entities = convertRequestListToEntityList(eventsRequests);
