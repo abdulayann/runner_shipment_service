@@ -2468,8 +2468,9 @@ class HblServiceTest extends CommonMocks {
                     ORIGINAL_BL_APPROVAL)).thenReturn(List.of(Map.of("id", "1")));
 
             //when //then
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentId);
             assertThrows(MdmTaskException.class, () ->
-                    hblService.createHblTaskForApproval(CommonRequestModel.buildRequest(shipmentId)));
+                    hblService.createHblTaskForApproval(commonRequestModel));
         }
 
         @Test
@@ -2479,8 +2480,9 @@ class HblServiceTest extends CommonMocks {
             when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
 
             //when //then
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentId);
             assertThrows(DataRetrievalFailureException.class, () ->
-                    hblService.createHblTaskForApproval(CommonRequestModel.buildRequest(shipmentId)));
+                    hblService.createHblTaskForApproval(commonRequestModel));
         }
     }
 
