@@ -485,7 +485,7 @@ public class HblService implements IHblService {
     public ResponseEntity<DocumentDownloadResponse> downloadHblDocument(CommonRequestModel request) {
         Long shipmentId = request.getId();
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id" + shipmentId));
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id " + shipmentId));
         return documentManagerRestClient.downloadDocument(
                 createHblDocDownloadFetchRequest(shipmentDetails));
     }
