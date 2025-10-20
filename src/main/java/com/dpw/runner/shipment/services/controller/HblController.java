@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
@@ -156,6 +157,12 @@ public class HblController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_TASK_CREATION_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(HblConstants.CREATE_HBL_TASK)
+    public ResponseEntity<IRunnerResponse> createHblApprovalTask(@RequestParam Long shipmentId) throws RunnerException {
+        return hblService.createHblTaskForApproval(CommonRequestModel.buildRequest(shipmentId));
     }
 
 }

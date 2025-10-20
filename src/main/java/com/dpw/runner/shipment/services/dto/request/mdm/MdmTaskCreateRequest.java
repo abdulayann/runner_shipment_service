@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.mdm;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MdmTaskCreateRequest implements IRunnerRequest {
 
   @JsonProperty("status")
@@ -36,4 +38,11 @@ public class MdmTaskCreateRequest implements IRunnerRequest {
 
   @JsonProperty("sendMail")
   private Boolean sendEmail;
+
+  private String referenceFileNumber;
+
+  private String taskInfoJson;
+
+  private Integer seqNo;
+
 }

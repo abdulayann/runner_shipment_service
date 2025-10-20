@@ -8,6 +8,9 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -25,31 +28,22 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblLockSettings;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.MdmTaskException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -59,20 +53,10 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.flywaydb.core.internal.util.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -83,6 +67,19 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.US;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 
 @Slf4j
@@ -129,6 +126,10 @@ public class HblService implements IHblService {
 
     @Autowired
     private IHblSync hblSync;
+
+    @Autowired
+    @Lazy
+    private MDMServiceAdapter mdmServiceAdapter;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -995,6 +996,109 @@ public class HblService implements IHblService {
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment.");
         }
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createHblTaskForApproval(CommonRequestModel commonRequestModel) throws RunnerException {
+        Long shipmentId = commonRequestModel.getId();
+
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id " + shipmentId.toString()));
+
+        List<Map<String, Object>> existingTaskPending = fetchExistingTaskPending(shipmentDetails);
+
+        if (!CollectionUtils.isEmpty(existingTaskPending)) {
+            throw new MdmTaskException("Task already pending for action for given shipment " + shipmentId.toString());
+        }
+
+        return createNewTask(shipmentDetails);
+    }
+
+    @NotNull
+    private ResponseEntity<IRunnerResponse> createNewTask(ShipmentDetails shipmentDetails) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+
+        MdmTaskCreateRequest taskRequest = createTaskRequest(shipmentDetails,shipmentSettings);
+
+        MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
+
+        TaskCreateResponse taskCreateResponse = TaskCreateResponse
+                .builder()
+                .tasksId(mdmTaskCreateResponse.getId().toString())
+                .taskGuid(mdmTaskCreateResponse.getUuid())
+                .build();
+
+        return ResponseHelper.buildSuccessResponse(taskCreateResponse);
+    }
+
+    private MdmTaskCreateRequest createTaskRequest(ShipmentDetails shipmentDetails,
+                                                   ShipmentSettingsDetails shipmentSettingsDetails) {
+
+        ConsolidationDetails consolidationDetails = getConsolidationDetails(shipmentDetails);
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+        Set<String> unlocoRequests = getUnlocoRequests(carrierDetails);
+        Map<String, EntityTransferUnLocations> locationsMap = masterDataUtil.getLocationDataFromCache(unlocoRequests, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        EntityTransferUnLocations originUnLoc = locationsMap.get(carrierDetails.getOrigin());
+        EntityTransferUnLocations destinationUnLoc = locationsMap.get(carrierDetails.getDestination());
+        Map<String, Object> taskInfoMap = buildTaskInfoMap(shipmentDetails, consolidationDetails, originUnLoc, destinationUnLoc);
+
+        return MdmTaskCreateRequest
+                .builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityUuid(shipmentDetails.getGuid().toString())
+                .roleId(shipmentSettingsDetails.getRestrictBlApprovalRole())
+                .taskType(ORIGINAL_BL_APPROVAL)
+                .status(PENDING_ACTION_TASK)
+                .userId(UserContext.getUser().getUserId())
+                .isCreatedFromV2(true)
+                .seqNo(1)
+                .sendEmail(false)
+                .referenceFileNumber(shipmentDetails.getShipmentId())
+                .taskInfoJson(jsonHelper.convertToJson(taskInfoMap))
+                .build();
+    }
+
+    private List<Map<String, Object>> fetchExistingTaskPending(ShipmentDetails shipmentDetails) {
+        return mdmServiceAdapter.getTaskList(String.valueOf(shipmentDetails.getGuid()),SHIPMENTS_WITH_SQ_BRACKETS, PENDING_ACTION_TASK, ORIGINAL_BL_APPROVAL);
+    }
+
+    private Set<String> getUnlocoRequests(CarrierDetails carrierDetails) {
+        if (carrierDetails == null) return Set.of();
+        return Stream.of(carrierDetails.getOrigin(), carrierDetails.getDestination())
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+    }
+
+    @NotNull
+    private static Map<String, Object> buildTaskInfoMap(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
+                                                        EntityTransferUnLocations originUnLoc, EntityTransferUnLocations destinationUnLoc) {
+        Map<String, Object> taskInfoMap = new LinkedHashMap<>();
+        taskInfoMap.put("transportMode", shipmentDetails.getTransportMode());
+        taskInfoMap.put("shipmentType", shipmentDetails.getShipmentType());
+        taskInfoMap.put("masterBill", shipmentDetails.getMasterBill());
+        taskInfoMap.put("houseBill", shipmentDetails.getHouseBill());
+        taskInfoMap.put("shipmentId", shipmentDetails.getShipmentId());
+        if (Objects.nonNull(consolidationDetails)) {
+            taskInfoMap.put("consolidationNumber", consolidationDetails.getConsolidationNumber());
+            taskInfoMap.put("consoleIdPk", consolidationDetails.getId());
+        }
+        taskInfoMap.put("shipmentIdPk", shipmentDetails.getId());
+        if (Objects.nonNull(originUnLoc) && originUnLoc.LocCode != null && originUnLoc.Name != null) {
+            taskInfoMap.put("origin", originUnLoc.LocCode + " - " + originUnLoc.Name);
+        }
+        if (Objects.nonNull(destinationUnLoc) && destinationUnLoc.LocCode != null && destinationUnLoc.Name != null) {
+            taskInfoMap.put("destination", destinationUnLoc.LocCode + " - " + destinationUnLoc.Name);
+        }
+        return taskInfoMap;
+    }
+
+    private ConsolidationDetails getConsolidationDetails(ShipmentDetails shipmentDetails) {
+        ConsolidationDetails consolidationDetails = null;
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        }
+        return consolidationDetails;
+    }
+
     private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
         HblDataDto hblData = hbl.getHblData();
         Routings routing = getRoutingsForShipment(shipmentDetail);
