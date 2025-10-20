@@ -12,17 +12,22 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -35,6 +40,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.Optional;
+import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
@@ -43,6 +50,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,9 +58,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
-import java.util.Optional;
 
 
 @RestController
@@ -298,4 +303,47 @@ public class ShipmentControllerV3 {
         ShipmentDetailsResponse defaultShipment = shipmentService.getDefaultShipment();
         return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = ShipmentRetrieveLiteResponse.class)})
+    @PostMapping(ApiConstants.API_CLONE_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> cloneShipment(@RequestBody @Valid CloneRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipment(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL, response = IRunnerResponse.class)})
+    @GetMapping(ApiConstants.API_CLONE_CONFIG)
+    public ResponseEntity<IRunnerResponse> getCloneConfig(@RequestParam() String type) {
+        log.info("{} | Request received for type : {}", LoggerHelper.getRequestIdFromMDC(), type);
+        try {
+            return ResponseHelper.buildSuccessResponse(shipmentService.getCloneConfig(type));
+        } catch (Exception ex) {
+            log.error("Error processing getCloneConfig", ex);
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_RESET_QUOTE_SUCCESSFUL, response = QuoteResetRulesResponse.class)})
+    @GetMapping(ApiConstants.API_RESET_QUOTE_FIELDS)
+    public ResponseEntity<IRunnerResponse> resetShipmentQuoteRules(@RequestParam(value = "shipmentId", required = false) Long shipmentId) {
+        return ResponseHelper.buildSuccessResponse(shipmentService.resetShipmentQuoteRules(shipmentId));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
+    public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request) throws RunnerException{
+        ShipmentPatchV3Request patchRequest = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchV3Request.class);
+        log.info("Received Shipment patch request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return ResponseHelper.buildSuccessResponse(shipmentService.partialUpdate(CommonRequestModel.buildRequest(patchRequest)));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ATTACH_DETACH_ORDER_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.ATTACH_DETACH_ORDER)
+    public ResponseEntity<IRunnerResponse> attachDetachOrder(@RequestBody @Valid ShipmentOrderAttachDetachRequest attachDetachRequest) {
+        try {
+            return shipmentService.attachDetachOrder(attachDetachRequest);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
 }

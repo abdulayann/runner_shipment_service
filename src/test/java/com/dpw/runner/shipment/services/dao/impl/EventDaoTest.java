@@ -1,6 +1,12 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.anyBoolean;
@@ -26,7 +32,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -134,6 +143,32 @@ class EventDaoTest {
 
         assertNotNull(r);
         assertNotNull(r.getId());
+    }
+
+    @Test
+    void testSaveWithoutTenant() {
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        testData.setId(1L);
+        when(eventRepository.saveWithoutTenant(any())).thenReturn(testData);
+
+        var r = eventDao.saveWithoutTenant(testData);
+
+        assertNotNull(r);
+        assertNotNull(r.getId());
+    }
+
+    @Test
+    void testFindByIdWithoutTenant() {
+        when(eventRepository.findByIdWithoutTenant(any())).thenReturn(Optional.of(testData));
+
+        var r = eventDao.findByIdWithoutTenant(any());
+
+        assertNotNull(r);
+    }
+
+    @Test
+    void testDeleteByIdWithoutTenant() {
+        assertDoesNotThrow(() -> eventDao.deleteByIdWithoutTenant(any()));
     }
 
     @Test
@@ -249,7 +284,6 @@ class EventDaoTest {
 
         when(eventRepository.findById(2L)).thenReturn(Optional.of(oldEvent));
         when(eventRepository.save(testData)).thenReturn(testData);
-        when(eventRepository.save(oldEvent)).thenReturn(oldEvent);
         when(jsonHelper.convertToJson(oldEvent)).thenReturn(objectMapper.writeValueAsString(oldEvent));
 
         try {

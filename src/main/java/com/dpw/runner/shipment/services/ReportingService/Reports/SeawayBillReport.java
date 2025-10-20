@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_TOTAL_PACKS_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_ADDRESS;
@@ -14,8 +15,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_MDY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_MDY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUE_PLACE_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PAID_PLACE_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_WC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
@@ -31,18 +30,17 @@ import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @NoArgsConstructor
@@ -233,7 +231,9 @@ public class SeawayBillReport extends IReport {
         dict.put("BLCustomConsigner", consignerWithNameAndAddress);
         dict.put("BLCustomConsignee", consigneeWithNameAndAddress);
         dict.put("PortOfLoad", model.blObject.getHblData().getPortOfLoad());
+        dict.put(BL_TOTAL_PACKS_COUNT, model.blObject.getHblData().getTotalUnitsReceivedByCarrier());
         populateBlTransportSectionDetails(model.blObject.getHblData(), dict);
+        populateFreightsAndCharges(dict, model.blObject, model.shipment);
     }
 
     private void processConsigner(SeawayBillModel model, Map<String, Object> dict) {

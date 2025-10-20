@@ -1,13 +1,19 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaEventDTO;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.repository.interfaces.InternalEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +35,15 @@ public class PushToDownstreamConsumer {
     private final IPushToDownstreamService pushToDownstreamService;
     private final IV1Service v1Service;
     private final RetryTemplate retryTemplate;
+    private final InternalEventRepository internalEventRepository;
 
     @Autowired
-    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service, RetryTemplate retryTemplate) {
+    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service, RetryTemplate retryTemplate, InternalEventRepository internalEventRepository) {
         this.objectMapper = objectMapper;
         this.pushToDownstreamService = pushToDownstreamService;
         this.v1Service = v1Service;
         this.retryTemplate = retryTemplate;
+        this.internalEventRepository = internalEventRepository;
     }
 
     @KafkaListener(
@@ -53,19 +61,28 @@ public class PushToDownstreamConsumer {
 
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);
 
+        Long eventId = null;
         try {
-            PushToDownstreamEventDto object = parseMessage(message, topic, partition, offset);
+            JsonNode rootNode = objectMapper.readTree(StringEscapeUtils.unescapeJson(message));
+            eventId = rootNode.get("eventId").asLong();
+            String payloadJson = rootNode.get("payload").toString();
+
+            PushToDownstreamEventDto object = parseMessage(payloadJson, topic, partition, offset);
             if (object == null) {
                 return;
             }
-
+            final Long finalEventId = eventId;
             retryTemplate.execute(retryContext -> {
                 pushToDownstreamService.process(object, transactionId);
+                internalEventRepository.updateConsumedStatus(finalEventId, "Consumed", LocalDateTime.now());
                 log.info("{} | Passed", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM);
                 return null;
             });
 
         } catch (Exception ex) {
+            if (eventId != null) {
+                internalEventRepository.updateConsumedStatus(eventId, "Consume_Failed", LocalDateTime.now());
+            }
             log.error("Exception occurred for event: {} | message: {} | error: {}",
                     LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, message, ex.getMessage(), ex);
         } finally {

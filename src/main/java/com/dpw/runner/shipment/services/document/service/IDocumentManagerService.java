@@ -32,4 +32,5 @@ public interface IDocumentManagerService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel request, Long page, Long size);
     ResponseEntity<IRunnerResponse> listDocTypes(CommonRequestModel request);
     DocumentManagerResponse<DocumentManagerDataResponse> pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest);
+    ResponseEntity<IRunnerResponse> searchDocumentTypes(CommonRequestModel request);
 }

@@ -71,4 +71,5 @@ public interface IConsolidationDetailsDao {
     void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
 
     void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
+    List<ConsolidationDetails> findByParentGuid(UUID parentGuid);
 }

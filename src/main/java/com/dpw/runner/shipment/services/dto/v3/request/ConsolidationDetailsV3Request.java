@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     @Size(max=100, message = "max size is 100 for container_category")
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     @Size(max=20, message = "max size is 20 for service_level")
@@ -70,6 +72,11 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days")
+    private Integer numberOfFreeDaysCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;
@@ -108,6 +115,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
     private List<TriangulationPartnerRequest> triangulationPartnerList;
@@ -143,6 +151,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     @Size(max=3, message = "max size is 3 for efreight_status")
     private String efreightStatus;
     private Boolean hazardous;
@@ -179,4 +188,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String incoterms;
     private MigrationStatus migrationStatus;
     private Boolean triggerMigrationWarning;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
+    private Long attachShipmentId;
 }

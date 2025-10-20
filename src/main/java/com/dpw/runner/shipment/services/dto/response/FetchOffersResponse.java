@@ -138,6 +138,10 @@ public class FetchOffersResponse implements IRunnerResponse {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Meta implements Serializable{
+        @JsonProperty("pol")
+        private String pol;
+        @JsonProperty("pod")
+        private String pod;
         @JsonProperty("route")
         private List<Route> route;
     }
@@ -180,6 +184,43 @@ public class FetchOffersResponse implements IRunnerResponse {
         private String maxTransitHours;
         @JsonProperty("carrier")
         private String carrier;
+        @JsonProperty("schedule_info")
+        private ScheduleInfo scheduleInfo;
+        @JsonProperty("group_totals")
+        private GroupTotals groupTotals;
+        @JsonProperty("total_route_price")
+        private BigDecimal totalRoutePrice;
+        @JsonProperty("total_route_cost")
+        private BigDecimal totalRouteCost;
+        @JsonProperty("total_route_margin")
+        private BigDecimal totalRouteMargin;
+        @JsonProperty("price_in_usd")
+        private BigDecimal priceInUsd;
+        @JsonProperty("required_currency")
+        private String requiredCurrency;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class GroupTotals {
+        @JsonProperty("ORIGIN_CHARGES")
+        private ChargeGroup originCharges;
+        @JsonProperty("FREIGHT_CHARGES")
+        private ChargeGroup freightCharges;
+        @JsonProperty("DESTINATION_CHARGES")
+        private ChargeGroup destinationCharges;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ChargeGroup {
+        private BigDecimal total;
+        private BigDecimal totalCost;
+        private String currency;
     }
 
     @Data
@@ -195,6 +236,17 @@ public class FetchOffersResponse implements IRunnerResponse {
         private Node origin;
         @JsonProperty("destination")
         private Node destination;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ScheduleInfo implements Serializable{
+        @JsonProperty("proposed_pickup_date")
+        private String proposedPickupDate;
+        @JsonProperty("estimated_arrival_date")
+        private String estimatedArrivalDate;
     }
 
 }

@@ -350,8 +350,9 @@ public class HblReport extends IReport {
         populateConsolidationFields(hblModel.consolidation, dictionary);
         jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
+        populateFreightsAndCharges(dictionary, hblModel.blObject, hblModel.shipment);
 
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
+        addIssueDateField(dictionary, hblModel);
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
@@ -367,7 +368,6 @@ public class HblReport extends IReport {
         addCargoLocationTag(hblModel, dictionary);
         processNotifyParty(hblModel, dictionary);
         processConsignerConsignee(hblModel, dictionary);
-
         List<String> deliveryParty = getOrgAddress(hblModel.shipment.getAdditionalDetails().getNotifyParty());
         if (hblModel.blObject.getHblNotifyParty() != null && !hblModel.blObject.getHblNotifyParty().isEmpty())
             dictionary.put(NOTIFY_PARTY_ADDRESS, getAddressList(hblModel.blObject.getHblNotifyParty().get(0).getAddress()));
@@ -505,8 +505,16 @@ public class HblReport extends IReport {
             this.getContainerDetails(hblModel.getShipment(), dictionary);
             this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
+        populateTotalCountFromCargoSummary(hblModel.blObject, dictionary);
+
         dictionary.put(BL_RELEASE_TYPE, ORIGINAL);
         return dictionary;
+    }
+
+    private void addIssueDateField(Map<String, Object> dictionary, HblModel hblModel) {
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(LocalDateTime.now(), "ddMMMy", true)));
+        if(hblModel.shipment.getAdditionalDetails() != null)
+            dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(LocalDateTime.now(), "dd/MMM/yyyy", true));
     }
 
     public String getContainerSummary(List<ContainerModel> containers) {
@@ -979,7 +987,7 @@ public class HblReport extends IReport {
                         getValueFromMap(consigneeAddress, ADDRESS2),
                         ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
                         getValueFromMap(consigneeAddress, EMAIL), getValueFromMap(consigneeAddress, CONTACT_PHONE),
-                        getValueFromMap(consigneeAddress, "Zip_PostCode"));
+                        getValueFromMap(consigneeAddress, ZIP_POSTCODE));
                 dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON, getValueFromMap(consigneeAddress, CONTACT_PERSON));
             }
@@ -1053,11 +1061,51 @@ public class HblReport extends IReport {
             dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
             dictionary.put(BL_DELIVERYAGENT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgent()));
             dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
+            populatePartyTagsV3(hblModel.blObject.getHblData(), dictionary);
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoTermsDescription()));
             dictionary.put(BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getBlRemarksDescription()));
+            dictionary.put(BL_REMARKS, hblModel.blObject.getHblData().getBlRemark());
+            dictionary.put(CARGO_TERMS, hblModel.blObject.getHblData().getCargoTerms());
             dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfReceipt()));
             dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfLoad()));
             dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPortOfDischarge()));
+        }
+    }
+
+    private void populatePartyTagsV3(HblDataDto hblDataDto, Map<String, Object> dictionary) {
+
+        // Populate new Party Tags if V3 Feature Flag is Enabled
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+
+            // Populating Shipper Tag
+            processPartyTagsV3(hblDataDto.getShipperName(), hblDataDto.getShipperAddressLine1(), hblDataDto.getShipperAddressLine2(),
+                    hblDataDto.getShipperCity(), hblDataDto.getShipperState(), hblDataDto.getShipperZipCode(),
+                    hblDataDto.getShipperCountry(), dictionary, BL_NEW_SHIPPER);
+
+            // Populating Consignee Tag
+            processPartyTagsV3(hblDataDto.getConsigneeName(), hblDataDto.getConsigneeAddressLine1(), hblDataDto.getConsigneeAddressLine2(),
+                    hblDataDto.getConsigneeCity(), hblDataDto.getConsigneeState(), hblDataDto.getConsigneeZipCode(),
+                    hblDataDto.getConsigneeCountry(), dictionary, BL_NEW_CONSIGNEE);
+
+            // Populating Delivery Tag
+            processPartyTagsV3(hblDataDto.getDeliveryAgentName(),
+                    hblDataDto.getDeliveryAgentAddressLine1(), hblDataDto.getDeliveryAgentAddressLine2(),
+                    hblDataDto.getDeliveryAgentCity(), hblDataDto.getDeliveryAgentState(), hblDataDto.getDeliveryAgentZipCode(),
+                    hblDataDto.getDeliveryAgentCountry(), dictionary, BL_DELIVERY);
+
+            // Populating Forwarding Tag
+            processPartyTagsV3(hblDataDto.getForwarderName(), hblDataDto.getForwarderAddressLine1(), hblDataDto.getForwarderAddressLine2(),
+                    hblDataDto.getForwarderCity(), hblDataDto.getForwarderState(), hblDataDto.getForwarderZipCode(),
+                    hblDataDto.getForwarderCountry(), dictionary, BL_FORWARDER);
+        }
+    }
+
+    private void processPartyTagsV3(String orgName, String address1, String address2,
+                                    String city, String state, String zipCode, String country, Map<String, Object> dictionary, String partyTagKey) {
+
+        List<String> partyV3 = ReportHelper.getOrgAddressWithNameAndCity(orgName, address1, address2, city, state, zipCode, country);
+        if (!partyV3.isEmpty()) {
+            dictionary.put(partyTagKey, partyV3);
         }
     }
 

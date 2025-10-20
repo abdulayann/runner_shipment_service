@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
@@ -30,6 +32,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3Service;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
@@ -40,6 +43,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -59,9 +63,13 @@ import org.slf4j.MDC;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
@@ -168,6 +176,9 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
     @Mock
     private ContainerV3Service containerV3Service;
+
+    @Mock
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -1299,7 +1310,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
             Set<String> toEmailIds = invocation.getArgument(0);
             toEmailIds.add("toEmail@example.com");
             return null;
-        }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt(), anyBoolean());
+        }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt());
 
         Map<Integer, Object> mockV1Map = new HashMap<>();
         mockV1Map.put(123, new Object());
@@ -2477,4 +2488,178 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    @Test
+    void testExtractTenantIds_withAllInputs() throws Exception {
+        EntityTransferService service = new EntityTransferService();
+
+        Long receivingBranch = 100L;
+        TriangulationPartner partner1 = new TriangulationPartner();
+        partner1.setTriangulationPartner(200L);
+
+        TriangulationPartner partner2 = new TriangulationPartner();
+        partner2.setTriangulationPartner(300L);
+
+        List<TriangulationPartner> partners = List.of(partner1, partner2);
+
+        Integer tenantId = 400;
+
+        Method method = EntityTransferService.class.getDeclaredMethod(
+                "extractTenantIds",
+                Long.class,
+                List.class,
+                Integer.class
+        );
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Set<Integer> result = (Set<Integer>) method.invoke(service, receivingBranch, partners, tenantId);
+
+        assertTrue(result.contains(100));
+        assertTrue(result.contains(200));
+        assertTrue(result.contains(300));
+        assertTrue(result.contains(400));
+    }
+
+    @Test
+    void testExtractTenantIds_withNulls() throws Exception {
+        EntityTransferService service = new EntityTransferService();
+
+        Method method = EntityTransferService.class.getDeclaredMethod(
+                "extractTenantIds",
+                Long.class,
+                List.class,
+                Integer.class
+        );
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Set<Integer> result = (Set<Integer>) method.invoke(service, null, null, null);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testExtractTenantIds_withDuplicates() throws Exception {
+        EntityTransferService service = new EntityTransferService();
+
+        Long receivingBranch = 100L;
+        TriangulationPartner partner = new TriangulationPartner();
+        partner.setTriangulationPartner(100L); // duplicate with receivingBranch
+        List<TriangulationPartner> partners = List.of(partner);
+        Integer tenantId = 100; // duplicate again
+
+        Method method = EntityTransferService.class.getDeclaredMethod(
+                "extractTenantIds",
+                Long.class,
+                List.class,
+                Integer.class
+        );
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Set<Integer> result = (Set<Integer>) method.invoke(service, receivingBranch, partners, tenantId);
+
+        // Even though we passed 3 "100"s, set should only contain one
+        assertEquals(1, result.size());
+        assertTrue(result.contains(100));
+    }
+
+    @Test
+    void testCreateConsolidationImportEmailBody_WithDefaultsAndNullShipments() {
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setConsolidationNumber("CNS123");
+        consolidationDetails.setTransportMode("SEA");
+        consolidationDetails.setBol("BOL001");
+        consolidationDetails.setShipmentsList(null);
+
+        EmailTemplatesRequest template = new EmailTemplatesRequest();
+        template.setBody(null);
+        template.setSubject(null);
+
+        TenantModel tenant = new TenantModel();
+        tenant.tenantName = "Chennai";
+        Map<Integer, TenantModel> tenantMap = Map.of(1, tenant);
+
+        UsersDto user = mock(UsersDto.class); // no stubbing here
+
+        try (var userCtx = mockStatic(UserContext.class);
+             var tenantCtx = mockStatic(TenantContext.class)) {
+
+            userCtx.when(UserContext::getUser).thenReturn(user); // used
+            tenantCtx.when(TenantContext::getCurrentTenant).thenReturn(1); // used
+
+            EmailTemplatesRequest result = entityTransferService.createConsolidationImportEmailBody(
+                    consolidationDetails, template, tenantMap, true, false, false, 100);
+
+            assertNotNull(result);
+            assertTrue(result.getSubject().contains("CNS123"));
+            assertTrue(result.getBody().contains("Automated Transfer"));
+            assertTrue(result.getBody().contains("0"));
+            assertTrue(result.getBody().contains(
+                    LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
+        }
+    }
+    @Test
+    void updateInterBranchShipmentStatus_WithNullShipNteList_ShouldNotProcess() {
+        // Arrange
+        UUID shipGuid1 = UUID.randomUUID();
+        UUID shipGuid2 = UUID.randomUUID();
+        Map<UUID, Long> oldVsNewShipIds = Map.of(
+                shipGuid1, 1001L,
+                shipGuid2, 1002L
+        );
+        when(networkTransferDao.findByEntityGuids(anyList())).thenReturn(null);
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateInterBranchShipmentStatus",oldVsNewShipIds);
+        verify(networkTransferDao).findByEntityGuids(anyList());
+        verify(networkTransferDao, never()).saveAll(anyList());
+    }
+
+    @Test
+    void updateInterBranchShipmentStatus_WithEmptyShipNteList_ShouldNotProcess() {
+        // Arrange
+        UUID shipGuid1 = UUID.randomUUID();
+        UUID shipGuid2 = UUID.randomUUID();
+        Map<UUID, Long> oldVsNewShipIds = Map.of(
+                shipGuid1, 1001L,
+                shipGuid2, 1002L
+        );
+
+        when(networkTransferDao.findByEntityGuids(anyList())).thenReturn(Collections.emptyList());
+
+        // Act
+        ReflectionTestUtils.invokeMethod(entityTransferService,"updateInterBranchShipmentStatus",oldVsNewShipIds);
+
+        // Assert
+        verify(networkTransferDao).findByEntityGuids(anyList());
+        verify(networkTransferDao, never()).saveAll(anyList());
+    }
+    @Test
+    void getTenantName_WithValidTenantIds_ShouldReturnTenantNames() {
+        // Arrange
+        List<Integer> tenantIds = List.of(1, 2, 3);
+
+        V1DataResponse mockResponse = new V1DataResponse();
+        mockResponse.entities = "mockEntities"; // Assuming entities is a String or JSON representation
+        List<V1TenantResponse> mockTenantResponses = new ArrayList<>();
+        V1TenantResponse tenant1 = new V1TenantResponse();
+        tenant1.setTenantName("Tenant1");
+        V1TenantResponse tenant2 = new V1TenantResponse();
+        tenant2.setTenantName("Tenant2");
+        V1TenantResponse tenant3 = new V1TenantResponse();
+        tenant3.setTenantName("Tenant3");
+
+        mockTenantResponses.addAll(List.of(tenant1, tenant2, tenant3));
+
+        when(v1Service.tenantNameByTenantId(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList("mockEntities", V1TenantResponse.class))
+                .thenReturn(mockTenantResponses);
+        List<String> result = ReflectionTestUtils.invokeMethod(entityTransferService,"getTenantName",tenantIds);
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertEquals(List.of("Tenant1", "Tenant2", "Tenant3"), result);
+        verify(v1Service).tenantNameByTenantId(any(CommonV1ListRequest.class));
+        verify(jsonHelper).convertValueToList("mockEntities", V1TenantResponse.class);
+    }
 }

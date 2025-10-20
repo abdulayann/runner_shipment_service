@@ -1,0 +1,9 @@
+ALTER TABLE IF EXISTS packing
+    ADD COLUMN IF NOT EXISTS pack_category VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS line_no NUMERIC,
+    ADD COLUMN IF NOT EXISTS sub_line_no NUMERIC,
+    ADD COLUMN IF NOT EXISTS product_code VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS shipment_order_id BIGINT;
+
+ALTER TABLE IF EXISTS shipment_order
+    ADD COLUMN IF NOT EXISTS order_date timestamp;

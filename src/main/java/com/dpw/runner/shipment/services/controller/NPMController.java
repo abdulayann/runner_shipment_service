@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
@@ -71,6 +72,24 @@ public class NPMController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(NPMConstants.LIST_CONTRACTS_WITH_FILTERS)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> fetchContractsWithFilters(@RequestBody @Valid ListContractsWithFilterRequest request) {
+        String responseMsg;
+        try {
+            return  npmService.fetchContractsWithFilters(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NPMConstants.CONTRACT_LIST_FAILED;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @PostMapping(NPMConstants.RETRIEVE_CONTRACT)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
@@ -99,6 +118,24 @@ public class NPMController {
         String responseMsg;
         try {
             return npmService.fetchOffers(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(NPMConstants.GET_OFFERS_WITH_FILTERS)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> getNPMOffersWithFilters(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
+        String responseMsg;
+        try {
+            return npmService.fetchOffersWithFilter(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -151,5 +188,16 @@ public class NPMController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(NPMConstants.LIST_CONTRACTS_MULTI_PARTY)
+    public ResponseEntity<IRunnerResponse> fetchContractsCountForParties(@RequestBody @Valid GetContractsCountForPartiesRequest request) {
+        try {
+            return npmService.fetchContractsCountForParties(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : NPMConstants.CONTRACT_LIST_FAILED;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 }

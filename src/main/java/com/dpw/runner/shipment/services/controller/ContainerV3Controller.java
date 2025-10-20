@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerV3PatchBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -84,6 +85,20 @@ public class ContainerV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PatchMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_PATCH_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updatePatchBulk(@RequestBody @Valid Object request) throws RunnerException {
+        ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, CONSOLIDATION));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PatchMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_PATCH_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updatePatchBulkShipment(@RequestBody @Valid Object request) throws RunnerException {
+        ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, SHIPMENT));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, SHIPMENT));
@@ -91,14 +106,14 @@ public class ContainerV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, CONSOLIDATION));
+    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, CONSOLIDATION, isForceDelete));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
+    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT, isForceDelete));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
@@ -176,7 +191,7 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams()));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})

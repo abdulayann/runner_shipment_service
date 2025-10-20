@@ -155,6 +155,8 @@ public class ReportConstants {
     public static final String ETD = "Etd";
     public static final String ETD_MDY = "EtdMDY";
     public static final String ETD_CAPS = "ETD";
+    public static final String ATD_CAPS = "ATD";
+    public static final String ATA_CAPS = "ATA";
     public static final String ATA = "Ata";
     public static final String ATD = "Atd";
     public static final String ATD_MDY = "AtdMDY";
@@ -261,6 +263,7 @@ public class ReportConstants {
     public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
     public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
     public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDate";
+    public static final String SHIPPED_ONBOARD_NEW = "BL_ShippedOnBoard";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
@@ -396,6 +399,7 @@ public class ReportConstants {
     public static final String BL_NETWEIGHT_UNIT = "BL_NetWeightUnit";
     public static final String BL_DELIVERYAGENT = "BL_DeliveryAgent";
     public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAgentAddress";
+    public static final String BL_TOTAL_PACKS_COUNT = "BL_TotalPacksCount";
     public static final String TOTAL_PCS = "ToatalPcs";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";
@@ -559,6 +563,10 @@ public class ReportConstants {
     public static final String BL_VESSEL_NAME = "BL_VesselName";
     public static final String BL_VOYAGE = "BL_Voyage";
     public static final String BL_NOTIFY_PARTY = "BL_NotifyParty";
+    public static final String BL_NEW_SHIPPER = "BL_NewShipper";
+    public static final String BL_NEW_CONSIGNEE = "BL_NewConsignee";
+    public static final String BL_FORWARDER = "BL_Forwarder";
+    public static final String BL_DELIVERY = "BL_Delivery";
     public static final String TOTAL_PACKS_WEIGHT = "TotalPacksWeight";
     public static final String TOTAL_PACKS_VOLUME = "TotalPacksVolume";
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";
@@ -572,6 +580,8 @@ public class ReportConstants {
     public static final String CHARGES_IN_CAPS = "chargesInCaps";
     public static final String COPY_CHARGES = "copyCharges";
     public static final String BILL_REMARK = "BillRemark";
+    public static final String VALUE = "Value";
+    public static final String CHARGE_TYPE = "ChargeType";
 
     public static final String CARGO_TOTAL_INFORMATION = "BillRemark";
     public static final String PP_REVENUE_TOTAL = "PrepaidRevenueTotal";
@@ -632,6 +642,10 @@ public class ReportConstants {
     public static final String BL_DELIVERY_AGENT_ADDRESS = "BL_DeliveryAgentAddress";
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
+    public static final String BL_REMARKS = "BLRemarks";
+    public static final String BL_IS_NOT_RATED = "BL_IsNotRated";
+    public static final String BL_IS_NOT_RATED_VALUE = "AS AGREED";
+    public static final String BL_CHARGES = "BLCharges";
 
     //HAWB
     public static final String AGENT = "Agent";
@@ -952,6 +966,7 @@ public class ReportConstants {
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
+    public static final String EMAIL_TEMPLATE_DATA = "/getEmailTemplateData";
     public static final String VALIDATE_HOUSE_BILL = "/validate-house-bill";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
@@ -1112,6 +1127,7 @@ public class ReportConstants {
     public static final String PORT_OF_LOADING_IN_CAPS = "PortOfLoadingInCaps";
     public static final String BL_DESCRIPTION = "BLDescription";
     public static final String CARGO_TERMS_DESCRIPTION = "CargoTermsDescription";
+    public static final String CARGO_TERMS = "CargoTerms";
     public static final String LOAD_DESCRIPTION_REMARKS = "LoadRemarksDescription";
     public static final String CONSOLE_DELIVERY_MODE_IN_CAPS = "ConsolDeliveryMode";
     public static final String CONSOLE_MARKS_N_NUMBERS_IN_CAPS = "ConsolMarksandNumber";
@@ -1458,6 +1474,21 @@ public class ReportConstants {
     public static final String DA_PHONE = "DAPhone";
     public static final String DA_EMAIL = "DAemail";
     public static final String PHONE = "Phone";
+    //default template constants
+    public static final String TEMPLATE_PAYMENT_TERMS = "Payment Terms";
+    public static final String OA_EMAIL_CAPS = "OAEmail";
+    public static final String DA_EMAIL_CAPS = "DAEmail";
+    public static final String DST = "Dst";
+    public static final String CARRIER_REF = "CarrierRef";
+    public static final String HBL_NO = "HBLNo";
+    public static final String MBL_NO = "MBLNo";
+    public static final String CONTAINER_NOS = "ContainerNos";
+    public static final String PACKAGE_COUNT = "PackageCount";
+    public static final String CUSTOMER_REF = "CustomerRef";
+    public static final String SALES_BRANCH = "SalesBranch";
+    public static final String SUMMARY_DOCUMENTS = "Summary_Documents";
+    public static final String LIST_ALL_DOCUMENTS = "List_All_Documents";
+
 
     public static final String ZIP_POSTCODE = "Zip_PostCode";
 
@@ -1560,6 +1591,7 @@ public class ReportConstants {
     public static final String PACKAGES = "Packages";
 
     public static final String TRANSPORT_INSTRUCTIONS= "Transport Instructions";
+    public static final String FIRMS_CODE_SUFFIX = ".FIRMSCode";
 
     public static final String C_PACK = "C_Pack";
     public static final String C_PACK_TYPE = "C_PackType";
@@ -1570,4 +1602,8 @@ public class ReportConstants {
 
     public static final String PACKAGE_STRING = "PACKAGE(S)";
     public static final String CONTAINERS_STRING = "CONTAINERS";
+    public static final String NO_SHIPMENT_FOUND = "No Shipment found with Id: ";
+    public static final String NO_TEMPLATE_FOUND = "No Template Found!";
+    public static final String ORIGIN_ERROR = "Error while getting origin Agent Data";
+    public static final String DSTN_ERROR = "Error while getting destination Agent Data";
 }

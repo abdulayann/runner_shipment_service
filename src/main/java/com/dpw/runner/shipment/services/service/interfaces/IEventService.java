@@ -21,6 +21,8 @@ public interface IEventService extends ICommonService {
     ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException;
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
     boolean processUpstreamTrackingMessage(Container container, String messageId);
+
+    List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source);
     ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel);
     void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto);
     void saveEvent(EventsRequest eventsRequest);

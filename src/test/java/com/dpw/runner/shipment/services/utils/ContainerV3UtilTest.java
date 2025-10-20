@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +126,9 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
+    private ShipmentsV3Util shipmentsV3Util;
 
     @Mock
     private IApplicationConfigService applicationConfigService;
@@ -1198,5 +1202,114 @@ class ContainerV3UtilTest extends CommonMocks {
         String result = containerV3Util.getContainerNumberOrType(container);
 
         assertEquals("20GP", result);
+    }
+
+    @Test
+    void testUpdatedContainerResponseForLCLandLTL_WithContainerAssigned() throws RunnerException {
+        // Arrange
+        ContainerBaseResponse container = new ContainerBaseResponse();
+        container.setId(1L);
+
+        List<ContainerBaseResponse> containerList = Collections.singletonList(container);
+
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getContainerAssignedToShipmentCargo()).thenReturn(1L);
+        when(shipmentDetails.getWeight()).thenReturn(BigDecimal.valueOf(100));
+        when(shipmentDetails.getWeightUnit()).thenReturn("KG");
+        when(shipmentDetails.getVolume()).thenReturn(BigDecimal.valueOf(200));
+        when(shipmentDetails.getVolumeUnit()).thenReturn("M3");
+        when(shipmentDetails.getNoOfPacks()).thenReturn(5);
+        when(shipmentDetails.getPacksUnit()).thenReturn("BAG");
+
+        // Act
+        containerV3Util.updatedContainerResponseForLCLandLTL(containerList, shipmentDetails);
+
+        // Assert
+        assertEquals(BigDecimal.valueOf(100), container.getGrossWeight());
+        assertEquals("KG", container.getGrossWeightUnit());
+        assertEquals(BigDecimal.valueOf(100), container.getNetWeight());
+        assertEquals("KG", container.getNetWeightUnit());
+        assertEquals(BigDecimal.valueOf(200), container.getGrossVolume());
+        assertEquals("M3", container.getGrossVolumeUnit());
+        assertEquals("5", container.getPacks());
+        assertEquals("BAG", container.getPacksType());
+    }
+
+    @Test
+    void testUpdatedContainerResponseForLCLandLTL_WithoutContainerAssigned_CallsUpdateContainersFromAssignedPackings() throws RunnerException {
+        // Arrange
+        ContainerBaseResponse container = new ContainerBaseResponse();
+        container.setId(1L);
+
+        List<ContainerBaseResponse> containerList = Collections.singletonList(container);
+
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        when(shipmentDetails.getContainerAssignedToShipmentCargo()).thenReturn(null);
+        when(shipmentDetails.getId()).thenReturn(101L);
+
+        when(packingDao.findByShipmentId(101L)).thenReturn(Collections.emptyList());
+
+        // Act
+        containerV3Util.updatedContainerResponseForLCLandLTL(containerList, shipmentDetails);
+
+        // Assert
+        verify(packingDao).findByShipmentId(101L);
+        // Since no packings, container details remain unchanged
+        assertNull(container.getGrossWeight());
+        assertNull(container.getGrossVolume());
+        assertNull(container.getPacks());
+    }
+
+    @Test
+    void testUpdatedContainerResponseForLCLandLTL_TriggersInternalUpdates() throws RunnerException {
+        // Arrange
+        ContainerBaseResponse container = new ContainerBaseResponse();
+        container.setId(1L);
+        List<ContainerBaseResponse> containerList = List.of(container);
+
+        Packing packing1 = new Packing();
+        packing1.setWeight(BigDecimal.valueOf(10));
+        packing1.setWeightUnit("KG");
+        packing1.setVolume(BigDecimal.valueOf(5));
+        packing1.setVolumeUnit("M3");
+        packing1.setPacks("2");
+        packing1.setContainerId(1L);
+        packing1.setPacksType("PKG");
+
+        Packing packing2 = new Packing();
+        packing2.setWeight(BigDecimal.valueOf(15));
+        packing2.setWeightUnit("KG");
+        packing2.setVolume(BigDecimal.valueOf(10));
+        packing2.setVolumeUnit("M3");
+        packing2.setPacks("3");
+        packing2.setContainerId(1L);
+        packing2.setPacksType("BAG");
+
+        List<Packing> packings = Arrays.asList(packing1, packing2);
+        testShipment.setContainerAssignedToShipmentCargo(null);
+        testShipment.setId(100L);
+        when(packingDao.findByShipmentId(100L)).thenReturn(packings);
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setWeightChargeableUnit("KG");
+        settings.setVolumeChargeableUnit("M3");
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+        when(shipmentsV3Util.resolveUnit(anyList(), eq("KG"))).thenReturn("KG");
+        when(shipmentsV3Util.resolveUnit(anyList(), eq("M3"))).thenReturn("M3");
+        when(shipmentsV3Util.resolveUnit(anyList(), eq("PKG"))).thenReturn("PKG");
+
+        // Act
+        containerV3Util.updatedContainerResponseForLCLandLTL(containerList, testShipment);
+
+        // Assert
+        assertEquals(BigDecimal.valueOf(25.0), container.getGrossWeight());
+        assertEquals("KG", container.getGrossWeightUnit());
+        assertEquals(BigDecimal.valueOf(25.0), container.getNetWeight());
+        assertEquals("KG", container.getNetWeightUnit());
+        assertEquals(BigDecimal.valueOf(15.0), container.getGrossVolume());
+        assertEquals("M3", container.getGrossVolumeUnit());
+        assertEquals("5", container.getPacks());
+        assertEquals("PKG", container.getPacksType());
     }
 }

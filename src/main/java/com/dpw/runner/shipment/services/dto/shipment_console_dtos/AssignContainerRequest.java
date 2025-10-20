@@ -10,5 +10,6 @@ import java.util.Map;
 public class AssignContainerRequest implements IRunnerRequest {
     private Map<Long, List<Long>> shipmentPackIds; // Map<shipmentId, List<packingId>>
     private Long containerId;
+    private Boolean allowPackageReassignment;
     private Boolean allowCargoDetachIfRequired = false;
 }

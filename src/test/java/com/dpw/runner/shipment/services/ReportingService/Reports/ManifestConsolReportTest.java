@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -102,6 +103,9 @@ class ManifestConsolReportTest extends CommonMocks {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private V1MasterDataImpl v1MasterData;

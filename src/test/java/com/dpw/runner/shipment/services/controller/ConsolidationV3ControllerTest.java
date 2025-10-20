@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +51,9 @@ class ConsolidationV3ControllerTest {
 
   @InjectMocks
   private ConsolidationV3Controller controller;
+
+  @InjectMocks
+  private ConsolidationControllerExternal controller2;
 
   @Mock
   private IConsolidationV3Service consolidationV3Service;
@@ -253,7 +259,7 @@ class ConsolidationV3ControllerTest {
     when(consolidationV3Service.retrieveByIdExternal(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-    ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternal(id, guid, xSource);
+    ResponseEntity<IRunnerResponse> response = controller2.retrieveByIdExternal(id, guid, xSource);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -271,7 +277,7 @@ class ConsolidationV3ControllerTest {
         when(consolidationV3Service.retrieveByIdExternalPartial(any())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-        ResponseEntity<IRunnerResponse> response = controller.retrieveByIdExternalPartial(request, xSource);
+        ResponseEntity<IRunnerResponse> response = controller2.retrieveByIdExternalPartial(request, xSource);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -289,7 +295,7 @@ class ConsolidationV3ControllerTest {
     when(consolidationV3Service.listExternal(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
-    ResponseEntity<IRunnerResponse> response = controller.listExternal(listRequest);
+    ResponseEntity<IRunnerResponse> response = controller2.listExternal(listRequest);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -308,6 +314,48 @@ class ConsolidationV3ControllerTest {
       assertNotNull(response);
       assertEquals(HttpStatus.OK, response.getStatusCode());
       verify(consolidationV3Service).getDefaultConsolidation();
+  }
+
+  @Test
+  void testGetNewConsoleDataFromShipmentId_shouldReturnSuccessResponse() throws AuthenticationException, RunnerException {
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+    when(consolidationV3Service.getNewConsoleDataFromShipment(Mockito.anyLong(), Mockito.any()))
+            .thenReturn(mockResponse);
+    long shipmentId = 123L;
+    ResponseEntity<IRunnerResponse> response = controller.getNewConsoleDataFromShipmentId(shipmentId);
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).getNewConsoleDataFromShipment(eq(shipmentId), Mockito.any());
+  }
+
+  @Test
+  void testCreateConsoleAndAttachShipment_success() throws Exception {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(123L);
+    when(jsonHelper.convertToJson(any())).thenReturn("{json}");
+    when(consolidationV3Service.createConsoleDetailsAndAttachShipment(any()))
+            .thenReturn("Console attached successfully");
+    ResponseEntity<IRunnerResponse> response = controller.createConsoleAndAttachShipment(request);
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    verify(consolidationV3Service).createConsoleDetailsAndAttachShipment(any());
+    verify(jsonHelper).convertToJson(any());
+  }
+
+  @Test
+  void testCreateConsoleAndAttachShipment_shouldThrowRunnerException() throws Exception {
+    ConsolidationDetailsV3Request request = new ConsolidationDetailsV3Request();
+    request.setAttachShipmentId(123L);
+    when(jsonHelper.convertToJson(any())).thenReturn("{json}");
+    when(consolidationV3Service.createConsoleDetailsAndAttachShipment(any()))
+            .thenThrow(new RunnerException("Error during creation"));
+    RunnerException ex = assertThrows(
+            RunnerException.class,
+            () -> controller.createConsoleAndAttachShipment(request)
+    );
+    assertEquals("Error during creation", ex.getMessage());
+    verify(consolidationV3Service).createConsoleDetailsAndAttachShipment(any());
   }
 
 }
