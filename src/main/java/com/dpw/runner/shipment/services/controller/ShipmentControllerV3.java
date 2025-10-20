@@ -302,13 +302,13 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(defaultShipment);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 201, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PostMapping(ApiConstants.API_CLONE_PACKAGES)
     public ResponseEntity<IRunnerResponse> cloneShipmentPackages(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipmentPackages(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 201, message = ShipmentConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
     public ResponseEntity<IRunnerResponse> cloneShipmentContainers(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(shipmentService.cloneShipmentContainers(request));

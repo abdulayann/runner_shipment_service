@@ -313,13 +313,13 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getDefaultBooking());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 201, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PostMapping(ApiConstants.API_CLONE_PACKAGES)
     public ResponseEntity<IRunnerResponse> cloneBookingPackages(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingPackages(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 201, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
     public ResponseEntity<IRunnerResponse> cloneBookingContainers(@RequestBody @Valid BulkCloneLineItemRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.cloneBookingContainers(request));

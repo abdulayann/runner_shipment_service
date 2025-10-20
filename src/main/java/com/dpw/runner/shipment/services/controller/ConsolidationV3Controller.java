@@ -257,7 +257,7 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(defaultConsolidation);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 201, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PostMapping(ApiConstants.API_CLONE_CONTAINERS)
     public ResponseEntity<IRunnerResponse> cloneConsolidationContainers(@RequestBody @Valid @NonNull BulkCloneLineItemRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.cloneContainers(request));
