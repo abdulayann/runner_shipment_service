@@ -818,7 +818,7 @@ public class HawbReport extends IReport{
                 value.computeIfPresent(ReportConstants.CHARGEABLE_WT, (key, oldValue) ->
                         roundUpToNextHalf(oldValue.toString())
                 );
-                value.put(OTHER_INFORMATION1, cargoInfoRows.getOtherInfo());
+                value.put(OTHER_INFORMATION, cargoInfoRows.getOtherInfo());
                 addRateChargeTag(v1TenantSettingsResponse, cargoInfoRows, value);
                 addTotalAmountTag(v1TenantSettingsResponse, cargoInfoRows, value);
                 value.computeIfPresent(PIECES_NO, (key, oldValue) ->
