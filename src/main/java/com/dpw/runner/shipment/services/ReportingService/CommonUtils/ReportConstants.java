@@ -789,6 +789,7 @@ public class ReportConstants {
     public static final String AMOUNT_OF_INSURANCE = "AmountOfInsurance";
     public static final String AOI = "AOI";
     public static final String OTHER_INFORMATION = "OtherInformation";
+    public static final String OTHER_INFORMATION1 = "OtherInformationPackss";
     public static final String OPTIONAL_SHIPPING_INFORMATION_OTHER = "AWBOSI2";
     public static final String OPTIONAL_SHIPPING_INFORMATION = "AWBOSI";
 
