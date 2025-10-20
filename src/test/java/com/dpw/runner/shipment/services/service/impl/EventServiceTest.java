@@ -210,8 +210,8 @@ class EventServiceTest extends CommonMocks {
         EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
 
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(EventsRequest.class))).thenReturn(request);
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
-        when(eventDao.save(any())).thenReturn(testData);
+        when(jsonHelper.convertValueToList(anyList(), eq(Events.class))).thenReturn(List.of(testData, testData));
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(testData));
         when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
@@ -255,8 +255,8 @@ class EventServiceTest extends CommonMocks {
         String errorMessage = "Custom error message";
 
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(EventsRequest.class))).thenReturn(request);
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
-        when(eventDao.save(any())).thenThrow(new RuntimeException(errorMessage));
+        when(jsonHelper.convertValueToList(anyList(), eq(Events.class))).thenReturn(List.of(testData, testData));
+        when(eventDao.saveAll(anyList())).thenThrow(new RuntimeException(errorMessage));
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulkEvents(commonRequestModel);
 

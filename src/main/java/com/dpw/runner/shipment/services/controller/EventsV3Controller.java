@@ -81,7 +81,7 @@ public class EventsV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),
+            @ApiResponse(code = 201, message = EventConstants.EVENT_CREATE_SUCCESS),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE_BULK)

@@ -217,32 +217,38 @@ public class EventService implements IEventService {
         if (request.getReferenceNumbersList() == null || request.getReferenceNumbersList().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No reference numbers provided for bulk event creation.");
         }
-        List<Events> createdEvents = new ArrayList<>();
-        for (String refNo : request.getReferenceNumbersList()) {
-            try {
-                EventsRequest singleRequest = createSingleReferenceRequest(request, refNo);
-                Events event = convertRequestToEntity(singleRequest);
-                createdEvents.add(event);
-                saveEventUtil(singleRequest);
 
-                // audit logs
+        try {
+            EventsRequest finalRequest = request;
+            List<EventsRequest> individualRequests = request.getReferenceNumbersList().stream()
+                    .map(refNo -> createSingleReferenceRequest(finalRequest, refNo))
+                    .collect(Collectors.toList());
+            List<Events> eventsList = convertRequestListToEntityList(individualRequests);
+
+            // Save all events
+            saveAllEvent(individualRequests);
+
+            // audit logs
+            for (Events event : eventsList) {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                .tenantId(UserContext.getUser().getTenantId())
+                                .userName(UserContext.getUser().getUsername())
                                 .newData(event)
                                 .prevData(null)
                                 .parent(Events.class.getSimpleName())
                                 .parentId(event.getId())
-                                .operation(DBOperationType.CREATE.name()).build()
+                                .operation(DBOperationType.CREATE.name())
+                                .build()
                 );
-            } catch (Exception e) {
-                responseMsg = e.getMessage() != null ? e.getMessage()
-                        : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-                log.error(responseMsg, e);
-                return ResponseHelper.buildFailedResponse(responseMsg);
             }
+            return ResponseHelper.buildSuccessResponse(convertEntityListToDtoList(eventsList));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityListToDtoList(createdEvents));
     }
 
     @Transactional
