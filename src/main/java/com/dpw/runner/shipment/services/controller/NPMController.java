@@ -126,6 +126,24 @@ public class NPMController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(NPMConstants.GET_OFFERS_WITH_FILTERS)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> getNPMOffersWithFilters(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
+        String responseMsg;
+        try {
+            return npmService.fetchOffersWithFilter(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @PostMapping(NPMConstants.GET_OFFERS_V8)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),

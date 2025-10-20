@@ -60,6 +60,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -1779,6 +1781,240 @@ class NPMServiceAdapterTest {
         verify(commonRequestModel).getData();
         verify(jsonHelper).convertToJson(isA(NpmErrorResponse.class));
         verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSortParams")
+    void sortNpmOffers_variousSortFields_sortedCorrectly(String sortField, String order, String requestSource) throws RunnerException {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName(sortField).order(order).build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), eq(FetchOffersResponse.class)))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse result = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        // Assert
+
+        assertEquals(2, result.getOffers().size());
+        boolean ascending = !"desc".equalsIgnoreCase(order);
+        FetchOffersResponse.Offer first = result.getOffers().get(0);
+        FetchOffersResponse.Offer second = result.getOffers().get(1);
+
+        switch (sortField) {
+            case "fastest" -> {
+                long firstHours = Long.parseLong(first.getMaxTransitHours());
+                long secondHours = Long.parseLong(second.getMaxTransitHours());
+                assertTrue(ascending ? firstHours <= secondHours : firstHours >= secondHours,
+                        () -> "FASTEST sort failed: " + firstHours + " vs " + secondHours);
+            }
+
+            case "departure" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getProposedPickupDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getProposedPickupDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "DEPARTURE sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "arrival" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getEstimatedArrivalDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getEstimatedArrivalDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "ARRIVAL sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "freightRate" -> {
+                BigDecimal firstRate = "AUTO_SELL".equals(requestSource)
+                        ? first.getGroupTotals().getFreightCharges().getTotal()
+                        : first.getGroupTotals().getFreightCharges().getTotalCost();
+                BigDecimal secondRate = "AUTO_SELL".equals(requestSource)
+                        ? second.getGroupTotals().getFreightCharges().getTotal()
+                        : second.getGroupTotals().getFreightCharges().getTotalCost();
+                assertTrue(ascending ? firstRate.compareTo(secondRate) <= 0 : firstRate.compareTo(secondRate) >= 0,
+                        () -> "FREIGHT_RATE sort failed: " + firstRate + " vs " + secondRate);
+            }
+
+            case "totalRate" -> {
+                BigDecimal firstTotal = "AUTO_SELL".equals(requestSource)
+                        ? first.getTotalRoutePrice()
+                        : first.getTotalRouteCost();
+                BigDecimal secondTotal = "AUTO_SELL".equals(requestSource)
+                        ? second.getTotalRoutePrice()
+                        : second.getTotalRouteCost();
+                assertTrue(ascending ? firstTotal.compareTo(secondTotal) <= 0 : firstTotal.compareTo(secondTotal) >= 0,
+                        () -> "TOTAL_RATE sort failed: " + firstTotal + " vs " + secondTotal);
+            }
+
+            default -> fail("Unsupported sort field: " + sortField);
+        }
+    }
+
+    private static Stream<Arguments> provideSortParams() {
+        return Stream.of(
+                Arguments.of("fastest", "asc", "AUTO_SELL"),
+                Arguments.of("fastest", "desc", "AUTO_SELL"),
+                Arguments.of("departure", "asc", "AUTO_SELL"),
+                Arguments.of("arrival", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_COST"),
+                Arguments.of("totalRate", "desc", "AUTO_SELL"),
+                Arguments.of("totalRate", "asc", "AUTO_COST")
+        );
+    }
+
+    @Test
+    void fetchOffersWithFilter_successfulResponse_sortsFiltersPaginates() throws Exception {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        // Arrange
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName("fastest").order("asc").build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+
+        // Mock json serialization
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        // Prepare sample offers
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+
+        // Assert
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse fetchOffersResponse1 = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        assertEquals(2, fetchOffersResponse1.getOffers().size());
+
+        assertTrue(Double.parseDouble(fetchOffersResponse1.getOffers().get(0).getMaxTransitHours()) <= Double.parseDouble(fetchOffersResponse1.getOffers().get(1).getMaxTransitHours()));
+        verify(restTemplate3, times(1)).exchange(any(RequestEntity.class), eq(FetchOffersResponse.class));
+    }
+
+    @Test
+    void fetchOffersWithFilter_httpException_throwsNPMException() {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
+        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
+                .thenReturn(buildResult);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(mock);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new NPMFetchOffersRequestFromUI()).build();
+        // Act and Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffersWithFilter(commonRequestModel));
     }
 
     private static Stream<Arguments> provideDgContractTestData() {
