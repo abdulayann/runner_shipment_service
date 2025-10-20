@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TriangulationPartnerModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -234,6 +235,12 @@ public class ConsolidationModel implements IDocumentModel {
     private String emergencyContactNumberCode;
     @JsonProperty("screeningStatus")
     private List<String> screeningStatus;
+    @JsonProperty("SecurityStatusReceivedFrom")
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    @JsonProperty("ExpiryDate")
+    private LocalDateTime expiryDate;
+    @JsonProperty("RegulatedEntityCategory")
+    private String regulatedEntityCategory;
     @JsonProperty("exemptionCodes")
     private String exemptionCodes;
     @JsonProperty("aomFreeText")

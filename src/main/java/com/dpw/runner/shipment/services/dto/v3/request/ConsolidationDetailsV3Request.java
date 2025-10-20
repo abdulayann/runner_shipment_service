@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
@@ -164,6 +165,9 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String securityStatus;
     @Size(max=50, message = "max size is 50 for screening_status")
     private List<String> screeningStatus;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String regulatedEntityCategory;
+    private LocalDateTime expiryDate;
     private String exemptionCodes;
     private String aomFreeText;
     private String sci;

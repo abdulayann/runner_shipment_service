@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AwbGoodsDescriptionInfoModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
@@ -940,8 +941,13 @@ public class HawbReport extends IReport{
                 masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
-            if(hawbModel.getShipmentDetails() != null) {
-                dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getShipmentDetails().getAdditionalDetails(), hawbModel.awb));
+            if(hawbModel.getShipmentDetails() != null && hawbModel.getShipmentDetails().getAdditionalDetails() != null) {
+                //HAWB && DRT MAWB
+                AdditionalDetailModel additionalDetails = hawbModel.getShipmentDetails().getAdditionalDetails();
+                dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(additionalDetails.getSecurityStatusReceivedFrom(), additionalDetails.getRegulatedEntityCategory(), additionalDetails.getScreeningStatus(), hawbModel.awb));
+            }else if(hawbModel.getConsolidationDetails() != null){
+                //MAWB
+                dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getConsolidationDetails().getSecurityStatusReceivedFrom(), hawbModel.getConsolidationDetails().getRegulatedEntityCategory(), hawbModel.getConsolidationDetails().getScreeningStatus(), hawbModel.awb));
             }
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
             dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));

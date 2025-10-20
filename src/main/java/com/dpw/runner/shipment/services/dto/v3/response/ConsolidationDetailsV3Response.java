@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -117,4 +118,7 @@ public class ConsolidationDetailsV3Response extends ConsolidationDetailsBaseResp
     private Map<String, Object> masterDataMap;
     private UUID parentGuid;
     private Long parentTenantId;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String regulatedEntityCategory;
+    private LocalDateTime expiryDate;
 }

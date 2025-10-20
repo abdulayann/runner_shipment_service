@@ -245,13 +245,7 @@ public class AwbUtility {
                 .replace("<Date+Time>", safeString(dateTime));
     }
 
-    public static boolean isCargoSecuredByDPW(AdditionalDetailModel additionalDetails){
-        if(additionalDetails == null) return false;
-        AirAuthorisingEntity receivedFrom = additionalDetails.getSecurityStatusReceivedFrom();
-        String regulatedEntity = additionalDetails.getRegulatedEntityCategory();
-
-        List<String> screeningStatus = additionalDetails.getScreeningStatus();
-
+    public static boolean isCargoSecuredByDPW(AirAuthorisingEntity receivedFrom, String regulatedEntity,List<String> screeningStatus){
         boolean hasKCOrAO = screeningStatus != null &&
                 screeningStatus.stream()
                         .filter(Objects::nonNull)

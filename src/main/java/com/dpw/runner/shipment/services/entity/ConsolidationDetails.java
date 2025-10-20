@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -473,6 +474,16 @@ public class ConsolidationDetails extends MultiTenancy {
     @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
     @BatchSize(size = 10)
     private List<String> screeningStatus;
+
+    @Column(name = "security_status_received_from")
+    @Enumerated(EnumType.STRING)
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+
+    @Column(name = "expiry_date")
+    private LocalDateTime expiryDate;
+
+    @Column(name = "regulated_entity_category")
+    private String regulatedEntityCategory;
 
     @Column(name = "exemption_codes")
     @MasterData(type = MasterDataType.EXEMPTION_CODES)

@@ -92,6 +92,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -5333,7 +5334,7 @@ public abstract class IReport {
         return String.join("/", eCsdInfoList.stream().filter(StringUtility::isNotEmpty).toList());
     }
 
-    public String getCSDSecurityInfo(AdditionalDetailModel additionalDetails, Awb awb){
+    public String getCSDSecurityInfo(AirAuthorisingEntity receivedFrom, String regulatedEntity, List<String> screeningStatusList, Awb awb){
 
         if (awb == null) {
             return "";
@@ -5344,7 +5345,7 @@ public abstract class IReport {
             return "";
         }
 
-        boolean isCargoSecuredByDPW = AwbUtility.isCargoSecuredByDPW(additionalDetails);
+        boolean isCargoSecuredByDPW = AwbUtility.isCargoSecuredByDPW(receivedFrom, regulatedEntity, screeningStatusList);
 
         LocalDateTime screeningTime = awbCargoInfo.getScreeningTime();
         String dateTimeStr = "";
@@ -5353,10 +5354,10 @@ public abstract class IReport {
             dateTimeStr = screeningTime.format(fmt);
         }
 
-        List<String> screeningStatusList = awbCargoInfo.getScreeningStatus();
-        String screeningStatus = (screeningStatusList == null || screeningStatusList.isEmpty())
+        List<String> awbCargoInfoScreeningStatusList = awbCargoInfo.getScreeningStatus();
+        String screeningStatus = (awbCargoInfoScreeningStatusList == null || awbCargoInfoScreeningStatusList.isEmpty())
                 ? ""
-                : String.join(", ", screeningStatusList);
+                : String.join(", ", awbCargoInfoScreeningStatusList);
 
         if (isCargoSecuredByDPW) {
             return AwbUtility.buildSecurityStatus(
@@ -5367,12 +5368,10 @@ public abstract class IReport {
                     dateTimeStr
             );
         } else {
-            String regulatedEntityCategory = (additionalDetails != null) ? additionalDetails.getRegulatedEntityCategory() : null;
-
             return AwbUtility.buildThirdPartySecurityStatus(
                     awbCargoInfo.getSecurityStatus(),
                     screeningStatus,
-                    regulatedEntityCategory,
+                    regulatedEntity,
                     awbCargoInfo.getRaNumber(),
                     awbCargoInfo.getUserInitials(),
                     dateTimeStr
