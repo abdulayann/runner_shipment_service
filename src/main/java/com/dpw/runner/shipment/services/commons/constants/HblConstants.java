@@ -18,12 +18,14 @@ public class HblConstants {
     public static final String HBL_DATA_FOUND = "Existing HBL data found for given shipment id - %s.";
     public static final String HBL_NO_DATA_FOUND_SHIPMENT = "No HBL data found for given shipment id - %s.";
     public static final String HBL_NO_DATA_FOUND_ID = "No HBL data found for given shipment id - %s.";
+    public static final String HBL_DOWNLOAD_SUCCESS = "HBL document downloaded successfully";
 
     /** API Constants */
     public static final String API_RETRIEVE_BY_SHIPMENT_ID = "/retrieve/shipment";
     public static final String API_GENERATE_HBL = "/generate";
     public static final String API_PARTIAL_UPDATE = "/partial-update";
     public static final String API_RESET_HBL = "/reset";
+    public static final String DOWNLOAD = "/download";
 
 
     /** HBL Types */

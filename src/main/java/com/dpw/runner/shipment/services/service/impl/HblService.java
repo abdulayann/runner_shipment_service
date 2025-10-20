@@ -13,6 +13,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerDownloadRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentDownloadResponse;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
@@ -126,6 +129,9 @@ public class HblService implements IHblService {
     @Autowired
     @Lazy
     private MDMServiceAdapter mdmServiceAdapter;
+
+    @Autowired
+    private DocumentManagerRestClient documentManagerRestClient;
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -282,7 +288,7 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
-        
+
         hbl = hblDao.save(hbl);
         return hbl;
     }
@@ -491,6 +497,24 @@ public class HblService implements IHblService {
         }
         hbl = hblDao.save(hbl);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
+    }
+
+    @Override
+    public ResponseEntity<DocumentDownloadResponse> downloadHblDocument(CommonRequestModel request) {
+        Long shipmentId = request.getId();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found for id " + shipmentId));
+        return documentManagerRestClient.downloadDocument(
+                createHblDocDownloadFetchRequest(shipmentDetails));
+    }
+
+    private DocumentManagerDownloadRequest createHblDocDownloadFetchRequest(ShipmentDetails shipmentDetails) {
+        return DocumentManagerDownloadRequest.builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityKey(shipmentDetails.getGuid().toString())
+                .docType("HBL")
+                .childType("Original")
+                .build();
     }
 
     private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) throws RunnerException {
@@ -981,7 +1005,7 @@ public class HblService implements IHblService {
             log.error(responseMsg, e);
             throw new GenericException(e);
         }
-        
+
     }
 
     public void validateHblContainerNumberCondition(Hbl hblObject){

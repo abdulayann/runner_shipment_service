@@ -28,6 +28,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -332,6 +334,38 @@ public class DocumentManagerRestClient {
             throw new DocumentClientException(var7.getMessage());
         }
 
+    }
+
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(DocumentManagerDownloadRequest request) {
+        try {
+            log.info("DummyDocumentManagerRestClient downloadDocument dummy implementation called with: {}", request);
+
+            String dummyContent = String.format(
+                    "Dummy document for %s | EntityKey: %s | DocType: %s | ChildType: %s | GeneratedAt: %s",
+                    request.getEntityType(),
+                    request.getEntityKey(),
+                    request.getDocType(),
+                    request.getChildType(),
+                    LocalDateTime.now()
+            );
+
+            byte[] fakePdfBytes = dummyContent.getBytes(StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.add("Content-Disposition",
+                    "attachment; filename=" + request.getDocType() + "_" + request.getChildType() + "_dummy.pdf");
+
+            DocumentDownloadResponse response = DocumentDownloadResponse.builder()
+                    .content(fakePdfBytes)
+                    .headers(headers)
+                    .build();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            log.error("Error in DummyDocumentManagerRestClient.downloadDocument: {}", ex.getMessage(), ex);
+            throw new DocumentClientException("Failed to generate dummy document: " + ex.getMessage());
+        }
     }
 
     public DocumentManagerResponse<T> bulkSaveFiles(Object object) {

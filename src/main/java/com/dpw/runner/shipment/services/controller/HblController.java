@@ -8,22 +8,27 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings("ALL")
@@ -158,6 +163,26 @@ public class HblController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @GetMapping(HblConstants.DOWNLOAD)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = HblConstants.HBL_DOWNLOAD_SUCCESS, response = ByteArrayResourceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    public ResponseEntity<IRunnerResponse> downloadHblDocument(@RequestParam Long shipmentId) {
+        String responseMsg;
+        try {
+            var response = hblService.downloadHblDocument(CommonRequestModel.buildRequest(shipmentId));
+            return ResponseHelper.buildFileResponse(Objects.requireNonNull(response.getBody()).getContent(), MediaType.APPLICATION_OCTET_STREAM, HttpHeaders.CONTENT_DISPOSITION,
+                    StringUtility.convertToString(Objects.requireNonNull(response.getBody()).getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_TASK_CREATION_SUCCESS, response = RunnerResponse.class)})
     @PostMapping(HblConstants.CREATE_HBL_TASK)

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.document.response.DocumentDownloadResponse;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
@@ -14,7 +15,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
@@ -233,6 +236,28 @@ class HblControllerTest {
         var responseEntity = hblController.retrieveById(111L, List.of());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void downloadDocument() {
+        // given
+        when(hblService.downloadHblDocument(any())).thenReturn(ResponseEntity.ok(
+                DocumentDownloadResponse.builder().content(new byte[1024]).headers(new HttpHeaders()).build()));
+        // when
+        var responseEntity = hblController.downloadHblDocument(123L);
+
+        //then
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void downloadDocumentBadRequuest() {
+        // given
+        when(hblService.downloadHblDocument(any())).thenThrow(new RuntimeException());
+        var responseEntity = hblController.downloadHblDocument(123L);
+
+        //then
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
