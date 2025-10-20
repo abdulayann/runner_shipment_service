@@ -21,7 +21,8 @@ public enum CarrierBookingStatus {
     ReplacedByCarrier(10, "Replaced By Carrier", List.of(Constants.INTTRA)),
     ChangeDraft(11, "Change Draft", List.of(Constants.INTTRA)),
     CancelledByCarrier(12, "Cancelled By Carrier", List.of(Constants.INTTRA)),
-    AmendRejected(13, "Amend Rejected By INTTRA", List.of(Constants.INTTRA));
+    AmendRejected(13, "Amend Rejected By INTTRA", List.of(Constants.INTTRA)),
+    CancelledRequested(14, "Cancelled Requested", List.of(Constants.INTTRA));;
 
     private final int value;
     private final String description;

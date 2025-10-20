@@ -19,7 +19,7 @@ public interface IHblService extends ICommonService {
     ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel buildRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel buildRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
-    Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings);
+    Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) throws RunnerException;
     ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> validateSealNumberWarning(Long shipmentId);
     ResponseEntity<IRunnerResponse>  createHblTaskForApproval(CommonRequestModel commonRequestModel) throws RunnerException;

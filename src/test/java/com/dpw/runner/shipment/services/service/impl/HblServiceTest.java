@@ -50,12 +50,15 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.*;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -105,6 +108,8 @@ class HblServiceTest extends CommonMocks {
     private IShipmentSettingsDao shipmentSettingsDao;
     @Mock
     private IShipmentService shipmentService;
+    @Mock
+    private ContainerV3Util containerV3Util;
     @Mock
     private SyncConfig syncConfig;
     @Mock
@@ -216,7 +221,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenContainerNumberMissingInInuptList() {
+    void checkAllContainerAssignedWhenContainerNumberMissingInInuptList() throws RunnerException {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
@@ -228,7 +233,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenContainerNumberEmptyInInuptList() {
+    void checkAllContainerAssignedWhenContainerNumberEmptyInInuptList() throws RunnerException {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
@@ -240,7 +245,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenFindShipmentEmpty() {
+    void checkAllContainerAssignedWhenFindShipmentEmpty() throws RunnerException {
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
         inputShipment.setId(11L);
@@ -256,7 +261,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenNoContainerIsPresentInBL() {
+    void checkAllContainerAssignedWhenNoContainerIsPresentInBL() throws RunnerException {
         ShipmentDetails inputShipment = completeShipment;
         inputShipment.setId(11L);
         Hbl inputHBL = mockHbl;
@@ -272,7 +277,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenNoContainerIsPresentInShipment() {
+    void checkAllContainerAssignedWhenNoContainerIsPresentInShipment() throws RunnerException {
         ShipmentDetails inputShipment = completeShipment;
         inputShipment.setId(11L);
         inputShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
@@ -291,7 +296,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenHblIsAlreadyGeneratedSuccess() {
+    void checkAllContainerAssignedWhenHblIsAlreadyGeneratedSuccess() throws RunnerException {
 
         // Shipment, Lis<Container>, List<Packing>
         Long shipmentId = 1L;
@@ -320,7 +325,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedWhenHblIsNotGenerated() {
+    void checkAllContainerAssignedWhenHblIsNotGenerated() throws RunnerException {
 
         TenantContext.setCurrentTenant(1);
 
@@ -359,7 +364,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void checkAllContainerAssignedReturnsNullWhenRestrictHblGenIsTrue() {
+    void checkAllContainerAssignedReturnsNullWhenRestrictHblGenIsTrue() throws RunnerException {
 
         TenantContext.setCurrentTenant(1);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
@@ -515,6 +520,114 @@ class HblServiceTest extends CommonMocks {
         testShipment.setContainersList(new HashSet<>());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
+
+        // Mock
+        mockShipmentSettings();
+        addDataForAutomaticTransfer(testShipment);
+        testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccessForLclShipmentContainerAssignedToCargo() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
+        testShipment.setTransportMode("SEA");
+        testShipment.setShipmentType("LCL");
+        Containers containers1 = new Containers();
+        containers1.setId(1L);
+        containers1.setCommodityCode("20FR");
+        containers1.setContainerCount(2L);
+        containers1.setGrossWeight(BigDecimal.TEN);
+        containers1.setGrossWeightUnit("KG");
+        containers1.setGrossVolume(BigDecimal.ZERO);
+        containers1.setGrossVolumeUnit("M3");
+        containers1.setPacks("10");
+        containers1.setPacksType("BAG");
+        testShipment.setContainersList(Set.of(containers1));
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        Packing packing = new Packing();
+        packing.setContainerId(1L);
+        packing.setId(2L);
+        packing.setWeight(BigDecimal.valueOf(20L));
+        packing.setWeightUnit("KG");
+        packing.setVolumeUnit("M3");
+        packing.setPacks("5");
+        packing.setPacksType("BBL");
+        packing.setVolume(BigDecimal.TEN);
+        packing.setShipmentId(testShipment.getId());
+        testShipment.setPackingList(List.of(packing));
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+
+        // Mock
+        mockShipmentSettings();
+        addDataForAutomaticTransfer(testShipment);
+        testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccessForLclShipment() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainersList(new HashSet<>());
+        testShipment.setTransportMode("SEA");
+        testShipment.setShipmentType("LCL");
+        Containers containers1 = new Containers();
+        containers1.setId(1L);
+        containers1.setCommodityCode("20FR");
+        containers1.setContainerCount(2L);
+        containers1.setGrossWeight(BigDecimal.TEN);
+        containers1.setGrossWeightUnit("KG");
+        containers1.setGrossVolume(BigDecimal.ZERO);
+        containers1.setGrossVolumeUnit("M3");
+        containers1.setPacks("10");
+        containers1.setPacksType("BAG");
+        testShipment.setContainersList(Set.of(containers1));
+        Packing packing = new Packing();
+        packing.setContainerId(1L);
+        packing.setId(2L);
+        packing.setWeight(BigDecimal.valueOf(20L));
+        packing.setWeightUnit("KG");
+        packing.setVolumeUnit("M3");
+        packing.setPacks("5");
+        packing.setPacksType("BBL");
+        packing.setVolume(BigDecimal.TEN);
+        packing.setShipmentId(testShipment.getId());
+        testShipment.setPackingList(List.of(packing));
+        testShipment.setContainerAssignedToShipmentCargo(null);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
         // Mock
         mockShipmentSettings();

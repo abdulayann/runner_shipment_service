@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.carrierbooking.VerifiedGross
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.VgmCancelRequest;
 import com.dpw.runner.shipment.services.entity.enums.EntityType;
 import com.dpw.runner.shipment.services.entity.enums.OperationType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -30,7 +31,9 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -206,6 +209,33 @@ class VerifiedGrossMassControllerTest {
         verify(jsonHelper).convertToJson(mockResponse);
         verify(verifiedGrossMassService).syncContainersByIds(containerIds);
     }
+    @Test
+    void testCancel_Success() {
+        // Given
+        VgmCancelRequest request = new VgmCancelRequest();
+        request.setContainersIds(List.of(1001L, 1002L));
 
+        // When
+        ResponseEntity<IRunnerResponse> response = controller.cancel(request);
+
+        // Then
+        verify(verifiedGrossMassService, times(1)).cancelVerifiedGrossMass(request);
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testCancel_CallsServiceOnce() {
+        // Given
+        VgmCancelRequest request = new VgmCancelRequest();
+        request.setContainersIds(List.of(101L, 102L));
+
+        // When
+        controller.cancel(request);
+
+        // Then
+        verify(verifiedGrossMassService, times(1)).cancelVerifiedGrossMass(request);
+        verifyNoMoreInteractions(verifiedGrossMassService);
+    }
 }
 

@@ -16,7 +16,8 @@ public enum ShippingInstructionStatus {
     Cancelled(8, "Cancelled"),
     Changed(9,"Changed"),
     ReplacedByCarrier(10, "Replaced By Carrier"),
-    ChangeSI(11, "Change SI");
+    ChangeSI(11, "Change SI"),
+    CancelledRequested(12, "Cancelled Requested");
 
     private final int value;
     private final String description;

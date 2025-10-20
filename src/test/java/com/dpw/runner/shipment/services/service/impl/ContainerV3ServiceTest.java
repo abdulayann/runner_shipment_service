@@ -235,8 +235,6 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Mock
     private ShippingInstructionUtil shippingInstructionUtil;
 
-
-
     @InjectMocks
     @Spy
     private ContainerV3Service containerV3Service;
@@ -1353,7 +1351,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
         when(shipmentService.findById(anyLong())).thenReturn(Optional.ofNullable(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(page);
-        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(testPacking));
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(ListCommonRequest.builder().entityId("1").build(), Constants.SHIPMENT);
         assertNotNull(containerListResponse);

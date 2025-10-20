@@ -19,5 +19,9 @@ public class ListContractsWithFilterRequest implements IRunnerRequest {
     private Long minTransitDays;
     private Long maxTransitDays;
     private ListContractRequest listContractRequest;
+    @Builder.Default
+    private Integer pageNo = 1;
+    @Builder.Default
+    private Integer pageSize = Integer.MAX_VALUE;
     private SortRequest sortRequest;
 }
