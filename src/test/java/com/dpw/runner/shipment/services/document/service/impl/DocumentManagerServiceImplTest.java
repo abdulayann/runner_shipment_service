@@ -260,7 +260,7 @@ class DocumentManagerServiceImplTest {
     @Test
     void testDownloadDocument() {
         var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HttpHeaders()).build());
-        when(documentManagerRestClient.downloadDocument(any())).thenReturn(mockResponse);
+        when(documentManagerRestClient.downloadDocument(any(Object.class))).thenReturn(mockResponse);
         var responseEntity = documentManagerServiceImpl.downloadDocument(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
         assertNotNull(responseEntity);
         assertEquals(mockResponse, responseEntity);

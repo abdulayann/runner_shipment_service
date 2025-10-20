@@ -24,6 +24,9 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerDownloadRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentDownloadResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -65,6 +68,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -103,6 +107,8 @@ class HblServiceTest extends CommonMocks {
     private PartialFetchUtils partialFetchUtils;
     @Mock
     private ConsolidationService consolidationService;
+    @Mock
+    private DocumentManagerRestClient documentManagerRestClient;
     @Mock
     private HblService self;
     private ShipmentDetails shipmentDetail;
@@ -2249,6 +2255,22 @@ class HblServiceTest extends CommonMocks {
         assertNotNull(resultParty.getState());
         assertNotNull(resultParty.getZipCode());
         assertNotNull(resultParty.getCountry());
+    }
+
+    @Test
+    void testDownloadHblDocument() {
+        // given
+        var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HttpHeaders()).build());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(documentManagerRestClient.downloadDocument(any(DocumentManagerDownloadRequest.class)))
+                .thenReturn(mockResponse);
+
+        // when
+        ResponseEntity<DocumentDownloadResponse> response = hblService.downloadHblDocument(CommonRequestModel.buildRequest(1L));
+
+        //then
+        assertEquals(mockResponse, response);
+
     }
 
 }
