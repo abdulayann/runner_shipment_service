@@ -963,15 +963,14 @@ public class CarrierBookingService implements ICarrierBookingService {
                 Location endLocation = transportLeg.getEndLocation();
                 if (Objects.nonNull(startLocation)) {
                     carrierRouting.setPol(startLocation.getIdentifierValue());
+                    List<LocationDate> startLocationLocationDates = startLocation.getLocationDates();
+                    carrierRouting.setEtd(getETD(startLocationLocationDates));
                 }
                 if (Objects.nonNull(endLocation)) {
                     carrierRouting.setPod(endLocation.getIdentifierValue());
+                    List<LocationDate> endLocationLocationDates = endLocation.getLocationDates();
+                    carrierRouting.setEta(getETA(endLocationLocationDates));
                 }
-                List<LocationDate> startLocationLocationDates = startLocation.getLocationDates();
-                List<LocationDate> endLocationLocationDates = endLocation.getLocationDates();
-
-                carrierRouting.setEta(getETA(endLocationLocationDates));
-                carrierRouting.setEtd(getETD(startLocationLocationDates));
                 carrierRoutings.add(carrierRouting);
                 sequence++;
             }

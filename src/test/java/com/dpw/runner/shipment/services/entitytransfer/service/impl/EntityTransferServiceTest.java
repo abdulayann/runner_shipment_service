@@ -4254,11 +4254,11 @@ class EntityTransferServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
-        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(new Awb())); // MAWB is generated
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(Awb.builder().printType(PrintType.ORIGINAL_PRINTED).build())); // MAWB is generated and printed
 
         // Mocks to isolate the two error conditions
         when(awbDao.findByShipmentId(shipment1.getId())).thenReturn(Collections.emptyList()); // Fails generation check
-        when(awbDao.findByShipmentId(shipment2.getId())).thenReturn(List.of(new Awb())); // Passes generation check
+        when(awbDao.findByShipmentId(shipment2.getId())).thenReturn(List.of(Awb.builder().printType(PrintType.ORIGINAL_PRINTED).build())); // Passes generation check
 
         // Act
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
@@ -4291,7 +4291,7 @@ class EntityTransferServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
-        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(new Awb())); // MAWB is generated
+        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(Awb.builder().printType(PrintType.ORIGINAL_PRINTED).build())); // MAWB is generated and printed
         when(awbDao.findByShipmentId(shipment1.getId())).thenReturn(Collections.emptyList()); // HAWB not generated
 
         // Act
