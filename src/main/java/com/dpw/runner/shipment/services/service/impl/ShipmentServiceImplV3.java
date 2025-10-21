@@ -129,6 +129,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -2929,6 +2930,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                          LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         Events events = initializeAutomatedEvents(shipmentDetails, eventCode, actualDateTime, estimatedDateTime);
         commonUtils.updateEventWithMasterData(List.of(events));
+
+        if (events.getEventCode().equalsIgnoreCase(EventConstants.SHCR)) {
+            events.setContainerNumber(shipmentDetails.getShipmentId());
+            events.setLocationRole(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+        }
+
         // Persist the event
         eventDao.save(events);
         return events;
