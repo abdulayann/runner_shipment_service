@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.dpw.runner.shipment.services.dto.request.EventsBulkRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
@@ -72,6 +73,36 @@ class EventsV3ControllerTest {
     }
 
     @Test
+    void createBulk() {
+        // Mock
+        when(eventService.createBulk(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = eventsController.createBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBulk2() {
+        // Mock
+        when(eventService.createBulk(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = eventsController.createBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBulk3() {
+        // Mock
+        when(eventService.createBulk(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = eventsController.createBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void create() {
         // Mock
         when(eventService.create(any())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -131,7 +162,35 @@ class EventsV3ControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void updateBulk() throws RunnerException {
+        // Mock
+        when(eventService.updateBulk(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = eventsController.updateBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void updateBulk2() throws RunnerException {
+        // Mock
+        when(eventService.updateBulk(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = eventsController.updateBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateBulk3() throws RunnerException {
+        // Mock
+        when(eventService.updateBulk(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = eventsController.updateBulk(EventsBulkRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
     @Test
     void delete() {

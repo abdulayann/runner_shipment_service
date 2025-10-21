@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dto.request.EventsBulkRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
@@ -413,9 +414,19 @@ public class EventV3Service implements IEventsV3Service {
         return eventV2Service.create(commonRequestModel);
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> createBulk(EventsBulkRequest eventsBulkRequest) {
+        return eventV2Service.createBulk(eventsBulkRequest);
+    }
+
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         return eventV2Service.update(commonRequestModel);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> updateBulk(EventsBulkRequest eventsBulkRequest) throws RunnerException {
+        return eventV2Service.updateBulk(eventsBulkRequest);
     }
 
     @Override

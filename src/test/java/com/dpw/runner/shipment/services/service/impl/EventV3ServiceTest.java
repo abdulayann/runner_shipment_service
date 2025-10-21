@@ -3,8 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,10 +17,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -322,6 +318,26 @@ class EventV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCreateBulk_success() {
+        // Arrange
+        EventsRequest request1 = objectMapperTest.convertValue(testData, EventsRequest.class);
+
+        IRunnerResponse mockRunnerResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(mockRunnerResponse);
+
+        when(eventV2Service.createBulk(any())).thenReturn(expectedResponse);
+
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(new EventsRequest()));
+        // Act
+        ResponseEntity<IRunnerResponse> actualResponse = eventV3Service.createBulk(eventsBulkRequest);
+
+        // Assert
+        assertEquals(expectedResponse, actualResponse);
+        verify(eventV2Service, times(1)).createBulk(eventsBulkRequest);
+    }
+
+    @Test
     void testCreate_success() {
         // Arrange
         EventsRequest request1 = objectMapperTest.convertValue(testData, EventsRequest.class);
@@ -352,6 +368,21 @@ class EventV3ServiceTest extends CommonMocks {
 
         assertEquals(expected, actual);
         verify(eventV2Service).update(commonRequestModel);
+    }
+
+    @Test
+    void testUpdateBulk_success() throws RunnerException {
+        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
+
+        when(eventV2Service.updateBulk(any())).thenReturn(expected);
+
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(new EventsRequest()));
+        ResponseEntity<IRunnerResponse> actual = eventV3Service.updateBulk(eventsBulkRequest);
+
+        assertEquals(expected, actual);
+        verify(eventV2Service).updateBulk(eventsBulkRequest);
     }
 
     @Test

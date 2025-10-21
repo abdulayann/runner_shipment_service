@@ -7,10 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,30 +30,15 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -161,6 +143,9 @@ class EventServiceTest extends CommonMocks {
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
 
+    @Mock
+    private IHistoryDetailMetaDao historyDetailMetaDao;
+
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
     private static ObjectMapper objectMapperTest;
@@ -198,6 +183,58 @@ class EventServiceTest extends CommonMocks {
         testEventsRequestV2 = jsonTestUtility.getTestEventsRequestV2();
     }
 
+    @Test
+    void createBulkEventsSuccess() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(request, request));
+        List<EventsResponse> responses = List.of(
+                objectMapperTest.convertValue(testData, EventsResponse.class),
+                objectMapperTest.convertValue(testData, EventsResponse.class)
+        );
+        EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
+
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(testData, testData));
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(testData, testData));
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
+        when(historyDetailMetaDao.saveAll(anyList())).thenReturn(List.of(new HistoryDetailMeta()));
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulk(eventsBulkRequest);
+
+        Assertions.assertNotNull(responseEntity);
+        verify(historyDetailMetaDao, times(1)).saveAll(anyList());
+        assertEquals(ResponseHelper.buildSuccessResponse(responses), responseEntity);
+    }
+
+    @Test
+    void createBulkEventsEmptyRequest() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulk(eventsBulkRequest);
+
+        Assertions.assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("Empty request received", runnerResponse.getError().getMessage());
+    }
+
+    @Test
+    void createBulkEventsThrowsException() {
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(request, request));
+        String errorMessage = "Custom error message";
+
+        when(jsonHelper.convertValueToList(anyList(), eq(Events.class))).thenReturn(List.of(testData, testData));
+        when(eventDao.saveAll(anyList())).thenThrow(new RuntimeException(errorMessage));
+
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.createBulk(eventsBulkRequest);
+
+        Assertions.assertNotNull(responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+    }
 
     @Test
     void create() {
@@ -262,6 +299,76 @@ class EventServiceTest extends CommonMocks {
         Assertions.assertNotNull(responseEntity);
         RunnerResponse runnerResponse  = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
         assertEquals(errorMessage, runnerResponse.getError().getMessage());
+    }
+
+    @Test
+    void updateBulkSuccess() throws Exception {
+        // Arrange
+        EventsRequest request1 = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request1.setId(1L);
+        EventsRequest request2 = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request2.setId(2L);
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(request1, request2));
+
+        Events existing1 = new Events();
+        existing1.setId(1L);
+        existing1.setGuid(UUID.randomUUID());
+
+        Events existing2 = new Events();
+        existing2.setId(2L);
+        existing2.setGuid(UUID.randomUUID());
+
+        // Mock DB fetch
+        when(eventDao.findAllByIds(anyList())).thenReturn(List.of(existing1, existing2));
+
+        // Mock entity conversion
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class)))
+                .thenReturn(new Events());
+
+        when(historyDetailMetaDao.saveAll(anyList())).thenReturn(List.of(new HistoryDetailMeta()));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = eventService.updateBulk(eventsBulkRequest);
+
+        // Assert
+        verify(historyDetailMetaDao, times(1)).saveAll(anyList());
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void updateBulkWithEmptyRequestList() {
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        // Act + Assert
+        RunnerException e = assertThrows(
+                RunnerException.class,
+                () -> eventService.updateBulk(eventsBulkRequest)
+        );
+        assertEquals(EventConstants.EMPTY_REQUEST_ERROR, e.getMessage());
+    }
+
+    @Test
+    void updateBulkWithEmptyRequestId() {
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        eventsBulkRequest.setEventsRequestList(List.of(new EventsRequest()));
+
+        Exception e = assertThrows(RunnerException.class, () -> eventService.updateBulk(eventsBulkRequest));
+
+        assertEquals(EventConstants.EMPTY_REQUEST_ID_ERROR, e.getMessage());
+    }
+
+    @Test
+    void updateBulkThrowsExceptionWhenOldEntityIsNotPresent() {
+        testData.setId(100L);
+        EventsBulkRequest eventsBulkRequest = new EventsBulkRequest();
+        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        eventsBulkRequest.setEventsRequestList(List.of(request));
+
+        when(eventDao.findAllByIds(anyList())).thenReturn(new ArrayList<>());
+        Exception e = assertThrows(DataRetrievalFailureException.class, () -> eventService.updateBulk(eventsBulkRequest));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
     }
 
     @Test

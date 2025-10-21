@@ -37,14 +37,7 @@ import com.nimbusds.jose.util.Pair;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -126,6 +119,14 @@ public class EventDao implements IEventDao {
     @Override
     public Optional<Events> findById(Long id) {
         return eventRepository.findById(id);
+    }
+
+    @Override
+    public List<Events> findAllByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return eventRepository.findAllById(ids);
     }
 
     @Override

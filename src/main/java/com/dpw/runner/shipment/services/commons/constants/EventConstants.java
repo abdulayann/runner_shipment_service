@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class EventConstants {
@@ -182,4 +183,5 @@ public class EventConstants {
     public static final String MSCU = "MSCU";
     public static final String EXPORT_LOADED_ON_VESSEL = "Export Loaded on Vessel";
     public static final String EVENT_CODE_MATCHES_FCL = "Event code {} matches FCL shipment criteria. messageId {}";
+    public static final DateTimeFormatter HISTORY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mma");
 }
