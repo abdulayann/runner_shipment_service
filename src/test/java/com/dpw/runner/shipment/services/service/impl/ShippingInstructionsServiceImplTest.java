@@ -734,7 +734,7 @@ class ShippingInstructionsServiceImplTest {
 
         CarrierBookingInfoProjection projection = mock(CarrierBookingInfoProjection.class);
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(si);
-        when(repository.findBookingByConsolId("CONSOL123")).thenReturn(List.of(projection));
+        when(repository.findBookingByConsolId(123L)).thenReturn(List.of(projection));
 
         assertThatThrownBy(() -> service.createShippingInstruction(request))
                 .isInstanceOf(ValidationException.class)

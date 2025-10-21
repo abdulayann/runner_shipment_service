@@ -315,6 +315,9 @@ public class DbAccessHelper {
             case "!=":
                 return processNotEqualsToCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
+            case "ISNOTEQUALORNULL":
+                return processNotEqualsOrNullToCriteria(dataType, input, path, criteriaBuilder, fieldName);
+
             case ">":
                 return processGreaterThanCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
@@ -477,6 +480,19 @@ public class DbAccessHelper {
             return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
         }
         return criteriaBuilder.notEqual(path.get(fieldName), input.getValue());
+    }
+
+    private static <T> Predicate processNotEqualsOrNullToCriteria(Class<T> dataType, Criteria input, Path<T> path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.or(
+                    criteriaBuilder.isNull(path.get(fieldName)),
+                    criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()))
+            );
+        }
+        return criteriaBuilder.or(
+                criteriaBuilder.isNull(path.get(fieldName)),
+                criteriaBuilder.notEqual(path.get(fieldName), input.getValue())
+        );
     }
 
     @SuppressWarnings("java:S3740")

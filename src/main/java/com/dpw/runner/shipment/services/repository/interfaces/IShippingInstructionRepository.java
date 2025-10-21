@@ -47,9 +47,9 @@ public interface IShippingInstructionRepository extends MultiTenancyRepository<S
     List<ShippingConsoleIdProjection> findByCarrierBookingConsolId(List<Long> consolNumbers);
 
     @Query(value = "select status as bookingStatus, booking_no as bookingNumber, entity_id as entityId " +
-            "from carrier_booking where entity_number = ?1 and entity_type='CONSOLIDATION' " +
+            "from carrier_booking where entity_id = ?1 and entity_type='CONSOLIDATION' " +
             "and status!='Cancelled' and is_deleted is false;", nativeQuery = true)
-    List<CarrierBookingInfoProjection> findByConsolidationNo(String consolNumber);
+    List<CarrierBookingInfoProjection> findByConsolidationNo(Long consolId);
 
     @Query(value = "select status as bookingStatus, booking_no as bookingNumber, entity_id as entityId " +
             "from carrier_booking where entity_number = ?1 and entity_type='CONSOLIDATION' " +
