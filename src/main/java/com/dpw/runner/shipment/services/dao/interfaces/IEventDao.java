@@ -25,6 +25,7 @@ public interface IEventDao {
     Page<Events> findAllWithoutTenantFilter(Specification<Events> spec, Pageable pageable);
 
     Optional<Events> findById(Long id);
+    List<Events> findAllByIds(List<Long> ids);
 
     Optional<Events> findByEntityIdAndEntityType(Long id, String entityType);
 

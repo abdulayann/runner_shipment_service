@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.EventConstants.HISTORY_DATE_FORMATTER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -20,12 +21,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.EventsBulkRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -38,12 +35,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -71,18 +63,8 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
+import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -131,6 +113,7 @@ public class EventService implements IEventService {
     private CommonUtils commonUtils;
     private ICarrierDetailsDao carrierDetailsDao;
     private IShipmentSettingsDao shipmentSettingsDao;
+    private IHistoryDetailMetaDao historyDetailMetaDao;
 
     private static final Set<String> SUPPORTED_TRACKING_EVENT_CODES = Stream.of(
             EventConstants.ARDP, EventConstants.ARDT, EventConstants.BAAR, EventConstants.BADE,
@@ -151,7 +134,7 @@ public class EventService implements IEventService {
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
             PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, ICarrierDetailsDao carrierDetailsDao,
-                        IShipmentSettingsDao shipmentSettingsDao) {
+                        IShipmentSettingsDao shipmentSettingsDao, IHistoryDetailMetaDao historyDetailMetaDao) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -169,6 +152,7 @@ public class EventService implements IEventService {
         this.commonUtils = commonUtils;
         this.carrierDetailsDao = carrierDetailsDao;
         this.shipmentSettingsDao = shipmentSettingsDao;
+        this.historyDetailMetaDao = historyDetailMetaDao;
     }
 
     @Transactional
@@ -203,6 +187,55 @@ public class EventService implements IEventService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(event));
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> createBulk(EventsBulkRequest eventsBulkRequest) {
+
+        if (eventsBulkRequest == null || eventsBulkRequest.getEventsRequestList() == null|| eventsBulkRequest.getEventsRequestList().isEmpty()) {
+            log.debug("Empty request received for Event bulk create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Empty request received");
+        }
+        List<EventsRequest> eventsRequestList = eventsBulkRequest.getEventsRequestList();
+
+        try {
+            List<EventsRequest> validRequests = eventsRequestList.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            List<Events> createdEvents = jsonHelper.convertValueToList(validRequests, Events.class);
+
+            // Save all events
+            saveAllEventsUtil(eventsRequestList);
+
+            // Create history meta and link details
+            List<HistoryDetailMeta> historyDetailMetaList = new ArrayList<>();
+            for (Events event : createdEvents) {
+                HistoryDetailMeta historyMeta = HistoryDetailMeta.builder()
+                        .entityType(Events.class.getSimpleName())
+                        .entityId(event.getId())
+                        .changedByUser(UserContext.getUser().getUsername())
+                        .changedByUserEmail(UserContext.getUser().getEmail())
+                        .changeSource(event.getSource())
+                        .changeTimestamp(LocalDateTime.now())
+                        .action("Created")
+                        .build();
+
+                List<HistoryDetail> historyDetails = buildHistoryDetailsForEvent(event, null);
+
+                historyMeta.setHistoryDetails(new HashSet<>(historyDetails));
+                historyDetailMetaList.add(historyMeta);
+            }
+            historyDetailMetaDao.saveAll(historyDetailMetaList);
+
+            log.info("Event created with history for Ids {} with Request Id {}", createdEvents.stream().map(Events::getId).toList(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(convertEntityListToDtoList(createdEvents));
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error("Error during bulk create for Events: {}", responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     @Transactional
@@ -253,6 +286,88 @@ public class EventService implements IEventService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> updateBulk(EventsBulkRequest eventsBulkRequest) throws RunnerException {
+        if (eventsBulkRequest == null || eventsBulkRequest.getEventsRequestList() == null || eventsBulkRequest.getEventsRequestList().isEmpty()) {
+            log.debug("Empty request received for Event bulk update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ERROR);
+        }
+        List<EventsRequest> eventRequests = eventsBulkRequest.getEventsRequestList();
+
+        // Extract all IDs to fetch existing entities
+        List<Long> ids = eventRequests.stream()
+                .map(EventsRequest::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (ids.isEmpty()) {
+            log.debug("One or more Event IDs are null for bulk update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
+        }
+
+        // Fetch existing entities from DB
+        List<Events> existingEntities = eventDao.findAllByIds(ids);
+        if (existingEntities.size() != ids.size()) {
+            log.debug("Some Event records not found in DB for IDs: {} with Request Id {}", ids, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        // Map existing entities by ID for quick lookup
+        Map<Long, Events> existingEntityMap = existingEntities.stream()
+                .collect(Collectors.toMap(Events::getId, Function.identity()));
+
+        List<Events> updatedEntities = new ArrayList<>();
+
+        try {
+            List<HistoryDetailMeta> historyDetailMetaList = new ArrayList<>();
+            for (EventsRequest request : eventRequests) {
+                Events oldEntity = existingEntityMap.get(request.getId());
+                Events updatedEvent = convertRequestToEntity(request);
+                updatedEvent.setId(oldEntity.getId());
+
+                // GUID consistency check
+                if (updatedEvent.getGuid() != null && !Objects.equals(oldEntity.getGuid(), updatedEvent.getGuid())) {
+                    throw new RunnerException("Provided GUID doesn't match with the existing one for ID: " + request.getId());
+                }
+
+                // Build history details using old and new state
+                List<HistoryDetail> historyDetails = buildHistoryDetailsForEvent(oldEntity, updatedEvent);
+
+                // Create history meta and link details
+                HistoryDetailMeta historyMeta = HistoryDetailMeta.builder()
+                        .entityType(Events.class.getSimpleName())
+                        .entityId(updatedEvent.getId())
+                        .changedByUser(UserContext.getUser().getUsername())
+                        .changedByUserEmail(UserContext.getUser().getEmail())
+                        .changeSource(updatedEvent.getSource())
+                        .changeTimestamp(LocalDateTime.now())
+                        .action("Updated By User")
+                        .build();
+
+                historyMeta.setHistoryDetails(new HashSet<>(historyDetails));
+                historyDetailMetaList.add(historyMeta);
+
+                updatedEntities.add(updatedEvent);
+            }
+            historyDetailMetaDao.saveAll(historyDetailMetaList);
+
+            // Persist all updates in one go
+            saveAllEventsUtil(eventRequests);
+
+            log.info("Updated the event details for Ids {} with Request Id {}", updatedEntities.stream().map(Events::getId).toList(), LoggerHelper.getRequestIdFromMDC());
+            List<EventsResponse> responses = updatedEntities.stream()
+                    .map(this::convertEntityToDto)
+                    .collect(Collectors.toList());
+
+            return ResponseHelper.buildSuccessResponse(responses);
+
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
@@ -1394,6 +1509,10 @@ public class EventService implements IEventService {
     @Override
     @Transactional
     public void saveAllEvent(List<EventsRequest> eventsRequests) {
+        saveAllEventsUtil(eventsRequests);
+    }
+
+    public void saveAllEventsUtil(List<EventsRequest> eventsRequests) {
         if (CommonUtils.listIsNullOrEmpty(eventsRequests))
             return;
         List<Events> entities = convertRequestListToEntityList(eventsRequests);
@@ -1495,6 +1614,36 @@ public class EventService implements IEventService {
                 eventDao.saveAll(eventsToDelete);
             }
         }
+    }
+
+    public List<HistoryDetail> buildHistoryDetailsForEvent(Events newEvent, Events oldEvent) {
+        List<HistoryDetail> historyDetails = new ArrayList<>();
+
+        // Estimated Date
+        String estimatedOld = formatLocalDateTime(oldEvent != null ? oldEvent.getEstimated() : null);
+        String estimatedNew = formatLocalDateTime(newEvent != null ? newEvent.getEstimated() : null);
+        historyDetails.add(HistoryDetail.builder().fieldName("Estimated Date").oldValue(estimatedOld).newValue(estimatedNew).build());
+
+        // Actual Date
+        String actualOld = formatLocalDateTime(oldEvent != null ? oldEvent.getActual() : null);
+        String actualNew = formatLocalDateTime(oldEvent != null ? oldEvent.getActual() : null);
+        historyDetails.add(HistoryDetail.builder().fieldName("Actual Date").oldValue(actualOld).newValue(actualNew).build());
+
+        // Location
+        String locationOld = oldEvent != null ? oldEvent.getPlaceName() : null;
+        String locationNew = newEvent != null ? newEvent.getPlaceName() : null;
+        historyDetails.add(HistoryDetail.builder().fieldName("Location").oldValue(locationOld).newValue(locationNew).build());
+
+        // Remarks
+        String remarksOld = oldEvent != null ? oldEvent.getRemarks() : null;
+        String remarksNew = newEvent != null ? newEvent.getRemarks() : null;
+        historyDetails.add(HistoryDetail.builder().fieldName("Remarks").oldValue(remarksOld).newValue(remarksNew).build());
+
+        return historyDetails;
+    }
+
+    private String formatLocalDateTime(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.format(HISTORY_DATE_FORMATTER);
     }
 
 }

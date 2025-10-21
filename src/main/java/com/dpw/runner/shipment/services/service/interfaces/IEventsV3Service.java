@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.EventsBulkRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -28,7 +29,11 @@ public interface IEventsV3Service {
 
     ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel);
 
+    ResponseEntity<IRunnerResponse> createBulk(EventsBulkRequest eventsBulkRequest);
+
     ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException;
+
+    ResponseEntity<IRunnerResponse> updateBulk(EventsBulkRequest eventsBulkRequest) throws RunnerException;
 }
