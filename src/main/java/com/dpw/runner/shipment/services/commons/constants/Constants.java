@@ -757,6 +757,9 @@ public class Constants {
     public static final String EXPORT_EXCEL_CACHE_KEY = "EXPORT_EXCEL_CACHE_KEY";
     public static final String EXPORT_EXCEL_EXPIRE_TIME = "EXPORT_EXCEL_EXPIRE_TIME";
 
+    public static final String SECURITY_STATUS_TEMPLATE = "<Security status> BY <Screening method> <Branch RA No> <Screener> <Date+Time>";
+    public static final String THIRD_PARTY_SECURITY_STATUS_TEMPLATE = "<Security status> BY <Screening method> <3rd party RA No> ACCEPTED BY <Branch RA No> <Screener> <Date+Time>";
+
     public static final String PROD_ENV = "prod";
     public static final String DEMO_ENV = "demo";
     public static final String CONTRACT_TYPE = "CONTRACT";

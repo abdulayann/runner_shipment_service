@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Containe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
-import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
@@ -49,6 +48,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
@@ -92,6 +92,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -5332,6 +5333,52 @@ public abstract class IReport {
 
         return String.join("/", eCsdInfoList.stream().filter(StringUtility::isNotEmpty).toList());
     }
+
+    public String getCSDSecurityInfo(AirAuthorisingEntity receivedFrom, String regulatedEntity, List<String> screeningStatusList, Awb awb){
+
+        if (awb == null) {
+            return "";
+        }
+
+        AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
+        if (awbCargoInfo == null) {
+            return "";
+        }
+
+        boolean isCargoSecuredByDPW = AwbUtility.isCargoSecuredByDPW(receivedFrom, regulatedEntity, screeningStatusList);
+
+        LocalDateTime screeningTime = awbCargoInfo.getScreeningTime();
+        String dateTimeStr = "";
+        if (screeningTime != null) {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
+            dateTimeStr = screeningTime.format(fmt);
+        }
+
+        List<String> awbCargoInfoScreeningStatusList = awbCargoInfo.getScreeningStatus();
+        String screeningStatus = (awbCargoInfoScreeningStatusList == null || awbCargoInfoScreeningStatusList.isEmpty())
+                ? ""
+                : String.join(", ", awbCargoInfoScreeningStatusList);
+
+        if (isCargoSecuredByDPW) {
+            return AwbUtility.buildSecurityStatus(
+                    awbCargoInfo.getSecurityStatus(),
+                    screeningStatus,
+                    awbCargoInfo.getRaNumber(),
+                    awbCargoInfo.getUserInitials(),
+                    dateTimeStr
+            );
+        } else {
+            return AwbUtility.buildThirdPartySecurityStatus(
+                    awbCargoInfo.getSecurityStatus(),
+                    screeningStatus,
+                    regulatedEntity,
+                    awbCargoInfo.getRaNumber(),
+                    awbCargoInfo.getUserInitials(),
+                    dateTimeStr
+            );
+        }
+    }
+
 
     public String getPrintOriginalDate(Awb awb) {
         if (Objects.nonNull(awb.getAwbCargoInfo().getScreeningTime()))

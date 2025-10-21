@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -1547,5 +1549,86 @@ class AwbUtilityTest extends CommonMocks {
         assertEquals("1234", awbResponse.getMeta().getTenantInfo().getPimaAddress());
     }
 
+    @Test
+    void testBuildSecurityStatus_ReplacesAllPlaceholders() {
+
+        // when
+        String result = AwbUtility.buildSecurityStatus(
+                "ACCEPTED", "X-RAY", "RA123", "John Doe", "13-Oct-2025 10:30");
+
+        // then
+        assertNotNull(result);
+    }
+
+    @Test
+    void testBuildThirdPartySecurityStatus_ReplacesAllPlaceholders() {
+
+        // when
+        String result = AwbUtility.buildThirdPartySecurityStatus(
+                "ACCEPTED", "X-RAY", "TP5678", "RA123", "John Doe", "13-Oct-2025 10:30");
+
+        // then
+        assertNotNull(result);
+    }
+
+    @Test
+    void testIsCargoSecuredByDPW_WhenHasKCOrAOM_ReturnsTrue() {
+        // given
+        AdditionalDetailModel details = new AdditionalDetailModel();
+        details.setScreeningStatus(List.of("KC"));
+        details.setSecurityStatusReceivedFrom(AirAuthorisingEntity.AO);
+        details.setRegulatedEntityCategory("SomeCategory");
+
+        // when
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
+
+        // then
+        assertTrue(result);
+    }
+
+    @Test
+    void testIsCargoSecuredByDPW_WhenReceivedFromNullAndRegulatedEntityBlank_ReturnsTrue() {
+        // given
+        AdditionalDetailModel details = new AdditionalDetailModel();
+        details.setScreeningStatus(List.of());
+        details.setSecurityStatusReceivedFrom(null);
+        details.setRegulatedEntityCategory("  "); // blank
+
+        // when
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
+
+        // then
+        assertTrue(result);
+    }
+
+    @Test
+    void testIsCargoSecuredByDPW_WhenNoKCOrAOMAndValidReceivedFrom_ReturnsFalse() {
+        // given
+        AdditionalDetailModel details = new AdditionalDetailModel();
+        details.setScreeningStatus(List.of("ETD"));
+        details.setSecurityStatusReceivedFrom(AirAuthorisingEntity.AO);
+        details.setRegulatedEntityCategory("Regulated");
+
+        // when
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
+
+        // then
+        assertFalse(result);
+    }
+
+    @Test
+    void testIsCargoSecuredByDPW_WhenNullInputs_ReturnsFalse() {
+        // given
+        AdditionalDetailModel details = new AdditionalDetailModel();
+        details.setScreeningStatus(null);
+        details.setSecurityStatusReceivedFrom(AirAuthorisingEntity.AO);
+        details.setRegulatedEntityCategory("Regulated");
+
+        // when
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
+
+        // then
+        assertFalse(result);
+    }
 
 }

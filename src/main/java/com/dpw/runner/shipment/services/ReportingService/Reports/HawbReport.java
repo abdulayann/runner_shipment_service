@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AwbGoodsDescriptionInfoModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
@@ -912,20 +913,20 @@ public class HawbReport extends IReport{
             BigDecimal amountOfInsurance = cargoInfoRows.getInsuranceAmount();
             BigDecimal carriageValue = cargoInfoRows.getCarriageValue();
             BigDecimal customsValue = cargoInfoRows.getCustomsValue();
-            BigDecimal zeroDecimal = BigDecimal.ZERO;
-            if(amountOfInsurance != null && !Objects.equals(amountOfInsurance, zeroDecimal)) {
+
+            if(isNonZero(amountOfInsurance)) {
                 dictionary.put(ReportConstants.AOI, IReport.twoDecimalPlacesFormatDecimal(amountOfInsurance));
                 dictionary.put(ReportConstants.AMOUNT_OF_INSURANCE, AmountNumberFormatter.format(amountOfInsurance, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
             } else {
                 dictionary.put(ReportConstants.AMOUNT_OF_INSURANCE, "XXX");
                 dictionary.put(ReportConstants.AOI , "XXX");
             }
-            if(carriageValue != null && !Objects.equals(carriageValue, zeroDecimal)) {
+            if(isNonZero(carriageValue)) {
                 dictionary.put(ReportConstants.DECLARED_VALUE_FOR_CARRIAGE,  AmountNumberFormatter.format(carriageValue, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
             } else {
                 dictionary.put(ReportConstants.DECLARED_VALUE_FOR_CARRIAGE,  "NVD");
             }
-            if(customsValue!= null && !Objects.equals(customsValue, zeroDecimal)) {
+            if(isNonZero(customsValue)) {
                 dictionary.put(ReportConstants.DECLARED_VALUE_FOR_CUSTOMS, AmountNumberFormatter.format(customsValue, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
             } else {
                 dictionary.put(ReportConstants.DECLARED_VALUE_FOR_CUSTOMS, "NCV");
@@ -940,11 +941,28 @@ public class HawbReport extends IReport{
                 masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
+            processSecurityTags(hawbModel, dictionary);
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
             dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
         }
+    }
+
+    private void processSecurityTags(HawbModel hawbModel, Map<String, Object> dictionary){
+        if(hawbModel.getShipmentDetails() != null && hawbModel.getShipmentDetails().getAdditionalDetails() != null) {
+            //HAWB && DRT MAWB
+            AdditionalDetailModel additionalDetails = hawbModel.getShipmentDetails().getAdditionalDetails();
+            dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(additionalDetails.getSecurityStatusReceivedFrom(), additionalDetails.getRegulatedEntityCategory(), additionalDetails.getScreeningStatus(), hawbModel.awb));
+        }else if(hawbModel.getConsolidationDetails() != null){
+            //MAWB
+            dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getConsolidationDetails().getSecurityStatusReceivedFrom(), hawbModel.getConsolidationDetails().getRegulatedEntityCategory(), hawbModel.getConsolidationDetails().getScreeningStatus(), hawbModel.awb));
+        }
+    }
+
+    private boolean isNonZero(BigDecimal amount) {
+        BigDecimal zeroDecimal = BigDecimal.ZERO;
+        return amount != null && !Objects.equals(amount, zeroDecimal);
     }
 
     public static String constructAddressForAwb(String address1, String address2, String country, String state, String city, String zipCode, String phone) {

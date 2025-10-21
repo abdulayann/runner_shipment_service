@@ -1445,6 +1445,7 @@ public class ReportConstants {
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
     public static final String ISSUING_AGENT_CITY = "IssuingAgentCity";
     public static final String RA_CSD = "RA_CSD";
+    public static final String RA_CSD_SECURITY = "RA_CSD_SECURITY";
     public static final String FCR_CONSIGNOR_IN_CAPS = "FCR_ConsignorInCaps";
     public static final String SHIP_CONSIGNEE_IN_CAPS = "Ship_ConsigneeInCaps";
     public static final String SHIP_NOTIFY_PARTY_IN_CAPS = "Ship_NotifyPartyInCaps";
