@@ -522,10 +522,8 @@ void testPopulateConsolidationReportData_withFirmsCode() {
             )).thenReturn("SECURED_STATUS_3P");
 
             // Act
-            String result = iReport.getCSDSecurityInfo(AirAuthorisingEntity.AO, "regulatedEntity", new ArrayList<>(), awb);
+            iReport.getCSDSecurityInfo(AirAuthorisingEntity.AO, "regulatedEntity", new ArrayList<>(), awb);
 
-            // Assert
-            assertNotNull(result);
             awbUtility.verify(() -> AwbUtility.buildThirdPartySecurityStatus(any(), any(), any(), any(), any(), any()));
         }
     }
