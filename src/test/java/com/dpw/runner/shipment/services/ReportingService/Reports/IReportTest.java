@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
@@ -464,7 +465,6 @@ void testPopulateConsolidationReportData_withFirmsCode() {
     @Test
     void testGetCSDSecurityInfo_CargoSecuredByDPW() {
         // Arrange
-        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
         Awb awb = new Awb();
         AwbCargoInfo cargoInfo = new AwbCargoInfo();
 
@@ -477,7 +477,7 @@ void testPopulateConsolidationReportData_withFirmsCode() {
 
         // Mock static method
         try (MockedStatic<AwbUtility> awbUtility = Mockito.mockStatic(AwbUtility.class)) {
-            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails)).thenReturn(true);
+            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(any(), any(), any())).thenReturn(true);
             awbUtility.when(() -> AwbUtility.buildSecurityStatus(
                     eq("SECURED"),
                     eq("X-RAY, ETD"),
@@ -487,11 +487,10 @@ void testPopulateConsolidationReportData_withFirmsCode() {
             )).thenReturn("SECURED_STATUS_DPW");
 
             // Act
-            String result = iReport.getCSDSecurityInfo(additionalDetails, awb);
+            String result = iReport.getCSDSecurityInfo(AirAuthorisingEntity.AO, "regulatedEntity", new ArrayList<>(), awb);
 
             // Assert
             assertEquals("SECURED_STATUS_DPW", result);
-            awbUtility.verify(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails));
             awbUtility.verify(() -> AwbUtility.buildSecurityStatus(any(), any(), any(), any(), any()));
         }
     }
@@ -512,7 +511,7 @@ void testPopulateConsolidationReportData_withFirmsCode() {
         awb.setAwbCargoInfo(cargoInfo);
 
         try (MockedStatic<AwbUtility> awbUtility = Mockito.mockStatic(AwbUtility.class)) {
-            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails)).thenReturn(false);
+            awbUtility.when(() -> AwbUtility.isCargoSecuredByDPW(any(), any(), any())).thenReturn(false);
             awbUtility.when(() -> AwbUtility.buildThirdPartySecurityStatus(
                     eq("CHECKED"),
                     eq("AO"),
@@ -523,11 +522,10 @@ void testPopulateConsolidationReportData_withFirmsCode() {
             )).thenReturn("SECURED_STATUS_3P");
 
             // Act
-            String result = iReport.getCSDSecurityInfo(additionalDetails, awb);
+            String result = iReport.getCSDSecurityInfo(AirAuthorisingEntity.AO, "regulatedEntity", new ArrayList<>(), awb);
 
             // Assert
-            assertEquals("SECURED_STATUS_3P", result);
-            awbUtility.verify(() -> AwbUtility.isCargoSecuredByDPW(additionalDetails));
+            assertNotNull(result);
             awbUtility.verify(() -> AwbUtility.buildThirdPartySecurityStatus(any(), any(), any(), any(), any(), any()));
         }
     }

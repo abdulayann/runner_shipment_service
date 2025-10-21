@@ -1580,7 +1580,7 @@ class AwbUtilityTest extends CommonMocks {
         details.setRegulatedEntityCategory("SomeCategory");
 
         // when
-        boolean result = AwbUtility.isCargoSecuredByDPW(details);
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
 
         // then
         assertTrue(result);
@@ -1595,7 +1595,7 @@ class AwbUtilityTest extends CommonMocks {
         details.setRegulatedEntityCategory("  "); // blank
 
         // when
-        boolean result = AwbUtility.isCargoSecuredByDPW(details);
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
 
         // then
         assertTrue(result);
@@ -1610,7 +1610,7 @@ class AwbUtilityTest extends CommonMocks {
         details.setRegulatedEntityCategory("Regulated");
 
         // when
-        boolean result = AwbUtility.isCargoSecuredByDPW(details);
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
 
         // then
         assertFalse(result);
@@ -1625,7 +1625,7 @@ class AwbUtilityTest extends CommonMocks {
         details.setRegulatedEntityCategory("Regulated");
 
         // when
-        boolean result = AwbUtility.isCargoSecuredByDPW(details);
+        boolean result = AwbUtility.isCargoSecuredByDPW(details.getSecurityStatusReceivedFrom(), details.getRegulatedEntityCategory(), details.getScreeningStatus());
 
         // then
         assertFalse(result);
