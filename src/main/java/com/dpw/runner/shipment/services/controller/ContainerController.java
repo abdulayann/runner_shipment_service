@@ -71,9 +71,9 @@ public class ContainerController {
         this.containerService = containerService;
     }
 
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Successful", content = @Content(schema = @Schema(implementation = MyContainerResponseClass.class))),
-            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyContainerResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {

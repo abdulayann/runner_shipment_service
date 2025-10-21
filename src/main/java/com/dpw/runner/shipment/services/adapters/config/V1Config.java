@@ -11,6 +11,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.TimeUnit;
+
 @Configuration
 public class V1Config {
 
@@ -23,7 +25,7 @@ public class V1Config {
 
         // Configure timeouts using RequestConfig
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofSeconds(60))
+                .setConnectionRequestTimeout(60, TimeUnit.SECONDS)
                 .setResponseTimeout(Timeout.ofSeconds(60))
                 .build();
 

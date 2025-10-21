@@ -21,6 +21,6 @@ public class CloneRequest extends CommonRequest implements IRunnerRequest {
     private Long bookingId;
     @NotNull(message = "Flags cannot be null")
     @Valid
-    @Schema(description = "Clone configuration flags", required = true)
+    @Schema(description = "Clone configuration flags")
     private CloneFlagsRequest flags;
 }

@@ -15,8 +15,6 @@
     <description>Shipment service</description>
 
     <properties>
-<!--        <maven.compiler.source>11</maven.compiler.source>-->
-<!--        <maven.compiler.target>11</maven.compiler.target>-->
         <java.version>17</java.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
         <org.projectlombok.version>1.18.30</org.projectlombok.version>
@@ -32,7 +30,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.41</version> <!-- latest stable non-vulnerable -->
+            <version>10.1.41</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
@@ -55,13 +53,6 @@
             <artifactId>jakarta.mail</artifactId>
             <version>2.0.1</version>
         </dependency>
-
-<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.sun.mail/javax.mail &ndash;&gt;-->
-<!--        <dependency>-->
-<!--            <groupId>com.sun.mail</groupId>-->
-<!--            <artifactId>javax.mail</artifactId>-->
-<!--            <version>1.6.2</version>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -96,16 +87,6 @@
             <version>2.6.0</version>
         </dependency>
 
-        <!--        <dependency>-->
-<!--            <groupId>io.springfox</groupId>-->
-<!--            <artifactId>springfox-swagger2</artifactId>-->
-<!--            <version>2.9.2</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.springfox</groupId>-->
-<!--            <artifactId>springfox-swagger-ui</artifactId>-->
-<!--            <version>2.9.2</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
@@ -151,10 +132,6 @@
             <artifactId>hibernate-core</artifactId>
             <version>6.4.4.Final</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.hibernate.orm</groupId>-->
-<!--            <artifactId>hibernate-annotations</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -176,20 +153,10 @@
         </dependency>
         <!-- JSON‑API & Jakarta JSON -->
         <dependency>
-<!--            <groupId>javax.json</groupId>-->
-<!--            <artifactId>javax.json-api</artifactId>-->
-<!--            <version>1.1.4</version>-->
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
             <version>2.1.1</version>
         </dependency>
-        <!-- Barcode / PDF / miscellaneous -->
-<!--        <dependency>-->
-<!--            <groupId>org.glassfish</groupId>-->
-<!--            <artifactId>javax.json</artifactId>-->
-<!--            <version>1.0.4</version>-->
-<!--        </dependency>-->
-
 
         <dependency>
             <groupId>org.openapitools</groupId>
@@ -207,19 +174,10 @@
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
-
-        <!-- Also likely needed -->
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.glassfish</groupId>-->
-<!--            <artifactId>javax.json</artifactId>-->
-<!--            <version>1.0.4</version>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
@@ -259,7 +217,7 @@
         <dependency>
             <groupId>com.dpw.runner</groupId>
             <artifactId>runner-timezone-utils</artifactId>
-            <version>0.0.4</version>  <!-- 0.0.4-->
+            <version>0.0.4</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -269,7 +227,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
-            <version>6.2.8</version> <!-- or 6.2.7 -->
+            <version>6.2.8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -307,7 +265,6 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-<!--            <version>LATEST</version> &lt;!&ndash; <version>1.12.25</version>  or the version managed by Spring &ndash;&gt;-->
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -318,65 +275,23 @@
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-commons</artifactId>
-            <version>1.3.1-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>*</groupId>-->
-<!--                    <artifactId>*</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
+            <version>1.3.1-REPORT_RELEASE</version>
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-api-quartz</artifactId>
-            <version>1.3.2-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
+            <version>1.3.2-REPORT_RELEASE</version>
         </dependency>
         <dependency>
             <groupId>com.dpw.api</groupId>
             <artifactId>dpw-messaging-quartz</artifactId>
-            <version>1.3.2-REPORT_RELEASE</version> <!-- 1.1.0.RELEASE-->
+            <version>1.3.2-REPORT_RELEASE</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.quartz-scheduler</groupId>-->
-<!--            <artifactId>quartz</artifactId>-->
-<!--            <version>2.2.3</version>-->
-<!--        </dependency>-->
-        <!-- Quartz upgraded to 2.5.0, exclude old c3p0 -->
-
-<!--        <dependency>-->
-<!--            <groupId>org.quartz-scheduler</groupId>-->
-<!--            <artifactId>quartz</artifactId>-->
-<!--            <version>2.5.0</version>-->
-<!--&lt;!&ndash;            <exclusions>&ndash;&gt;-->
-<!--&lt;!&ndash;                <exclusion>&ndash;&gt;-->
-<!--&lt;!&ndash;                    <groupId>c3p0</groupId>&ndash;&gt;-->
-<!--&lt;!&ndash;                    <artifactId>c3p0</artifactId>&ndash;&gt;-->
-
-<!--&lt;!&ndash;                </exclusion>&ndash;&gt;-->
-
-<!--&lt;!&ndash;            </exclusions>&ndash;&gt;-->
-
-<!--        </dependency>-->
-
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz-jobs</artifactId>
             <version>2.5.0</version>
         </dependency>
-
-
-
-        <!-- Provide a modern c3p0 version (or switch to HikariCP) -->
-
-<!--        <dependency>-->
-
-<!--            <groupId>com.mchange</groupId>-->
-
-<!--            <artifactId>c3p0</artifactId>-->
-
-<!--            <version>0.9.5.5</version>-->
-
-<!--        </dependency>-->
     </dependencies>
 
     <repositories>

@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.concurrent.TimeUnit;
+
 @Data
 @Configuration
 public class TrackingServiceConfig {
@@ -24,7 +26,7 @@ public class TrackingServiceConfig {
     public TrackingServiceConfig() {
 
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofMilliseconds(5000))
+                .setConnectionRequestTimeout(5000, TimeUnit.MILLISECONDS)
                 .setResponseTimeout(Timeout.ofMilliseconds(5000))
                 .build();
 
