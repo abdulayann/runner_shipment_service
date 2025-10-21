@@ -37,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -195,7 +196,7 @@ class ShipmentJobExecutorServiceTest {
         when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
-        when(entityTransferService.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
+        when(entityTransferV3Service.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
         List<Integer> list = new ArrayList<>();
         list.add(1);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
@@ -213,7 +214,7 @@ class ShipmentJobExecutorServiceTest {
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
         verify(shipmentDao, times(1)).findById(anyLong());
         verify(documentManagerRestClient, times(1)).multipleEntityFilesWithTenant(any());
-        verify(entityTransferService, times(1)).automaticTransferShipmentValidation(any());
+        verify(entityTransferV3Service, times(1)).automaticTransferShipmentValidation(any());
         verify(entityTransferV3Service, times(1)).sendShipment(any());
         verify(commonErrorLogsDao, times(1)).deleteShipmentErrorsLogs(anyLong());
         verify(quartzJobInfoDao, times(1)).save(any());
@@ -387,7 +388,7 @@ class ShipmentJobExecutorServiceTest {
 
         when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
         when(consolidationDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(entityTransferService.automaticTransferConsoleValidation(any())).thenReturn(sendConsoleValidationResponse);
+        when(entityTransferV3Service.automaticTransferConsoleValidation(any())).thenReturn(sendConsoleValidationResponse);
         when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
         List<Integer> list = new ArrayList<>();
         list.add(1);
@@ -405,7 +406,7 @@ class ShipmentJobExecutorServiceTest {
         verify(v1Service).clearAuthContext();
         verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
         verify(consolidationDao, times(1)).findById(anyLong());
-        verify(entityTransferService, times(1)).automaticTransferConsoleValidation(any());
+        verify(entityTransferV3Service, times(1)).automaticTransferConsoleValidation(any());
         verify(documentManagerRestClient, times(1)).multipleEntityFilesWithTenant(any());
         verify(entityTransferV3Service, times(1)).sendConsolidation(any());
         verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(anyLong(), anyList());
@@ -551,6 +552,190 @@ class ShipmentJobExecutorServiceTest {
 
     public ResponseEntity<IRunnerResponse> getResponse(IRunnerResponse data, HttpStatus status) {
         return new ResponseEntity<>(RunnerResponse.builder().success(true).data(data).build(), status);
+    }
+
+    @Test
+    void testExecuteJob_EmptyShipmentsList_ForConsolidation() {
+        String jobId = "1";
+        quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
+        consolidationDetails.setShipmentsList(new HashSet<>());
+        JobDetail jobDetail = mock(JobDetail.class);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(consolidationDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
+        verify(consolidationDao, times(1)).findById(anyLong());
+    }
+
+    @Test
+    void testExecuteJob_NullCarrierDetails_ForShipment() {
+        String jobId = "1";
+        shipmentDetails.setCarrierDetails(null);
+        JobDetail jobDetail = mock(JobDetail.class);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
+        verify(quartzJobInfoDao, times(1)).save(any());
+    }
+
+    @Test
+    void testExecuteJob_NullCarrierDetails_ForConsolidation() {
+        String jobId = "1";
+        quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
+        consolidationDetails.setCarrierDetails(null);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
+        JobDetail jobDetail = mock(JobDetail.class);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(consolidationDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
+        verify(quartzJobInfoDao, times(1)).save(any());
+    }
+
+    @Test
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsShipment_WithTriangulationPartner() throws RunnerException {
+        String jobId = "1";
+        shipmentDetails.setReceivingBranch(1L);
+        JobDetail jobDetail = mock(JobDetail.class);
+        SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
+        sendShipmentValidationResponse.setIsError(false);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
+        when(entityTransferService.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
+        when(entityTransferService.sendShipment(any())).thenReturn(getResponse(new SendShipmentResponse(), HttpStatus.OK));
+        doNothing().when(commonErrorLogsDao).deleteShipmentErrorsLogs(anyLong());
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(quartzJobInfo);
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(entityTransferService, times(1)).sendShipment(any());
+    }
+
+    @Test
+    void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_WithTriangulationPartner() throws RunnerException {
+        String jobId = "1";
+        quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
+        consolidationDetails.setReceivingBranch(1L);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
+        JobDetail jobDetail = mock(JobDetail.class);
+        SendConsoleValidationResponse sendConsoleValidationResponse = new SendConsoleValidationResponse();
+        sendConsoleValidationResponse.setIsError(false);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(consolidationDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(entityTransferService.automaticTransferConsoleValidation(any())).thenReturn(sendConsoleValidationResponse);
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(getDocumentResponse());
+        when(entityTransferService.sendConsolidation(any())).thenReturn(getResponse(new SendConsolidationResponse(), HttpStatus.OK));
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(anyLong(), anyList());
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(quartzJobInfo);
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(entityTransferService, times(1)).sendConsolidation(any());
+    }
+
+    @Test
+    void testExecuteJob_DocumentManagerReturnsNull() throws RunnerException {
+        String jobId = "1";
+        JobDetail jobDetail = mock(JobDetail.class);
+        SendShipmentValidationResponse sendShipmentValidationResponse = new SendShipmentValidationResponse();
+        sendShipmentValidationResponse.setIsError(false);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        when(quartzJobInfoDao.findByIdQuery(Long.parseLong(jobId))).thenReturn(Optional.of(quartzJobInfo));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> emptyResponse = new DocumentManagerListResponse<>();
+        emptyResponse.setData(new ArrayList<>());
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(emptyResponse);
+
+        when(entityTransferService.automaticTransferShipmentValidation(any())).thenReturn(sendShipmentValidationResponse);
+        when(entityTransferService.sendShipment(any())).thenReturn(getResponse(new SendShipmentResponse(), HttpStatus.OK));
+        doNothing().when(commonErrorLogsDao).deleteShipmentErrorsLogs(anyLong());
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(quartzJobInfo);
+
+        doNothing().when(v1Service).setAuthContext();
+        doNothing().when(v1Service).clearAuthContext();
+
+        shipmentJobExecutorService.executeJob(jobExecutionContext);
+
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
+        verify(quartzJobInfoDao, times(1)).findByIdQuery(anyLong());
+        verify(shipmentDao, times(1)).findById(anyLong());
+        verify(documentManagerRestClient, times(1)).multipleEntityFilesWithTenant(any());
+        verify(entityTransferService, times(1)).automaticTransferShipmentValidation(any());
+        verify(entityTransferService, times(1)).sendShipment(any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+    }
+
+    @Test
+    void testExecuteJob_InvalidJobId() {
+        String jobId = "invalid";
+        JobDetail jobDetail = mock(JobDetail.class);
+
+        when(jobDetail.getKey()).thenReturn(JobKey.jobKey(jobId));
+        when(jobExecutionContext.getJobDetail()).thenReturn(jobDetail);
+
+        assertThrows(NumberFormatException.class, () -> {
+            shipmentJobExecutorService.executeJob(jobExecutionContext);
+        });
     }
 
 }
