@@ -941,18 +941,22 @@ public class HawbReport extends IReport{
                 masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
-            if(hawbModel.getShipmentDetails() != null && hawbModel.getShipmentDetails().getAdditionalDetails() != null) {
-                //HAWB && DRT MAWB
-                AdditionalDetailModel additionalDetails = hawbModel.getShipmentDetails().getAdditionalDetails();
-                dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(additionalDetails.getSecurityStatusReceivedFrom(), additionalDetails.getRegulatedEntityCategory(), additionalDetails.getScreeningStatus(), hawbModel.awb));
-            }else if(hawbModel.getConsolidationDetails() != null){
-                //MAWB
-                dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getConsolidationDetails().getSecurityStatusReceivedFrom(), hawbModel.getConsolidationDetails().getRegulatedEntityCategory(), hawbModel.getConsolidationDetails().getScreeningStatus(), hawbModel.awb));
-            }
+            processSecurityTags(hawbModel, dictionary);
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
             dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
+        }
+    }
+
+    private void processSecurityTags(HawbModel hawbModel, Map<String, Object> dictionary){
+        if(hawbModel.getShipmentDetails() != null && hawbModel.getShipmentDetails().getAdditionalDetails() != null) {
+            //HAWB && DRT MAWB
+            AdditionalDetailModel additionalDetails = hawbModel.getShipmentDetails().getAdditionalDetails();
+            dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(additionalDetails.getSecurityStatusReceivedFrom(), additionalDetails.getRegulatedEntityCategory(), additionalDetails.getScreeningStatus(), hawbModel.awb));
+        }else if(hawbModel.getConsolidationDetails() != null){
+            //MAWB
+            dictionary.put(RA_CSD_SECURITY, getCSDSecurityInfo(hawbModel.getConsolidationDetails().getSecurityStatusReceivedFrom(), hawbModel.getConsolidationDetails().getRegulatedEntityCategory(), hawbModel.getConsolidationDetails().getScreeningStatus(), hawbModel.awb));
         }
     }
 
