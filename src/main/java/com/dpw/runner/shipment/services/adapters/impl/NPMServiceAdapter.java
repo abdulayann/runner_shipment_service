@@ -1352,11 +1352,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private boolean matchesMinTransit(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
-        if (request.getMinTransitDays() == null) {
-            return true;
-        }
         Long offerMinTransitHours = parseTransitHours(offer.getMinTransitHours(), offer);
-        if (offerMinTransitHours == null) {
+        if (request.getMinTransitDays() == null || offerMinTransitHours == null) {
             return true;
         }
         long minTransitHours = request.getMinTransitDays() * 24L;
@@ -1364,11 +1361,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private boolean matchesMaxTransit(NPMFetchOffersRequestFromUI request, FetchOffersResponse.Offer offer) {
-        if (request.getMaxTransitDays() == null) {
-            return true;
-        }
         Long offerMaxTransitHours = parseTransitHours(offer.getMaxTransitHours(), offer);
-        if (offerMaxTransitHours == null) {
+        if (request.getMaxTransitDays() == null || offerMaxTransitHours == null) {
             return true;
         }
         long maxTransitHours = request.getMaxTransitDays() * 24L;
