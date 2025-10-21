@@ -1797,8 +1797,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.airConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         if(Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)) {
             List<Awb> mawbs = awbDao.findByConsolidationId(consolidationDetails.getId());
-            if (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && (mawbs.isEmpty() || !Objects.equals(mawbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)))
-                isPrintMawbError = true;
+            isPrintMawbError = checkPrintMawbError(consolidationDetails, mawbs);
         }
 
         for (var shipment : consolidationDetails.getShipmentsList()) {
@@ -1837,6 +1836,10 @@ public class EntityTransferService implements IEntityTransferService {
     private boolean validateConditionsForHAWBNumber(String direction, String shipmentType, String houseBill){
         return Objects.equals(direction, DIRECTION_CTS) || Objects.equals(direction, DIRECTION_IMP) || (!Objects.equals(shipmentType, Constants.SHIPMENT_TYPE_STD)
                 && !Objects.equals(shipmentType, Constants.CONSOLIDATION_TYPE_DRT)) && Strings.isNullOrEmpty(houseBill);
+    }
+
+    private boolean checkPrintMawbError(ConsolidationDetails consolidationDetails, List<Awb> mawbs){
+        return (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && (mawbs.isEmpty() || !Objects.equals(mawbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)));
     }
 
     private List<String> airConsoleFieldValidations(ConsolidationDetails consolidationDetails, boolean isAutomaticTransfer) {
