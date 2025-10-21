@@ -414,12 +414,11 @@ public class CommonUtils {
     IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -1055,6 +1054,9 @@ public class CommonUtils {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             setRequestedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
         }
@@ -1092,7 +1094,7 @@ public class CommonUtils {
             template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
-    public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PULL_ACCEPTED)) {
@@ -1109,10 +1111,21 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+        if (isV3FlagEnabled) {
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+    }
+
+    private void getToAndCcEmailMasterListsForHubAndRegion(SendEmailDto sendEmailDto, Set<String> toEmailIds, Set<String> ccEmailIds) {
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+        if(Objects.nonNull(sendEmailDto.getShipmentDetails()) && Objects.nonNull(sendEmailDto.getShipmentDetails().getTenantId())) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        }
     }
 
     public void populateShipmentImportPullAttachmentTemplate(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, UnlocationsResponse> unLocMap) {
@@ -1225,7 +1238,7 @@ public class CommonUtils {
         setCurrentUserEmail(ccEmailIds);
         if (isV3FlagEnabled) {
             // fetching to and cc from master lists
-            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
         }
@@ -1234,7 +1247,7 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_PUSH_REQUESTED)) {
@@ -1250,8 +1263,11 @@ public class CommonUtils {
         setShipmentCreateAndAssignedUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
-
+        if(isV3FlagEnabled) {
+            getToAndCcEmailMasterListsForHubAndRegion(sendEmailDto, toEmailIds, ccEmailIds);
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        }
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
@@ -1274,6 +1290,9 @@ public class CommonUtils {
         if(isV3FlagEnabled) {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
         }
@@ -1301,6 +1320,9 @@ public class CommonUtils {
         if (isV3FlagEnabled) {
             setConsolidationCreatedUserEmail(sendEmailDto, ccEmailIds);
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if(Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
         } else {
             getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
         }
@@ -1310,7 +1332,7 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailShipmentDetach(SendEmailDto sendEmailDto) {
+    public void sendEmailShipmentDetach(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         if (!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_DETACH)) {
@@ -1326,7 +1348,14 @@ public class CommonUtils {
         setConsolidationAssignedToUserEmail(sendEmailDto, ccEmailIds);
         setCurrentUserEmail(ccEmailIds);
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+        if (isV3FlagEnabled) {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId());
+            if (Objects.nonNull(sendEmailDto.getConsolidationDetails()) && Objects.nonNull(sendEmailDto.getConsolidationDetails().getTenantId())) {
+                getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId());
+            }
+        } else {
+            getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -1435,12 +1464,12 @@ public class CommonUtils {
     public void sendEmailForPullPushRequestStatus(SendEmailDto sendEmailDto, boolean isV3FlagEnabled) throws Exception {
         switch (sendEmailDto.getType()) {
             case SHIPMENT_PULL_REQUESTED -> sendEmailShipmentPullRequest(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_PULL_ACCEPTED -> sendEmailShipmentPullAccept(sendEmailDto);
+            case SHIPMENT_PULL_ACCEPTED -> sendEmailShipmentPullAccept(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PULL_REJECTED -> sendEmailShipmentPullReject(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto);
+            case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PUSH_ACCEPTED -> sendEmailShipmentPushAccept(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PUSH_REJECTED -> sendEmailShipmentPushReject(sendEmailDto, isV3FlagEnabled);
-            case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
+            case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto, isV3FlagEnabled);
             case SHIPMENT_PULL_WITHDRAW -> sendEmailShipmentPullWithdraw(sendEmailDto);
             case SHIPMENT_PUSH_WITHDRAW -> sendEmailShipmentPushWithdraw(sendEmailDto);
             default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType(), isV3FlagEnabled);
@@ -3765,20 +3794,32 @@ public class CommonUtils {
         return null;
     }
 
-    public static String constructAddress(Map<String, Object> addressData) {
+    public static String constructAddress(Map<String, Object> addressData, Map<String, Object> orgData) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
 
         if (addressData != null) {
+            // Name
+            if (addressData.containsKey(PartiesConstants.COMPANY_NAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(addressData.get(PartiesConstants.COMPANY_NAME))
+                ));
+            }
+            else if (Objects.nonNull(orgData) && orgData.containsKey(PartiesConstants.FULLNAME)) {
+                sb.append(StringUtility.toUpperCase(
+                        StringUtility.convertToString(orgData.get(PartiesConstants.FULLNAME))
+                ));
+            }
+
             // Address1
             if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
-                sb.append(StringUtility.toUpperCase(
+                sb.append(newLine).append(StringUtility.toUpperCase(
                         StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1))
                 ));
             }
 
             // Address2
-            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+            if (checkAddressKeyExists(addressData, PartiesConstants.ADDRESS2)) {
                 sb.append(newLine).append(
                         StringUtility.toUpperCase(
                                 StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2))
@@ -3799,30 +3840,35 @@ public class CommonUtils {
 
     private static String constructAddressL3(Map<String, Object> addressData) {
         StringBuilder line3 = new StringBuilder();
-        if (addressData.containsKey(PartiesConstants.CITY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.CITY)) {
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.CITY))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.STATE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.STATE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.STATE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.ZIP_POST_CODE)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE))
             ));
         }
-        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
+        if (checkAddressKeyExists(addressData, PartiesConstants.COUNTRY)) {
             if (!line3.isEmpty()) line3.append(" ");
             line3.append(StringUtility.toUpperCase(
                     getCountryName(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)))
             ));
         }
         return line3.toString();
+    }
+
+    private static boolean checkAddressKeyExists(Map<String, Object> addressData, String key) {
+        return addressData.containsKey(key) &&
+                addressData.get(key) != null && StringUtility.isNotEmpty(String.valueOf(addressData.get(key)));
     }
 
     private static String getCountryName(String code) {
@@ -4801,6 +4847,109 @@ public class CommonUtils {
             return Constants.EXPORT_EXCEL_MESSAGE + minutes + " minutes and " + seconds + " seconds. Please try again after that time.";
         }
     }
+
+    public void validateAndSetOriginAndDestinationPortIfNotExist(ShipmentDetails shipment, ConsolidationDetails console) {
+
+        CarrierDetails carrierDetails;
+        List<Routings> routings;
+        if (null != shipment) {
+            carrierDetails = shipment.getCarrierDetails();
+            routings = shipment.getRoutingsList();
+        } else {
+            carrierDetails = console.getCarrierDetails();
+            routings = console.getRoutingsList();
+        }
+
+        Set<String> plcData = new HashSet<>();
+        boolean isCarrierLocCodeAdded = false;
+        boolean isRoutingLocCodeAdded = false;
+        isCarrierLocCodeAdded = validateCarrierDetail(carrierDetails, isCarrierLocCodeAdded, plcData);
+        isRoutingLocCodeAdded = validateRoute(routings, isRoutingLocCodeAdded, plcData);
+        setIfLocCodeExist(plcData, isCarrierLocCodeAdded, carrierDetails, isRoutingLocCodeAdded, routings);
+    }
+
+    private static boolean validateCarrierDetail(CarrierDetails carrierDetails, boolean isCarrierLocCodeAdded, Set<String> plcData) {
+        if (null != carrierDetails) {
+            if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getOriginPort());
+            }
+            if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort()) {
+                isCarrierLocCodeAdded = true;
+                plcData.add(carrierDetails.getDestinationPort());
+            }
+        }
+        return isCarrierLocCodeAdded;
+    }
+
+    private static boolean validateRoute(List<Routings> routings, boolean isRoutingLocCodeAdded, Set<String> plcData) {
+        if (Objects.isNull(routings) || routings.isEmpty()) {
+            return isRoutingLocCodeAdded;
+        }
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPol());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod()){
+                isRoutingLocCodeAdded = true;
+                plcData.add(route.getPod());
+            }
+        }
+        return isRoutingLocCodeAdded;
+    }
+
+    private void setIfLocCodeExist(Set<String> plcData, boolean isCarrierLocCodeAdded, CarrierDetails carrierDetails, boolean isRoutingLocCodeAdded, List<Routings> routings) {
+
+        if (!CollectionUtils.isEmpty(plcData)) {
+            log.info("Getting unLocationData from v1 for plcData : {}", plcData.stream().toList());
+            Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(plcData);
+            if (!unlocationsMap.isEmpty()) {
+                unlocationsMap.forEach((key, value) ->
+                    log.info("UnlocCode for : {} is  : {} ", key, value.getLocCode())
+                );
+            }
+            if (isCarrierLocCodeAdded && Objects.nonNull(carrierDetails)) {
+                setCarrierData(carrierDetails, unlocationsMap);
+            }
+            if (isRoutingLocCodeAdded && Objects.nonNull(routings) && !routings.isEmpty()) {
+                setRoutingData(routings, unlocationsMap);
+            }
+        }
+    }
+
+    private static void setCarrierData(CarrierDetails carrierDetails, Map<String, UnlocationsResponse> unlocationsMap) {
+        if (null == carrierDetails.getOriginPortLocCode() && null != carrierDetails.getOriginPort() && unlocationsMap.containsKey(carrierDetails.getOriginPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getOriginPort());
+            carrierDetails.setOriginPortLocCode(unLocResp.getLocCode());
+        }
+        if (null == carrierDetails.getDestinationPortLocCode() && null != carrierDetails.getDestinationPort() && unlocationsMap.containsKey(carrierDetails.getDestinationPort())) {
+            UnlocationsResponse unLocResp = unlocationsMap.get(carrierDetails.getDestinationPort());
+            carrierDetails.setDestinationPortLocCode(unLocResp.getLocCode());
+        }
+    }
+
+    private static void setRoutingData(List<Routings> routings, Map<String, UnlocationsResponse> unlocationsMap) {
+        for (Routings route : routings) {
+            if (null == route.getOriginPortLocCode() && null != route.getPol() && unlocationsMap.containsKey(route.getPol())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPol());
+                route.setOriginPortLocCode(unLocResp.getLocCode());
+            }
+            if (null == route.getDestinationPortLocCode() && null != route.getPod() && unlocationsMap.containsKey(route.getPod())){
+                UnlocationsResponse unLocResp = unlocationsMap.get(route.getPod());
+                route.setDestinationPortLocCode(unLocResp.getLocCode());
+            }
+        }
+    }
+
+    public boolean getBooleanConfigFromAppConfig(String appConfigKey) {
+        String configuredValue = applicationConfigService.getValue(appConfigKey);
+        if (null == configuredValue) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(configuredValue);
+    }
+
 
     public Map<Long, String> getTenantNameMap(List<Integer> tenantIds){
         CommonV1ListRequest request = new CommonV1ListRequest();

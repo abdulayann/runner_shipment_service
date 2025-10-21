@@ -11690,6 +11690,70 @@
     },
     "containsText": ""
   },
+  "LIST_REQUEST_14" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISEMPTY"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_15" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISNOTEMPTY"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_16" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISNOTEQUALORNULL",
+              "value": "VALUE"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
   "QUOTE_CONTRACTS": {
     "id": 1,
     "guid": "63b0083b-08ab-49e4-a457-a7484cb172c8",

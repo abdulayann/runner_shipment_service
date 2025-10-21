@@ -4814,13 +4814,15 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendImportShipmentPullAttachmentEmail() {
     // setup
     shipmentDetails = ShipmentDetails.builder().build();
+    shipmentDetails.setAssignedTo("assignedUser");
     consolidationDetails = ConsolidationDetails.builder().build();
     consolidationDetails.setAssignedTo("assignedToUser");
+    consolidationDetails.setCreatedBy("createdBy");
     List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    // method under test
+      // method under test
     ResponseEntity<IRunnerResponse> result = consolidationV3Service.sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
 
     // assertions
@@ -4831,9 +4833,18 @@ if (unitConversionUtilityMockedStatic != null) {
   void testSendEmailForPullRequested() {
     when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    testConsol.setTenantId(101);
     // method under test
     assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
   }
+
+    @Test
+    void testSendEmailForPullRequested_WithNoTenantId() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        // method under test
+        assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
+    }
 
   @Test
   void testGetSummaryDgPacks() {
@@ -6913,6 +6924,67 @@ if (unitConversionUtilityMockedStatic != null) {
         verify(criteriaQuery).where(predicate);
         verify(commonUtils).refineIncludeColumns(request.getIncludeColumns());
         verify(typedQuery).getResultList();
+    }
+    @Test
+    void testGetConsolDetails_WithInvalidIdThrowsException() throws RunnerException {
+        // Arrange
+        CommonGetRequest request = new CommonGetRequest();
+        request.setId(123L);
+        request.setIncludeColumns(Arrays.asList("id", "consolidationNumber", "status"));
+
+        // Mock EntityManager and CriteriaBuilder chain
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Object[].class)).thenReturn(criteriaQuery);
+        when(criteriaQuery.from(ConsolidationDetails.class)).thenReturn(root);
+        when(criteriaQuery.multiselect(anyList())).thenReturn(criteriaQuery);
+        when(criteriaQuery.distinct(anyBoolean())).thenReturn(criteriaQuery);
+        when(criteriaQuery.where(any(Predicate.class))).thenReturn(criteriaQuery);
+        when(entityManager.createQuery(criteriaQuery)).thenReturn(typedQuery);
+        Predicate predicate = mock(Predicate.class, withSettings().lenient());
+
+        // Mock predicate creation for ID filtering
+        when(criteriaBuilder.equal(any(), eq(123L))).thenReturn(predicate);
+        when(root.get("id")).thenReturn(mock(Path.class));
+
+        // Mock CommonUtils methods
+        when(commonUtils.refineIncludeColumns(anyList()))
+                .thenReturn(Arrays.asList("id", "consoleNumber", "status"));
+
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipment", Arrays.asList("id", "consoleNumber", "status"));
+        when(commonUtils.extractRequestedColumns(anyList(), any())).thenReturn(requestedColumns);
+        when(commonUtils.detectCollectionRelationships(any(), eq(ConsolidationDetails.class)))
+                .thenReturn(new HashSet<>());
+
+        // Mock buildJoinsAndSelections - simplified to avoid ClassCastException
+        doNothing().when(commonUtils).buildJoinsAndSelections(any(), any(), anyList(), anyList(), anyString(), any());
+
+        // Mock query results
+        List<Object[]> queryResults = new ArrayList<>();
+        queryResults.add(new Object[]{123L, "SHIP-001", "DELIVERED"});
+        when(typedQuery.getResultList()).thenReturn(queryResults);
+
+        when(commonUtils.convertToNestedMapWithCollections(anyList(), anySet(), anyString()))
+                .thenReturn(new ArrayList<>());
+
+        // Mock ShipmentDetails conversion
+        ConsolidationDetails mockShipment = new ConsolidationDetails();
+        mockShipment.setId(123L);
+        lenient().when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(mockShipment);
+
+        // Mock response conversion
+        ConsolidationDetailsResponse mockResponse = new ConsolidationDetailsResponse();
+        lenient().when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(mockResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = consolidationV3Service.getConsolidationDetails(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+        // Assert
+
     }
 
     @Test

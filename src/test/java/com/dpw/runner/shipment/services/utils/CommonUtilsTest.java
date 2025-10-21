@@ -101,6 +101,7 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
@@ -194,6 +195,7 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.service.impl.ApplicationConfigServiceImpl;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
@@ -459,6 +461,7 @@ class CommonUtilsTest {
     @Mock
     private ObjectMapper objectMapper;
 
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
@@ -510,6 +513,54 @@ class CommonUtilsTest {
         mockUser.setUsername("TestUser");
         mockUser.setTenantDisplayName("Test Tenant");
         UserContext.setUser(mockUser);
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNamePresentInAddressData_UsesCompanyName() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.COMPANY_NAME, "My Company");
+        addressData.put(PartiesConstants.ADDRESS1, "123 Street");
+        addressData.put(PartiesConstants.CITY, "City");
+        addressData.put(PartiesConstants.STATE, "ST");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        String result = CommonUtils.constructAddress(addressData, null);
+
+        assertTrue(result.startsWith("MY COMPANY"));
+        assertTrue(result.contains("123 STREET"));
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNameNotPresent_UsesOrgFullName() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "456 Avenue");
+        addressData.put(PartiesConstants.CITY, "Metropolis");
+        addressData.put(PartiesConstants.STATE, "CA");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "98765");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(PartiesConstants.FULLNAME, "Organization Full Name");
+
+        String result = CommonUtils.constructAddress(addressData, orgData);
+
+        assertTrue(result.startsWith("ORGANIZATION FULL NAME"));
+        assertTrue(result.contains("456 AVENUE"));
+    }
+
+    @Test
+    void constructAddress_WhenCompanyNameNotPresent_UsesNullOrg() {
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(PartiesConstants.ADDRESS1, "456 Avenue");
+        addressData.put(PartiesConstants.CITY, "Metropolis");
+        addressData.put(PartiesConstants.STATE, "CA");
+        addressData.put(PartiesConstants.ZIP_POST_CODE, "98765");
+        addressData.put(PartiesConstants.COUNTRY, "USA");
+
+        String result = CommonUtils.constructAddress(addressData, null);
+
+        assertTrue(result.contains("456 AVENUE"));
     }
 
     @Test
@@ -1467,6 +1518,24 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 "username", null, false);
         assertFalse(shipmentRequestedTypes.isEmpty());
+        //with v3FlagEnabled.
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+               shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                shipmentRequestedTypes,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                "username", null, true);
+        assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
     @Test
@@ -1479,6 +1548,30 @@ class CommonUtilsTest {
                         .carrierDetails(CarrierDetails.builder().build())
                         .allocations(Allocations.builder().build())
                         .build(),
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //with v2 flag enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
                 SHIPMENT_PULL_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>(),
@@ -1554,6 +1647,31 @@ class CommonUtilsTest {
                 }},
                 "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -1616,6 +1734,35 @@ class CommonUtilsTest {
     }
 
     @Test
+    void sendEmailForPullPushRequestStatusPullReject_withV3FlagEnabled() throws Exception {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
     void sendEmailForPullPushRequestStatusPullRejectNoTemplate() throws Exception {
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
@@ -1634,6 +1781,30 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+               shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1673,6 +1844,31 @@ class CommonUtilsTest {
                     put(56, v1TenantSettingsResponse);
                 }},
                 "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1806,6 +2002,32 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+        //When v3 flag is enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -1930,6 +2152,32 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //when v3 flag is enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -2033,14 +2281,16 @@ class CommonUtilsTest {
 
     @Test
     void sendEmailForPullPushRequestStatusPushReject() throws Exception {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build()).build();
+
         commonUtils.sendEmailForPullPushRequestStatus(
-                ShipmentDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .build(),
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                shipmentDetails1,
+                consolidationDetails1,
                 SHIPMENT_PUSH_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
@@ -2052,6 +2302,25 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //when v3 flag is enabled
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2075,6 +2344,32 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3flagEnabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -2150,6 +2445,25 @@ class CommonUtilsTest {
                 }},
                 "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With V3 Flag enabled
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
@@ -2178,21 +2492,52 @@ class CommonUtilsTest {
     }
 
     @Test
+    void sendEmailForPullPushRequestStatus_withV3FlagEnabled() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
     void sendEmailForPullPushRequestStatus_Cases() throws Exception {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .assignedTo("assigned")
                 .carrierDetails(CarrierDetails.builder().build())
                 .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails.setTenantId(94);
         shipmentDetails.setCreatedBy("created");
         shipmentDetails.setTenantId(56);
         V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                consolidationDetails,
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
@@ -2822,6 +3167,34 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusDetach_withV3Enabled() throws Exception {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails.setTenantId(100);
+        consolidationDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails,
+                SHIPMENT_DETACH,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_DETACH, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -7720,4 +8093,114 @@ class CommonUtilsTest {
     }
 
 
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromShipment() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR1");
+        carrier.setDestinationPort("DS1");
+
+        Routings routing = new Routings();
+        routing.setPol("POL1");
+        routing.setPod("POD1");
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR1_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("DS1_CODE");
+        UnlocationsResponse un3 = new UnlocationsResponse();
+        un3.setLocCode("POL1_CODE");
+        UnlocationsResponse un4 = new UnlocationsResponse();
+        un4.setLocCode("POD1_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = new HashMap<>();
+        mockMap.put("OR1", un1);
+        mockMap.put("DS1", un2);
+        mockMap.put("POL1", un3);
+        mockMap.put("POD1", un4);
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then
+        assertEquals("OR1_CODE", carrier.getOriginPortLocCode());
+        assertEquals("DS1_CODE", carrier.getDestinationPortLocCode());
+        assertEquals("POL1_CODE", routing.getOriginPortLocCode());
+        assertEquals("POD1_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_FromConsole() {
+        // given
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setOriginPort("OR2");
+
+        Routings routing = new Routings();
+        routing.setPod("POD2");
+
+        ConsolidationDetails console = new ConsolidationDetails();
+        console.setCarrierDetails(carrier);
+        console.setRoutingsList(List.of(routing));
+
+        UnlocationsResponse un1 = new UnlocationsResponse();
+        un1.setLocCode("OR2_CODE");
+        UnlocationsResponse un2 = new UnlocationsResponse();
+        un2.setLocCode("POD2_CODE");
+
+        Map<String, UnlocationsResponse> mockMap = Map.of(
+                "OR2", un1,
+                "POD2", un2
+        );
+
+        when(masterDataUtils.getLocationData(anySet())).thenReturn(mockMap);
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(null, console);
+
+        // then
+        assertEquals("OR2_CODE", carrier.getOriginPortLocCode());
+        assertEquals("POD2_CODE", routing.getDestinationPortLocCode());
+    }
+
+    @Test
+    void testValidateAndSetOriginAndDestinationPort_NoPlcData() {
+        CarrierDetails carrier = new CarrierDetails(); // empty, no ports
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(carrier);
+        shipment.setRoutingsList(Collections.emptyList());
+
+        // when
+        commonUtils.validateAndSetOriginAndDestinationPortIfNotExist(shipment, null);
+
+        // then → no interaction with masterDataUtils
+        verify(masterDataUtils, never()).getLocationData(anySet());
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_null() {
+        when(applicationConfigService.getValue("key1")).thenReturn(null);
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key1"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_true() {
+        when(applicationConfigService.getValue("key2")).thenReturn("true");
+
+        assertTrue(commonUtils.getBooleanConfigFromAppConfig("key2"));
+    }
+
+    @Test
+    void testGetBooleanConfigFromAppConfig_false() {
+        when(applicationConfigService.getValue("key3")).thenReturn("false");
+
+        assertFalse(commonUtils.getBooleanConfigFromAppConfig("key3"));
+    }
 }

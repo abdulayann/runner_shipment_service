@@ -235,8 +235,6 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Mock
     private ShippingInstructionUtil shippingInstructionUtil;
 
-
-
     @InjectMocks
     @Spy
     private ContainerV3Service containerV3Service;
@@ -854,12 +852,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(containerRequests, Containers.class)).thenReturn(containers);
         when(containerDao.saveAll(containers)).thenReturn(containers);
         doNothing().when(auditLogService).addAuditLog(any());
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
 
         when(jsonHelper.convertValueToList(containers, ContainerResponse.class)).thenReturn(responseList);
 
@@ -880,12 +872,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         when(containerDao.save(testContainer)).thenReturn(testContainer);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
@@ -901,12 +887,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
         lenient().when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         when(containerDao.save(testContainer)).thenReturn(testContainer);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         lenient().when(iConsoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
@@ -978,13 +958,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
-
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            Runnable argument = invocation.getArgument(0);
-            argument.run();
-            return mockRunnable;
-        });
 
         lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         lenient().doNothing().when(shipmentsContainersMappingDao).assignShipments(containerId, Set.of(shipmentId), false);
@@ -1378,7 +1351,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
         when(shipmentService.findById(anyLong())).thenReturn(Optional.ofNullable(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(page);
-        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(testPacking));
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(ListCommonRequest.builder().entityId("1").build(), Constants.SHIPMENT);
         assertNotNull(containerListResponse);

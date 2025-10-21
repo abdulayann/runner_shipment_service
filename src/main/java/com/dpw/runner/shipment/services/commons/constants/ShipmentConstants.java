@@ -34,7 +34,7 @@ public class ShipmentConstants {
             "Estimated Cost", "Estimated Revenue", "Estimated Profit", "Estimated Profit %",
             "Captured Cost", "Captured Revenue", "Captured Profit", "Captured Profit %",
             "Invoiced Payable Cost", "Invoiced Receivable Revenue", "Invoiced Profit",
-            "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
+            "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "POL",
             "POD", "Waybill Number", "Additional Terms", "Reference Number", "POL Code", "POD Code", "Origin Code", "Destination Code"
     );
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", REFERENCE_NUMBERS_LIST,"servicesList", "containersList", "eventsList","triangulationPartnerList");
@@ -365,6 +365,7 @@ public class ShipmentConstants {
     public static final String SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG = "Shipment details fetched successfully for Id {} with Request Id {} within: {}ms";
     public static final String SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE = "Include Columns field is mandatory";
     public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE = "Shipment Details is null for the input with Request Id {}";
+    public static final String SHIPMENT_DETAILS_IS_NULL_MESSAGE_DR = "Shipment Details is null for Id/Guid {} with Request Id {}";
 
     public static final String PARTY_UPDATE_SUCCESSFUL = "Successful Party Data Update";
     public static final String ERROR_INVALID_REQUEST_DG_APPROVE = "Invalid request for sendEmailForDGApprove";

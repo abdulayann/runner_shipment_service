@@ -6,9 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
@@ -449,6 +447,56 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(modelMapper.map(any(), eq(NetworkTransferListResponse.class))).thenReturn(objectMapper.convertValue(networkTransfer, NetworkTransferListResponse.class));
         // Test
         var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest(ListCommonRequest.builder().build()));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertFalse(((RunnerListResponse) Objects.requireNonNull(responseEntity.getBody())).getData().isEmpty());
+    }
+
+    @Test
+    void testListWithSuccessResultWithShipmentNumberFilter() {
+        when(networkTransferDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(networkTransfer)));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+        ListCommonRequest request = ListCommonRequest.builder()
+                .pageNo(1)
+                .pageSize(25)
+                .filterCriteria(new ArrayList<>(List.of(
+                        FilterCriteria.builder()
+                                .innerFilter(new ArrayList<>(List.of(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("isHidden")
+                                                        .operator("=")
+                                                        .value(false)
+                                                        .build())
+                                                .build(),
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("shipmentNumber")
+                                                        .operator("=")
+                                                        .value("SHP000135316")
+                                                        .build())
+                                                .logicOperator("and")
+                                                .build()
+                                )))
+                                .build()
+                )))
+                .sortRequest(SortRequest.builder()
+                        .fieldName("createdAt")
+                        .order("DESC")
+                        .build())
+                .build();
+
+        when(modelMapper.map(any(), eq(NetworkTransferListResponse.class))).thenReturn(objectMapper.convertValue(networkTransfer, NetworkTransferListResponse.class));
+        // Test
+        var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest(request));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertFalse(((RunnerListResponse) Objects.requireNonNull(responseEntity.getBody())).getData().isEmpty());

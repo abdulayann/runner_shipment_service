@@ -71,6 +71,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.ShippingInstructionsConstants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.CancelledRequested;
 import static com.dpw.runner.shipment.services.entity.enums.ShippingInstructionStatus.Requested;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -518,7 +519,6 @@ class ShippingInstructionsServiceImplTest {
         when(consol.getShipInstructionCutoff()).thenReturn(LocalDateTime.now());
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
-        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
         when(carrierBookingInttraUtil.getConsolidationDetail(999L)).thenReturn(consol);
         when(repository.save(any(ShippingInstruction.class))).thenReturn(entity);
         when(jsonHelper.convertValue(any(ShippingInstruction.class), eq(ShippingInstructionResponse.class)))
@@ -734,7 +734,7 @@ class ShippingInstructionsServiceImplTest {
 
         CarrierBookingInfoProjection projection = mock(CarrierBookingInfoProjection.class);
         when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(si);
-        when(repository.findBookingByConsolId("CONSOL123")).thenReturn(List.of(projection));
+        when(repository.findBookingByConsolId(123L)).thenReturn(List.of(projection));
 
         assertThatThrownBy(() -> service.createShippingInstruction(request))
                 .isInstanceOf(ValidationException.class)
@@ -1176,7 +1176,7 @@ class ShippingInstructionsServiceImplTest {
     void getDefaultShippingInstructionValues_shouldThrow_whenUnsupportedEntityType() {
         assertThatThrownBy(() -> service.getDefaultShippingInstructionValues(null, 100L))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test
@@ -1186,11 +1186,10 @@ class ShippingInstructionsServiceImplTest {
         entity.setEntityType(null); // unsupported
 
         when(repository.findById(request.getId())).thenReturn(Optional.of(entity));
-        when(jsonHelper.convertValue(request, ShippingInstruction.class)).thenReturn(entity);
 
         assertThatThrownBy(() -> service.updateShippingInstructions(request))
                 .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Invalid value of Shipping Instruction Type");
+                .hasMessageContaining("Invalid value of Shipping Instruction Entity Type");
     }
 
     @Test
@@ -1244,6 +1243,11 @@ class ShippingInstructionsServiceImplTest {
 
     @Test
     void testCancelShippingInstruction_success() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
         Long siId = 123L;
         ShippingInstruction si = new ShippingInstruction();
         si.setId(siId);
@@ -1257,16 +1261,16 @@ class ShippingInstructionsServiceImplTest {
         service.cancelShippingInstruction(siId);
 
         // Verify SI status is updated
-        assertEquals(ShippingInstructionStatus.Cancelled, si.getStatus());
+        assertEquals(ShippingInstructionStatus.CancelledRequested, si.getStatus());
 
         // Verify repository.save was called
         verify(repository, times(1)).save(si);
 
         // Verify transaction history creation
         verify(carrierBookingInttraUtil, times(1)).createTransactionHistory(
-                (Requested.getDescription()),
+                (CancelledRequested.getDescription()),
                 (FlowType.Inbound),
-                ("SI Cancelled"),
+                ("Cancelled Requestedby: user"),
                 (SourceSystem.CargoRunner),
                 (siId),
                 (EntityTypeTransactionHistory.SI)

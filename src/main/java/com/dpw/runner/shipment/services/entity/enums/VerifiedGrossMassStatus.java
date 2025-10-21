@@ -18,7 +18,9 @@ public enum VerifiedGrossMassStatus {
     ReplacedByCarrier(10, "Replaced By Carrier"),
     ChangeDraft(11, "Change Draft"),
     CancelledByCarrier(12, "Cancelled By Carrier"),
-    AmendRejected(13, "Amend Rejected By INTTRA"), Acknowledged(14, "Acknowledged");
+    AmendRejected(13, "Amend Rejected By INTTRA"),
+    Acknowledged(14, "Acknowledged"),
+    CancelledRequested(15, "Cancelled Requested");
 
     private final int value;
     private final String description;

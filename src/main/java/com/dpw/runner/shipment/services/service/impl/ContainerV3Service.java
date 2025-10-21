@@ -1246,7 +1246,7 @@ public class ContainerV3Service implements IContainerV3Service {
             if (shipmentDetailsEntity.isPresent()) {
                 ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
                 if(List.of(TRANSPORT_MODE_SEA, TRANSPORT_MODE_RAI, TRANSPORT_MODE_ROA).contains(shipmentDetails.getTransportMode()) && List.of(SHIPMENT_TYPE_LCL, CARGO_TYPE_LTL).contains(shipmentDetails.getShipmentType())) {
-                    updatedContainerResponseForLCLandLTL(containerBaseResponseList, shipmentDetails);
+                    containerV3Util.updatedContainerResponseForLCLandLTL(containerBaseResponseList, shipmentDetails);
                 }
             }
             return getContainerSummaryResponse(jsonHelper.convertValueToList(containerBaseResponseList, Containers.class), true, xSource);
@@ -1289,7 +1289,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if (shipmentDetailsEntity.isPresent()) {
             ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
             if(List.of(TRANSPORT_MODE_SEA, TRANSPORT_MODE_RAI, TRANSPORT_MODE_ROA).contains(shipmentDetails.getTransportMode()) && List.of(SHIPMENT_TYPE_LCL, CARGO_TYPE_LTL).contains(shipmentDetails.getShipmentType())) {
-                updatedContainerResponseForLCLandLTL(containerListResponse.getContainers(), shipmentDetails);
+                containerV3Util.updatedContainerResponseForLCLandLTL(containerListResponse.getContainers(), shipmentDetails);
             }
             containerListResponse.setTriggerMigrationWarning(shipmentDetails.getTriggerMigrationWarning());
         }
@@ -1310,111 +1310,6 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         return processAfterList(containerListResponse);
-    }
-
-    private void updatedContainerResponseForLCLandLTL(List<ContainerBaseResponse> containerBaseResponses, ShipmentDetails shipmentDetails) throws RunnerException {
-        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
-            updateContainerFromShipmentCargo(containerBaseResponses, shipmentDetails);
-        } else {
-            updateContainersFromAssignedPackings(containerBaseResponses, shipmentDetails);
-        }
-    }
-
-    private void updateContainerFromShipmentCargo(List<ContainerBaseResponse> containerBaseResponses, ShipmentDetails shipmentDetails) {
-        Long containerId = shipmentDetails.getContainerAssignedToShipmentCargo();
-
-        containerBaseResponses.stream()
-                .filter(c -> Objects.equals(c.getId(), containerId))
-                .findFirst()
-                .ifPresent(containerBaseResponse -> {
-                    containerBaseResponse.setGrossWeight(shipmentDetails.getWeight());
-                    containerBaseResponse.setGrossWeightUnit(shipmentDetails.getWeightUnit());
-
-                    containerBaseResponse.setNetWeight(shipmentDetails.getWeight());
-                    containerBaseResponse.setNetWeightUnit(shipmentDetails.getWeightUnit());
-
-                    containerBaseResponse.setGrossVolume(shipmentDetails.getVolume());
-                    containerBaseResponse.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
-
-                    if (shipmentDetails.getNoOfPacks() != null) {
-                        containerBaseResponse.setPacks(String.valueOf(shipmentDetails.getNoOfPacks()));
-                    }
-                    containerBaseResponse.setPacksType(shipmentDetails.getPacksUnit());
-                });
-    }
-
-    private void updateContainersFromAssignedPackings(List<ContainerBaseResponse> containerBaseResponses, ShipmentDetails shipmentDetails) throws RunnerException {
-        List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
-        if (packings == null || packings.isEmpty()) {
-            return;
-        }
-
-        Map<Long, ContainerBaseResponse> containerMap = containerBaseResponses.stream()
-                .collect(Collectors.toMap(ContainerBaseResponse::getId, c -> c));
-
-        Map<Long, List<Packing>> packingsByContainer = packings.stream()
-                .collect(Collectors.groupingBy(Packing::getContainerId));
-
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        String defaultWeightUnit = resolveDefaultUnit(shipmentSettingsDetails.getWeightChargeableUnit(), Constants.WEIGHT_UNIT_KG);
-        String defaultVolumeUnit = resolveDefaultUnit(shipmentSettingsDetails.getVolumeChargeableUnit(), Constants.VOLUME_UNIT_M3);
-
-        for (Map.Entry<Long, List<Packing>> entry : packingsByContainer.entrySet()) {
-            Long containerId = entry.getKey();
-            List<Packing> containerPackings = entry.getValue();
-            ContainerBaseResponse container = containerMap.get(containerId);
-
-            if (container != null) {
-                updateContainerFromPackingList(container, containerPackings, defaultWeightUnit, defaultVolumeUnit);
-            }
-        }
-    }
-
-    private void updateContainerFromPackingList(ContainerBaseResponse container, List<Packing> containerPackings, String defaultWeightUnit, String defaultVolumeUnit) throws RunnerException {
-        double totalWeight = 0;
-        double totalVolume = 0;
-        int totalPacks = 0;
-
-        String targetWeightUnit = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getWeightUnit).toList(), defaultWeightUnit);
-        String targetVolumeUnit = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getVolumeUnit).toList(), defaultVolumeUnit);
-        String packType = shipmentsV3Util.resolveUnit(containerPackings.stream().map(Packing::getPacksType).toList(), PKG);
-
-        for (Packing packing : containerPackings) {
-            totalWeight += calculateWeight(packing, targetWeightUnit);
-            totalVolume += calculateVolume(packing, targetVolumeUnit);
-            totalPacks += parsePacks(packing);
-        }
-
-        container.setGrossWeight(BigDecimal.valueOf(totalWeight));
-        container.setGrossWeightUnit(targetWeightUnit);
-
-        container.setNetWeight(BigDecimal.valueOf(totalWeight));
-        container.setNetWeightUnit(targetWeightUnit);
-
-        container.setGrossVolume(BigDecimal.valueOf(totalVolume));
-        container.setGrossVolumeUnit(targetVolumeUnit);
-
-        container.setPacks(String.valueOf(totalPacks));
-        container.setPacksType(packType);
-    }
-
-    private String resolveDefaultUnit(String unitFromSettings, String fallback) {
-        return !isStringNullOrEmpty(unitFromSettings) ? unitFromSettings : fallback;
-    }
-
-    private double calculateWeight(Packing packing, String targetWeightUnit) throws RunnerException {
-        if (packing.getWeight() == null) return 0;
-        return convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), targetWeightUnit).doubleValue();
-    }
-
-    private double calculateVolume(Packing packing, String targetVolumeUnit) throws RunnerException {
-        if (packing.getVolume() == null) return 0;
-        return convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), targetVolumeUnit).doubleValue();
-    }
-
-    private int parsePacks(Packing packing) {
-        if (packing.getPacks() == null) return 0;
-        return Integer.parseInt(packing.getPacks());
     }
 
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
@@ -1779,31 +1674,17 @@ public class ContainerV3Service implements IContainerV3Service {
         if (Objects.equals(BOOKING, module)) {
             customerBookingV3Service.updateContainerInfoInBooking(request.getBookingId());
         }
-
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        futures.add(CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() -> afterSave(container, true, true)),
-                executorService
-        ));
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        afterSave(container, true, true);
     }
 
   private void handlePostSaveActionsBulk(List<Containers> containers, List<ContainerV3Request> requests, String module) {
     if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
 
-    List<CompletableFuture<Void>> futures = new ArrayList<>();
-
     for (int i = 0; i < containers.size(); i++) {
       Containers container = containers.get(i);
       ContainerV3Request request = requests.get(i); // assuming same index mapping
 
-      // Async afterSave
-      futures.add(CompletableFuture.runAsync(
-          masterDataUtils.withMdc(() -> afterSave(container, true, true)),
-          executorService
-      ));
+      afterSave(container, true, true);
 
       // Shipment assignment (sync)
       Optional.ofNullable(module)
@@ -1816,27 +1697,15 @@ public class ContainerV3Service implements IContainerV3Service {
               false
           ));
     }
-
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }
 
     private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) throws RunnerException {
         if (Objects.equals(BOOKING, module)) {
             customerBookingV3Service.updateContainerInfoInBooking(containers.iterator().next().getBookingId());
         }
-        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
-        CompletableFuture.allOf(afterSaveFuture).join();
-    }
-
-    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers, boolean isAutoSell) {
-        return CompletableFuture.allOf(
-                containers.stream()
-                        .map(container -> CompletableFuture.runAsync(
-                                masterDataUtils.withMdc(() -> afterSave(container, isAutoSell, false)),
-                                executorService
-                        ))
-                        .toArray(CompletableFuture[]::new)
-        );
+        for (Containers container : containers) {
+            afterSave(container, isAutoSell, false);
+        }
     }
 
     @Override

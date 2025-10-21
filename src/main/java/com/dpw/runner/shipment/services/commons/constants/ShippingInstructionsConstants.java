@@ -29,7 +29,7 @@ public class ShippingInstructionsConstants {
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Shipping Instruction Retrieval";
     public static final String SUBMIT_SUCCESSFUL = "Shipping Instruction submitted successfully.";
     public static final String AMEND_SUCCESSFUL = "Shipping Instruction amend successful.";
-    public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Type";
+    public static final String INVALID_ENTITY_TYPE = "Invalid value of Shipping Instruction Entity Type";
     public static final String SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES = "SHIPPING_INSTRUCTION_ADDITIONAL_PARTIES";
     public static final String SI_TABLE = "ShippingInstruction";
     public static final String SAILING_INFORMATION = "sailingInformation";
@@ -48,6 +48,8 @@ public class ShippingInstructionsConstants {
     public static final String REJECTED_BY_CARRIER = "RejectedByCarrier";
     public static final String PROCESSED = "Processed";
     public static final String SHIPPING_INSTRUCTION_EMAIL_TEMPLATE = "SHIPPING_INSTRUCTION";
+    public static final String SHIPPING_INSTRUCTION_TYPE = "si";
+
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(SI_TABLE)
@@ -139,6 +141,48 @@ public class ShippingInstructionsConstants {
                     .dataType(LocalDateTime.class)
                     .fieldName("shipInstructionCutoff")
                     .isContainsText(false)
+                    .build()),
+            Map.entry("voyageNo", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("voyageNo")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("emptyContainerPickupCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("emptyContainerPickupCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("loadedContainerGateInCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("loadedContainerGateInCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("eta", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("eta")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("etd", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("etd")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("carrierReceiptPlace", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierReceiptPlace")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("carrierDeliveryPlace", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierDeliveryPlace")
+                    .isContainsText(true)
                     .build()),
             Map.entry("vgmCutoff", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
