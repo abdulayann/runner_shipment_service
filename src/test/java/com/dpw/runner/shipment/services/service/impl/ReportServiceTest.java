@@ -1,5 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,13 +15,20 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -24,8 +38,10 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
@@ -48,6 +64,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsFor
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -60,6 +77,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.CustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.impl.EventDao;
 import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
@@ -73,6 +91,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityF
 import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
+import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -87,6 +106,7 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -100,8 +120,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
@@ -115,6 +137,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,6 +148,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -135,7 +159,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
@@ -151,9 +177,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.Spy;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
@@ -243,6 +272,9 @@ class ReportServiceTest extends CommonMocks {
     private ShipmentDao shipmentDao;
 
     @Mock
+    private CustomerBookingDao bookingDao;
+
+    @Mock
     private EventDao eventDao;
 
     @Mock
@@ -309,6 +341,9 @@ class ReportServiceTest extends CommonMocks {
     @Mock
     private TransportInstructionReportHelper transportInstructionReport;
 
+    @Mock
+    private MDMServiceAdapter mdmServiceAdapter;
+
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
     @BeforeAll
@@ -342,35 +377,125 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void shouldValidateHblReport_CallInternalValidator() {
+        // Arrange
         when(reportsFactory.getReport(any())).thenReturn(new HblReport());
-        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(
+                ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
+        );
 
+        ShipmentDetails shipment = new ShipmentDetails();
+        AdditionalDetails details = new AdditionalDetails();
+
+        details.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(details);
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipment.setContainersList(Set.of(cont1));
+        shipment.setControlled(true);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
+        // Act
         reportService.validateHouseBill(reportRequest);
 
+        // Assert
         verify(reportService).validateUnassignedPackagesInternal(
                 any(), any(), eq("BL"), eq("BL for possible cargo discrepancies.")
         );
     }
 
     @Test
+    void shouldNotThrow_whenShipmentControlledIsTrue() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(
+                ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
+        );
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        AdditionalDetails details = new AdditionalDetails();
+        details.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(details);
+        shipment.setControlled(true);
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipment.setContainersList(Set.of(cont1));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
+        doNothing().when(reportService).validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act & Assert
+        assertDoesNotThrow(() -> reportService.validateHouseBill(reportRequest));
+    }
+
+    @Test
+    void shouldThrowValidationException_whenShipmentControlledIsFalse() {
+        // Arrange
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(
+                ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).volumeDecimalPlace(2).build()
+        );
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        AdditionalDetails details = new AdditionalDetails();
+        details.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(details);
+        shipment.setControlled(false);
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipment.setContainersList(Set.of(cont1));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipment));
+
+        // Act
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> reportService.validateHouseBill(reportRequest));
+
+        // Assert
+        assertTrue(ex.getMessage().contains("Update the Shipment as Controlled - YES and Controlled Ref No."));
+    }
+
+    @Test
     void shouldThrowValidationException_WhenInvalidReportType() {
-        // some dummy report implementation or plain mock
+        // Arrange
         when(reportsFactory.getReport(any())).thenReturn(mock(IReport.class));
 
-        assertThrows(ValidationException.class, () ->
-                reportService.validateHouseBill(reportRequest));
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> reportService.validateHouseBill(reportRequest));
     }
 
     @Test
     void shouldValidateSeawayBill_CallInternalValidator() {
         // Arrange
-        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
-        Mockito.when(commonUtils.getShipmentSettingFromContext())
-                .thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getReportInfo()).thenReturn("SeawayBill");
+        when(reportRequest.getReportId()).thenReturn("123");
 
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder()
+                        .isRunnerV3Enabled(true)
+                        .volumeDecimalPlace(2)
+                        .build());
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        CarrierDetails carrier = new CarrierDetails();
+        carrier.setEtd(LocalDateTime.now());
+        carrier.setEta(LocalDateTime.now().plusDays(1));
+        shipment.setCarrierDetails(carrier);
+
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipment.setContainersList(Set.of(cont1));
+
+        shipment.setControlled(true);
+        AdditionalDetails add = new AdditionalDetails();
+        add.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(add);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
         doNothing().when(reportService)
                 .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
 
@@ -383,6 +508,79 @@ class ReportServiceTest extends CommonMocks {
         );
     }
 
+    @Test
+    void shouldThrowValidationException_whenEtdOrEtaMissing() {
+        // Arrange
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getReportInfo()).thenReturn("SeawayBill"); // exact match
+        when(reportRequest.getReportId()).thenReturn("123"); // numeric string
+
+        when(reportsFactory.getReport(any())).thenReturn(new SeawayBillReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder()
+                        .isRunnerV3Enabled(true)
+                        .build());
+
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        // CarrierDetails exists, but ETD/ETA missing → triggers ValidationException
+        shipment.setCarrierDetails(new CarrierDetails());
+
+        // At least one container to avoid container validation issues
+        Containers cont1 = new Containers();
+        cont1.setContainerNumber("C1");
+        shipment.setContainersList(Set.of(cont1));
+
+        // Mandatory AdditionalDetails.releaseType → prevents ReportException
+        AdditionalDetails add = new AdditionalDetails();
+        add.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(add);
+
+        // Mock DAO to return the shipment
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        // Spy: prevent internal helper from doing anything
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act & Assert
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> reportService.validateHouseBill(reportRequest));
+
+        assertTrue(ex.getMessage().contains("Update the ETD & ETA in the shipment"));
+    }
+
+    @Test
+    void shouldThrowValidationException_whenContainerNumberMissing() {
+        // Arrange
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getReportInfo()).thenReturn("HouseBill"); // exact match
+        when(reportRequest.getReportId()).thenReturn("123");
+
+        when(reportsFactory.getReport(any())).thenReturn(new HblReport());
+        when(commonUtils.getShipmentSettingFromContext())
+                .thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setCarrierDetails(new CarrierDetails()); // must exist
+
+        AdditionalDetails details = new AdditionalDetails();
+        details.setReleaseType("RANDOM");
+        shipment.setAdditionalDetails(details);
+
+        shipment.setContainersList(Set.of(new Containers())); // missing number
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+
+        doNothing().when(reportService)
+                .validateUnassignedPackagesInternal(any(), any(), anyString(), anyString());
+
+        // Act & Assert
+        ValidationException ex = assertThrows(ValidationException.class,
+                () -> reportService.validateHouseBill(reportRequest));
+
+        assertTrue(ex.getMessage().contains("Assign the Container Number to all Containers"));
+    }
 
     @Test
     void getSeawayBillDocumentData()
@@ -2262,6 +2460,86 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs2()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1L));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123L);
+        tiLegs.setOrigin(Parties.builder().build());
+        tiLegs.setDestination(Parties.builder().build());
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs3()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1L));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123L);
+        tiLegs.setOrigin(Parties.builder().orgId("1").build());
+        tiLegs.setDestination(Parties.builder().orgId("1").build());
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        var data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
     void getShipPicupOrderAirDocumentData()
             throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -4064,6 +4342,600 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
+    void getDefaultEmailTemplateData(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+    @Test
+    void getDefaultEmailTemplateDataForShipment() throws RunnerException {
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        String demoTemplate = "\"Hi ,\n" +
+                "    \n" +
+                "    Please find the attached documents for the {CBN Number}\n" +
+                "    \n" +
+                "    {Mode}\n" +
+                "    {Origin}\n" +
+                "    {Dstn}\n" +
+                "    {ETD}\n" +
+                "    {ETA}\n" +
+                "    {HBLNo}\n" +
+                "    {HAWBNo}\n" +
+                "    {MBLNo}\n" +
+                "    {MAWBNo}\n" +
+                "    {Carrier}\n" +
+                "    {Airline}\n" +
+                "    \n" +
+                "    Sender (Origin)\n" +
+                "    {OABranch}\n" +
+                "    {OABranchAdd}\n" +
+                "    {OAName}\n" +
+                "    {OAEmail}\n" +
+                "    {OAPhone}\n" +
+                "    \n" +
+                "    Recipient (Destination)\n" +
+                "    {DABranch}\n" +
+                "    {DABranchAdd}\n" +
+                "    {DAName}\n" +
+                "    {DAEmail}\n" +
+                "    {DAPhone}\n" +
+                "    Sales Branch: {SalesBranch}\n" +
+                "    \n" +
+                "    {List_All_Documents}\n" +
+                "    \n" +
+                "    Regards,\n" +
+                "    Team DPW\"";
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn("");
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+
+                // Access the emailTemplatesRequests parameter (4th parameter, index 3)
+                @SuppressWarnings("unchecked")
+                List<EmailTemplatesRequest> emailTemplatesRequests = (List<EmailTemplatesRequest>) args[3];
+
+                // Add test data to the list
+                EmailTemplatesRequest request1 = new EmailTemplatesRequest();
+                request1.setSubject(demoTemplate);
+                request1.setBody("Test Body 1");
+
+                emailTemplatesRequests.add(request1);
+
+                return null; // Required for void methods
+            }
+        }).when(reportService).populateShipmentsTagsAndEmailTemplate(
+                any(ShipmentDetails.class),
+                anyMap(),
+                any(DefaultEmailTemplateRequest.class),
+                anyList(),
+                anySet()
+        );
+        EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+        assertNotNull(response);
+    }
+    @Test
+    void getDefaultEmailTemplateDataForShipment2() throws RunnerException {
+        // Arrange
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Shipment", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
+
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
+
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
+
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+
+        // Mock shipment data with complete broker information
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .vessel("2werssd")
+                                .build())
+                        .additionalDetails(new AdditionalDetails()
+                                .setExportBroker(exportBroker)
+                                .setImportBroker(importBroker))
+                        .containersList(Set.of(container))
+                        .build()));
+
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
+
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<IReport> iReportMock = mockStatic(IReport.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            // Mock IReport.getPartyAddress
+            iReportMock.when(() -> IReport.getPartyAddress(any(PartiesModel.class)))
+                    .thenReturn(expectedAddress);
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock masterDataUtils.withMdc
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            // Mock location data cache - ensure all location codes are populated
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            // Mock tenant data
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
+            lenient().doAnswer(invocation -> {
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
+                return null;
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+
+            // Correct verification for static mock
+            iReportMock.verify(() -> IReport.getPartyAddress(any(PartiesModel.class)), atLeast(2));
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
+        }
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForConsol(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForConsol2() throws RunnerException {
+//        when(consolidationDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().carrierDetails(CarrierDetails.builder().build()).achievedQuantities(AchievedQuantities.builder().containerCount(1).build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Consolidations", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
+
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
+
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
+
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+
+        // Mock shipment data with complete broker information
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .build())
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .vessel("3ersdfd")
+                                .build())
+                        .achievedQuantities(AchievedQuantities.builder().containerCount(1).build())
+                        .receivingAgent(importBroker)
+                        .sendingAgent(exportBroker)
+                        .build()));
+
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
+
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<IReport> iReportMock = mockStatic(IReport.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+            // Mock IReport.getPartyAddress
+            iReportMock.when(() -> IReport.getPartyAddress(any(PartiesModel.class)))
+                    .thenReturn(expectedAddress);
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock masterDataUtils.withMdc
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            // Mock location data cache - ensure all location codes are populated
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            // Mock tenant data
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
+            lenient().doAnswer(invocation -> {
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
+                return null;
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+
+            // Correct verification for static mock
+            iReportMock.verify(() -> IReport.getPartyAddress(any(PartiesModel.class)), atLeast(2));
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
+        }
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForBooking(){
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("Booking",1L, 2L, List.of( "Commercial Incoice",
+                "Console Manifest",
+                "Pre Alert") );
+        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertThrows(RunnerException.class, () -> reportService.getDefaultEmailTemplateData(request));
+    }
+
+    @Test
+    void getDefaultEmailTemplateDataForBooking2() throws RunnerException {
+//        when(bookingDao.findById(any())).thenReturn(Optional.of(CustomerBooking.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        DefaultEmailTemplateRequest request = new DefaultEmailTemplateRequest("booking", 1L, 2L,
+                List.of("Commercial Invoice", "Console Manifest", "Pre Alert"));
+
+        String demoTemplate = "Hi,\n" +
+                "Please find the attached documents for the {CBN Number}\n" +
+                "{Mode}\n{Origin}\n{Dstn}\n{ETD}\n{ETA}\n" +
+                "Regards, Team DPW";
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "RA Regulated Agt");
+        orgData.put(PHONE, "9876534212");
+        orgData.put(EMAIL, "raregulatedagt@gmail.com");
+
+        Parties exportBroker = Parties.builder().orgData(orgData).build();
+        exportBroker.setAddressData(Map.of(CONTACT_PERSON, "Export Broker Contact Person"));
+
+        Parties importBroker = Parties.builder().orgData(orgData).build();
+        importBroker.setAddressData(Map.of(CONTACT_PERSON, "Import Broker Contact Person"));
+
+        Containers container = new Containers();
+        container.setContainerNumber("UJHYT65432R");
+        // Mock shipment data with complete broker information
+        when(bookingDao.findById(any())).thenReturn(Optional.of(
+                CustomerBooking.builder()
+                        .carrierDetails(CarrierDetails.builder()
+                                .origin("INMAA")
+                                .destination("USLAX")
+                                .originPort("INSA")
+                                .destinationPort("UAE")
+                                .shippingLine("3dfsre")
+                                .build())
+                        .containersList(List.of(container))
+                        .build()));
+
+        List<String> expectedAddress = Arrays.asList("Test Company", "123 Test St", "Test City", "12345");
+
+        // REMOVED CALLS_REAL_METHODS - this is the key fix
+        try (MockedStatic<CompletableFuture> completableFutureMock = mockStatic(CompletableFuture.class);
+             MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+             MockedStatic<CommonUtils> commonUtilsMock = mockStatic(CommonUtils.class)) {
+
+
+            // Mock CommonUtils.isStringNullOrEmpty - CRITICAL for code coverage
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INMAA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("USLAX")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("INSA")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty("UAE")).thenReturn(false);
+            commonUtilsMock.when(() -> CommonUtils.isStringNullOrEmpty(anyString())).thenReturn(false);
+
+            // Mock runAsync to execute synchronously and return a mockable future
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            completableFutureMock.when(() -> CompletableFuture.runAsync(any(Runnable.class), any(Executor.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        // Create a mock future that has join() method
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock allOf to return a completed mock future - use any() not any(CompletableFuture[].class)
+            completableFutureMock.when(() -> CompletableFuture.allOf(any()))
+                    .thenAnswer(invocation -> {
+                        CompletableFuture<Void> mockFuture = mock(CompletableFuture.class);
+                        lenient().when(mockFuture.join()).thenReturn(null);
+                        return mockFuture;
+                    });
+
+            // Mock masterDataUtils.withMdc
+            lenient().when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                Runnable originalRunnable = invocation.getArgument(0);
+                return originalRunnable;
+            });
+
+            // Mock location data cache - ensure all location codes are populated
+            lenient().doAnswer(invocation -> {
+                Set<String> locationCodes = invocation.getArgument(0);
+                Map<String, EntityTransferUnLocations> targetMap = invocation.getArgument(1);
+
+                for (String code : locationCodes) {
+                    EntityTransferUnLocations location = new EntityTransferUnLocations();
+                    switch (code) {
+                        case "INMAA": location.setName("Mumbai"); break;
+                        case "USLAX": location.setName("Los Angeles"); break;
+                        case "INSA": location.setName("America"); break;
+                        case "UAE": location.setName("Dubai"); break;
+                        default: location.setName("Unknown Location");
+                    }
+                    targetMap.put(code, location);
+                }
+                return null;
+            }).when(masterDataUtils).getLocationDataFromCache(anySet(), any(Map.class));
+
+            // Mock tenant data
+            lenient().doAnswer(invocation -> {
+                Map<String, TenantModel> tenantMap = invocation.getArgument(1);
+                TenantModel tenant = new TenantModel();
+                tenant.tenantName = "Test Tenant";
+                tenantMap.put("123", tenant);
+                return null;
+            }).when(masterDataUtils).getTenantDataFromCache(anySet(), any(Map.class));
+
+            // Mock UserContext
+            UsersDto mockUser = mock(UsersDto.class);
+            lenient().when(mockUser.getTenantId()).thenReturn(123);
+            userContextMock.when(UserContext::getUser).thenReturn(mockUser);
+
+            // Mock ModelMapper - IMPORTANT for broker address mapping
+            lenient().when(modelMapper.map(any(Parties.class), eq(PartiesModel.class)))
+                    .thenAnswer(invocation -> {
+                        Parties party = invocation.getArgument(0);
+                        PartiesModel model = new PartiesModel();
+                        model.setAddressData(party.getAddressData());
+                        model.setOrgData(party.getOrgData());
+                        return model;
+                    });
+
+            // Mock commonUtils - for template processing
+            lenient().when(commonUtils.replaceDefaultTagsFromData(anyMap(), any())).thenReturn(demoTemplate);
+
+            // Mock getEmailTemplate (void method) - this gets called in the async operation
+            lenient().doAnswer(invocation -> {
+                List<EmailTemplatesRequest> emailTemplatesList = invocation.getArgument(1);
+                // Create and add a mock email template
+                EmailTemplatesRequest emailTemplate = new EmailTemplatesRequest();
+                emailTemplate.setSubject("{Summary_Documents} for the {ShipmentNumber}");
+                emailTemplate.setBody(demoTemplate);
+                emailTemplatesList.add(emailTemplate);
+                return null;
+            }).when(reportService).getEmailTemplate(anyLong(), anyList());
+//            lenient().doNothing().when(reportService).getEmailTemplate(anyLong(), anyList());
+
+            // Act - Call the method that internally calls populateShipmentsTagsAndEmailTemplate
+            EmailBodyResponse response = reportService.getDefaultEmailTemplateData(request);
+
+            // Assert
+            assertNotNull(response);
+
+            // Correct verification for static mock
+
+            commonUtilsMock.verify(() -> CommonUtils.isStringNullOrEmpty(anyString()), atLeast(4));
+        }
+    }
+
+    @Test
     void getEmailTemplate() {
         List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
@@ -4989,6 +5861,198 @@ class ReportServiceTest extends CommonMocks {
         String fileName = reportService.applyCustomNaming(request, DocumentConstants.HBL, ReportConstants.DRAFT, ENTITY_GUID, IDENTIFIER);
 
         assertEquals("HBL_DRAFT_SHIP123_3.pdf", fileName);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_RatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_HOUSE_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_RatedBL_existsInDB() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_HOUSE_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+        when(docDetailsDao.findByFileId(anyString())).thenReturn(docDetail);
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NotRatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(false);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.NOT_RATED_HOUSE_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_ShipmentDetailsEmpty() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NotAdditionalDetails() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.NOT_RATED_HOUSE_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_SeawayBill_RatedBL() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(SEAWAY_BILL);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        ShipmentDetails fakeShipmentDetails = ShipmentDetails.builder().build();
+        AdditionalDetails fakeAdditionalDetails = new AdditionalDetails();
+        fakeAdditionalDetails.setIsRatedBL(true);
+        fakeShipmentDetails.setAdditionalDetails(fakeAdditionalDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(fakeShipmentDetails));
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+
+        DocDetails docDetail = DocDetails.builder()
+                .type(DocDetailsTypes.RATED_SEAWAY_BILL)
+                .entityId(1L)
+                .fileId(fakeFieldId)
+                .build();
+        verify(docDetailsDao, times(1)).save(docDetail);
+    }
+
+    @Test
+    void saveDocDetails_HouseBill_NoFileIdInDocumentServiceResponse() {
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("1");
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_NotHblAndNotSeawayBill() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HAWB);
+        fakeReportRequest.setReportId("1");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        verify(docDetailsDao, times(0)).save(any());
+    }
+
+    @Test
+    void saveDocDetails_ReportIdNotLong() {
+        String fakeFieldId = "fakeFileId";
+
+        ReportRequest fakeReportRequest = new ReportRequest();
+        fakeReportRequest.setReportInfo(HOUSE_BILL);
+        fakeReportRequest.setReportId("wrongValue");
+
+        Map<String, Object> documentServiceResponse = new HashMap<>();
+        documentServiceResponse.put("fileId", fakeFieldId);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            reportService.saveDocDetailsAfterPushToDocumentMaster(fakeReportRequest, documentServiceResponse);
+        });
     }
 
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
@@ -29,8 +30,7 @@ import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -357,4 +357,27 @@ class DocumentManagerServiceImplTest {
 
         return mockResponse;
     }
+
+    @Test
+    void testSearchDocuments_Success() {
+        // Arrange
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .dependentData("test-request-data")
+                .build();
+
+        DocumentManagerResponse successResponse = new DocumentManagerResponse();
+        successResponse.setSuccess(true);
+        successResponse.setData("test-data");
+        successResponse.setPageNo(0);
+        successResponse.setCount(25L);
+
+        when(documentManagerRestClient.searchDocuments(any(Object.class))).thenReturn(successResponse);
+        ResponseEntity<IRunnerResponse> response = documentManagerServiceImpl.searchDocumentTypes(commonRequestModel);
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+        verify(documentManagerRestClient, times(1)).searchDocuments("test-request-data");
+    }
+
+
+
 }

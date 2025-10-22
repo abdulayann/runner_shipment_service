@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
+import lombok.NonNull;
 import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
@@ -84,8 +85,15 @@ public interface IConsolidationV3Service {
     Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsV3Response consolidationDetailsV3Response);
     void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
                                  String sourceInfo);
-    Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
+    Optional<ConsolidationDetails> retrieveConsolidationByIdWithQuery(Long id, String xSource) throws RunnerException, AuthenticationException;
     ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException;
     CheckDGShipmentV3 getDGShipment(Long consoleId);
     ConsolidationDetailsV3Response getDefaultConsolidation();
+    ResponseEntity<IRunnerResponse> fetchConsolidation(ListCommonRequest listCommonRequest) throws RunnerException;
+    ResponseEntity<IRunnerResponse> getConsolidationDetails(CommonGetRequest commonGetRequest) throws RunnerException;
+    void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+                                                ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment);
+    ConsolidationDetailsV3Response getNewConsoleDataFromShipment(Long id, ConsolidationDetailsV3Response defaultConsolidation) throws RunnerException, AuthenticationException;
+
+    String createConsoleDetailsAndAttachShipment(@Valid @NonNull ConsolidationDetailsV3Request request) throws RunnerException;
 }

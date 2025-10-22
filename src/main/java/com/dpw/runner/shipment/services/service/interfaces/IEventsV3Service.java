@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 public interface IEventsV3Service {
     List<EventsResponse> listV2(CommonRequestModel commonRequestModel, String source);
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
+
+    List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source);
 
     void processEventsAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails);
 

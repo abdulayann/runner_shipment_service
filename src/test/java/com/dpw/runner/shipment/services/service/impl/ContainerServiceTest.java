@@ -1599,7 +1599,7 @@ class ContainerServiceTest extends CommonMocks {
         List<Containers> containersList = Arrays.asList(c1,c2);
         List<Containers> oldContainers = List.of(c1);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        Set<Containers> containers = new HashSet<Containers>();
+        Set<Containers> containers = new HashSet<>();
         containers.add(c1);
         shipmentDetails.setContainersList(containers);
         shipmentDetails.setBookingReference("DBFC-4353158-409107");

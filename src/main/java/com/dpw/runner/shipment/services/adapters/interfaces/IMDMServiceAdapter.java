@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IMDMServiceAdapter {
     ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException;
@@ -34,4 +35,5 @@ public interface IMDMServiceAdapter {
 
     MDMTaskRetrieveResponse getTask(String taskUuid, Long id) throws RunnerException;
 
+    Map<String, String> getFirmsCodeListFromCache(Set<String> orgIds);
 }

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
@@ -83,6 +84,10 @@ class ConsolidationDaoTest extends CommonMocks {
 
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private IApplicationConfigService applicationConfigService;
+
     @InjectMocks
     private ConsolidationDao consolidationsDao;
 
@@ -1324,5 +1329,190 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationsDao.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
         verify(consolidationRepository, times(1))
                 .deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
+    }
+
+    @Test
+    void findByParentGuid() {
+        // Arrange
+        UUID parentGuid = UUID.randomUUID();
+        List<ConsolidationDetails> expectedConsolidations = List.of(new ConsolidationDetails());
+        when(consolidationRepository.findByParentGuid(parentGuid)).thenReturn(expectedConsolidations);
+
+        // Act
+        List<ConsolidationDetails> response = consolidationsDao.findByParentGuid(parentGuid);
+
+        // Assert
+        assertFalse(response.isEmpty());
+        assertEquals(expectedConsolidations, response);
+        verify(consolidationRepository, times(1)).findByParentGuid(parentGuid);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_WhenFlagDisabled_ShouldSkipValidation() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingBranch(2L);
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+            ShipmentSettingsDetails.builder()
+                .isRunnerV3Enabled(false)
+                .build()
+        );
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("false");
+        mockShipmentSettings();
+
+        // Act
+        ConsolidationDetails responseEntity = spyService.saveV3(consolidationDetails);
+
+        // Assert
+        assertEquals(consolidationDetails, responseEntity);
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_WhenFlagEnabled_WithV3EnabledBranch_ShouldPass() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingBranch(2L);
+
+        ShipmentSettingsDetails receivingBranchSettings = ShipmentSettingsDetails.builder()
+            .isRunnerV3Enabled(true)
+            .build();
+        receivingBranchSettings.setTenantId(2);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+        doReturn(consolidationDetails).when(consolidationRepository).save(any());
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(receivingBranchSettings));
+        mockShipmentSettings();
+
+        // Act
+        ConsolidationDetails responseEntity = spyService.saveV3(consolidationDetails);
+
+        // Assert
+        assertEquals(consolidationDetails, responseEntity);
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_WhenFlagEnabled_WithV3DisabledBranch_ShouldFail() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingBranch(2L);
+
+        ShipmentSettingsDetails receivingBranchSettings = ShipmentSettingsDetails.builder()
+            .isRunnerV3Enabled(false)
+            .build();
+        receivingBranchSettings.setTenantId(2);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(123L);
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(receivingBranchSettings));
+        mockShipmentSettings();
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> spyService.saveV3(consolidationDetails));
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_WhenFlagEnabled_WithMultipleTriangulationPartners_OneDisabled_ShouldFail() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingBranch(2L);
+
+        TriangulationPartner partner1 = TriangulationPartner.builder().triangulationPartner(3L).build();
+        TriangulationPartner partner2 = TriangulationPartner.builder().triangulationPartner(4L).build();
+        consolidationDetails.setTriangulationPartnerList(List.of(partner1, partner2));
+
+        ShipmentSettingsDetails receivingBranchSettings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build();
+        receivingBranchSettings.setTenantId(2);
+        ShipmentSettingsDetails partner1Settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build();
+        partner1Settings.setTenantId(3);
+        ShipmentSettingsDetails partner2Settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        partner2Settings.setTenantId(4);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList()))
+            .thenReturn(List.of(receivingBranchSettings, partner1Settings, partner2Settings));
+        mockShipmentSettings();
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> spyService.saveV3(consolidationDetails));
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_IMPDirection_WithDisabledTriangulationPartner_ShouldFail() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_IMP);
+
+        TriangulationPartner partner1 = TriangulationPartner.builder()
+            .triangulationPartner(3L)
+            .build();
+        consolidationDetails.setTriangulationPartnerList(List.of(partner1));
+
+        ShipmentSettingsDetails partner1Settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        partner1Settings.setTenantId(3);
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(partner1Settings));
+        mockShipmentSettings();
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> spyService.saveV3(consolidationDetails));
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
+    }
+
+    @Test
+    void testSaveV3_RailTransfer_CTSDirection_WithDisabledTriangulationPartner_ShouldFail() {
+        // Arrange
+        ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_CTS);
+
+        TriangulationPartner partner1 = TriangulationPartner.builder()
+            .triangulationPartner(5L)
+            .build();
+        consolidationDetails.setTriangulationPartnerList(List.of(partner1));
+
+        ShipmentSettingsDetails partner1Settings = ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build();
+        partner1Settings.setTenantId(5);
+
+        var spyService = Mockito.spy(consolidationsDao);
+        doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
+
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(partner1Settings));
+        mockShipmentSettings();
+
+        // Act & Assert
+        assertThrows(ValidationException.class, () -> spyService.saveV3(consolidationDetails));
+        verify(applicationConfigService, times(1)).getValue(Constants.IS_RAIL_TRANSFER_ENABLED);
     }
 }

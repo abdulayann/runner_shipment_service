@@ -289,6 +289,31 @@ public class ConsolidationValidationV3Util {
         }
     }
 
+    public void validateControlledFields(ConsolidationDetails newConsol) {
+        if (newConsol == null) {
+            throw new ValidationException("Consolidation details cannot be null");
+        }
+
+        String transportMode = newConsol.getTransportMode();
+        Boolean newControlled = newConsol.getControlled();
+        String newControlledRefNumber = newConsol.getControlledReferenceNumber();
+
+        // Validation 1: Controlled fields allowed only for SEA mode
+        if (!Constants.TRANSPORT_MODE_SEA.equals(transportMode)
+                && (newControlled != null || StringUtility.isNotEmpty(newControlledRefNumber))) {
+            throw new ValidationException(
+                    "Controlled and Controlled Reference Number can be selected for Sea Transport Mode only"
+            );
+        }
+
+        // Validation 2: Controlled requires Controlled Reference Number
+        if (newControlled != null && StringUtility.isEmpty(newControlledRefNumber)) {
+            throw new ValidationException(
+                    "If value in Controlled is selected, please enter a value in Controlled Reference Number"
+            );
+        }
+    }
+
     /**
      * Checks if the shipment date is after the consolidation date.
      *

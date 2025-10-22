@@ -36,7 +36,7 @@ import java.util.UUID;
 @Getter
 @Table(name = "shipment_details")
 @Accessors(chain = true)
-@ToString(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = false)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -275,6 +275,10 @@ public class ShipmentDetails extends MultiTenancy {
     @TenantIdData
     private Long sourceTenantId;
 
+    @Column(name = "parent_tenant_id")
+    @TenantIdData
+    private Long parentTenantId;
+
     @Column(name = "documentation_partner")
     @TenantIdData
     private Long documentationPartner;
@@ -458,6 +462,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "parent_contract_id")
     private String parentContractId;
 
+    @Column(name = "quote_date")
+    private LocalDateTime quoteDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_date_type")
+    private ShipmentDetailsQuoteDateType quoteDateType;
+
     @MasterData(type = MasterDataType.COUNTRIES)
     @Column(name = "client_country")
     private String clientCountry;
@@ -488,6 +499,9 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+
+    @Column(name = "parent_guid")
+    private UUID parentGuid;
 
     @Column(name = "consignee_dps_address_id")
     private Long consigneeDpsAddressId;
@@ -740,6 +754,19 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "trigger_migration_warning")
     private Boolean triggerMigrationWarning = false;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
+
 
     @Override
     public boolean equals(Object o) {

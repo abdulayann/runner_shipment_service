@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteDateType;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -77,6 +79,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String consigneeCountry;
     private String notifyPartyCountry;
     private String parentContractId;
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
+    private CustomerBookingQuoteDateType quoteDateType;
     private String salesBranch;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
@@ -143,4 +148,9 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String description;
     private String marksnNumbers;
     private String additionalTerms;
+    private LocalDateTime carrierDocCutOff;
+    private LocalDateTime cargoReceiptWHCutOff;
+    private LocalDateTime lastFreeDateCutOff;
+    @Digits(integer = 3, fraction = 0, message = "Max 3 digits allowed for Number Of Free Days CutOff")
+    private Integer numberOfFreeDaysCutOff;
 }

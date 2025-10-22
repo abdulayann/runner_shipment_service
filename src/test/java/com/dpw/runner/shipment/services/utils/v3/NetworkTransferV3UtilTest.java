@@ -3,12 +3,17 @@ package com.dpw.runner.shipment.services.utils.v3;
 import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferShipmentsMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -33,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -59,6 +65,18 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
     @Mock
     private CommonErrorLogsDao commonErrorLogsDao;
+
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private ShipmentDao shipmentDao;
+
+    @Mock
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
+
+    @Mock
+    private IApplicationConfigService applicationConfigService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
@@ -88,30 +106,45 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(2L).build();
         TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(3L).build();
         TriangulationPartner triangulationPartner3 = TriangulationPartner.builder().triangulationPartner(4L).build();
-        // Arrange
+
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setReceivingBranch(1L);
-        shipmentDetails.setDirection("Inbound");
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
         shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setShipmentType(DIRECTION_EXP);
+        shipmentDetails.setReceivingBranch(100L);
         shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1, triangulationPartner2));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
-        oldEntity.setReceivingBranch(1L);
+        oldEntity.setReceivingBranch(200L);
         oldEntity.setTriangulationPartnerList(List.of(triangulationPartner2, triangulationPartner3));
+
         when(commonUtils.getTriangulationPartnerList(shipmentDetails.getTriangulationPartnerList())).thenReturn(List.of(1L, 2L, 3L));
         when(commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())).thenReturn(List.of(3L, 4L));
+
         // Act
         networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
 
-        // Verify new tenant IDs processing
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        // Assert
+        verify(networkTransferService).processNetworkTransferEntity(
+                eq(100L),               // new tenantId
+                eq(200L),               // old tenantId
+                eq(Constants.SHIPMENT),
+                eq(shipmentDetails),
+                isNull(),
+                eq(DIRECTION_IMP),
+                isNull(),
+                eq(false)
+        );
 
-        // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        verify(networkTransferService).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+        verify(networkTransferService).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+        verify(networkTransferService).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), eq(false));
+
+        verify(networkTransferService, times(4)).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
+
+
 
     @Test
     void testCreateOrUpdateNetworkTransferEntity_NotEligibleForNetworkTransfer() {
@@ -1533,5 +1566,194 @@ class NetworkTransferV3UtilTest extends CommonMocks {
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
     }
 
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_RailTransferDisabled_ShouldSkipProcessing() {
+        // Arrange
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .isNetworkTransferEntityEnabled(true)
+                .build();
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI); // Set transport mode to Rail
+
+        // Mock the feature flag to be disabled
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("false");
+
+        // Act
+        networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, null);
+
+        // Assert
+        verify(networkTransferService, never()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_RailTransferEnabled_ShouldProcess() {
+        // Arrange
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetails.builder()
+                .isNetworkTransferEntityEnabled(true)
+                .build();
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI); // Set transport mode to Rail
+        consoleDetails.setReceivingBranch(123L);
+
+        // Mock the feature flag to be enabled
+        when(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED)).thenReturn("true");
+
+        // Act
+        networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, null);
+
+        // Assert
+        verify(networkTransferService, atLeastOnce()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), anyBoolean());
+    }
+
+
+    private NetworkTransfer createNetworkTransfer(NetworkTransferStatus status, Long sourceBranchId) {
+        NetworkTransfer transfer = new NetworkTransfer();
+        transfer.setId(1L);
+        transfer.setStatus(status);
+        transfer.setSourceBranchId(Math.toIntExact(sourceBranchId));
+        return transfer;
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForShipment_SuccessfulUpdate() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentId("SHIP-001");
+
+        NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.SCHEDULED, 100L);
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
+                .thenReturn(List.of(mockTransfer));
+
+        when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
+                .thenReturn(List.of("OLD-SHIP"));
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
+
+        verify(networkTransferShipmentsMappingDao)
+                .deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("OLD-SHIP"));
+
+        verify(networkTransferShipmentsMappingDao).saveAll(anyList());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForShipment_NonEligibleStatus_NoUpdate() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentId("SHIP-001");
+
+        NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.RETRANSFERRED, 100L);
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
+                .thenReturn(List.of(mockTransfer));
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
+
+        verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
+        verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForShipment_Accepted_SameSourceBranch_NoUpdate() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentId("SHIP-001");
+
+        TenantContext.setCurrentTenant(100);
+        NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.ACCEPTED, 100L);
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
+                .thenReturn(List.of(mockTransfer));
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
+
+        verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
+        verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForShipment_Accepted_DifferentSourceBranch_ShouldUpdate() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentId("SHIP-001");
+
+        TenantContext.setCurrentTenant(200);
+        NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.ACCEPTED, 100L);
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
+                .thenReturn(List.of(mockTransfer));
+
+        when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
+                .thenReturn(List.of("OLD-SHIP"));
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
+
+        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("OLD-SHIP"));
+        verify(networkTransferShipmentsMappingDao).saveAll(anyList());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForShipment_NoTransfersFound() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentId("SHIP-001");
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(10L), "SHIPMENT"))
+                .thenReturn(Collections.emptyList());
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("SHIPMENT", shipmentDetails, null);
+
+        verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
+        verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForConsolidation_Success() {
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(20L);
+        consolidation.setConsolidationNumber("CON-001");
+
+        ShipmentDetails s1 = new ShipmentDetails();
+        s1.setShipmentId("S1");
+        consolidation.setShipmentsList(Set.of(s1));
+        ShipmentDetails s2 = new ShipmentDetails();
+        s1.setShipmentId("S2");
+
+        NetworkTransfer mockTransfer = createNetworkTransfer(NetworkTransferStatus.REQUESTED_TO_TRANSFER, 100L);
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(20L), "CONSOLIDATION"))
+                .thenReturn(List.of(mockTransfer));
+
+        when(networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(mockTransfer.getId()))
+                .thenReturn(List.of("S1", "S2", "S3"));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(s1, s2));
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("CONSOLIDATION", null, consolidation);
+
+        verify(networkTransferShipmentsMappingDao).deleteByNetworkTransferIdAndShipmentNumbers(mockTransfer.getId(), List.of("S3", "S1"));
+        verify(networkTransferShipmentsMappingDao).saveAll(anyList());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForConsolidation_NoShipments() {
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setId(20L);
+        consolidation.setConsolidationNumber("CON-001");
+        consolidation.setShipmentsList(Collections.emptySet());
+
+        when(networkTransferDao.findByEntityIdsAndEntityType(Set.of(20L), "CONSOLIDATION"))
+                .thenReturn(Collections.emptyList());
+
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("CONSOLIDATION", null, consolidation);
+
+        verify(networkTransferShipmentsMappingDao, never()).deleteByNetworkTransferIdAndShipmentNumbers(any(), anyList());
+        verify(networkTransferShipmentsMappingDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testSyncNetworkTransferShipmentMappingsForInvalidEntityType() {
+        networkTransferV3Util.syncNetworkTransferShipmentMappingsForConsolOrShipment("UNKNOWN", null, null);
+        verifyNoInteractions(networkTransferDao);
+        verifyNoInteractions(networkTransferShipmentsMappingDao);
+    }
 
 }

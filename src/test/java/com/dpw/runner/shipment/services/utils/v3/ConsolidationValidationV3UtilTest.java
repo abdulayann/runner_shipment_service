@@ -474,5 +474,69 @@ class ConsolidationValidationV3UtilTest {
 
       assertThrows(DpsException.class, executable);
   }
+
+  @Test
+  void testValidateControlledFields_whenConsolIsNull_thenThrowsException() {
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(null));
+    assertEquals("Consolidation details cannot be null", ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenNonSeaAndControlledSet_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode("AIR");  // non-SEA
+    consol.setControlled(true);
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("Controlled and Controlled Reference Number can be selected for Sea Transport Mode only",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenNonSeaAndRefNumberSet_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode("RAIL");  // non-SEA
+    consol.setControlledReferenceNumber("REF123");
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("Controlled and Controlled Reference Number can be selected for Sea Transport Mode only",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaControlledWithoutRefNumber_thenThrowsException() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consol.setControlled(true);
+    consol.setControlledReferenceNumber(null);  // missing
+
+    ValidationException ex = assertThrows(ValidationException.class,
+            () -> validationUtil.validateControlledFields(consol));
+    assertEquals("If value in Controlled is selected, please enter a value in Controlled Reference Number",
+            ex.getMessage());
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaControlledWithRefNumber_thenDoesNotThrow() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consol.setControlled(true);
+    consol.setControlledReferenceNumber("REF123");
+
+    assertDoesNotThrow(() -> validationUtil.validateControlledFields(consol));
+  }
+
+  @Test
+  void testValidateControlledFields_whenSeaAndNoControlledFields_thenDoesNotThrow() {
+    ConsolidationDetails consol = new ConsolidationDetails();
+    consol.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+    assertDoesNotThrow(() -> validationUtil.validateControlledFields(consol));
+  }
+
+
 }
 

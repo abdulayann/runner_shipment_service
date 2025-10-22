@@ -24,6 +24,7 @@ public interface IShipmentsContainersMappingRepository extends JpaRepository <Sh
     }
 
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
+    List<ShipmentsContainersMapping> findByShipmentIdIn(List<Long> shipmentId);
     Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable);
 
     @Modifying

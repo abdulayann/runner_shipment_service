@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureExcept
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.InttraFailureException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
@@ -56,14 +57,14 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             DataRetrievalFailureException.class,
             NotificationServiceException.class
     })
-    private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
+    public ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler({
             ReportExceptionWarning.class
     })
-    private ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
+    public ResponseEntity<IRunnerResponse> handleCustomWarningExceptions(final RuntimeException ex) {
         return ResponseHelper.buildSuccessResponseWithWarning(ex.getMessage());
     }
 
@@ -156,5 +157,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({BackupFailureException.class, RestoreFailureException.class})
     public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler({InttraFailureException.class})
+    private ResponseEntity<IRunnerResponse> handleInttraFailureException(final InttraFailureException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }

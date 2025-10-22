@@ -1,0 +1,1 @@
+update shipment_setting set allow_unassigned_bl_inv_generation = false where tenant_id in (506,523,536,551,571,591,604,606,685,699,707,708,715,590,654,507,467,482,665,714,520,459,479,465,583,713);

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineCreateUpdateDeleteRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -223,5 +224,10 @@ class PackingV3ControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
-
+    @Test
+    void orderLineBulkCreate() throws RunnerException {
+        OrderLineCreateUpdateDeleteRequest fakeRequest = OrderLineCreateUpdateDeleteRequest.builder().build();
+        var response = packingV3Controller.orderLineCreateUpdateDeleteBulk(fakeRequest);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 }

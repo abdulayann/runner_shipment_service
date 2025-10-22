@@ -40,7 +40,7 @@ class EventsV3ControllerTest {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
+        when(eventService.listWithoutTenantFilter(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         // Test
         var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
@@ -52,7 +52,7 @@ class EventsV3ControllerTest {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any(), any())).thenThrow(new RuntimeException());
+        when(eventService.listWithoutTenantFilter(any(), any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
@@ -64,7 +64,7 @@ class EventsV3ControllerTest {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
-        when(eventService.listV2(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(eventService.listWithoutTenantFilter(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
