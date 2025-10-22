@@ -649,49 +649,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         createOrUpdateNetworkTransferShipmentMapping(tenant, shipment.getId(), shipment.getShipmentId(), SHIPMENT, List.of(shipment.getShipmentId()));
     }
 
-
-    private void interBranchValidation(ConsolidationDetails consol, SendConsolidationRequest sendConsolidationRequest) {
-        if(Boolean.TRUE.equals(consol.getInterBranchConsole())) {
-            var shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
-            commonUtils.setInterBranchContextForHub();
-            Set<Integer> uniqueTenants = new HashSet<>(sendConsolidationRequest.getSendToBranch());
-            var tenantSettingsMap = v1ServiceUtil.getTenantSettingsMap(uniqueTenants.stream().toList());
-            var coloadInfoMap = v1ServiceUtil.fetchCoLoadInfo(sendConsolidationRequest.getSendToBranch(), EntityTransferConstants.PARENT_TENANT_ID);
-            List<Integer> errorTenants = new ArrayList<>();
-
-            for (int i = 0; i < sendConsolidationRequest.getSendToBranch().size(); i++) {
-                var consoleReceivingBranch = sendConsolidationRequest.getSendToBranch().get(i);
-                var tenantSettings = tenantSettingsMap.get(consoleReceivingBranch);
-                if (Objects.isNull(tenantSettings)) {
-                    errorTenants.add(consoleReceivingBranch);
-                }
-                else if (shipmentGuidSendToBranch != null) {
-                    processShipmentGuidSendToBranch(shipmentGuidSendToBranch, consoleReceivingBranch, i, tenantSettings, coloadInfoMap, errorTenants);
-                }
-            }
-
-            if(!errorTenants.isEmpty()) {
-                throw new ValidationException(String.format("Destination branches %s not having co-loading branch relation!!", String.join(", ", getTenantName(errorTenants))));
-            }
-        }
-    }
-
-    private void processShipmentGuidSendToBranch(Map<String, List<Integer>> shipmentGuidSendToBranch, Integer consoleReceivingBranch, int i, V1TenantSettingsResponse tenantSettings, Map<Integer, Set<Integer>> coloadInfoMap, List<Integer> errorTenants) {
-        for (var set : shipmentGuidSendToBranch.entrySet()) {
-            var list = set.getValue();
-
-            if (isInvalidConsoleReceivingBranch(list, consoleReceivingBranch, i, tenantSettings, coloadInfoMap)) {
-                errorTenants.add(consoleReceivingBranch);
-            }
-        }
-    }
-
-    private boolean isInvalidConsoleReceivingBranch(List<Integer> list, Integer consoleReceivingBranch, int i, V1TenantSettingsResponse tenantSettings, Map<Integer, Set<Integer>> coloadInfoMap) {
-        return !CommonUtils.listIsNullOrEmpty(list) && !Objects.equals(consoleReceivingBranch, list.get(i)) &&
-                (!Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled()) || !coloadInfoMap.containsKey(consoleReceivingBranch) || !coloadInfoMap.get(consoleReceivingBranch).contains(list.get(i)));
-    }
-
-
     @Transactional
     @Override
     public String importShipment (CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException {
@@ -770,23 +727,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                     .filter(Objects::nonNull)
                     .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
                 shipmentDao.updateIsAcceptedTriangulationPartner(nte.get().getEntityId(), tenantId, Boolean.TRUE);
-        }
-    }
-
-    private void validateApprovalRoleForImport() {
-        var tenantId = TenantContext.getCurrentTenant();
-        List<UsersDto> users = v1ServiceUtil.getUsersWithGivenPermission(List.of(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
-        if (CommonUtils.listIsNullOrEmpty(users)) {
-            throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
-        }
-        Long userId = UserContext.getUser().getUserId();
-        Set<Long> userIds = users.stream()
-                .map(UsersDto::getUserId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        if (!userIds.contains(userId)) {
-            throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
         }
     }
 
