@@ -4211,7 +4211,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 shipmentDetails.setNumberOfFreeDaysCutOff(newConsolidation.getNumberOfFreeDaysCutOff());
             } else {
                 updateIfChanged(oldConsolidation.getLastFreeDateCutOff(), newConsolidation.getLastFreeDateCutOff(), shipmentDetails::setLastFreeDateCutOff);
-                updateIfChanged(oldConsolidation.getNumberOfFreeDaysCutOff(), newConsolidation.getNumberOfFreeDaysCutOff(), shipmentDetails::setNumberOfFreeDaysCutOff);
+                updateIfChanged(oldConsolidation.getNumberOfFreeDaysCutOff(), newConsolidation.getNumberOfFreeDaysCutOff(), shipmentDetails::setNumberOfFreeDaysCutOff, () -> shipmentDetails.setNumberOfFreeDaysCutOff((Integer) null));
             }
         }
     }
@@ -4294,9 +4294,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void updateIfChanged(Integer oldValue, Integer newValue, IntConsumer setter) {
-        if (newValue != null && !Objects.equals(oldValue, newValue)) {
-            setter.accept(newValue.intValue());
+    private void updateIfChanged(Integer oldValue, Integer newValue, IntConsumer setter,  Runnable clearer) {
+        if (!Objects.equals(oldValue, newValue)){
+            Optional.ofNullable(newValue).ifPresentOrElse(setter::accept, clearer::run);
         }
     }
 
