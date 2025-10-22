@@ -244,26 +244,17 @@ public class PackingValidationV3Util {
     }
 
     public String checkForTemperatureHumidityWarnings(PackingV3Request request) {
-
         if (!Boolean.TRUE.equals(request.getIsTemperatureControlled())) {
             return null;
         }
-        boolean tempWarning = false;
-        boolean humidityWarning = false;
-        // Check temperature set point
-        if (request.getTempSetPoint() != null && request.getMinTemp() != null && request.getMaxTemp() != null &&
+        validateHumidityPositiveValues(request);
+        boolean tempWarning = isTemperatureSetPointOutsideRange(request);
+        boolean humidityWarning = isHumiditySetPointOutsideRange(request);
 
-                (request.getTempSetPoint().compareTo(request.getMinTemp()) < 0 ||
-                        request.getTempSetPoint().compareTo(request.getMaxTemp()) > 0)) {
-            tempWarning = true;
-        }
-        // Check humidity set point
-        if (request.getHumiditySetPoint() != null && request.getMinHumidity() != null && request.getMaxHumidity() != null &&
-                (request.getHumiditySetPoint().compareTo(request.getMinHumidity()) < 0 ||
-                        request.getHumiditySetPoint().compareTo(request.getMaxHumidity()) > 0)) {
+        return buildWarningMessage(tempWarning, humidityWarning);
+    }
 
-            humidityWarning = true;
-        }
+    private void validateHumidityPositiveValues(PackingV3Request request) {
         if (request.getMinHumidity() != null && request.getMinHumidity().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Minimum humidity must be a positive value");
         }
@@ -273,11 +264,28 @@ public class PackingValidationV3Util {
         if (request.getHumiditySetPoint() != null && request.getHumiditySetPoint().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Humidity set point must be a positive value");
         }
+    }
+
+    private boolean isTemperatureSetPointOutsideRange(PackingV3Request request) {
+        return request.getTempSetPoint() != null && request.getMinTemp() != null && request.getMaxTemp() != null &&
+                (request.getTempSetPoint().compareTo(request.getMinTemp()) < 0 ||
+                        request.getTempSetPoint().compareTo(request.getMaxTemp()) > 0);
+    }
+
+    private boolean isHumiditySetPointOutsideRange(PackingV3Request request) {
+        return request.getHumiditySetPoint() != null && request.getMinHumidity() != null && request.getMaxHumidity() != null &&
+                (request.getHumiditySetPoint().compareTo(request.getMinHumidity()) < 0 ||
+                        request.getHumiditySetPoint().compareTo(request.getMaxHumidity()) > 0);
+    }
+
+    private String buildWarningMessage(boolean tempWarning, boolean humidityWarning) {
         if (tempWarning && humidityWarning) {
             return "You have selected the set point beyond the minimum and maximum temperature and humidity % range, kindly check";
-        } else if (tempWarning) {
+        }
+        if (tempWarning) {
             return "You have selected the set point beyond the minimum and maximum temperature range, kindly check";
-        } else if (humidityWarning) {
+        }
+        if (humidityWarning) {
             return "You have selected the set point beyond the minimum and maximum humidity % range, kindly check";
         }
         return null;
