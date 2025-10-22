@@ -101,22 +101,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 public class EntityTransferV3Service implements IEntityTransferV3Service {
     public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
-    private static final String ALREADY_TRANSFERRED_ERROR_MESSAGE = "Already transferred CTS file is not allowed to transfer again";
-    private static final String MAWB_NUMBER = "MAWB Number";
-    private static final String HAWB_NUMBER = "HAWB Number";
-    private static final String FLIGHT_NUMBER = "Flight number";
-    private static final String FIELD_HBL = "HBL";
-    private static final String FIELD_MBL = "MBL";
-    private static final String FIELD_ETA = "Eta";
-    private static final String FIELD_ETD = "Etd";
-    private static final String FIELD_SHIPPING_LINE = "Shipping line";
-    private static final String FIELD_VESSEL = "Vessel";
-    private static final String FIELD_VOYAGE = "Voyage";
-    private static final String FIELD_ORIGIN_AGENT = "Origin agent";
-    private static final String FIELD_DESTINATION_AGENT = "Destination agent";
-    private static final String ERROR_MSG_SUFFIX_CONSOLIDATION = " for the consolidation";
-    private static final String ERROR_MSG_HAWB_RETRIGGER = "Please enter the HAWB number to retrigger the transfer.";
-    private static final String ERROR_MSG_HBL_RETRIGGER = "Please enter the HBL number to retrigger the transfer.";
     private IShipmentDao shipmentDao;
     private IShipmentServiceV3 shipmentService;
     private IConsolidationV3Service consolidationService;
@@ -2068,7 +2052,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (isAlreadyTransferredCts(shipmentDetails)) {
             return SendShipmentValidationResponse.builder()
                     .isError(true)
-                    .shipmentErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
+                    .shipmentErrorMessage(EntityTransferConstants.ALREADY_TRANSFERRED_ERROR_MESSAGE)
                     .build();
         }
 
@@ -2108,13 +2092,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
     private void addAirShipmentMissingFields(ShipmentDetails shipment, List<String> missingFields, boolean isAutomaticTransfer) {
         if (Strings.isNullOrEmpty(shipment.getCarrierDetails().getFlightNumber())) {
-            missingFields.add(FLIGHT_NUMBER);
+            missingFields.add(EntityTransferConstants.FLIGHT_NUMBER);
         }
         if (shipment.getCarrierDetails().getEta() == null) {
-            missingFields.add(FIELD_ETA);
+            missingFields.add(EntityTransferConstants.FIELD_ETA);
         }
         if (shipment.getCarrierDetails().getEtd() == null) {
-            missingFields.add(FIELD_ETD);
+            missingFields.add(EntityTransferConstants.FIELD_ETD);
         }
         if (!isAutomaticTransfer && isBranchSelectionMissing(shipment)) {
             missingFields.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
@@ -2138,7 +2122,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (Strings.isNullOrEmpty(shipmentDetails.getHouseBill())) {
             if (Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode())
                     && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
-                missingField.add(HAWB_NUMBER);
+                missingField.add(EntityTransferConstants.HAWB_NUMBER);
             }
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                     && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()))
@@ -2146,7 +2130,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
         if (Strings.isNullOrEmpty(shipmentDetails.getMasterBill())) {
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                missingField.add(MAWB_NUMBER);
+                missingField.add(EntityTransferConstants.MAWB_NUMBER);
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
                 missingField.add("Master Bill");
         }
@@ -2160,7 +2144,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 case "House Bill":
                     errorMessage.append("HBL number");
                     break;
-                case MAWB_NUMBER, HAWB_NUMBER, FLIGHT_NUMBER, FIELD_ETA, FIELD_ETD:
+                case EntityTransferConstants.MAWB_NUMBER, EntityTransferConstants.HAWB_NUMBER, EntityTransferConstants.FLIGHT_NUMBER, EntityTransferConstants.FIELD_ETA, EntityTransferConstants.FIELD_ETD:
                     errorMessage.append(key);
                     break;
                 default:
@@ -2189,7 +2173,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (isAlreadyTransferredCts(shipment)) {
             return SendShipmentValidationResponse.builder()
                     .isError(true)
-                    .shipmentErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
+                    .shipmentErrorMessage(EntityTransferConstants.ALREADY_TRANSFERRED_ERROR_MESSAGE)
                     .build();
         }
         return networkTransferValidationsForShipment(shipment, true);
@@ -2304,7 +2288,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                                          String polId, String podId, boolean entityTransferDetails) {
 
         if (Strings.isNullOrEmpty(bol)) {
-            missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? MAWB_NUMBER : "Master Bill");
+            missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? EntityTransferConstants.MAWB_NUMBER : "Master Bill");
         }
         if (Strings.isNullOrEmpty(voyage)) {
             missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
@@ -2314,8 +2298,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                     ? EntityTransferConstants.MISSING_FIELD_FLIGHT_NUMBER : EntityTransferConstants.MISSING_FIELD_VESSEL);
         }
-        if (eta == null) missingField.add(FIELD_ETA);
-        if (etd == null) missingField.add(FIELD_ETD);
+        if (eta == null) missingField.add(EntityTransferConstants.FIELD_ETA);
+        if (etd == null) missingField.add(EntityTransferConstants.FIELD_ETD);
         if (Strings.isNullOrEmpty(polId)) missingField.add("Origin Port");
         if (Strings.isNullOrEmpty(podId)) missingField.add("Destination Port");
         if (entityTransferDetails) {
@@ -2327,7 +2311,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (isAlreadyTransferredCtsConsole(consolidationDetails)) {
             return SendConsoleValidationResponse.builder()
                     .isError(true)
-                    .consoleErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
+                    .consoleErrorMessage(EntityTransferConstants.ALREADY_TRANSFERRED_ERROR_MESSAGE)
                     .build();
         }
 
@@ -2405,13 +2389,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (isMissingHouseBill(shipment)) {
             isHblNumberError = true;
             isShipmentError = true;
-            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_HBL : HAWB_NUMBER;
+            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? EntityTransferConstants.FIELD_HBL : EntityTransferConstants.HAWB_NUMBER;
             addMissingFieldOnce(missingShipmentFields, fieldName);
         }
 
         if (Strings.isNullOrEmpty(shipment.getMasterBill())) {
             isShipmentError = true;
-            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_MBL : MAWB_NUMBER;
+            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? EntityTransferConstants.FIELD_MBL : EntityTransferConstants.MAWB_NUMBER;
             addMissingFieldOnce(missingShipmentFields, fieldName);
         }
 
@@ -2435,8 +2419,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         String shipErrorMsg = "";
         if (isHblNumberError) {
             shipErrorMsg = TRANSPORT_MODE_SEA.equals(transportMode)
-                    ? ERROR_MSG_HBL_RETRIGGER
-                    : ERROR_MSG_HAWB_RETRIGGER;
+                    ? EntityTransferConstants.ERROR_MSG_HBL_RETRIGGER
+                    : EntityTransferConstants.ERROR_MSG_HAWB_RETRIGGER;
         }
 
         return SendConsoleValidationResponse.builder()
@@ -2522,16 +2506,16 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         List<String> missingField = new ArrayList<>();
 
         if (Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getFlightNumber()))
-            missingField.add(FLIGHT_NUMBER);
+            missingField.add(EntityTransferConstants.FLIGHT_NUMBER);
         if (consolidationDetails.getCarrierDetails().getEta() == null)
-            missingField.add(FIELD_ETA);
+            missingField.add(EntityTransferConstants.FIELD_ETA);
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
-            missingField.add(FIELD_ETD);
+            missingField.add(EntityTransferConstants.FIELD_ETD);
         if (!isAutomaticTransfer && isBranchSelectionMissingForConsole(consolidationDetails)) {
             missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
         }
         if (isNonStandardConsolWithoutBol(consolidationDetails)) {
-            missingField.add(MAWB_NUMBER);
+            missingField.add(EntityTransferConstants.MAWB_NUMBER);
         }
 
         boolean isHawbNumberError = false;
@@ -2544,7 +2528,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 isHawbNumberError = true;
                 errorShipments.add(shipment.getShipmentId());
                 errorShipIds.add(shipment.getId());
-                addMissingFieldOnce(allMissingKeys, HAWB_NUMBER);
+                addMissingFieldOnce(allMissingKeys, EntityTransferConstants.HAWB_NUMBER);
             }
         }
 
@@ -2552,7 +2536,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (!errorMsg.isEmpty()) {
             return SendConsoleValidationResponse.builder()
                     .consoleErrorMessage(errorMsg)
-                    .shipmentErrorMessage(isHawbNumberError ? ERROR_MSG_HAWB_RETRIGGER : "")
+                    .shipmentErrorMessage(isHawbNumberError ? EntityTransferConstants.ERROR_MSG_HAWB_RETRIGGER : "")
                     .shipmentIds(errorShipIds)
                     .missingKeys(allMissingKeys)
                     .isError(Boolean.TRUE)
@@ -2582,7 +2566,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (!consoleMissingFields.isEmpty()) {
             errorMsg.append(EntityTransferConstants.PLEASE_ENTER_THE)
                     .append(String.join(", ", consoleMissingFields))
-                    .append(ERROR_MSG_SUFFIX_CONSOLIDATION);
+                    .append(EntityTransferConstants.ERROR_MSG_SUFFIX_CONSOLIDATION);
         }
 
         if (isHawbNumberError) {
@@ -2606,7 +2590,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         List<String> allMissingKeys = new ArrayList<>(missingField);
         if (shipmentValidation.isHblNumberError()) {
-            addMissingFieldOnce(allMissingKeys, FIELD_HBL);
+            addMissingFieldOnce(allMissingKeys, EntityTransferConstants.FIELD_HBL);
         }
 
         String errorMsg = buildSeaConsoleErrorMessage(missingField, shipmentValidation.isHblNumberError(),
@@ -2614,7 +2598,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (!errorMsg.isEmpty()) {
             return SendConsoleValidationResponse.builder()
                     .consoleErrorMessage(errorMsg)
-                    .shipmentErrorMessage(shipmentValidation.isHblNumberError() ? ERROR_MSG_HBL_RETRIGGER : "")
+                    .shipmentErrorMessage(shipmentValidation.isHblNumberError() ? EntityTransferConstants.ERROR_MSG_HBL_RETRIGGER : "")
                     .shipmentIds(shipmentValidation.getErrorShipIds())
                     .missingKeys(allMissingKeys)
                     .isError(Boolean.TRUE)
@@ -2627,21 +2611,21 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         List<String> missingField = new ArrayList<>();
 
         if (Strings.isNullOrEmpty(consolidationDetails.getBol()))
-            missingField.add(FIELD_MBL);
+            missingField.add(EntityTransferConstants.FIELD_MBL);
         if (consolidationDetails.getCarrierDetails().getEta() == null)
-            missingField.add(FIELD_ETA);
+            missingField.add(EntityTransferConstants.FIELD_ETA);
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
-            missingField.add(FIELD_ETD);
+            missingField.add(EntityTransferConstants.FIELD_ETD);
         if (Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine()))
-            missingField.add(FIELD_SHIPPING_LINE);
+            missingField.add(EntityTransferConstants.FIELD_SHIPPING_LINE);
         if (Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getVessel()))
-            missingField.add(FIELD_VESSEL);
+            missingField.add(EntityTransferConstants.FIELD_VESSEL);
         if (Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getVoyage()))
-            missingField.add(FIELD_VOYAGE);
+            missingField.add(EntityTransferConstants.FIELD_VOYAGE);
         if (isSendingAgentMissing(consolidationDetails))
-            missingField.add(FIELD_ORIGIN_AGENT);
+            missingField.add(EntityTransferConstants.FIELD_ORIGIN_AGENT);
         if (isReceivingAgentMissing(consolidationDetails))
-            missingField.add(FIELD_DESTINATION_AGENT);
+            missingField.add(EntityTransferConstants.FIELD_DESTINATION_AGENT);
         if (!isAutomaticTransfer && isBranchSelectionMissingForConsole(consolidationDetails))
             missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
 
@@ -2708,7 +2692,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (!consoleMissingFields.isEmpty()) {
             errorMsg.append(EntityTransferConstants.PLEASE_ENTER_THE)
                     .append(String.join(", ", consoleMissingFields))
-                    .append(ERROR_MSG_SUFFIX_CONSOLIDATION);
+                    .append(EntityTransferConstants.ERROR_MSG_SUFFIX_CONSOLIDATION);
         }
 
         if (isHblNumberError) {
@@ -2730,13 +2714,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         List<String> missingField = new ArrayList<>();
 
         if (consolidationDetails.getCarrierDetails().getEta() == null)
-            missingField.add(FIELD_ETA);
+            missingField.add(EntityTransferConstants.FIELD_ETA);
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
-            missingField.add(FIELD_ETD);
+            missingField.add(EntityTransferConstants.FIELD_ETD);
         if (isSendingAgentMissing(consolidationDetails))
-            missingField.add(FIELD_ORIGIN_AGENT);
+            missingField.add(EntityTransferConstants.FIELD_ORIGIN_AGENT);
         if (isReceivingAgentMissing(consolidationDetails))
-            missingField.add(FIELD_DESTINATION_AGENT);
+            missingField.add(EntityTransferConstants.FIELD_DESTINATION_AGENT);
         if (!isAutomaticTransfer && isBranchSelectionMissingForConsole(consolidationDetails)) {
             missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
         }
@@ -2750,7 +2734,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 : EntityTransferConstants.TO_TRANSFER_THE_FILES;
         String errorMsg = EntityTransferConstants.PLEASE_ENTER_THE
                 + String.join(", ", missingField)
-                + ERROR_MSG_SUFFIX_CONSOLIDATION
+                + EntityTransferConstants.ERROR_MSG_SUFFIX_CONSOLIDATION
                 + msgSuffix;
 
         return SendConsoleValidationResponse.builder()
