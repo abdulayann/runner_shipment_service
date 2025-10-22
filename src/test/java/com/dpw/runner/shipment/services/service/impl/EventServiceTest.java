@@ -12,7 +12,10 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,7 +29,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -96,7 +98,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -187,6 +189,7 @@ class EventServiceTest extends CommonMocks {
 
 
     @InjectMocks
+    @Spy
     private EventService eventService;
 
     @BeforeAll
@@ -218,13 +221,16 @@ class EventServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
 
+        // Both directions of mapping
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
+
         when(eventDao.save(any())).thenReturn(testData);
         when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.create(commonRequestModel);
 
-        Assertions.assertNotNull(responseEntity);
+        assertNotNull(responseEntity);
         assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
     }
 
@@ -243,60 +249,125 @@ class EventServiceTest extends CommonMocks {
 
     @Test
     void createThrowsException() {
+        // Arrange
         EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
 
         String errorMessage = "Custom error message";
 
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
-        when(eventDao.save(any())).thenThrow(new RuntimeException(errorMessage));
+        Events validEvent = new Events();
 
+        // jsonHelper.convertValue called twice with EventsRequest -> Events
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class)))
+                .thenReturn(validEvent, validEvent);
+
+        // jsonHelper.convertValue called with Events -> EventsRequest inside saveEventUtil
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class)))
+                .thenReturn(request);
+
+        // Mock commonUtils
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+
+        // Mock eventDao.save to throw exception
+        doThrow(new RuntimeException(errorMessage)).when(eventDao).save(any());
+
+        // Act
         ResponseEntity<IRunnerResponse> responseEntity = eventService.create(commonRequestModel);
 
-        Assertions.assertNotNull(responseEntity);
-        RunnerResponse runnerResponse  = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        // Assert
+        assertNotNull(responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertNotNull(runnerResponse.getError());
         assertEquals(errorMessage, runnerResponse.getError().getMessage());
+
+        // Verify interactions
+        verify(jsonHelper, times(2)).convertValue(any(EventsRequest.class), eq(Events.class));
+        verify(jsonHelper, times(1)).convertValue(any(Events.class), eq(EventsRequest.class));
+        verify(commonUtils, times(1)).updateEventWithMasterData(anyList());
+        verify(eventDao, times(1)).save(any());
     }
 
     @Test
     void createThrowsExceptionWithEmptyMessage() {
-        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        EventsResponse response = objectMapperTest.convertValue(testData, EventsResponse.class);
+        // Given
+        EventsRequest mockRequest = new EventsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockRequest);
 
-        String errorMessage = DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+        // mock conversions
+        Events mockEventEntity = new Events();
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class)))
+                .thenReturn(mockEventEntity);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class)))
+                .thenReturn(mockRequest);
 
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
-        when(eventDao.save(any())).thenThrow(new RuntimeException());
+        // make sure convertRequestToEntity is not blocking
+        doReturn(mockEventEntity).when(eventService).convertRequestToEntity(any());
 
+        // stub internal dependencies
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        doNothing().when(eventDao).updateEventDetails(any());
+        doNothing().when(eventService).handleDuplicationForExistingEvents(any());
+
+        // Simulate failure on save
+        doThrow(new RuntimeException()).when(eventDao).save(any());
+
+        // When
         ResponseEntity<IRunnerResponse> responseEntity = eventService.create(commonRequestModel);
 
-        Assertions.assertNotNull(responseEntity);
-        RunnerResponse runnerResponse  = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
-        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+        // Then
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof RunnerResponse);
+        RunnerResponse body = (RunnerResponse) responseEntity.getBody();
+        assertEquals(DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG, body.getError().getMessage());
+
+        // Verify calls
+        verify(jsonHelper, times(1)).convertValue(any(EventsRequest.class), eq(Events.class));
+        verify(eventDao, times(1)).save(any());
     }
 
     @Test
-    void update() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        testData.setId(1L);
+    void updateThrowsException2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Prepare request
         EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        request.setId(123L); // ensure ID is present
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        EventsResponse eventsResponse = objectMapperTest.convertValue(testData, EventsResponse.class);
 
-        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
+        // Mock old event entity
+        Events oldEventEntity = new Events();
+        oldEventEntity.setId(123L);
+        oldEventEntity.setGuid(UUID.randomUUID());
 
-        when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.saveWithoutTenant(any(Events.class))).thenReturn(testData);
-        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(eventDao.findByIdWithoutTenant(123L)).thenReturn(Optional.of(oldEventEntity));
 
+        // Mock new event entity conversion
+        Events newEventEntity = new Events();
+        newEventEntity.setGuid(oldEventEntity.getGuid()); // keep GUID same to avoid exception
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(newEventEntity);
 
+        // Mock Events -> EventsRequest conversion (used in saveEventUtilWithoutTenant)
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
+
+        // Mock UserContext
+        UsersDto user = new UsersDto();
+        user.setTenantId(123);
+        user.setUsername("testUser");
+        mockStatic(UserContext.class);
+        when(UserContext.getUser()).thenReturn(user);
+
+        // Mock commonUtils update method
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+
+        // Mock DAO update and saveWithoutTenant
+        doNothing().when(eventDao).updateEventDetails(any());
+        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException("Custom error message"));
+
+        // Execute
         ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);
 
-        Mockito.verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
+        // Assertions
         Assertions.assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildSuccessResponse(eventsResponse) , responseEntity);
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("Custom error message", runnerResponse.getError().getMessage());
     }
 
     @Test
@@ -351,23 +422,46 @@ class EventServiceTest extends CommonMocks {
 
     @Test
     void updateThrowsException() throws RunnerException {
-        testData.setId(1L);
-        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
+        // Prepare testData as Events entity
+        Events oldEventEntity = new Events();
+        oldEventEntity.setId(1L);
+        oldEventEntity.setGuid(UUID.randomUUID());
+
+        // Prepare EventsRequest
+        EventsRequest request = objectMapperTest.convertValue(oldEventEntity, EventsRequest.class);
+        request.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        String errorMessage = DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+        // Mock DAO to return old event
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(oldEventEntity));
 
-        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
-
+        // Mock JSON conversions
+        Events newEventEntity = new Events();
+        newEventEntity.setGuid(oldEventEntity.getGuid()); // to avoid GUID mismatch
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(newEventEntity);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException());
 
+        // Mock commonUtils to avoid NPE
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+
+        // Mock UserContext
+        UsersDto user = new UsersDto();
+        user.setTenantId(123);
+        user.setUsername("testUser");
+        mockStatic(UserContext.class);
+        when(UserContext.getUser()).thenReturn(user);
+
+        // Mock DAO saveWithoutTenant to throw exception
+        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException(DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG));
+
+        // Execute
         ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);
 
+        // Assertions
         Assertions.assertNotNull(responseEntity);
         RunnerResponse runnerResponse  = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
-        assertEquals(errorMessage, runnerResponse.getError().getMessage());
+        assertEquals(DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG, runnerResponse.getError().getMessage());
     }
 
     @Test

@@ -1648,7 +1648,8 @@ public class EventService implements IEventService {
         return predicate;
     }
 
-    private void handleDuplicationForExistingEvents(Events event) {
+    @Override
+    public void handleDuplicationForExistingEvents(Events event) {
 
         Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
         Page<Events> duplicateEventPage = eventDao.findAllWithoutTenantFilter(duplicateEventSpecification, Pageable.unpaged());

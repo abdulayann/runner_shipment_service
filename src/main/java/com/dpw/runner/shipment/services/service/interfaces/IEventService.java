@@ -30,4 +30,6 @@ public interface IEventService extends ICommonService {
     void populateBranchNames(List<EventsResponse> eventResponses);
     ResponseEntity<IRunnerResponse> pushTrackingEvents(@Valid Container request);
     void saveAllEvent(List<EventsRequest> eventsRequests);
+
+    void handleDuplicationForExistingEvents(Events event);
 }
