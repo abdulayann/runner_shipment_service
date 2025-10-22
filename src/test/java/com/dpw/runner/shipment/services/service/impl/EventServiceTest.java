@@ -12,8 +12,10 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -58,6 +60,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -94,6 +97,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -1526,6 +1530,54 @@ class EventServiceTest extends CommonMocks {
         assertEquals(2, result.size());
         assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
     }
+
+    @Test
+    void saveAllEvent_setsProgressStatusCorrectly_withArgumentCaptor() {
+        // given
+        EventsRequest request1 = new EventsRequest();
+        EventsRequest request2 = new EventsRequest();
+        List<EventsRequest> requests = List.of(request1, request2);
+
+        // Spy the service
+        EventService spyService = spy(eventService);
+
+        // Create Events entities
+        Events event1 = new Events();
+        Events event2 = new Events();
+        List<Events> events = List.of(event1, event2);
+
+        // Mock conversion of requests to entities
+        doReturn(events).when(spyService).convertRequestListToEntityList(requests);
+
+        // Mock progress status calculation in order
+        doReturn(EventProgressStatus.TO_BE_PLANNED, EventProgressStatus.COMPLETED)
+                .when(spyService).calculateProgressStatus(any(Events.class));
+
+        // Mock internal void methods
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        doNothing().when(eventDao).updateAllEventDetails(anyList());
+        doNothing().when(spyService).handleDuplicationForExistingEvents(any(Events.class));
+
+        // when
+        spyService.saveAllEvent(requests);
+
+        // then
+        // Capture the argument passed to updateEventWithMasterData
+        ArgumentCaptor<List<Events>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonUtils).updateEventWithMasterData(captor.capture());
+        List<Events> capturedEvents = captor.getValue();
+
+        // Verify progress status
+        assertEquals(EventProgressStatus.TO_BE_PLANNED, capturedEvents.get(0).getProgressStatus());
+        assertEquals(EventProgressStatus.COMPLETED, capturedEvents.get(1).getProgressStatus());
+
+        // Verify database update call
+        verify(eventDao).updateAllEventDetails(capturedEvents);
+
+        // Verify duplication handling called for each event
+        verify(spyService, times(2)).handleDuplicationForExistingEvents(any(Events.class));
+    }
+
 
 
 }
