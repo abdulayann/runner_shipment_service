@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,12 +28,15 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -518,6 +523,248 @@ class PackingValidationV3UtilTest {
                 packingValidationV3Util.validateContainerIds(List.of(), List.of(updateReq), List.of(existing))
         );
     }
+    @Test
+    void testCheckForTemperatureHumidityWarnings_AllScenarios() {
+        // Test 1: Temperature set point above maximum
+        PackingV3Request tempAboveMax = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("15.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        assertEquals("You have selected the set point beyond the minimum and maximum temperature range, kindly check",
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(tempAboveMax));
 
+        // Test 2: Temperature set point below minimum
+        PackingV3Request tempBelowMin = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("-5.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        assertEquals("You have selected the set point beyond the minimum and maximum temperature range, kindly check",
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(tempBelowMin));
 
+        // Test 3: Humidity set point above maximum
+        PackingV3Request humidityAboveMax = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("5.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("75.0"))
+                .build();
+        assertEquals("You have selected the set point beyond the minimum and maximum humidity % range, kindly check",
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(humidityAboveMax));
+
+        // Test 4: Humidity set point below minimum
+        PackingV3Request humidityBelowMin = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("5.0"))
+                .minHumidity(new BigDecimal("40.0"))
+                .maxHumidity(new BigDecimal("70.0"))
+                .humiditySetPoint(new BigDecimal("25.0"))
+                .build();
+        assertEquals("You have selected the set point beyond the minimum and maximum humidity % range, kindly check",
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(humidityBelowMin));
+
+        // Test 5: Both temperature and humidity outside range
+        PackingV3Request bothOutside = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("15.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("75.0"))
+                .build();
+        assertEquals("You have selected the set point beyond the minimum and maximum temperature and humidity % range, kindly check",
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(bothOutside));
+
+        // Test 6: Valid set points - no warning
+        PackingV3Request valid = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("5.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        assertNull(packingValidationV3Util.checkForTemperatureHumidityWarnings(valid));
+
+        // Test 7: Temperature control false - no warning
+        PackingV3Request tempControlFalse = PackingV3Request.builder()
+                .isTemperatureControlled(false)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("15.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("75.0"))
+                .build();
+        assertNull(packingValidationV3Util.checkForTemperatureHumidityWarnings(tempControlFalse));
+    }
+
+    @Test
+    void testValidateHumidityPositiveValues_AllScenarios() {
+        // Test 1: Negative minimum humidity - should throw exception
+        PackingV3Request negativeMinHumidity = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minHumidity(new BigDecimal("-10.0")) // Negative
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        ValidationException exception1 = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(negativeMinHumidity));
+        assertEquals("Minimum humidity must be a positive value", exception1.getMessage());
+
+        // Test 2: Negative maximum humidity - should throw exception
+        PackingV3Request negativeMaxHumidity = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("-5.0")) // Negative
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        ValidationException exception2 = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(negativeMaxHumidity));
+        assertEquals("Maximum humidity must be a positive value", exception2.getMessage());
+
+        // Test 3: Negative humidity set point - should throw exception
+        PackingV3Request negativeSetPoint = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("-5.0"))
+                .build();
+        ValidationException exception3 = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.checkForTemperatureHumidityWarnings(negativeSetPoint));
+        assertEquals("Humidity set point must be a positive value", exception3.getMessage());
+
+        // Test 4: All positive values - should not throw exception
+        PackingV3Request allPositive = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
+        assertDoesNotThrow(() -> packingValidationV3Util.checkForTemperatureHumidityWarnings(allPositive));
+
+        // Test 5: Temperature control false with negative values - should not validate
+        PackingV3Request tempControlFalse = PackingV3Request.builder()
+                .isTemperatureControlled(false)
+                .minHumidity(new BigDecimal("-10.0"))
+                .maxHumidity(new BigDecimal("-5.0"))
+                .humiditySetPoint(new BigDecimal("-2.0"))
+                .build();
+        assertDoesNotThrow(() -> packingValidationV3Util.checkForTemperatureHumidityWarnings(tempControlFalse));
+    }
+    @Test
+    void testAddWarningsToPackingResponses_AllScenarios() {
+        // Create test requests with warnings
+        List<PackingV3Request> requests = Arrays.asList(
+                PackingV3Request.builder()
+                        .id(1L)
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("2.0"))
+                        .maxTemp(new BigDecimal("8.0"))
+                        .tempSetPoint(new BigDecimal("15.0")) // Will trigger temperature warning
+                        .minHumidity(new BigDecimal("30.0"))
+                        .maxHumidity(new BigDecimal("60.0"))
+                        .humiditySetPoint(new BigDecimal("45.0"))
+                        .build(),
+                PackingV3Request.builder()
+                        .id(2L)
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("2.0"))
+                        .maxTemp(new BigDecimal("8.0"))
+                        .tempSetPoint(new BigDecimal("5.0"))
+                        .minHumidity(new BigDecimal("30.0"))
+                        .maxHumidity(new BigDecimal("60.0"))
+                        .humiditySetPoint(new BigDecimal("75.0")) // Will trigger humidity warning
+                        .build(),
+                PackingV3Request.builder()
+                        .id(3L)
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("2.0"))
+                        .maxTemp(new BigDecimal("8.0"))
+                        .tempSetPoint(new BigDecimal("5.0"))
+                        .minHumidity(new BigDecimal("30.0"))
+                        .maxHumidity(new BigDecimal("60.0"))
+                        .humiditySetPoint(new BigDecimal("45.0")) // No warning
+                        .build(),
+                PackingV3Request.builder()
+                        .id(null) // No ID - should be skipped
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("2.0"))
+                        .maxTemp(new BigDecimal("8.0"))
+                        .tempSetPoint(new BigDecimal("20.0")) // Would trigger warning but no ID
+                        .build()
+        );
+
+        // Create corresponding responses using constructor or setters
+        List<PackingResponse> responses = Arrays.asList(
+                createPackingResponse(1L),
+                createPackingResponse(2L),
+                createPackingResponse(3L),
+                createPackingResponse(4L) // No matching request - should not get warning
+        );
+
+        // Execute the method
+        packingValidationV3Util.addWarningsToPackingResponses(requests, responses);
+
+        // Verify warnings are correctly mapped
+        assertEquals("You have selected the set point beyond the minimum and maximum temperature range, kindly check",
+                responses.get(0).getWarning()); // ID 1 - temperature warning
+        assertEquals("You have selected the set point beyond the minimum and maximum humidity % range, kindly check",
+                responses.get(1).getWarning()); // ID 2 - humidity warning
+        Assertions.assertNull(responses.get(2).getWarning()); // ID 3 - no warning
+        Assertions.assertNull(responses.get(3).getWarning()); // ID 4 - no matching request
+    }
+
+    // Helper method to create PackingResponse
+    private PackingResponse createPackingResponse(Long id) {
+        PackingResponse response = new PackingResponse();
+        response.setId(id);
+        return response;
+    }
+
+    @Test
+    void testCheckForBulkTemperatureHumidityWarnings_NoWarning() {
+        List<PackingV3Request> requests = Arrays.asList(
+                PackingV3Request.builder()
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("2.0"))
+                        .maxTemp(new BigDecimal("8.0"))
+                        .tempSetPoint(new BigDecimal("5.0"))
+                        .minHumidity(new BigDecimal("30.0"))
+                        .maxHumidity(new BigDecimal("60.0"))
+                        .humiditySetPoint(new BigDecimal("45.0"))
+                        .build(),
+                PackingV3Request.builder()
+                        .isTemperatureControlled(true)
+                        .minTemp(new BigDecimal("-5.0"))
+                        .maxTemp(new BigDecimal("5.0"))
+                        .tempSetPoint(new BigDecimal("0.0"))
+                        .minHumidity(new BigDecimal("40.0"))
+                        .maxHumidity(new BigDecimal("70.0"))
+                        .humiditySetPoint(new BigDecimal("50.0")) // Within range
+                        .build()
+        );
+
+        // Execute method
+        String warning = packingValidationV3Util.checkForBulkTemperatureHumidityWarnings(requests);
+
+        // Verify no warning is returned
+        Assertions.assertNull(warning);
+    }
 }

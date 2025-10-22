@@ -111,6 +111,13 @@ public class PackingResponse implements IRunnerResponse {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
     private String shipmentType;
+    private BigDecimal tempSetPoint;
+    private String tempSetPointUnit;
+
+    private BigDecimal minHumidity;
+    private BigDecimal maxHumidity;
+    private BigDecimal humiditySetPoint;
+    private String warning;
 
     public boolean getAssigned() {return containerId != null;}
 }

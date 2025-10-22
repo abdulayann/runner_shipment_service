@@ -159,6 +159,7 @@ public class PackingV3Service implements IPackingV3Service {
     public PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
+        String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(packingRequest);
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
         if (packingRequest.getContainerId() != null) {
@@ -200,6 +201,9 @@ public class PackingV3Service implements IPackingV3Service {
         log.info("Audit log recorded for packing creation | Packing ID: {}", savedPacking.getId());
 
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
+        if (warning != null) {
+            response.setWarning(warning);
+        }
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
         afterSave(List.of(savedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
         // Triggering Event for shipment and console for DependentServices update
@@ -380,6 +384,8 @@ public class PackingV3Service implements IPackingV3Service {
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
+        // Check for warnings
+        String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(packingRequest);
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -425,7 +431,11 @@ public class PackingV3Service implements IPackingV3Service {
         }
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(updatedPacking), isAutoSell, module);
-        return convertEntityToDto(updatedPacking);
+        PackingResponse response = convertEntityToDto(updatedPacking);
+        if (warning != null) {
+            response.setWarning(warning);
+        }
+        return response;
     }
 
     @Override
@@ -479,6 +489,7 @@ public class PackingV3Service implements IPackingV3Service {
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
+        String warning = packingValidationV3Util.checkForBulkTemperatureHumidityWarnings(packingRequestList);
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -564,6 +575,7 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
+        packingValidationV3Util.addWarningsToPackingResponses(packingRequestList, packingResponses);
         afterSave(allSavedPackings, module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, oldConvertedPackings);
 
         // Triggering Event for shipment and console for DependentServices update
@@ -572,6 +584,7 @@ public class PackingV3Service implements IPackingV3Service {
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
+                .warning(warning)
                 .build();
     }
 
@@ -1722,5 +1735,9 @@ public class PackingV3Service implements IPackingV3Service {
     private void updatePackingRequestWithTemperatureFalse(PackingV3Request packingV3Request) {
         packingV3Request.setMinTemp(null);
         packingV3Request.setMaxTemp(null);
+        packingV3Request.setTempSetPoint(null);
+        packingV3Request.setMinHumidity(null);
+        packingV3Request.setMaxHumidity(null);
+        packingV3Request.setHumiditySetPoint(null);
     }
 }

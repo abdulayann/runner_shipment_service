@@ -18,5 +18,6 @@ import java.util.List;
 @AllArgsConstructor
 public class BulkPackingResponse {
     private String message;
+    private String warning;
     private List<PackingResponse> packingResponseList;
 }

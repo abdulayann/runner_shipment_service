@@ -266,5 +266,21 @@ public class Packing extends MultiTenancy {
     @Column(name = "pack_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String packWeightUnit;
+
+    @Column(name = "temp_set_point")
+    private BigDecimal tempSetPoint;
+
+    @Column(name = "temp_set_point_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
+    private String tempSetPointUnit;
+
+    @Column(name = "min_humidity")
+    private BigDecimal minHumidity;
+
+    @Column(name = "max_humidity")
+    private BigDecimal maxHumidity;
+
+    @Column(name = "humidity_set_point")
+    private BigDecimal humiditySetPoint;
 }
 

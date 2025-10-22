@@ -99,4 +99,11 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
+
+    private BigDecimal tempSetPoint;
+    private String tempSetPointUnit;
+
+    private BigDecimal minHumidity;
+    private BigDecimal maxHumidity;
+    private BigDecimal humiditySetPoint;
 }
