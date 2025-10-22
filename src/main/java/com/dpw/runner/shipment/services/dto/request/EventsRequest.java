@@ -61,4 +61,6 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String branch;
     private String referenceNumber;
     private String direction;
+    private LocalDateTime plannedDate;
+    private LocalDateTime predictedDate;
 }

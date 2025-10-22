@@ -177,32 +177,32 @@ public class EventService implements IEventService {
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
-            log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            log.info("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildFailedResponse("Empty request received");
         }
-        Events event = convertRequestToEntity(request);
+        Events newEventEntity = jsonHelper.convertValue(request, Events.class);
         try {
-            saveEventUtil(request);
+            saveEventUtil(jsonHelper.convertValue(newEventEntity, EventsRequest.class));
 
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(event)
+                            .newData(newEventEntity)
                             .prevData(null)
                             .parent(Events.class.getSimpleName())
-                            .parentId(event.getId())
+                            .parentId(newEventEntity.getId())
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
-            log.info("Event Details created successfully for Id {} with Request Id {}", event.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Event Details created successfully for Id {} with Request Id {}", newEventEntity.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(event));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(newEventEntity));
     }
 
     @Transactional
@@ -219,30 +219,31 @@ public class EventService implements IEventService {
             throw new RunnerException(EventConstants.EMPTY_REQUEST_ID_ERROR);
         }
         long id = request.getId();
-        Optional<Events> oldEntity = eventDao.findById(id);
-        if (oldEntity.isEmpty()) {
-            log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        Events oldEventEntity = eventDao.findById(id)
+                .orElseThrow(()-> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+
+        Events newEventEntity = jsonHelper.convertValue(request, Events.class);
+        newEventEntity.setId(oldEventEntity.getId());
+        if (oldEventEntity.getEstimated() == null && newEventEntity.getEstimated() != null && newEventEntity.getPlannedDate() == null) {
+            newEventEntity.setPlannedDate(newEventEntity.getEstimated());
         }
 
-        Events events = convertRequestToEntity(request);
-        events.setId(oldEntity.get().getId());
-        if(events.getGuid() != null && !oldEntity.get().getGuid().equals(events.getGuid())) {
+        if(newEventEntity.getGuid() != null && !oldEventEntity.getGuid().equals(newEventEntity.getGuid())) {
             throw new RunnerException("Provided GUID doesn't match with the existing one !");
         }
         try {
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEventEntity);
 
-            saveEventUtil(request);
+            saveEventUtil(jsonHelper.convertValue(newEventEntity, EventsRequest.class));
 
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(events)
+                            .newData(newEventEntity)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Events.class))
                             .parent(Events.class.getSimpleName())
-                            .parentId(events.getId())
+                            .parentId(newEventEntity.getId())
                             .operation(DBOperationType.UPDATE.name()).build()
             );
             log.info("Updated the event details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -252,7 +253,7 @@ public class EventService implements IEventService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(newEventEntity));
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {

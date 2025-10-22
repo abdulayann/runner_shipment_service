@@ -148,4 +148,10 @@ public class Events extends MultiTenancy {
     @Column(name = "reference_number")
     private String referenceNumber;
 
+    @Column(name = "planned_date")
+    private LocalDateTime plannedDate;
+
+    @Column(name = "predicted_date")
+    private LocalDateTime predictedDate;
+
 }
