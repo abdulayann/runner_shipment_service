@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
+import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class OrderManageDto {
     @AllArgsConstructor
     @Builder
     public static class OrderManagement {
+        private BookingStatus moduleStatus;
         private String moduleId;
         private String moduleGuid;
         private String orderManagementId;

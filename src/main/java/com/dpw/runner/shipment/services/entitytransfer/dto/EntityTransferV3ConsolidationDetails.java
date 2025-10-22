@@ -49,9 +49,10 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private String dgClass;
     private String dgSubstance;
     private Boolean override;
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
     private LocalDateTime latestFullEquDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquToCarrier;
-    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
@@ -79,12 +80,12 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
+    private UUID parentGuid;
     private String ediTransactionId;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
-    private Long triangulationPartner;
-    private Long receivingBranch;
 
     private Long originBranch;
+    private Long receivingBranch;
 
     private boolean intraBranch;
     private Long documentationPartner;

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -46,12 +47,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -120,7 +125,6 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build()),
             Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build())
-
     );
 
 
@@ -133,8 +137,16 @@ public class NetworkTransferService implements INetworkTransferService {
                 log.error("Request is empty for NetworkTransfer list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
+            String shipmentNumber = extractShipmentNumber(request.getFilterCriteria());
+            removeShipmentNumberFilter(request.getFilterCriteria());
+
+            Specification<NetworkTransfer> shipmentNumberSpec = buildShipmentNumberFilterSpec(shipmentNumber);
             Pair<Specification<NetworkTransfer>, Pageable> tuple = fetchData(request, NetworkTransfer.class, tableNames);
-            Page<NetworkTransfer> networkTransferPage = networkTransferDao.findAll(tuple.getLeft(), tuple.getRight());
+            Specification<NetworkTransfer> finalSpec = shipmentNumberSpec;
+            if (tuple.getLeft() != null) {
+                finalSpec = finalSpec == null ? tuple.getLeft() : finalSpec.and(tuple.getLeft());
+            }
+            Page<NetworkTransfer> networkTransferPage = networkTransferDao.findAll(finalSpec, tuple.getRight());
             log.info("NetworkTransfer list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(networkTransferPage.getContent()),
                     networkTransferPage.getTotalPages(), networkTransferPage.getTotalElements());
@@ -145,10 +157,66 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
+    public Specification<NetworkTransfer> buildShipmentNumberFilterSpec(String shipmentNumber) {
+        if (shipmentNumber == null || shipmentNumber.isEmpty()) {
+            return null;
+        }
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<NetworkTransferShipmentsMapping> subRoot = subquery.from(NetworkTransferShipmentsMapping.class);
+
+            subquery.select(subRoot.get("networkTransferId"))
+                    .where(cb.equal(subRoot.get(NetworkTransferConstants.SHIPMENT_NUMBER), shipmentNumber.trim().toUpperCase()));
+
+            return root.get("id").in(subquery);
+        };
+    }
+
+    private String extractShipmentNumber(List<FilterCriteria> filters) {
+        if (filters == null) return null;
+        for (FilterCriteria filter : filters) {
+            if (filter.getCriteria() != null && NetworkTransferConstants.SHIPMENT_NUMBER.equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+                Object val = filter.getCriteria().getValue();
+                return val != null ? val.toString() : null;
+            }
+            String nested = extractShipmentNumber(filter.getInnerFilter());
+            if (nested != null) return nested;
+        }
+        return null;
+    }
+
+    private void removeShipmentNumberFilter(List<FilterCriteria> filters) {
+        if (filters == null) return;
+
+        Iterator<FilterCriteria> iterator = filters.iterator();
+        while (iterator.hasNext()) {
+            FilterCriteria filter = iterator.next();
+            if (filter.getCriteria() != null &&
+                    NetworkTransferConstants.SHIPMENT_NUMBER.equalsIgnoreCase(filter.getCriteria().getFieldName())) {
+                iterator.remove();
+                continue;
+            }
+            removeShipmentNumberFilter(filter.getInnerFilter());
+            if ((filter.getInnerFilter() == null || filter.getInnerFilter().isEmpty()) && filter.getCriteria() == null) {
+                iterator.remove();
+            }
+        }
+    }
+
     private List<IRunnerResponse> convertEntityListToDtoList(List<NetworkTransfer> lst) {
         List<NetworkTransferListResponse> networkTransferListResponses = new ArrayList<>();
         lst.forEach(networkTransfer -> {
             var response = modelMapper.map(networkTransfer, NetworkTransferListResponse.class);
+            if (networkTransfer.getNetworkTransferShipmentsMappings() != null) {
+                List<String> shipmentNumbers = networkTransfer.getNetworkTransferShipmentsMappings()
+                        .stream()
+                        .map(NetworkTransferShipmentsMapping::getShipmentNumber)
+                        .collect(Collectors.toList());
+                response.setShipmentNumbers(shipmentNumbers);
+            } else {
+                response.setShipmentNumbers(Collections.emptyList());
+            }
+
             networkTransferListResponses.add(response);
         });
 
@@ -449,7 +517,10 @@ public class NetworkTransferService implements INetworkTransferService {
         notificationDao.save(notification);
         networkTransferList.add(networkTransfer.get());
         networkTransferDao.saveAll(networkTransferList);
-        triggerRequestTransferEmail(entityId, entityType, requestForTransferRequest.getRemarks());
+
+        if(isNteAdditionalEmailFlagEnabled())
+            triggerRequestTransferEmail(entityId, entityType, requestForTransferRequest.getRemarks());
+
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -498,8 +569,11 @@ public class NetworkTransferService implements INetworkTransferService {
         if(!networkTransferList.isEmpty()){
             networkTransferDao.saveAll(networkTransferList);
         }
-        for(NetworkTransfer nte: networkTransferList) {
-            triggerReassignmentEmail(nte, reassignRequest);
+
+        if(isNteAdditionalEmailFlagEnabled()) {
+            for (NetworkTransfer nte : networkTransferList) {
+                triggerReassignmentEmail(nte, reassignRequest);
+            }
         }
         return ResponseHelper.buildSuccessResponse();
     }
@@ -632,20 +706,35 @@ public class NetworkTransferService implements INetworkTransferService {
         try {
             String entityNumber = "";
             String assignedTo = "";
+            String createdBy = "";
             if(SHIPMENT.equals(entityType)) {
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
                 if (shipmentDetails.isPresent()) {
                     assignedTo = shipmentDetails.get().getAssignedTo();
                     entityNumber = shipmentDetails.get().getShipmentId();
+                    createdBy = shipmentDetails.get().getCreatedBy();
                 }
             }
-            if (CommonUtils.isStringNullOrEmpty(assignedTo))
-                return;
+            if(CONSOLIDATION.equals(entityType)) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findConsolidationByIdWithQuery(entityId);
+                if (consolidationDetails.isPresent()) {
+                    assignedTo = consolidationDetails.get().getAssignedTo();
+                    entityNumber = consolidationDetails.get().getConsolidationNumber();
+                    createdBy = consolidationDetails.get().getCreatedBy();
+                }
+            }
+
             List<String> emailList = new ArrayList<>();
             Map<String, String> usernameEmailsMap = new HashMap<>();
-            commonUtils.getUserDetails(new HashSet<>(Set.of(assignedTo)), usernameEmailsMap);
+            Set<String> usernames = Stream.of(assignedTo, createdBy)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+            commonUtils.getUserDetails(usernames, usernameEmailsMap);
+
             if (usernameEmailsMap.containsKey(assignedTo))
                 emailList.add(usernameEmailsMap.get(assignedTo));
+            if(!CommonUtils.isStringNullOrEmpty(createdBy) && usernameEmailsMap.containsKey(createdBy))
+                emailList.add(usernameEmailsMap.get(createdBy));
             EmailTemplatesRequest template = createRequestTransferEmailBody(entityType, reason, entityNumber);
             if(!emailList.isEmpty() && template.getBody() != null) {
                 commonUtils.sendEmailNotification(template, emailList, Collections.singletonList(UserContext.getUser().getEmail()));
@@ -693,30 +782,41 @@ public class NetworkTransferService implements INetworkTransferService {
             String entityType = networkTransfer.getEntityType();
             Long entityId = networkTransfer.getEntityId();
             String createdBy = networkTransfer.getCreatedBy();
+            String entityCreatedBy = "";
 
             String assignedTo = "";
             if(SHIPMENT.equals(entityType)) {
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
                 if (shipmentDetails.isPresent()) {
                     assignedTo = shipmentDetails.get().getAssignedTo();
+                    entityCreatedBy = shipmentDetails.get().getCreatedBy();
                 }
             }
+
+            if(CONSOLIDATION.equals(entityType)) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findConsolidationByIdWithQuery(entityId);
+                if (consolidationDetails.isPresent()) {
+                    assignedTo = consolidationDetails.get().getAssignedTo();
+                    entityCreatedBy = consolidationDetails.get().getCreatedBy();
+                }
+            }
+
             Set<String> emailsList = new HashSet<>();
-            if (!CommonUtils.isStringNullOrEmpty(assignedTo))
-                emailsList.add(assignedTo);
-            if (!CommonUtils.isStringNullOrEmpty(createdBy))
-                emailsList.add(createdBy);
+            addFieldsOnMailListSet(emailsList, assignedTo, createdBy, entityCreatedBy);
 
             Integer reAssignedBranch = getReAssignedBranch(networkTransfer, reassignRequest);
 
             List<String> emailList = new ArrayList<>();
             Map<String, String> usernameEmailsMap = new HashMap<>();
             commonUtils.getUserDetails(new HashSet<>(emailsList), usernameEmailsMap);
-            if (createdBy!=null && usernameEmailsMap.containsKey(createdBy))
+            if (NetworkTransferConstants.TRANSFER_RETRANSFER_SET.contains(networkTransfer.getStatus()) && createdBy!=null && usernameEmailsMap.containsKey(createdBy))
                 emailList.add(usernameEmailsMap.get(createdBy));
 
             if (assignedTo!=null && usernameEmailsMap.containsKey(assignedTo))
                 emailList.add(usernameEmailsMap.get(assignedTo));
+
+            if(entityCreatedBy!=null && usernameEmailsMap.containsKey(entityCreatedBy))
+                emailList.add(usernameEmailsMap.get(entityCreatedBy));
 
             EmailTemplatesRequest template = createRequestReassignEmailBody(networkTransfer, reason, reAssignedBranch);
             if(!emailList.isEmpty() && template.getBody() != null) {
@@ -772,6 +872,20 @@ public class NetworkTransferService implements INetworkTransferService {
         body = body.replace(EntityTransferConstants.REASSIGNED_USER_EMAIL_ID, user.getEmail());
         body = body.replace(EntityTransferConstants.ORIGINAL_DESTINATION_BRANCH, StringUtility.convertToString(branchIdVsTenantModelMap.get(networkTransfer.getTenantId()).tenantName));
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
+    }
+
+    private boolean isNteAdditionalEmailFlagEnabled(){
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        return shipmentSettingsDetails != null && shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled() != null && shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled();
+    }
+
+    private void addFieldsOnMailListSet(Set<String> emailsList, String assignedTo, String createdBy, String entityCreatedBy){
+        if (!CommonUtils.isStringNullOrEmpty(assignedTo))
+            emailsList.add(assignedTo);
+        if (!CommonUtils.isStringNullOrEmpty(createdBy))
+            emailsList.add(createdBy);
+        if (!CommonUtils.isStringNullOrEmpty(entityCreatedBy))
+            emailsList.add(entityCreatedBy);
     }
 
     public ResponseEntity<IRunnerResponse> getAllMasterDataForNT(Map<String, Object> requestPayload) {

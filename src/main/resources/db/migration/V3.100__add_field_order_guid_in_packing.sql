@@ -1,0 +1,2 @@
+ALTER TABLE packing
+    ADD COLUMN IF NOT EXISTS order_guid UUID;

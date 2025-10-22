@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.AuthLoginRequest;
@@ -20,6 +21,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -46,7 +48,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
     public IRunnerResponse requestTactResponse(CommonRequestModel commonRequestModel) throws RunnerException {
         String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword(), bridgeServiceConfig.getTenantCode());
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
+        headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER + authToken);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
 
         TactBridgePayload tactBridgePayload = (TactBridgePayload) commonRequestModel.getData();
@@ -61,7 +63,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             return bridgeResponse.getBody();
         }
         catch (Exception e) {
-            log.error("Error while hitting bridge service request endpoint", e);
+            log.error("Error while hitting bridge service request endpoint for tact", e);
             throw new RunnerException(e.getMessage());
         }
 
@@ -89,7 +91,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
     public IRunnerResponse requestOutBoundFileTransfer(CommonRequestModel commonRequestModel) throws RunnerException {
         String authToken = generateToken(bridgeServiceConfig.getOutBoundTransferUserName(), bridgeServiceConfig.getOutBoundTransferPassword(), null);
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
+        headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER + authToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
@@ -116,6 +118,31 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             );
         }
 
+    }
+
+    @Override
+    public IRunnerResponse bridgeApiIntegration(Object payload, String integrationCode, String transactionId, String referenceId) throws RunnerException {
+        String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword(),null);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, Constants.BEARER + authToken);
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
+
+        BridgeRequest request = BridgeRequest.builder().requestCode(integrationCode).transactionId(transactionId).referenceId(referenceId)
+                .payload(payload).build();
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(jsonHelper.convertToJson(request), headers);
+
+        try {
+            ResponseEntity<BridgeServiceResponse> bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
+
+            log.info("Received data from bridge service for inttra integration: {}", jsonHelper.convertToJson(bridgeResponse));
+            return bridgeResponse.getBody();
+        }
+        catch (Exception e) {
+            log.error("Error while hitting bridge service request endpoint for inttra", e);
+            throw new RunnerException(e.getMessage());
+        }
     }
 
     private String extractErrorDescription(String detailMessage) {

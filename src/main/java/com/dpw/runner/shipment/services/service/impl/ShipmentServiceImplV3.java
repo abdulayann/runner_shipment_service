@@ -24,6 +24,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDER
 import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ORDER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
@@ -32,17 +33,18 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.DESTINATION;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.ORIGIN;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_FETCHED_IN_TIME_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_DETAILS_IS_NULL_MESSAGE_DR;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT_INCLUDE_COLUMNS_REQUIRED_ERROR_MESSAGE;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
-import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
@@ -89,6 +91,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -104,6 +107,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
@@ -129,11 +133,12 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -147,6 +152,9 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -163,6 +171,9 @@ import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -185,6 +196,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
@@ -208,8 +220,10 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
+import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -247,14 +261,13 @@ import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -264,6 +277,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -278,7 +292,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Order;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -329,7 +352,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
     @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
+    @Autowired
     private INotesDao notesDao;
+    @Autowired
+    private EntityManager entityManager;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -346,6 +373,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private INetworkTransferDao networkTransferDao;
     private IDateTimeChangeLogService dateTimeChangeLogService;
     private IConsolidationDetailsDao consolidationDetailsDao;
+    private IAdditionalDetailDao additionalDetailDao;
     private IPartiesDao partiesDao;
     private IRoutingsDao routingsV3Dao;
     private IPackingDao packingDao;
@@ -387,9 +415,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     private ProductIdentifierUtility productEngine;
 
+    @Autowired
+    private ShipmentCommonUtils shipmentCommonUtils;
+    @Autowired
+    private IShipmentOrderDao shipmentOrderDao;
+
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
+
+    private static final String CLONE_SHIPMENT_NOT_ALLOWED = "Clone Shipment is not allowed. Please check the Transport Config.";
 
     @Autowired
     public ShipmentServiceImplV3(
@@ -407,6 +442,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ILogsHistoryService logsHistoryService,
             IDateTimeChangeLogService dateTimeChangeLogService,
             IConsolidationDetailsDao consolidationDetailsDao,
+            IAdditionalDetailDao additionalDetailDao,
             IPartiesDao partiesDao,
             IRoutingsDao routingsDao,
             IContainerDao containerDao,
@@ -445,6 +481,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.logsHistoryService = logsHistoryService;
         this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.consolidationDetailsDao = consolidationDetailsDao;
+        this.additionalDetailDao = additionalDetailDao;
         this.partiesDao = partiesDao;
         this.routingsV3Dao = routingsDao;
         this.orderManagementAdapter = orderManagementAdapter;
@@ -634,7 +671,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return isNotAllowed;
     }
 
-    public Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+    public Optional<ShipmentDetails> retrieveShipmentByIdWithQuery(CommonGetRequest request, String source) throws RunnerException, AuthenticationException {
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
         if (id != null) {
@@ -648,23 +685,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
-        Long currentTenant = TenantContext.getCurrentTenant().longValue();
-        ConsolidationDetails consolidationDetails = null;
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
-            consolidationDetails = shipmentDetails.get().getConsolidationList().iterator().next();
-        }
-        if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
-            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+        if (Objects.equals(source, NETWORK_TRANSFER)) {
+            List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
+            Long currentTenant = TenantContext.getCurrentTenant().longValue();
+            ConsolidationDetails consolidationDetails = null;
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
+                consolidationDetails = shipmentDetails.get().getConsolidationList().iterator().next();
+            }
+            if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
+                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+            }
         }
         return shipmentDetails;
     }
 
     private Optional<ShipmentDetails> fetchShipmentDetails(String source, CommonGetRequest request) throws AuthenticationException, RunnerException {
         Long requestId = request.getId();
-        if (Objects.equals(source, NETWORK_TRANSFER)) {
-            log.debug("Source is NETWORK_TRANSFER for the input with Request Id {}", requestId);
-            return retrieveForNte(request);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+            log.debug("Source {} can fetch details without tenant filter for the input with Request Id {}", source, requestId);
+            return retrieveShipmentByIdWithQuery(request, source);
         } else {
             log.debug("Source is {} for the input with Request Id {}", source, requestId);
             if (requestId != null) {
@@ -763,8 +802,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
-        if (Objects.equals(source, NETWORK_TRANSFER)) {
-            shipmentDetails = retrieveForNte(request);
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
+            shipmentDetails = retrieveShipmentByIdWithQuery(request, source);
         } else {
             if (id != null) {
                 shipmentDetails = shipmentDao.findById(id);
@@ -928,6 +967,306 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchShipments(ListCommonRequest listCommonRequest) throws RunnerException {
+        if (listCommonRequest.getIncludeColumns() == null || listCommonRequest.getIncludeColumns().isEmpty()) {
+            throw new ValidationException("Include columns can not be empty");
+        }
+        if (listCommonRequest.getPageNo() == null || listCommonRequest.getPageNo() < 1) {
+            throw new ValidationException("PageSize should be greater than 1");
+        }
+        listCommonRequest.getIncludeColumns().add("id");
+        long totalCount = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+        int pageNo = listCommonRequest.getPageNo();
+        int pageSize = Optional.ofNullable(listCommonRequest.getPageSize()).orElse(25);
+        int totalPages = (int) Math.ceil((double) totalCount / pageSize);
+        List<String> includeColumns = commonUtils.refineIncludeColumns(listCommonRequest.getIncludeColumns());
+
+        // Step 1: Read requested columns
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+//
+//
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Step 6: Build CriteriaQuery<Object[]>
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+        // Step 3: Parse filterCriteria into predicates
+        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
+
+        // Step 4: Parse sortRequest
+        Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, listCommonRequest);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>();
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  commonUtils.extractSortFieldFromPayload(listCommonRequest));
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add where
+        if (!predicates.isEmpty()) {
+            cq.where(cb.and(predicates.toArray(new Predicate[0])));
+        }
+
+        // Add sorting
+        if (sortOrder != null) {
+            cq.orderBy(sortOrder);
+        }
+        long start = System.currentTimeMillis();
+        // Step 7: Execute paginated query
+        List<Object[]> results = entityManager.createQuery(cq)
+                .setFirstResult((pageNo - 1) * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
+        log.info("Time taken in executing query: {} ms, filterCriteria: {}", (System.currentTimeMillis()-start), listCommonRequest.getFilterCriteria().toString());
+        // Step 8: Convert flat to nested map with array support
+        List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(flatList, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
+        List<ShipmentDetails> shiplist = new ArrayList<>();
+        for( Map<String, Object> curr : nestedList) {
+            ShipmentDetails ship = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
+            shiplist.add(ship);
+        }
+
+        List<IRunnerResponse> shipmentListResponses = new ArrayList<>();
+        for( ShipmentDetails curr : shiplist) {
+            IRunnerResponse shipmentListResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(curr, new HashSet<>(listCommonRequest.getIncludeColumns()), new ShipmentDetailsResponse());
+            shipmentListResponses.add(shipmentListResponse);
+        }
+   return ResponseHelper.buildListSuccessResponse(
+                shipmentListResponses,
+                totalPages,
+                totalCount);
+    }
+
+    @Override
+    public ShipmentRetrieveLiteResponse cloneShipment(CloneRequest request) throws RunnerException {
+        if (null == request.getShipmentId()) {
+            throw new ValidationException("Shipment Id Is Mandatory");
+        }
+        String responseMsg;
+        try {
+            Long shipemntId = request.getShipmentId();
+            Optional<ShipmentDetails> shipmentData = validateShipment(shipemntId);
+            ShipmentDetails shipmentDetails = shipmentData.get();
+            ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+            CarrierDetails details = shipmentDetails.getCarrierDetails();
+            CarrierDetailResponse.CarrierDetailResponseBuilder builder = CarrierDetailResponse.builder();
+            setHeadersDetails(request, shipmentDetails, shipmentRetrieveLiteResponse, details, builder);
+            setPartieDetails(request, shipmentDetails, shipmentRetrieveLiteResponse);
+            setCargoDetails(request, shipmentDetails, shipmentRetrieveLiteResponse);
+            setGeneralDetails(request, shipmentDetails, shipmentRetrieveLiteResponse, details, builder);
+            shipmentRetrieveLiteResponse.setCarrierDetails(builder.build());
+            return shipmentRetrieveLiteResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    @Override
+    public CloneFieldResponse getCloneConfig(String type) throws RunnerException {
+        return commonUtils.getCloneFieldResponse(type);
+    }
+
+    @Override
+    public QuoteResetRulesResponse resetShipmentQuoteRules(Long shipmentId) {
+        boolean hasMainCarriage = false;
+        if(!Objects.isNull(shipmentId)) {
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+            if(optionalShipmentDetails.isPresent()) {
+                hasMainCarriage = optionalShipmentDetails.get().getRoutingsList().stream()
+                        .map(Routings::getCarriage)
+                        .anyMatch(RoutingCarriage.MAIN_CARRIAGE::equals);
+            } else {
+                log.error("No Shipment found with ShipmentId {} for request {}", shipmentId, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException("No Shipment found with Shipment Id {}" + shipmentId);
+            }
+        }
+
+        List<QuoteResetField> quoteResetFields = new ArrayList<>();
+        quoteResetFields.add(QuoteResetField.builder().label("Quote Party").fieldName("currentPartyForQuote").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Transport Mode").fieldName("transportMode").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Cargo Type").fieldName("shipmentType").editable(false).selected(false).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Service Type").fieldName("serviceType").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Origin").fieldName(ORIGIN).editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Destination").fieldName(DESTINATION).editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Sales Branch").fieldName("salesBranch").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Primary Email").fieldName("primarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Secondary Email").fieldName("secondarySalesAgentEmail").editable(false).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("Incoterms").fieldName("incoterms").editable(true).selected(true).build());
+        quoteResetFields.add(QuoteResetField.builder().label("PaymentTerm").fieldName("paymentTerms").editable(true).selected(true).build());
+
+        if (!hasMainCarriage) {
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(true).selected(true).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(true).selected(true).build());
+        } else {
+            quoteResetFields.add(QuoteResetField.builder().label("POL").fieldName("orginPort").editable(false).selected(false).build());
+            quoteResetFields.add(QuoteResetField.builder().label("POD").fieldName("destinationPort").editable(false).selected(false).build());
+        }
+        return new QuoteResetRulesResponse(quoteResetFields);
+    }
+
+    public void setGeneralDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if (request.getFlags().isGeneral()) {
+            commonUtils.mapIfSelected(request.getFlags().isIncoterms(), shipmentDetails.getIncoterms(), shipmentRetrieveLiteResponse::setIncoterms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isCarrier(), details.getShippingLine(), builder::shippingLine);
+            }
+        }
+    }
+
+    public void setCargoDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
+        if (request.getFlags().isCargoSummary()) {
+            commonUtils.mapIfSelected(request.getFlags().isDescription(), shipmentDetails.getGoodsDescription(), shipmentRetrieveLiteResponse::setGoodsDescription);
+            commonUtils.mapIfSelected(request.getFlags().isMarksAndNumbers(), shipmentDetails.getMarksNum(), shipmentRetrieveLiteResponse::setMarksNum);
+            commonUtils.mapIfSelected(request.getFlags().isAdditionalTerms(), shipmentDetails.getAdditionalTerms(), shipmentRetrieveLiteResponse::setAdditionalTerms);
+        }
+    }
+
+    private void setPartieDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse) {
+        if(request.getFlags().isParty()) {
+            commonUtils.mapIfSelected(request.getFlags().isClient(), commonUtils.getPartiesResponse(shipmentDetails.getClient()), shipmentRetrieveLiteResponse::setClient);
+            commonUtils.mapIfSelected(request.getFlags().isConsignee(), commonUtils.getPartiesResponse(shipmentDetails.getConsignee()), shipmentRetrieveLiteResponse::setConsignee);
+            commonUtils.mapIfSelected(request.getFlags().isShipper(), commonUtils.getPartiesResponse(shipmentDetails.getConsigner()), shipmentRetrieveLiteResponse::setConsigner);
+            if (null != shipmentDetails.getAdditionalDetails() && null != shipmentDetails.getAdditionalDetails().getNotifyParty() && request.getFlags().isNotifyParty()) {
+                AdditionalDetailV3LiteResponse additionalDetailV3LiteResponse = new AdditionalDetailV3LiteResponse();
+                commonUtils.mapIfSelected(request.getFlags().isNotifyParty(), commonUtils.getPartiesResponse(shipmentDetails.getAdditionalDetails().getNotifyParty()), additionalDetailV3LiteResponse::setNotifyParty);
+                shipmentRetrieveLiteResponse.setAdditionalDetails(additionalDetailV3LiteResponse);
+            }
+            List<Parties> additionParties = shipmentDetails.getShipmentAddresses();
+            if (null != additionParties && !additionParties.isEmpty()) {
+                List<PartiesResponse> additionalParties = new ArrayList<>();
+                for (Parties additionalParty : additionParties) {
+                    additionalParties.add(commonUtils.getPartiesResponse(additionalParty));
+                }
+                commonUtils.mapIfSelected(request.getFlags().isAdditionalParty(), additionalParties, shipmentRetrieveLiteResponse::setShipmentAddresses);
+            }
+        }
+    }
+
+    public void setHeadersDetails(CloneRequest request, ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, CarrierDetails details, CarrierDetailResponse.CarrierDetailResponseBuilder builder) {
+        if(request.getFlags().isHeader()) {
+            commonUtils.mapIfSelected(request.getFlags().isMode(), shipmentDetails.getTransportMode(), shipmentRetrieveLiteResponse::setTransportMode);
+            commonUtils.mapIfSelected(request.getFlags().isServiceType(), shipmentDetails.getServiceType(), shipmentRetrieveLiteResponse::setServiceType);
+            commonUtils.mapIfSelected(request.getFlags().isShipmentType(), shipmentDetails.getDirection(), shipmentRetrieveLiteResponse::setDirection);
+            commonUtils.mapIfSelected(request.getFlags().isCargoType(), shipmentDetails.getShipmentType(), shipmentRetrieveLiteResponse::setShipmentType);
+            commonUtils.mapIfSelected(request.getFlags().isPaymentTerms(), shipmentDetails.getPaymentTerms(), shipmentRetrieveLiteResponse::setPaymentTerms);
+            if (null != details) {
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOrigin(), builder::origin);
+                commonUtils.mapIfSelected(request.getFlags().isOrigin(), details.getOriginCountry(), builder::originCountry);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestination(), builder::destination);
+                commonUtils.mapIfSelected(request.getFlags().isDestination(), details.getDestinationCountry(), builder::destinationCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPort(), builder::originPort);
+                commonUtils.mapIfSelected(request.getFlags().isPol(), details.getOriginPortCountry(), builder::originPortCountry);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPort(), builder::destinationPort);
+                commonUtils.mapIfSelected(request.getFlags().isPod(), details.getDestinationPortCountry(), builder::destinationPortCountry);
+            }
+        }
+    }
+
+    public Optional<ShipmentDetails> validateShipment(Long id) {
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+        if (shipmentDetails.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        commonUtils.checkPermissionsForCloning(shipmentDetails.get());
+        V1TenantSettingsResponse tenantData = commonUtils.getCurrentTenantSettings();
+        String shipmentMode = StringUtility.convertToString(shipmentDetails.get().getTransportMode());
+        if (Objects.nonNull(tenantData)) {
+            if (Boolean.TRUE.equals(tenantData.getTransportModeConfig()) && commonUtils.isSelectedModeOffInShipment(shipmentMode, tenantData)) {
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
+            }
+            if (Boolean.FALSE.equals(tenantData.getDisableDirectShipment())) {
+                if (commonUtils.isSelectedModeOffInBooking(shipmentMode, tenantData)) {
+                    return shipmentDetails;
+                } else {
+                    throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
+                }
+            }
+            if (Objects.nonNull(tenantData.getTransportModeConfig()) && Boolean.FALSE.equals(tenantData.getTransportModeConfig())) {
+                throw new IllegalStateException(CLONE_SHIPMENT_NOT_ALLOWED);
+            }
+        }
+        return shipmentDetails;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
+        try {
+            ShipmentDetailsResponse response = retrieveShipmentDetails(commonGetRequest);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : HttpStatus.BAD_REQUEST.toString();
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ShipmentDetailsResponse retrieveShipmentDetails(CommonGetRequest commonGetRequest) throws RunnerException {
+        List<String> includeColumns = commonUtils.refineIncludeColumns(commonGetRequest.getIncludeColumns());
+        // Step 1: Read requested columns
+        Map<String, Object> requestedColumns = commonUtils.extractRequestedColumns(includeColumns,  ShipmentConstants.SHIPMENT_DETAILS);
+
+        // Step 2: Auto-fill empty column lists with all columns
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Step 5: Collection types detection (OneToMany / ManyToMany)
+        Set<String> collectionRelationships = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
+
+        List<Selection<?>> selections = new ArrayList<>();
+        List<String> columnOrder = new ArrayList<>(); // to store column names in order
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, Constants.SHIPMENT_ROOT_KEY_NAME,  null);
+
+        cq.multiselect(selections).distinct(true);
+
+        // Add filter by id if provided
+        if (commonGetRequest.getId() != null) {
+            Predicate idPredicate = cb.equal(root.get("id"), commonGetRequest.getId());
+            cq.where(idPredicate);
+        } else if(commonGetRequest.getGuid() != null) {
+            Predicate idPredicate = cb.equal(root.get("guid"), UUID.fromString(commonGetRequest.getGuid()));
+            cq.where(idPredicate);
+        }
+
+        TypedQuery<Object[]> query = entityManager.createQuery(cq);
+        long start = System.currentTimeMillis();
+        List<Object[]> results = query.getResultList();
+        log.info("Time taken in executing query: {} ms, id/guid: {}/{}", (System.currentTimeMillis()-start), commonGetRequest.getId(), commonGetRequest.getGuid());
+        // Convert result list to List<Map<String, Object>>
+        List<Map<String, Object>> finalResult = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> rowMap = new LinkedHashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowMap.put(columnOrder.get(i), row[i]);
+            }
+            finalResult.add(rowMap);
+        }
+        List<Map<String, Object>> nestedList = commonUtils.convertToNestedMapWithCollections(finalResult, collectionRelationships, Constants.SHIPMENT_ROOT_KEY_NAME);
+        if(nestedList.isEmpty()){
+            log.error(SHIPMENT_DETAILS_IS_NULL_MESSAGE_DR, commonGetRequest.getId() == null ? commonGetRequest.getGuid() : commonGetRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentDetails shipDetails = new ShipmentDetails();
+        for( Map<String, Object> curr : nestedList) {
+            shipDetails = jsonHelper.convertValue(curr.get(Constants.SHIPMENT_ROOT_KEY_NAME), ShipmentDetails.class);
+
+        }
+        return (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipDetails, new HashSet<>(commonGetRequest.getIncludeColumns()), new ShipmentDetailsResponse());
+    }
+
+
     private void setCounterCountAndTeuCount(ShipmentRetrieveLiteResponse response, Set<Containers> containersList) {
         long shipmentCont = containersList.stream()
                 .mapToLong(Containers::getContainerCount)
@@ -1011,7 +1350,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setConsolidationList(null);
             shipmentDetails.setContainersList(null);
 
-            shipmentDetails = getShipment(shipmentDetails, false);
+            shipmentDetails = saveShipment(shipmentDetails, false);
 
             consoleShipmentData.setCreate(true);
             consoleShipmentData.setSyncConsole(syncConsole);
@@ -1039,7 +1378,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
     }
 
-    ShipmentDetails getShipment(ShipmentDetails shipmentDetails, boolean isFromBookingV3) throws RunnerException {
+    ShipmentDetails saveShipment(ShipmentDetails shipmentDetails, boolean isFromBookingV3) throws RunnerException {
         if (shipmentDetails.getShipmentId() == null) {
             shipmentDetails.setShipmentId(shipmentsV3Util.generateShipmentId(shipmentDetails));
         }
@@ -1097,7 +1436,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
-            createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+            shipmentCommonUtils.createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
@@ -1157,6 +1496,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsV3.setIsInland(false);
             consolidationDetailsV3.setCarrierBookingRef(shipmentDetailsV3.getBookingNumber());
             consolidationDetailsV3.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationDetailsV3.setParentTenantId(TenantContext.getCurrentTenant().longValue());
             consolidationDetailsV3.setDepartment(commonUtils.getAutoPopulateDepartment(
                     shipmentDetailsV3.getTransportMode(), shipmentDetailsV3.getDirection(), MdmConstants.CONSOLIDATION_MODULE
             ));
@@ -1344,6 +1684,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
+        if (Objects.isNull(shipmentDetails.getParentTenantId()))
+            shipmentDetails.setParentTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
         Set<ConsolidationDetails> consolidationDetails = oldEntity != null ? oldEntity.getConsolidationList() : new HashSet<>();
         shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, consolidationDetails);
 
@@ -1502,9 +1845,20 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
+        triggerPushToDownStreamInternal(shipmentDetails, oldShipment, isCreate, shipmentDetails.getId().toString());
+    }
+
+    public void triggerPushToDownStreamBooking(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate, Long customerBookingId) {
+        triggerPushToDownStreamInternal(shipmentDetails, oldShipment, isCreate, customerBookingId.toString());
+    }
+
+    private void triggerPushToDownStreamInternal(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate, String messageKey) {
+
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
         if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
-            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(
+                    shipmentDetails.getConsolidationList().iterator().next().getId()
+            );
         }
 
         boolean isAutoSell = false;
@@ -1520,8 +1874,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (!Objects.equals(oldOrigin, newOrigin) || !Objects.equals(oldDestination, newDestination)) {
                 isAutoSell = true;
             }
-
         }
+
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(shipmentDetails.getId())
                 .parentEntityName(SHIPMENT)
@@ -1530,11 +1884,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .isAutoSellRequired(isAutoSell)
                         .build())
                 .build();
+
         if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
             PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
                     .entityId(consoleShipmentMappings.get(0).getConsolidationId())
                     .entityName(Constants.CONSOLIDATION)
                     .build();
+
             List<PushToDownstreamEventDto.Triggers> triggersList = consoleShipmentMappings.stream()
                     .filter(x -> !Objects.equals(x.getShipmentId(), shipmentDetails.getId()))
                     .map(x -> PushToDownstreamEventDto.Triggers.builder()
@@ -1542,18 +1898,32 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .entityName(SHIPMENT)
                             .build())
                     .collect(Collectors.toList());
+
             triggersList.add(triggers);
             pushToDownstreamEventDto.setTriggers(triggersList);
         }
-        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentDetails.getId().toString());
+
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, messageKey);
     }
+
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails consolidationDetails) {
         log.info("shipment afterSave syncShipment..... ");
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        CompletableFuture<Void> networkTransferFuture = CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> automaticTransferFuture = CompletableFuture.completedFuture(null);
+
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+            networkTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
+        }
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
+            automaticTransferFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        }
+        CompletableFuture.allOf(networkTransferFuture, automaticTransferFuture)
+                .thenRunAsync(
+                        masterDataUtils.withMdc(() -> networkTransferV3Util
+                                .syncNetworkTransferShipmentMappingsForConsolOrShipment(SHIPMENT, shipmentDetails, null)),
+                        executorService
+                );
     }
 
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -1921,23 +2291,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return !Boolean.TRUE.equals(shipment.getContainsHazardous());
     }
 
-    private void createAuditLog(ShipmentDetails entity, String oldEntityJsonString, String operation) {
-        try {
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(entity)
-                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class) : null)
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(entity.getId())
-                            .operation(operation).build()
-            );
-        } catch (Exception e) {
-            log.error("Error creating audit service log", e);
-        }
-    }
-
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData,
                                                              List<ShipmentListResponse> shipmentListResponses,
                                                              Set<String> includeColumns) {
@@ -2127,7 +2480,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
         Optional<ShipmentDetails> shipmentDetailsOptional;
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(shipmentId);
         else
             shipmentDetailsOptional = shipmentDao.findById(shipmentId);
@@ -2146,8 +2499,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, Boolean isForcedDetach) {
         for (ShipmentDetails detachedShipment : detachedShipments) {
+            if(Boolean.TRUE.equals(isForcedDetach) && detachedShipment.getContainersList() != null){
+                detachedShipment.setContainersList(new HashSet<>());
+            }
             if (detachedShipment.getCarrierDetails() != null) {
                 detachedShipment.getCarrierDetails().setEta(null);
                 detachedShipment.getCarrierDetails().setEtd(null);
@@ -2482,7 +2838,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         if (customerBookingRequest.getOrderManagementId() != null) {
             ShipmentDetails shipmentDetails = null;
-            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
+            shipmentDetails = orderManagementAdapter.getOrderByGuidV3(customerBookingRequest.getOrderManagementId());
 
             if (shipmentDetails != null) {
                 processShipmentRequestFromDetails(shipmentRequest, shipmentDetails);
@@ -2490,9 +2846,29 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         }
 
+        setShipmentOrderFromCustomerBookingRequest(shipmentRequest, customerBookingRequest);
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId, notesRequests);
+    }
+
+    public void setShipmentOrderFromCustomerBookingRequest(ShipmentV3Request shipmentRequest, CustomerBookingV3Request customerBookingRequest) throws RunnerException {
+        if (customerBookingRequest.getOrderManagementId() == null) {
+            return;
+        }
+
+        OrderManagementDTO order = orderManagementAdapter.getOrderManagementDTOByGuid(customerBookingRequest.getOrderManagementId());
+        if (order == null) {
+            return;
+        }
+        ShipmentOrderV3Request shipmentOrder = ShipmentOrderV3Request.builder()
+                .orderNumber(customerBookingRequest.getOrderManagementNumber())
+                .orderGuid(UUID.fromString(customerBookingRequest.getOrderManagementId()))
+                .shipmentId(shipmentRequest.getId())
+                .orderPackings(order.getOrderLines())
+                .build();
+        List<ShipmentOrderV3Request> shipmentOrdersList = Arrays.asList(shipmentOrder);
+        shipmentRequest.setShipmentOrders(shipmentOrdersList);
     }
 
     private List<NotesRequest> getNotesRequest(List<Notes> notes){
@@ -2534,7 +2910,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
-            shipmentDetails = getShipment(shipmentDetails, true);
+            shipmentDetails = saveShipment(shipmentDetails, true);
             Long shipmentId = shipmentDetails.getId();
             if (consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
@@ -2553,6 +2929,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (ObjectUtils.isNotEmpty(referenceNumbersRequest)) {
                 shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
             }
+            List<ShipmentOrderV3Request> shipmentOrderRequestList = request.getShipmentOrders();
+            if(ObjectUtils.isNotEmpty(shipmentOrderRequestList)) {
+                setShipmentIdInShipmentOrderRequestList(shipmentId, shipmentOrderRequestList);
+                attachOrderWhenCreatingFromBookingResponse(shipmentOrderRequestList, shipmentId);
+                shipmentDetails.setShipmentOrders(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class));
+            }
 
             List<PartiesRequest> shipmentAddressList = request.getShipmentAddresses();
             if (shipmentAddressList != null) {
@@ -2561,7 +2943,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             createNotes(notesRequests, shipmentId);
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            this.triggerPushToDownStream(shipmentDetails, null, true);
+            this.triggerPushToDownStreamBooking(shipmentDetails, null, true, customerBookingV3Request.getId());
 
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -2579,6 +2962,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentDetailsV3Response shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return shipmentDetailsResponse;
+    }
+
+    private void setShipmentIdInShipmentOrderRequestList(Long shipmentId, List<ShipmentOrderV3Request> shipmentOrderRequestList) {
+        if (shipmentOrderRequestList != null) {
+            shipmentOrderRequestList.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(shipmentOrder -> shipmentOrder.setShipmentId(shipmentId));
+        }
     }
 
     private void createNotes(List<NotesRequest> notesRequests, Long shipmentId) {
@@ -2785,6 +3176,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 earliestEmptyEquipmentPickUp(customerBookingRequest.getEarliestEmptyEquipmentPickUp()).
                 latestFullEquipmentDeliveredToCarrier(customerBookingRequest.getLatestFullEquipmentDeliveredToCarrier()).
                 earliestDropOffFullEquipmentToCarrier(customerBookingRequest.getEarliestDropOffFullEquipmentToCarrier()).
+                carrierDocCutOff(customerBookingRequest.getCarrierDocCutOff()).
+                cargoReceiptWHCutOff(customerBookingRequest.getCargoReceiptWHCutOff()).
+                lastFreeDateCutOff(customerBookingRequest.getLastFreeDateCutOff()).
+                numberOfFreeDaysCutOff(customerBookingRequest.getNumberOfFreeDaysCutOff()).
                 latestArrivalTime(customerBookingRequest.getLatestArrivalTime()).
                 estimatedBrokerageAtDestinationDate(customerBookingRequest.getEstimatedBrokerageAtDestinationDate()).
                 estimatedBrokerageAtOriginDate(customerBookingRequest.getEstimatedBrokerageAtOriginDate()).
@@ -2838,14 +3233,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
-                setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+              shipmentCommonUtils.setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
             }
 
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
-                setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+                shipmentCommonUtils.setImportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker())) {
                 consolidationDetails.setReceivingAgent(shipmentDetails.getAdditionalDetails().getImportBroker());
                 consolUpdated = true;
@@ -2877,25 +3272,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null &&
-                !CommonUtils.checkSameParties(consolidationDetails.getSendingAgent(), shipmentDetails.getAdditionalDetails().getExportBroker())) {
-            shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
-        } else if (shipmentDetails.getAdditionalDetails() == null) {
-            shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-            shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
-        }
-    }
-
-    private void setImportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null &&
-                !CommonUtils.checkSameParties(consolidationDetails.getReceivingAgent(), shipmentDetails.getAdditionalDetails().getImportBroker())) {
-            shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
-        } else if (shipmentDetails.getAdditionalDetails() == null) {
-            shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-            shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
-        }
-    }
 
     private void populateImportExportBrokerForShipment(ShipmentDetails shipmentDetails) {
         if (Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()) &&
@@ -2963,7 +3339,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return updatedPackings;
     }
 
-    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) throws RunnerException {
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
             hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
         }
@@ -3300,7 +3676,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         String warning = sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
-        DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
+        DBOperationType operationType = shipmentCommonUtils.determineOperationTypeAfterApproval(oldDgStatus, request::getStatus);
 
         closeOceanDgTask(request);
         try {
@@ -3386,23 +3762,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequestV3 request) {
-        DBOperationType operationType = DG_REQUEST;
-        if (dgStatus == OCEAN_DG_REQUESTED) {
-            if (request.getStatus() == TaskStatus.APPROVED) {
-                operationType = DG_APPROVE;
-            } else {
-                operationType = DBOperationType.DG_REJECT;
-            }
-        } else if (dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
-            if (request.getStatus() == TaskStatus.APPROVED) {
-                operationType = COMMERCIAL_APPROVE;
-            } else {
-                operationType = DBOperationType.COMMERCIAL_REJECT;
-            }
-        }
-        return operationType;
-    }
 
     private String sendEmailResponseToDGRequester(OceanDGRequestV3 request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
 
@@ -3837,7 +4196,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         try {
-            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PULL_ACCEPTED, null, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, requestedUsername, null);
+            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PULL_ACCEPTED, null, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, requestedUsername, null, true);
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL);
         }
@@ -3847,9 +4206,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 try {
                     if (finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId())) {
                         if (consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, true);
                         else
-                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+                            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplateMap, requestedTypes, locationsMap, carrierMap, usernameEmailsMap, tenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null, true);
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -3864,9 +4223,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                                                       List<ConsoleShipmentMapping> consoleShipMappings, List<ConsolidationDetails> otherConsoles) {
         // fetching shipment and console
         tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.add(shipmentDetails.getTenantId());
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
 
         // fetching other consolidations
         List<Long> otherConsoleIds = new ArrayList<>();
@@ -3884,6 +4247,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
         for (ConsolidationDetails consolidationDetails1 : consolidationDetailsPage.getContent()) {
             userNames.add(consolidationDetails1.getCreatedBy());
+            if (consolidationDetails1.getAssignedTo() != null) {
+                userNames.add(consolidationDetails1.getAssignedTo());
+            }
             tenantIds.add(consolidationDetails1.getTenantId());
             otherConsoles.add(consolidationDetails1);
         }
@@ -3907,11 +4273,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsMap.put(consolidationDetails.getId(), consolidationDetails);
             tenantIds.add(consolidationDetails.getTenantId());
             userNames.add(consolidationDetails.getCreatedBy());
+            if (consolidationDetails.getAssignedTo() != null) {
+                userNames.add(consolidationDetails.getAssignedTo());
+            }
         }
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
+        tenantIds.add(shipmentDetails.getTenantId());
 
         Map<Long, String> consoleRequestUserMap = new HashMap<>();
         for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipMappings) {
@@ -3926,7 +4296,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         for (Long consoleId : consoleIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetailsMap.get(consoleId), SHIPMENT_PULL_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, consoleRequestUserMap.get(consoleId), null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetailsMap.get(consoleId), SHIPMENT_PULL_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, consoleRequestUserMap.get(consoleId), null, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -3956,7 +4326,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, tenantsDataFuture, userEmailsFuture).join();
         for (ConsolidationDetails consolidationDetails1 : consolidationDetails) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap, true);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
@@ -3969,6 +4339,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
                 tenantIds.add(consolidationDetails1.getTenantId());
                 userNames.add(consolidationDetails1.getCreatedBy());
+                if (consolidationDetails1.getAssignedTo() != null) {
+                    userNames.add(consolidationDetails1.getAssignedTo());
+                }
             }
         }
     }
@@ -4079,7 +4452,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         userNames.add(shipmentDetails.getCreatedBy());
         userNames.add(shipmentDetails.getAssignedTo());
         userNames.add(consolidationDetails.getCreatedBy());
+        if (consolidationDetails.getAssignedTo() != null) {
+            userNames.add(consolidationDetails.getAssignedTo());
+        }
         tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.add(shipmentDetails.getTenantId());
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(shipmentDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carriersMap)), executorService);
@@ -4089,7 +4466,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         try {
-            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PUSH_REQUESTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, null, null);
+            commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails, consolidationDetails, SHIPMENT_PUSH_REQUESTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, null, null, true);
         } catch (Exception e) {
             log.error("Error while sending email");
         }
@@ -4107,10 +4484,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                                                                   List<EmailTemplatesRequest> emailTemplates) {
         var emailTemplateModel = emailTemplates.stream().findFirst().orElse(new EmailTemplatesRequest());
 
-        List<String> toEmailList = new ArrayList<>();
-        List<String> ccEmailsList = new ArrayList<>();
+        Set<String> toEmailList = new HashSet<>();
+        Set<String> ccEmailsList = new HashSet<>();
         if (consolidationDetails.getCreatedBy() != null)
             toEmailList.add(consolidationDetails.getCreatedBy());
+
+        if (consolidationDetails.getAssignedTo() != null) {
+            ccEmailsList.add(consolidationDetails.getAssignedTo());
+        }
 
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -4129,18 +4510,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         CompletableFuture.allOf(carrierFuture, locationsFuture, toAndCcEmailIdsFuture).join();
 
-        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
-        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
-        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
-        if (consolidationDetails.getCreatedBy() == null) {
-            toEmailIds.clear();
-            ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
-            toEmailList.addAll(new ArrayList<>(toEmailIds));
-        }
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
+        ccEmailsList.addAll(toEmailIds);
+        ccEmailsList.addAll(ccEmailIds);
+        toEmailList.addAll(toEmailIds);
+        commonUtils.setCurrentUserEmail(ccEmailsList);
 
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carriersMap, locationsMap);
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, ccEmailsList);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, new ArrayList<>(toEmailList), new ArrayList<>(ccEmailsList));
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -4296,7 +4674,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
 
             consolPage.getContent().stream().forEach(i -> {
-                var res = mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData);
+                var res = shipmentCommonUtils.mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData, true);
                 consoleVsShipIdMap.get(i.getId()).forEach(shipId -> notificationResultMap.get(shipId).add(res));
             });
 
@@ -4307,54 +4685,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return notificationResultMap;
     }
 
-    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipMap,
-                                                             Map<String, TenantModel> tenantMap, Map<String, EntityTransferUnLocations> locationsMap) {
-        var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
-        var tenantData = Optional.ofNullable(tenantMap.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
-        return PendingShipmentActionsResponse.builder()
-                .consolId(consol.getId())
-                .consolidationNumber(consol.getReferenceNumber())
-                .masterBill(consol.getMawb())
-                .ata(carrierDetails.getAta())
-                .atd(carrierDetails.getAtd())
-                .eta(carrierDetails.getEta())
-                .etd(carrierDetails.getEtd())
-                .pol(Optional.ofNullable(locationsMap.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
-                .pod(Optional.ofNullable(locationsMap.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
-                .lat(consol.getLatDate())
-                .branch(tenantData.getCode() + " - " + tenantData.getTenantName())
-                .branchDisplayName(tenantData.displayName)
-                .hazardous(consol.getHazardous())
-                .requestedBy(consoleShipMap.get(consol.getId()).getCreatedBy())
-                .requestedOn(consoleShipMap.get(consol.getId()).getCreatedAt())
-                .requestedType(Objects.nonNull(consoleShipMap.get(consol.getId()).getRequestedType()) ? consoleShipMap.get(consol.getId()).getRequestedType().getV3Description() : null)
-                .build();
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getGuid() == null) {
-                log.error("Request Guid Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
-            if (!shipmentDetails.isPresent()) {
-                log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        return shipmentCommonUtils.getIdFromGuid(commonRequestModel);
     }
 
     public ShipmentDetailsResponse completeUpdateShipmentFromEntityTransfer(ShipmentEtV3Request shipmentRequest) throws RunnerException {
@@ -4386,7 +4719,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
-            createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+            shipmentCommonUtils.createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
@@ -4416,19 +4749,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
-            shipmentDetails = getShipment(shipmentDetails, false);
+            shipmentDetails = saveShipment(shipmentDetails, false);
             Long shipmentId = shipmentDetails.getId();
 
             if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
                 for (Containers container : shipmentDetails.getContainersList()) {
-                    addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
+                    shipmentCommonUtils.addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
                 }
             }
 
             shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid);
 
             // audit logs
-            createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
+            shipmentCommonUtils.createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
 
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
             String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
@@ -4441,22 +4774,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
     }
 
-    private void addAuditLogContainers(Containers container, Containers prev, Long shipmentId, String operationName) throws RunnerException {
-        try {
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(container)
-                            .prevData(prev)
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(shipmentId)
-                            .operation(operationName).build()
-            );
-        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException |
-                 NoSuchMethodException e) {
-            log.error(e.getMessage());
-        }
-    }
 
 
     private boolean isShipmentCargoFieldsChanged(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
@@ -4514,7 +4831,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
-        createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+        shipmentCommonUtils.createAuditLog(shipment, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
         this.triggerPushToDownStream(shipment, oldConvertedShipment, false);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
@@ -4708,42 +5025,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public ShipmentDetailsResponse getDefaultShipment() {
         try {
-            var tenantSettings = commonUtils.getShipmentSettingFromContext();
-            ShipmentDetailsResponse response = new ShipmentDetailsResponse();
-
-            // Populate the shipment details on the basis of tenant settings
-            response.setAdditionalDetails(new AdditionalDetailResponse());
-            response.setCarrierDetails(new CarrierDetailResponse());
-            response.setTransportMode(tenantSettings.getDefaultTransportMode());
-            response.setDirection(tenantSettings.getDefaultShipmentType());
-            response.setShipmentType(tenantSettings.getDefaultContainerType());
-
-            response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
-            response.setVolumeUnit(VOLUME_UNIT_M3);
-            response.setPacksUnit(tenantSettings.getDefaultPackUnit());
-            response.setDgPacksUnit(tenantSettings.getDefaultPackUnit());
-            response.setStatus(0);
-            response.setSource(Constants.SYSTEM);
-            response.setCreatedBy(UserContext.getUser().getUsername());
-            response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
-            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
-            response.setShipmentCreatedOn(LocalDateTime.now());
-            response.setAutoUpdateWtVol(true);
-            response.setDateType(ESTIMATED);
-            //Generate HBL
-            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL(null));
-
-            // Populate default department
-            response.setDepartment(commonUtils.getAutoPopulateDepartment(
-                    response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE
-            ));
-
-            setDefaultAgentAndTenant(response);
-
-            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL(null));
-
+            ShipmentDetailsResponse response = shipmentCommonUtils.buildDefaultShipment();
             Map<String, Object> masterDataResponse = fetchAllMasterDataByKey(null, response);
 
             //set master data response
@@ -4754,6 +5036,489 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
             log.error(responseMsg, e);
             throw new GenericException(e.getMessage());
+        }
+    }
+
+
+
+    @Override
+    @Transactional
+    public ShipmentDetailsV3Response partialUpdate(CommonRequestModel commonRequestModel) throws  RunnerException{
+        ShipmentPatchV3Request shipmentPatchRequest = (ShipmentPatchV3Request) commonRequestModel.getData();
+
+        final String shipmentIdValue = (shipmentPatchRequest.getShipmentId() != null && shipmentPatchRequest.getShipmentId().isPresent())
+                ? shipmentPatchRequest.getShipmentId().get() : null;
+
+        validatePatchRequest(shipmentPatchRequest, shipmentIdValue);
+        AdditionalDetailV3Request additionalDetailRequest = shipmentPatchRequest.getAdditionalDetails();
+        CarrierPatchV3Request carrierDetailRequest =  shipmentPatchRequest.getCarrierDetails();
+
+        Long id = null;
+        Optional<ShipmentDetails> oldShipmentDetails;
+        ShipmentV3Request fetchShipmentRequest = new ShipmentV3Request();
+        fetchShipmentRequest.setId(
+                (shipmentPatchRequest.getId() != null && shipmentPatchRequest.getId().isPresent())
+                        ? shipmentPatchRequest.getId().get() : null);
+        fetchShipmentRequest.setGuid(shipmentPatchRequest.getGuid());
+        if ((shipmentPatchRequest.getId() != null && shipmentPatchRequest.getId().isPresent()) || shipmentPatchRequest.getGuid() != null) {
+            oldShipmentDetails = retrieveByIdOrGuid(fetchShipmentRequest);
+        } else {
+            List<ShipmentDetails> shipmentDetails = shipmentDao.findByShipmentIdIn(List.of(shipmentIdValue));
+            if (CollectionUtils.isEmpty(shipmentDetails)) {
+                log.error("Shipment is not available for partial update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            if (shipmentDetails.size() != 1) {
+                log.error("Multiple shipments available for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INCORRECT_RESULT_SIZE_EXCEPTION_MSG);
+            }
+            oldShipmentDetails = Optional.of(shipmentDetails.get(0));
+        }
+        id = oldShipmentDetails.get().getId();
+        if (!oldShipmentDetails.isPresent()) {
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentPatchRequest.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        return getPartialUpdateResponse(oldShipmentDetails, shipmentPatchRequest, id, additionalDetailRequest, carrierDetailRequest);
+    }
+    private void validatePatchRequest(ShipmentPatchV3Request shipmentPatchRequest, String shipmentIdValue) throws RunnerException{
+        if ( (shipmentPatchRequest.getId() == null || !shipmentPatchRequest.getId().isPresent())
+                && (shipmentPatchRequest.getGuid() == null)
+                && (shipmentPatchRequest.getShipmentId() == null || !shipmentPatchRequest.getShipmentId().isPresent()
+                || shipmentIdValue == null || shipmentIdValue.isEmpty()) ) {
+            log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Request Id is null");
+        }
+    }
+
+    public ShipmentDetailsV3Response getPartialUpdateResponse(Optional<ShipmentDetails> oldShipmentDetails,
+                                                              ShipmentPatchV3Request shipmentRequest, Long id,
+                                                              AdditionalDetailV3Request additionalDetailRequest, CarrierPatchV3Request carrierDetailRequest) throws RunnerException {
+        try{
+            ShipmentDetails newShipmentDetails = oldShipmentDetails.get();
+            ShipmentDetails oldEntity = jsonHelper.convertValue(newShipmentDetails, ShipmentDetails.class);
+            shipmentDetailsMapper.updateFromV3Patch(shipmentRequest, newShipmentDetails);
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+            newShipmentDetails.setId(oldShipmentDetails.get().getId());
+            AdditionalDetails updatedAdditionalDetails = null;
+            if (additionalDetailRequest != null) {
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(
+                        jsonHelper.convertValue(additionalDetailRequest, AdditionalDetails.class));
+                newShipmentDetails.setAdditionalDetails(updatedAdditionalDetails);
+            }
+            CarrierDetails updatedCarrierDetails = null;
+            if (carrierDetailRequest != null) {
+                updatedCarrierDetails = oldShipmentDetails.get().getCarrierDetails();
+                carrierDetailsMapper.updateCarrierPatchV3(carrierDetailRequest, updatedCarrierDetails);
+                newShipmentDetails.setCarrierDetails(updatedCarrierDetails);
+            }
+
+            validateBeforeSave(newShipmentDetails, oldEntity);
+
+            ConsolidationDetails consolidationDetails = updateLinkedShipmentData(newShipmentDetails, oldShipmentDetails.get());
+            if (!Objects.isNull(consolidationDetails)) {
+                newShipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
+            }
+            newShipmentDetails = shipmentDao.update(newShipmentDetails, false);
+            if (additionalDetailRequest != null) {
+                newShipmentDetails.setAdditionalDetails(updatedAdditionalDetails);
+            }
+            if (carrierDetailRequest != null) {
+                newShipmentDetails.setCarrierDetails(updatedCarrierDetails);
+            }
+            processListTypeRequests(id, newShipmentDetails, oldEntity, shipmentSettingsDetails, shipmentRequest);
+            shipmentCommonUtils.createAuditLog(newShipmentDetails, jsonHelper.convertToJson(oldEntity), DBOperationType.UPDATE.name());
+            triggerPushToDownStream(newShipmentDetails, oldEntity, false);
+            processSyncV1AndAsyncFunctions(newShipmentDetails, oldEntity, shipmentSettingsDetails, false, null);
+
+            dependentServiceHelper.pushShipmentDataToDependentService(
+                    newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
+
+            return shipmentDetailsMapper.mapV3Response(newShipmentDetails);
+        } catch(Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void processListTypeRequests(Long id, ShipmentDetails newShipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentPatchV3Request shipmentPatchRequest) throws RunnerException {
+        List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentPatchRequest.getTruckDriverDetails();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentPatchRequest.getReferenceNumbersList();
+
+        if (truckDriverDetailsRequestList != null) {
+            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(jsonHelper.convertValueToList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+            newShipmentDetails.setTruckDriverDetails(updatedTruckDriverDetails);
+        }
+
+        if (referenceNumbersRequestList != null) {
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+            newShipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
+        }
+    }
+
+    /**
+     * Handles attaching and detaching orders to/from a shipment.
+     *
+     * <p>This method supports three types of operations based on the {@code event} field in the request:
+     * <ul>
+     *     <li>{@link Constants#ATTACH} - Attaches the provided orders to the shipment.</li>
+     *     <li>{@link Constants#DETACH} - Detaches the provided orders from the shipment.</li>
+     *     <li>{@link Constants#DETACH_AND_ATTACH} - Detaches specified orders and attaches new orders in a single operation.</li>
+     * </ul>
+     * </p>
+     *
+     * <p>If the {@code orderDetailsList} field in the request is provided with minimal information
+     * (just order IDs), this method will internally enrich the details using {@link #prepareRequestForOrderAttachDetach(ShipmentOrderAttachDetachRequest)}.</p>
+     *
+     * <p>After performing the database operations, this method also triggers a call to the Order Management System
+     * (OMS) via {@link #triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest)} to synchronize the changes externally.</p>
+     *
+     * <p><b>Mandatory fields in {@link ShipmentOrderAttachDetachRequest}:</b>
+     * <ul>
+     *     <li>{@code shipmentGuid} - UUID of the shipment. Must not be null.</li>
+     *     <li>{@code shipmentId} - Database ID of the shipment. Required when enriching order details.</li>
+     *     <li>{@code event} - The type of operation. Must be one of ATTACH, DETACH, or DETACH_AND_ATTACH.</li>
+     *     <li>{@code orderDetailsList} or pre-populated {@code orderDetailsForAttach} / {@code orderDetailsForDetach} - List of orders to process. Must contain valid order IDs if using {@code orderDetailsList} for enrichment.</li>
+     * </ul>
+     * </p>
+     *
+     * @param attachDetachRequest the request containing shipment and order details for attach/detach operation
+     * @return {@link ResponseEntity} wrapping a {@link IRunnerResponse} indicating success
+     * @throws ValidationException if mandatory fields are missing or the event type is invalid
+     * @throws RunnerException if order enrichment fails due to missing order data in the external service
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResponseEntity<IRunnerResponse> attachDetachOrder(ShipmentOrderAttachDetachRequest request) {
+        try {
+            log.info("Starting attach/detach operation for shipment: {}", request.getShipmentGuid());
+
+            // Step 1: Validate mandatory fields
+            validateRequest(request);
+
+            // Step 2: Prepare request payload if minimal order details are provided
+            prepareRequestForOrderAttachDetach(request);
+
+            // Extract prepared lists
+            List<OrderDetails> ordersToAttach = request.getOrderDetailsForAttach();
+            List<OrderDetails> ordersToDetach = request.getOrderDetailsForDetach();
+
+            // Nothing to process
+            if (CollectionUtils.isEmpty(ordersToAttach) && CollectionUtils.isEmpty(ordersToDetach)) {
+                log.info("No attach/detach operations found for shipment: {}", request.getShipmentGuid());
+                return ResponseHelper.buildSuccessResponse();
+            }
+
+            // Step 3: Fetch shipment entity
+            var shipmentEntity = shipmentDao.findByGuid(request.getShipmentGuid())
+                    .orElseThrow(() -> new ValidationException("Shipment not found for GUID: " + request.getShipmentGuid()));
+
+            // Step 4: Fetch existing shipment orders mapped by order GUID
+            Map<UUID, ShipmentOrder> existingShipmentOrders = getShipmentOrdersByGuid(
+                    shipmentOrderDao.findByShipmentId(shipmentEntity.getId())
+            );
+
+            // Step 5: Execute the requested event operation
+            switch (request.getEvent().toUpperCase()) {
+                case Constants.ATTACH -> {
+                    log.info("Attaching orders for shipment {}: {}", shipmentEntity.getId(), ordersToAttach);
+                    attachOrders(ordersToAttach, existingShipmentOrders, shipmentEntity.getId());
+                }
+                case Constants.DETACH -> {
+                    log.info("Detaching orders for shipment {}: {}", shipmentEntity.getId(), ordersToDetach);
+                    detachOrders(ordersToDetach, existingShipmentOrders);
+                }
+                case Constants.DETACH_AND_ATTACH -> {
+                    log.info("Detaching orders {} and attaching orders {} for shipment {}",
+                            ordersToDetach, ordersToAttach, shipmentEntity.getId());
+                    detachAndAttachOrders(ordersToAttach, ordersToDetach, existingShipmentOrders, shipmentEntity.getId());
+                }
+                default -> throw new ValidationException(
+                        "Invalid event type: " + request.getEvent() + ". Must be ATTACH, DETACH, or DETACH_AND_ATTACH"
+                );
+            }
+
+            // Step 6: Push shipment data to downstream services
+            triggerPushToDownStream(shipmentEntity, shipmentEntity, false);
+            log.info("Successfully completed attach/detach operation for shipment: {}", shipmentEntity.getId());
+
+            // Step 7: Trigger OMS API to synchronize attach/detach changes externally
+            triggerOrderAttachDetachToOMS(request);
+            log.info("OMS attach/detach API triggered successfully for shipment {}.", request.getShipmentGuid());
+
+            return ResponseHelper.buildSuccessResponse();
+
+        } catch (Exception ex) {
+            log.error("Failed to process attach/detach order for shipment {}: {}",
+                    request != null ? request.getShipmentGuid() : null, ex.getMessage(), ex);
+            throw new ValidationException("Failed to process attach/detach order: " + ex.getMessage());
+        }
+    }
+
+    @Override
+    public void triggerOrderAttachDetachToOMS(ShipmentOrderAttachDetachRequest request) {
+        if (request == null) {
+            log.warn("Cannot trigger OMS API because request is null");
+            return;
+        }
+
+        try {
+            // Map your existing ShipmentOrderAttachDetachRequest to the new AttachDetachOrderRequest DTO
+            AttachDetachOrderRequest omsRequest = AttachDetachOrderRequest.builder()
+                    .shipmentGuid(request.getShipmentGuid())
+                    .shipmentId(request.getShipmentId())
+                    .attachOrderInfo(
+                            request.getOrderDetailsForAttach() != null
+                                    ? request.getOrderDetailsForAttach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .detachOrderInfo(
+                            request.getOrderDetailsForDetach() != null
+                                    ? request.getOrderDetailsForDetach().stream().map(this::mapToOrderInfo).toList()
+                                    : List.of()
+                    )
+                    .build();
+
+            log.info("Triggering OMS attach/detach API for shipment {} with payload: {}",
+                    request.getShipmentGuid(), omsRequest);
+
+            // Call the OMS API
+            orderManagementAdapter.callAttachDetachApi(omsRequest);
+
+        } catch (Exception ex) {
+            log.error("Failed to trigger OMS attach/detach API for shipment {}: {}",
+                    request.getShipmentGuid(), ex.getMessage(), ex);
+        }
+    }
+
+    /** Helper to map OrderDetails to OrderInfo for OMS request */
+    private AttachDetachOrderRequest.OrderInfo mapToOrderInfo(OrderDetails orderDetails) {
+        return AttachDetachOrderRequest.OrderInfo.builder()
+                .orderGuid(orderDetails.getOrderGuid())
+                .orderId(orderDetails.getOrderId())
+                .orderNumber(orderDetails.getOrderNumber())
+                .build();
+    }
+
+    /**
+     * Prepares the attach/detach request by enriching minimal order details with full order data
+     * fetched from the Order Management Service.
+     * <p>
+     * This method allows users to provide only basic identifiers (like orderId, event, and shipmentId),
+     * and automatically constructs the full payload required for further attach/detach processing.
+     *
+     * @param attachDetachRequest the input request containing minimal or partial order details
+     * @throws RunnerException if data enrichment fails or external service returns incomplete data
+     */
+    private void prepareRequestForOrderAttachDetach(ShipmentOrderAttachDetachRequest attachDetachRequest) throws RunnerException {
+        if (attachDetachRequest == null) {
+            throw new ValidationException("ShipmentOrderAttachDetachRequest cannot be null.");
+        }
+
+        List<OrderDetails> rawOrderDetailsList = attachDetachRequest.getOrderDetailsList();
+        if (ObjectUtils.isEmpty(rawOrderDetailsList)) {
+            log.info("No order details provided in the request — skipping data preparation.");
+            return;
+        }
+
+        // Extract valid orderIds for data enrichment
+        List<String> orderIds = rawOrderDetailsList.stream()
+                .map(OrderDetails::getOrderId)
+                .filter(StringUtils::isNotBlank)
+                .toList();
+
+        if (orderIds.isEmpty()) {
+            throw new ValidationException("OrderDetails must contain valid non-blank orderIds for enrichment.");
+        }
+
+        log.info("Preparing order details for enrichment. OrderIds: {}", orderIds);
+
+        // Fetch order details with order lines from external service
+        Map<String, OrderManagementDTO> orderDataById = orderManagementAdapter.fetchOrdersWithOrderLineAsMap(orderIds);
+
+        if (MapUtils.isEmpty(orderDataById)) {
+            throw new RunnerException("No order data returned from Order Management Service for orderIds: " + orderIds);
+        }
+
+        log.info("Fetched orders from Order Management Service: {}", orderDataById.keySet());
+
+        // Build enriched OrderDetails list
+        List<OrderDetails> enrichedOrderDetailsList = new ArrayList<>();
+
+        for (OrderDetails inputOrder : rawOrderDetailsList) {
+            String orderId = inputOrder.getOrderId();
+            OrderManagementDTO orderData = orderDataById.get(orderId);
+
+            if (orderData == null) {
+                log.warn("OrderId {} not found in Order Management response. Skipping.", orderId);
+                continue;
+            }
+
+            OrderDetails enrichedOrder = OrderDetails.builder()
+                    .orderNumber(orderData.getOrderNumber())
+                    .orderGuid(orderData.getGuid())
+                    .orderId(orderData.getOrderId())
+                    .orderPackings(orderData.getOrderLines())
+                    .shipmentId(attachDetachRequest.getShipmentId())
+                    .build();
+
+            enrichedOrderDetailsList.add(enrichedOrder);
+
+            // Log detailed data for debugging
+            log.info("Prepared Order: orderId={}, orderNumber={}, orderGuid={}, shipmentId={}, orderPackings={}",
+                    enrichedOrder.getOrderId(),
+                    enrichedOrder.getOrderNumber(),
+                    enrichedOrder.getOrderGuid(),
+                    enrichedOrder.getShipmentId(),
+                    Optional.ofNullable(enrichedOrder.getOrderPackings())
+                            .map(p -> p.stream().map(o -> o.getId() + ":" + o.getCommodityGroup()).toList())
+                            .orElse(Collections.emptyList()));
+        }
+
+        if (enrichedOrderDetailsList.isEmpty()) {
+            throw new RunnerException("No valid order details could be prepared — check provided orderIds: " + orderIds);
+        }
+
+        String event = attachDetachRequest.getEvent();
+        if (Constants.ATTACH.equalsIgnoreCase(event)) {
+            attachDetachRequest.setOrderDetailsForAttach(enrichedOrderDetailsList);
+        } else if (Constants.DETACH.equalsIgnoreCase(event)) {
+            attachDetachRequest.setOrderDetailsForDetach(enrichedOrderDetailsList);
+        } else {
+            throw new ValidationException("Event must be either ATTACH or DETACH.");
+        }
+
+        log.info("Order preparation completed for event '{}'. Prepared orders: {}", event,
+                enrichedOrderDetailsList.stream()
+                        .map(o -> o.getOrderId() + ":" + o.getOrderNumber())
+                        .toList());
+    }
+
+    private void detachAndAttachOrders(List<OrderDetails> requestedOrderDetailsForAttach,
+            List<OrderDetails> requestedOrderDetailsForDetach, Map<UUID, ShipmentOrder> existingShipmentOrders, Long shipmentId) {
+        try {
+            // First detach
+            detachOrders(requestedOrderDetailsForDetach, existingShipmentOrders);
+
+            existingShipmentOrders = getShipmentOrdersByGuid(shipmentOrderDao.findByShipmentId(shipmentId));
+
+            // Then attach
+            attachOrders(requestedOrderDetailsForAttach, existingShipmentOrders, shipmentId);
+
+            log.info("Successfully detached and attached orders for shipment {}", shipmentId);
+        } catch (Exception ex) {
+            log.error("Error during detach-and-attach for shipment {}: {}", shipmentId, ex.getMessage(), ex);
+            throw new ValidationException("Failed to process detach and attach order: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Validates the {@link ShipmentOrderAttachDetachRequest} for mandatory fields and correctness.
+     *
+     * <p>This method ensures the request has all required fields to perform attach/detach operations:
+     * <ul>
+     *     <li>{@code shipmentGuid} - UUID of the shipment. Must not be null.</li>
+     *     <li>{@code event} - Type of operation. Must be one of {@link Constants#ATTACH},
+     *     {@link Constants#DETACH}, or {@link Constants#DETACH_AND_ATTACH} (case-insensitive).</li>
+     * </ul>
+     * </p>
+     *
+     * <p>If any validation fails, a {@link ValidationException} is thrown with a descriptive message.</p>
+     *
+     * @param request the {@link ShipmentOrderAttachDetachRequest} to validate
+     * @throws ValidationException if the request is null, missing shipment GUID, or has an invalid event type
+     */
+    private void validateRequest(ShipmentOrderAttachDetachRequest request) {
+        if (request == null) {
+            throw new ValidationException("Request cannot be null");
+        }
+
+        if (request.getShipmentGuid() == null) {
+            throw new ValidationException("Shipment GUID cannot be null");
+        }
+
+        String event = request.getEvent();
+        if (StringUtils.isBlank(event)) {
+            throw new ValidationException("Event must be ATTACH, DETACH, or DETACH_AND_ATTACH");
+        }
+
+        if (!Constants.ATTACH.equalsIgnoreCase(event) &&
+                !Constants.DETACH.equalsIgnoreCase(event) &&
+                !Constants.DETACH_AND_ATTACH.equalsIgnoreCase(event)) {
+            throw new ValidationException("Invalid event type: " + event);
+        }
+    }
+
+    private Map<UUID, ShipmentOrder> getShipmentOrdersByGuid(List<ShipmentOrder> shipmentOrders) {
+        if (CollectionUtils.isEmpty(shipmentOrders)) {
+            return Collections.emptyMap();
+        }
+        return shipmentOrders.stream()
+                .filter(order -> order.getOrderGuid() != null)
+                .collect(Collectors.toMap(ShipmentOrder::getOrderGuid, Function.identity()));
+    }
+
+    private void attachOrderWhenCreatingFromBookingResponse(List<ShipmentOrderV3Request> shipmentOrderV3List, Long shipmentId) throws RunnerException {
+        Map<UUID, ShipmentOrder> existingOrdersByGuid = new HashMap<>();
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsList = packingV3Util.mapToOrderDetailsList(shipmentOrderV3List);
+        attachOrders(orderDetailsList, existingOrdersByGuid, shipmentId);
+    }
+
+    private void attachOrders(List<OrderDetails> orderDetailsForAttach,
+            Map<UUID, ShipmentOrder> existingOrdersByGuid, Long shipmentId) throws RunnerException {
+        for (var orderDetails : orderDetailsForAttach) {
+            UUID orderGuid = orderDetails.getOrderGuid();
+            List<PackingV3Request> packingRequests = packingV3Util.mapOrderLineListToPackingV3RequestList(orderDetails.getOrderPackings());
+
+            if (orderGuid != null && !existingOrdersByGuid.containsKey(orderGuid)) {
+                ShipmentOrder newOrder = ShipmentOrder.builder()
+                        .shipmentId(shipmentId)
+                        .orderGuid(orderGuid)
+                        .orderNumber(orderDetails.getOrderNumber())
+                        .orderDate(orderDetails.getOrderDate()).build();
+
+                ShipmentOrder savedOrder = shipmentOrderDao.save(newOrder);
+
+                packingRequests.forEach(p -> {
+                    p.setShipmentOrderId(savedOrder.getId());
+                    p.setShipmentId(shipmentId);
+                });
+
+                for (PackingV3Request packingRequest : packingRequests) {
+                    packingV3Service.create(packingRequest, SHIPMENT_ORDER);
+                }
+            }
+        }
+    }
+
+    private void detachOrders(List<OrderDetails> orderDetailsForDetach,
+            Map<UUID, ShipmentOrder> existingOrdersByGuid) throws RunnerException {
+        for (var orderDetails : orderDetailsForDetach) {
+            UUID orderGuid = orderDetails.getOrderGuid();
+
+            List<PackingV3Request> orderPackings = packingV3Util.mapOrderLineListToPackingV3RequestList(orderDetails.getOrderPackings());
+            boolean hasLinkedContainer = orderPackings.stream()
+                    .filter(p -> p.getShipmentOrderId() != null)
+                    .anyMatch(p -> p.getContainerId() != null);
+
+            if (hasLinkedContainer) {
+                throw new ValidationException("Cannot detach since container is linked with one of the Order line items.");
+            }
+
+            if (orderGuid != null && existingOrdersByGuid.containsKey(orderGuid)) {
+                ShipmentOrder existingOrder = existingOrdersByGuid.get(orderGuid);
+
+                List<PackingV3Request> packingRequests =
+                        jsonHelper.convertValueToList(existingOrder.getOrderPackings(), PackingV3Request.class);
+
+                packingV3Service.deleteBulk(packingRequests, SHIPMENT_ORDER);
+                shipmentOrderDao.delete(existingOrder);
+            }
         }
     }
 

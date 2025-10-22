@@ -26,7 +26,6 @@ public class BridgeServiceConfig {
     @Value("${bridgeService.inbound.fileTransfer.password}")
     private String outBoundTransferPassword;
 
-
     @Value("${bridgeService.tactIntegrationRequestCode}")
     private String tactIntegrationRequestCode;
 

@@ -11,15 +11,13 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -30,6 +28,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,20 +49,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -110,6 +99,9 @@ class PackingV3UtilTest extends CommonMocks {
 
     @InjectMocks
     private PackingV3Util packingV3Util;
+
+    @Mock
+    private IShipmentOrderService shipmentOrderService;
 
     private Packing samplePacking;
     private PackingResponse sampleResponse;
@@ -848,6 +840,193 @@ class PackingV3UtilTest extends CommonMocks {
         // Then
         assertNull(result);
         verify(packingService, never()).calculatePackSummary(anyList(), anyString(), any(), any());
+    }
+
+    @Test
+    void testMapToOrderDetailsList_returnEmptyList() {
+        List<ShipmentOrderV3Request> list = new ArrayList<>();
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsResponse = packingV3Util.mapToOrderDetailsList(list);
+        assertTrue(orderDetailsResponse.isEmpty());
+    }
+
+
+    @Test
+    void testMapToOrderDetailsList() {
+        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
+        element.setId(1L);
+        element.setOrderGuid(UUID.randomUUID());
+        element.setOrderNumber("ORD_00001");
+        element.setShipmentId(2L);
+
+        OrderLineV3Response packingReq = OrderLineV3Response.builder()
+                .packs("test packs")
+                .packsType("test type")
+                .build();
+        element.setOrderPackings(List.of(packingReq));
+
+        List<ShipmentOrderV3Request> list = new ArrayList<>();
+        list.add(element);
+
+        List<ShipmentOrderAttachDetachRequest.OrderDetails> orderDetailsResponse = packingV3Util.mapToOrderDetailsList(list);
+        assertFalse(orderDetailsResponse.isEmpty());
+    }
+
+    @Test
+    void testMapToOrderDetail_returnNull() {
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetailsResponse = packingV3Util.mapToOrderDetails(null);
+        assertNull(orderDetailsResponse);
+    }
+
+    @Test
+    void testMapToOrderDetail_orderPackingIsNull() {
+        ShipmentOrderV3Request element = new ShipmentOrderV3Request();
+        element.setId(1L);
+        element.setOrderGuid(UUID.randomUUID());
+        element.setOrderNumber("ORD_00001");
+        element.setShipmentId(2L);
+
+        ShipmentOrderAttachDetachRequest.OrderDetails orderDetailsResponse = packingV3Util.mapToOrderDetails(element);
+        assertNotNull(orderDetailsResponse);
+    }
+
+    @Test
+    void mapOrderLineList_null_returnsEmptyList() {
+        List<PackingV3Request> result = packingV3Util.mapOrderLineListToPackingV3RequestList(null);
+        assertNotNull(result, "Should never return null for null input");
+        assertTrue(result.isEmpty(), "Null input should produce an empty list");
+    }
+
+    @Test
+    void mapOrderLineList_empty_returnsEmptyList() {
+        List<PackingV3Request> result = packingV3Util.mapOrderLineListToPackingV3RequestList(Collections.emptyList());
+        assertNotNull(result);
+        assertTrue(result.isEmpty(), "Empty input list should return empty list");
+    }
+
+    @Test
+    void mapOrderLineList_filtersNullAndMapsValues() {
+        OrderLineV3Response orderLine = new OrderLineV3Response();
+        orderLine.setId(123L);
+        orderLine.setGuid(UUID.randomUUID());
+        orderLine.setCommodityGroup("COM-GRP");
+        orderLine.setContainerId(999L);
+        orderLine.setGoodsDescription("Good desc");
+        orderLine.setHSCode("HS-001");
+        orderLine.setLength(new BigDecimal("12.5"));
+        orderLine.setLengthUnit("cm");
+        orderLine.setWidth(new BigDecimal("1.5"));
+        orderLine.setWidthUnit("cm");
+        orderLine.setHeight(new BigDecimal("2.0"));
+        orderLine.setHeightUnit("cm");
+        orderLine.setWeight(new BigDecimal("5.5"));
+        orderLine.setWeightUnit("kg");
+        orderLine.setVolume(new BigDecimal("0.25"));
+        orderLine.setVolumeUnit("m3");
+        orderLine.setNetWeight(new BigDecimal("5.0"));
+        orderLine.setNetWeightUnit("kg");
+        orderLine.setPacks("10");
+        orderLine.setPacksType("BOX");
+        orderLine.setLineNo(new BigDecimal("1"));
+        orderLine.setSubLineNo(new BigDecimal("0"));
+        orderLine.setProductCode("PROD-1");
+        orderLine.setShipmentOrderId(555L);
+
+        UUID randomUUID = UUID.randomUUID();
+        orderLine.setOrderGuid(randomUUID);
+
+        ShipmentOrder shipmentOrder = new ShipmentOrder();
+        shipmentOrder.setId(555L);
+        shipmentOrder.setOrderGuid(randomUUID);
+        when(shipmentOrderService.findByOrderGuidIn(Arrays.asList(randomUUID))).thenReturn(Arrays.asList(shipmentOrder));
+
+        List<OrderLineV3Response> input = Arrays.asList(orderLine, null);
+        List<PackingV3Request> result = packingV3Util.mapOrderLineListToPackingV3RequestList(input);
+
+        assertNotNull(result);
+        assertEquals(1, result.size(), "Null elements should be filtered out");
+        PackingV3Request mapped = result.get(0);
+
+        assertEquals(orderLine.getCommodityGroup(), mapped.getCommodityGroup());
+        assertEquals(orderLine.getContainerId(), mapped.getContainerId());
+        assertEquals(orderLine.getGoodsDescription(), mapped.getGoodsDescription());
+        assertEquals(orderLine.getHSCode(), mapped.getHSCode());
+        assertEquals(orderLine.getPacks(), mapped.getPacks());
+        assertEquals(orderLine.getPacksType(), mapped.getPacksType());
+        assertEquals(orderLine.getProductCode(), mapped.getProductCode());
+        assertEquals(orderLine.getShipmentOrderId(), mapped.getShipmentOrderId());
+
+        assertEquals(0, mapped.getLength().compareTo(orderLine.getLength()));
+        assertEquals(0, mapped.getWidth().compareTo(orderLine.getWidth()));
+        assertEquals(0, mapped.getHeight().compareTo(orderLine.getHeight()));
+        assertEquals(0, mapped.getWeight().compareTo(orderLine.getWeight()));
+        assertEquals(0, mapped.getVolume().compareTo(orderLine.getVolume()));
+        assertEquals(0, mapped.getNetWeight().compareTo(orderLine.getNetWeight()));
+    }
+
+    @Test
+    void mapOrderLine_null_returnsNull() {
+        PackingV3Request result = packingV3Util.mapOrderLineToPackingV3Request(null, new HashMap<>());
+        assertNull(result, "Mapping a null OrderLine should return null");
+    }
+
+    @Test
+    void mapOrderLine_valid_returnsMappedObject() {
+        OrderLineV3Response orderLineRes = new OrderLineV3Response();
+        orderLineRes.setId(7L);
+        orderLineRes.setGuid(UUID.randomUUID());
+        orderLineRes.setCommodityGroup("grp");
+        orderLineRes.setContainerId(11L);
+        orderLineRes.setGoodsDescription("desc");
+        orderLineRes.setHSCode("hs-code");
+        orderLineRes.setLength(BigDecimal.valueOf(2));
+        orderLineRes.setLengthUnit("cm");
+        orderLineRes.setPacks("3");
+        orderLineRes.setPacksType("CTN");
+        orderLineRes.setLineNo(BigDecimal.ONE);
+        orderLineRes.setSubLineNo(BigDecimal.ZERO);
+        orderLineRes.setProductCode("P-01");
+        orderLineRes.setShipmentOrderId(100L);
+
+        PackingV3Request packingReq = packingV3Util.mapOrderLineToPackingV3Request(orderLineRes, new HashMap<>());
+        assertNotNull(packingReq);
+
+        assertEquals(orderLineRes.getCommodityGroup(), packingReq.getCommodityGroup());
+        assertEquals(orderLineRes.getContainerId(), packingReq.getContainerId());
+        assertEquals(orderLineRes.getGoodsDescription(), packingReq.getGoodsDescription());
+        assertEquals(orderLineRes.getHSCode(), packingReq.getHSCode());
+        assertEquals(orderLineRes.getPacks(), packingReq.getPacks());
+        assertEquals(orderLineRes.getPacksType(), packingReq.getPacksType());
+        assertEquals(orderLineRes.getProductCode(), packingReq.getProductCode());
+        assertEquals(0, packingReq.getLength().compareTo(orderLineRes.getLength()));
+    }
+
+    @Test
+    void test_mapPackingV3RequestListToOrderLineList_nullOrEmpty() {
+        assertTrue(packingV3Util.mapPackingV3RequestListToOrderLineList(null).isEmpty());
+        assertTrue(packingV3Util.mapPackingV3RequestListToOrderLineList(List.of()).isEmpty());
+    }
+
+    @Test
+    void test_mapPackingV3RequestListToOrderLineList_withData() {
+        PackingV3Request req = PackingV3Request.builder()
+                .id(1L)
+                .guid(UUID.randomUUID())
+                .packs("10")
+                .packsType("BOX")
+                .commodityGroup("CG")
+                .goodsDescription("desc")
+                .build();
+
+        List<OrderLineV3Response> result = packingV3Util.mapPackingV3RequestListToOrderLineList(List.of(req));
+
+        assertEquals(1, result.size());
+        assertEquals(req.getId(), result.get(0).getId());
+        assertEquals(req.getCommodityGroup(), result.get(0).getCommodityGroup());
+    }
+
+    @Test
+    void test_mapPackingV3RequestToOrderLine_null() {
+        assertNull(packingV3Util.mapPackingV3RequestToOrderLine(null));
     }
 
 

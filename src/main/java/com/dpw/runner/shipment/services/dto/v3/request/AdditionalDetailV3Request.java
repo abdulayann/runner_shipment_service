@@ -122,6 +122,7 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private String placeOfSupply;
     private LocalDateTime dateOfIssue;
     private LocalDateTime dateOfReceipt;
+    private Boolean isRatedBL;
     private String goodsCO;
     private String BOENumber;
     private LocalDateTime BOEDate;

@@ -137,6 +137,11 @@ public class EventV3Service implements IEventsV3Service {
         return groupedEvents;
     }
 
+    @Override
+    public List<EventsResponse> listWithoutTenantFilter(TrackingEventsRequest request, String source) {
+        return eventV2Service.listWithoutTenantFilter(request, source);
+    }
+
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest, String source) {
         if (isShipment) {
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_ID, id, "=", listRequest);
@@ -146,7 +151,7 @@ public class EventV3Service implements IEventsV3Service {
         }
         Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
         List<Events> allEvents;
-        if (Objects.equals(source, Constants.NETWORK_TRANSFER)) {
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(source)) {
             allEvents = eventDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()).getContent();
         } else {
             allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();

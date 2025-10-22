@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.PackingListModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -81,6 +83,12 @@ class PackingListReportTest extends CommonMocks {
 
     @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
@@ -319,6 +327,7 @@ class PackingListReportTest extends CommonMocks {
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(Collections.emptyList());
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
@@ -351,6 +360,7 @@ class PackingListReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(Collections.emptyList());
         mockShipmentSettings();
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);

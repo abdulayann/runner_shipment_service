@@ -246,4 +246,8 @@ public class ConsolidationModel implements IDocumentModel {
     private String sci;
     @JsonProperty("AdditionalSecurityInformation")
     private String additionalSecurityInformation;
+    @JsonProperty("Controlled")
+    private Boolean controlled;
+    @JsonProperty("ControlledReferenceNumber")
+    private String controlledReferenceNumber;
 }

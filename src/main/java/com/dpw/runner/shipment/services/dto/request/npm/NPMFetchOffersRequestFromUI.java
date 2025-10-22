@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.npm;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,6 +48,15 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     private String weight_uom;
     private BigDecimal volume;
     private String volume_uom;
+    private String carrier;
+    private Long minTransitDays;
+    private Long maxTransitDays;
+    @Builder.Default
+    private Integer pageNo = 1;
+    @Builder.Default
+    private Integer pageSize = Integer.MAX_VALUE;
+    private SortRequest sortRequest;
+    private String requestSource;
 
     @Data
     @NoArgsConstructor

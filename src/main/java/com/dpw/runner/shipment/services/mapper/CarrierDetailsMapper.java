@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.mapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import org.mapstruct.*;
 
@@ -18,4 +19,5 @@ public interface CarrierDetailsMapper {
 
     @InheritConfiguration
     void update(CarrierPatchRequest update, @MappingTarget CarrierDetails destination);
+    void updateCarrierPatchV3(CarrierPatchV3Request update, @MappingTarget CarrierDetails destination);
 }

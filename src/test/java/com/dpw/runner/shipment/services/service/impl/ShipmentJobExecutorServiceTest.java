@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -34,6 +35,9 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -102,6 +106,7 @@ class ShipmentJobExecutorServiceTest {
         quartzJobInfo.setGuid(UUID.randomUUID());
         quartzJobInfo.setEntityId(100L);
         quartzJobInfo.setEntityType(Constants.SHIPMENT);
+        TransactionSynchronizationManager.clear();
     }
 
     @Test

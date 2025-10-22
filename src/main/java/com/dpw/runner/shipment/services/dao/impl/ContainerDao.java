@@ -148,6 +148,11 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<Containers> findAllByGuid(List<UUID> guid) {
+        return containerRepository.findAllByGuidIn(guid);
+    }
+
+    @Override
     public void delete(Containers containers) {
         containerRepository.delete(containers);
     }
