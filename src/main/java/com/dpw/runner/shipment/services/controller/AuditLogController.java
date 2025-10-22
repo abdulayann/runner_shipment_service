@@ -38,7 +38,7 @@ public class AuditLogController {
 
     private class MyAllocationsListResponseClass extends RunnerListResponse<AllocationsResponse>{}
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = MyAllocationsListResponseClass.class))))})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL, content = @Content(array = @ArraySchema(schema = @Schema(implementation = MyAllocationsListResponseClass.class))))})
     @PostMapping("/list")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                 @RequestHeader(value = "x-source", required = false) String xSource) {

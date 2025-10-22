@@ -129,12 +129,7 @@ public class VerifiedGrossMassController {
             @ApiResponse(
                     responseCode = "200",
                     description = VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL,
-                    content = @Content(
-                            mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = CommonContainerResponse.class))
-                    )
-            )
-    })
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CommonContainerResponse.class))))})
     @PutMapping(API_BULK_UPDATE)
     public ResponseEntity<IRunnerResponse> bulkUpdateContainers(@RequestBody @Valid VerifiedGrossMassBulkUpdateRequest request) {
         log.info("Received container bulk update request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());

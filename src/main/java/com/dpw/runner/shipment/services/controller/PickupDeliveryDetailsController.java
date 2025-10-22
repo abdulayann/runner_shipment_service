@@ -59,13 +59,7 @@ public class PickupDeliveryDetailsController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL,
-                    content = @Content(
-                            mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = IRunnerResponse.class))
-                    )
-            )
-    })
+                    description = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = IRunnerResponse.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return pickupDeliveryDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
@@ -116,15 +110,8 @@ public class PickupDeliveryDetailsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL,
-                    content = @Content(
-                            mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = IRunnerResponse.class))
-                    )
-            )
-    })@PostMapping(PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_LIST_V2)
+            @ApiResponse(responseCode = "200", description = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = IRunnerResponse.class)))})
+    @PostMapping(PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_LIST_V2)
     public ResponseEntity<IRunnerResponse> listV2(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return pickupDeliveryDetailsService.listV2(CommonRequestModel.buildRequest(listCommonRequest));
     }

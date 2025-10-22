@@ -61,11 +61,7 @@ public class TransportInstructionTruckDriverController {
     @ApiResponse(
             responseCode = "200",
             description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_TRUCK_DRIVER_LIST_SUCCESSFUL,
-            content = @Content(
-                    mediaType = "application/json",
-                    array = @ArraySchema(schema = @Schema(implementation = TransportInstructionLegsTruckDriverResponse.class))
-            )
-    )
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = TransportInstructionLegsTruckDriverResponse.class))))
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         TransportInstructionLegsTruckDriverListResponse legsListResponse = transportInstructionLegsTruckDriverService.list(listCommonRequest, getMasterData);

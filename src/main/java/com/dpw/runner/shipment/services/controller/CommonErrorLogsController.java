@@ -37,23 +37,13 @@ public class CommonErrorLogsController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = CommonErrorLogsConstants.LIST_SUCCESSFUL,
-                    content = @Content(
-                            mediaType = "application/json",
-                            array = @ArraySchema(schema = @Schema(implementation = CommonErrorLogsController.MyResponseClass.class))
-                    )
-            )
-    })
+            @ApiResponse(responseCode = "200", description = CommonErrorLogsConstants.LIST_SUCCESSFUL, content = @Content(  array = @ArraySchema(schema = @Schema(implementation = CommonErrorLogsController.MyResponseClass.class))))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return commonErrorLogsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(
-            mediaType = "application/json",
-            array = @ArraySchema(schema = @Schema(implementation = CommonErrorLogsController.MyResponseClass.class))), description = CommonErrorLogsConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CommonErrorLogsController.MyResponseClass.class))), description = CommonErrorLogsConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = CommonErrorLogsConstants.COMMON_ERROR_LOGS_ID) @RequestParam Optional<Long> id, @Parameter(description = CommonErrorLogsConstants.COMMON_ERROR_LOGS_GUID) @RequestParam Optional<String> guid) {
         CommonGetRequest request = CommonGetRequest.builder().build();
