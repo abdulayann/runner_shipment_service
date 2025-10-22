@@ -110,5 +110,21 @@ public class EntityTransferConstants {
     public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 
     public static final Set<String> validDirectionForNetworkTransfer = new HashSet<>(Arrays.asList(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS, Constants.DIRECTION_IMP));
+
+    public static final String ALREADY_TRANSFERRED_ERROR_MESSAGE = "Already transferred CTS file is not allowed to transfer again";
     public static final String MAWB_NUMBER = "MAWB Number";
+    public static final String HAWB_NUMBER = "HAWB Number";
+    public static final String FLIGHT_NUMBER = "Flight number";
+    public static final String FIELD_HBL = "HBL";
+    public static final String FIELD_MBL = "MBL";
+    public static final String FIELD_ETA = "Eta";
+    public static final String FIELD_ETD = "Etd";
+    public static final String FIELD_SHIPPING_LINE = "Shipping line";
+    public static final String FIELD_VESSEL = "Vessel";
+    public static final String FIELD_VOYAGE = "Voyage";
+    public static final String FIELD_ORIGIN_AGENT = "Origin agent";
+    public static final String FIELD_DESTINATION_AGENT = "Destination agent";
+    public static final String ERROR_MSG_SUFFIX_CONSOLIDATION = " for the consolidation";
+    public static final String ERROR_MSG_HAWB_RETRIGGER = "Please enter the HAWB number to retrigger the transfer.";
+    public static final String ERROR_MSG_HBL_RETRIGGER = "Please enter the HBL number to retrigger the transfer.";
 }

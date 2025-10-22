@@ -92,6 +92,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.validDirectionForNetworkTransfer;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -102,21 +103,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
     private static final String ALREADY_TRANSFERRED_ERROR_MESSAGE = "Already transferred CTS file is not allowed to transfer again";
-    private static final String MAWB_NUMBER = "MAWB Number";
-    private static final String HAWB_NUMBER = "HAWB Number";
-    private static final String FLIGHT_NUMBER = "Flight number";
-    private static final String FIELD_HBL = "HBL";
-    private static final String FIELD_MBL = "MBL";
-    private static final String FIELD_ETA = "Eta";
-    private static final String FIELD_ETD = "Etd";
-    private static final String FIELD_SHIPPING_LINE = "Shipping line";
-    private static final String FIELD_VESSEL = "Vessel";
-    private static final String FIELD_VOYAGE = "Voyage";
-    private static final String FIELD_ORIGIN_AGENT = "Origin agent";
-    private static final String FIELD_DESTINATION_AGENT = "Destination agent";
-    private static final String ERROR_MSG_SUFFIX_CONSOLIDATION = " for the consolidation";
-    private static final String ERROR_MSG_HAWB_RETRIGGER = "Please enter the HAWB number to retrigger the transfer.";
-    private static final String ERROR_MSG_HBL_RETRIGGER = "Please enter the HBL number to retrigger the transfer.";
     private IShipmentDao shipmentDao;
     private IShipmentServiceV3 shipmentService;
     private IConsolidationV3Service consolidationService;
@@ -1647,7 +1633,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         String subject = (template.getSubject() == null) ?
                 DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
         subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
-        subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+        subject = subject.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
         // Body
         String body = (template.getBody() == null) ? DEFAULT_SHIPMENT_V3_RECEIVED_BODY : template.getBody();
@@ -1662,7 +1648,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         else
             body = body.replace("<p><strong>MBL Number</strong>: {#MBL_NUMBER}</p> ", "");
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+        body = body.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
         body = setNamesInBody(shipmentDetails, body);
         template.setSubject(subject);
         template.setBody(body);
@@ -1703,7 +1689,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         String subject = (template.getSubject() == null) ?
                 DEFAULT_CONSOLIDATION_V3_RECEIVED_SUBJECT : template.getSubject();
         subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
-        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
+        subject = subject.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
         subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
 
         // Body
@@ -1714,7 +1700,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
         body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? StringUtility.convertToString(consolidationDetails.getBol()) : StringUtility.convertToString(consolidationDetails.getMawb()));
         body = body.replace(TRANSFERRED_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
+        body = body.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
 
         body = generateShipmentEmailBodyForConsole(shipmentDetailsList, body, tenantMap, isReceivingBranch, isInterBranchConsole, destinationBranch);
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
@@ -2108,7 +2094,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
     private void addAirShipmentMissingFields(ShipmentDetails shipment, List<String> missingFields, boolean isAutomaticTransfer) {
         if (Strings.isNullOrEmpty(shipment.getCarrierDetails().getFlightNumber())) {
-            missingFields.add(FLIGHT_NUMBER);
+            missingFields.add(EntityTransferConstants.FLIGHT_NUMBER);
         }
         if (shipment.getCarrierDetails().getEta() == null) {
             missingFields.add(FIELD_ETA);
@@ -2138,7 +2124,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (Strings.isNullOrEmpty(shipmentDetails.getHouseBill())) {
             if (Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode())
                     && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
-                missingField.add(HAWB_NUMBER);
+                missingField.add(EntityTransferConstants.HAWB_NUMBER);
             }
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                     && !Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()))
@@ -2146,7 +2132,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
         if (Strings.isNullOrEmpty(shipmentDetails.getMasterBill())) {
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                missingField.add(MAWB_NUMBER);
+                missingField.add(EntityTransferConstants.MAWB_NUMBER);
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
                 missingField.add("Master Bill");
         }
@@ -2160,7 +2146,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 case "House Bill":
                     errorMessage.append("HBL number");
                     break;
-                case MAWB_NUMBER, HAWB_NUMBER, FLIGHT_NUMBER, FIELD_ETA, FIELD_ETD:
+                case EntityTransferConstants.MAWB_NUMBER, EntityTransferConstants.HAWB_NUMBER, EntityTransferConstants.FLIGHT_NUMBER, FIELD_ETA, FIELD_ETD:
                     errorMessage.append(key);
                     break;
                 default:
@@ -2304,7 +2290,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                                          String polId, String podId, boolean entityTransferDetails) {
 
         if (Strings.isNullOrEmpty(bol)) {
-            missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? MAWB_NUMBER : "Master Bill");
+            missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? EntityTransferConstants.MAWB_NUMBER : "Master Bill");
         }
         if (Strings.isNullOrEmpty(voyage)) {
             missingField.add(consol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
@@ -2405,13 +2391,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if (isMissingHouseBill(shipment)) {
             isHblNumberError = true;
             isShipmentError = true;
-            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_HBL : HAWB_NUMBER;
+            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_HBL : EntityTransferConstants.HAWB_NUMBER;
             addMissingFieldOnce(missingShipmentFields, fieldName);
         }
 
         if (Strings.isNullOrEmpty(shipment.getMasterBill())) {
             isShipmentError = true;
-            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_MBL : MAWB_NUMBER;
+            String fieldName = TRANSPORT_MODE_SEA.equals(transportMode) ? FIELD_MBL : EntityTransferConstants.MAWB_NUMBER;
             addMissingFieldOnce(missingShipmentFields, fieldName);
         }
 
@@ -2522,7 +2508,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         List<String> missingField = new ArrayList<>();
 
         if (Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getFlightNumber()))
-            missingField.add(FLIGHT_NUMBER);
+            missingField.add(EntityTransferConstants.FLIGHT_NUMBER);
         if (consolidationDetails.getCarrierDetails().getEta() == null)
             missingField.add(FIELD_ETA);
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
@@ -2531,7 +2517,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
         }
         if (isNonStandardConsolWithoutBol(consolidationDetails)) {
-            missingField.add(MAWB_NUMBER);
+            missingField.add(EntityTransferConstants.MAWB_NUMBER);
         }
 
         boolean isHawbNumberError = false;
@@ -2544,7 +2530,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                 isHawbNumberError = true;
                 errorShipments.add(shipment.getShipmentId());
                 errorShipIds.add(shipment.getId());
-                addMissingFieldOnce(allMissingKeys, HAWB_NUMBER);
+                addMissingFieldOnce(allMissingKeys, EntityTransferConstants.HAWB_NUMBER);
             }
         }
 
