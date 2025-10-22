@@ -1806,7 +1806,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (consolidationDetails.getAssignedTo() != null) {
             usernamesList.add(consolidationDetails.getAssignedTo());
         }
-
+        tenantIds.add(consolidationDetails.getTenantId());
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(
             Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
@@ -1845,7 +1845,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     protected ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                                                     List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
-
+        String assignedTo = "";
+        String createdBy = "";
         var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
         Set<String> toEmailsList = new HashSet<>();
         Set<String> ccEmailsList = new HashSet<>();
@@ -1853,13 +1854,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             toEmailsList.add(shipmentDetails.getCreatedBy());
         }
         if (shipmentDetails.getAssignedTo() != null) {
+            assignedTo = shipmentDetails.getAssignedTo();
             toEmailsList.add(shipmentDetails.getAssignedTo());
         }
+
         if (consolidationDetails.getAssignedTo() != null) {
             ccEmailsList.add(consolidationDetails.getAssignedTo());
         }
         //add console created user data
         if (consolidationDetails.getCreatedBy() != null) {
+            createdBy = consolidationDetails.getCreatedBy();
             ccEmailsList.add(consolidationDetails.getCreatedBy());
         }
         Set<String> toEmailIds = new HashSet<>();
@@ -1872,6 +1876,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
         Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Set<String> usernames = Stream.of(assignedTo, createdBy)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(
                         () -> commonUtils.getCarriersData(Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)),
@@ -1881,18 +1889,23 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         .toList(), unLocMap)), executorService);
         var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)),
                 executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernames, usernameEmailsMap)), executorService);
 
-        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        //Add emailId for shipment assigned user.
+        if (usernameEmailsMap.containsKey(assignedTo))
+            toEmailsList.add(usernameEmailsMap.get(assignedTo));
+        //Add emailId for consolidation created by.
+        if (usernameEmailsMap.containsKey(createdBy))
+            toEmailsList.add(usernameEmailsMap.get(createdBy));
+
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId());
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
         ccEmailsList.addAll(new ArrayList<>(toEmailIds));
         ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
         commonUtils.setCurrentUserEmail(ccEmailsList);
-        if (shipmentDetails.getCreatedBy() == null || shipmentDetails.getAssignedTo() == null) {
-            toEmailIds.clear();
-            ccEmailIds.clear();
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId());
-            toEmailsList.addAll(new ArrayList<>(toEmailIds));
-        }
+        toEmailsList.addAll(new ArrayList<>(toEmailIds));
 
         commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
         commonUtils.sendEmailNotification(dictionary, emailTemplateModel, new ArrayList<>(toEmailsList), new ArrayList<>(ccEmailsList));
@@ -4561,7 +4574,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (console.getAssignedTo() != null) {
             userNames.add(console.getAssignedTo());
         }
-
+        tenantIds.add(console.getTenantId());
         // fetching other consolidations
         List<Long> otherConsoleIds = new ArrayList<>();
         for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipMappings) {
@@ -4659,6 +4672,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         if (console.getAssignedTo() != null) {
             usernamesList.add(console.getAssignedTo());
+        }
+        if (Objects.nonNull(console.getTenantId())) {
+            tenantIds.add(console.getTenantId());
         }
         if (shipmentDetails != null && !shipmentDetails.getContent().isEmpty())
             shipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(BaseEntity::getId, e -> e));
@@ -5163,6 +5179,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         userNames.add(consoleDetails.getCreatedBy());
         if (consoleDetails.getAssignedTo() != null) {
             userNames.add(consoleDetails.getAssignedTo());
+        }
+        if(Objects.nonNull(consoleDetails.getTenantId())) {
+            tenantIds.add(consoleDetails.getTenantId());
         }
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplates)), executorService);
