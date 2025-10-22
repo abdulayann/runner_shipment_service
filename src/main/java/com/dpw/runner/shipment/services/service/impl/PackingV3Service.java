@@ -167,6 +167,7 @@ public class PackingV3Service implements IPackingV3Service {
     public PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
+        String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(packingRequest);
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
         if (packingRequest.getContainerId() != null) {
@@ -217,6 +218,9 @@ public class PackingV3Service implements IPackingV3Service {
         log.info("Audit log recorded for packing creation | Packing ID: {}", savedPacking.getId());
 
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
+        if (warning != null) {
+            response.setWarning(warning);
+        }
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
         afterSave(List.of(savedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
         // Triggering Event for shipment and console for DependentServices update
@@ -402,6 +406,8 @@ public class PackingV3Service implements IPackingV3Service {
 
         updatePackingRequestOnDgAndTemperatureFlag(List.of(packingRequest));
         packingValidationV3Util.validateUpdateRequest(packingRequest);
+        String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(packingRequest);
+
 
         Optional<Packing> optionalPacking = packingDao.findById(packingRequest.getId());
         if (optionalPacking.isEmpty()) {
@@ -469,7 +475,11 @@ public class PackingV3Service implements IPackingV3Service {
         pushToDependentServices(List.of(updatedPacking), isAutoSell, module);
         log.info("Packing update completed successfully for id: {}", updatedPacking.getId());
 
-        return convertEntityToDto(updatedPacking);
+        PackingResponse response = convertEntityToDto(updatedPacking);
+        if (warning != null) {
+            response.setWarning(warning);
+        }
+        return response;
     }
 
     private ShipmentDetails extractShipmentDetails(Object entity) {
@@ -597,6 +607,8 @@ public class PackingV3Service implements IPackingV3Service {
 
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
+        String warning = getWarningFromBulkRequests(packingRequestList);
+
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -659,7 +671,18 @@ public class PackingV3Service implements IPackingV3Service {
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
+                .warning(warning)
                 .build();
+    }
+
+    private String getWarningFromBulkRequests(List<PackingV3Request> requests) {
+        for (PackingV3Request request : requests) {
+            String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(request);
+            if (warning != null) {
+                return warning; // Return first warning found
+            }
+        }
+        return null;
     }
 
     private static class RequestSplit {
@@ -1908,5 +1931,9 @@ public class PackingV3Service implements IPackingV3Service {
     private void updatePackingRequestWithTemperatureFalse(PackingV3Request packingV3Request) {
         packingV3Request.setMinTemp(null);
         packingV3Request.setMaxTemp(null);
+        packingV3Request.setTempSetPoint(null);
+        packingV3Request.setMinHumidity(null);
+        packingV3Request.setMaxHumidity(null);
+        packingV3Request.setHumiditySetPoint(null);
     }
 }

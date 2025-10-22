@@ -114,5 +114,10 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private UUID orderGuid;
     private Long orderLineId;
     private String orderLineGuid;
+    private BigDecimal tempSetPoint;
+    private String tempSetPointUnit;
+    private BigDecimal minHumidity;
+    private BigDecimal maxHumidity;
+    private BigDecimal humiditySetPoint;
 
 }
