@@ -288,6 +288,7 @@ class EventServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
         when(eventDao.saveWithoutTenant(any(Events.class))).thenReturn(testData);
         when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(eventsResponse);
 
@@ -361,6 +362,7 @@ class EventServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
         when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException());
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);

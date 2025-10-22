@@ -70,4 +70,6 @@ public class EventsResponse implements IRunnerResponse {
     private LocalDateTime scheduledDate;
     private String direction;
     private String referenceNumber;
+    private LocalDateTime plannedDate;
+    private LocalDateTime predictedDate;
 }
