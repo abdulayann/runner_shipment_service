@@ -119,6 +119,12 @@ public class PackingResponse implements IRunnerResponse {
     private Long orderLineId;
     private UUID orderGuid;
     private String orderLineGuid;
+    private BigDecimal tempSetPoint;
+    private String tempSetPointUnit;
+    private BigDecimal minHumidity;
+    private BigDecimal maxHumidity;
+    private BigDecimal humiditySetPoint;
+    private String warning;
 
     public boolean getAssigned() {return containerId != null;}
 }

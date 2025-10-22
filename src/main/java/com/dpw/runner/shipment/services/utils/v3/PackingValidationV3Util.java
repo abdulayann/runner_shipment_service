@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -16,6 +17,8 @@ import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingServi
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,6 +240,70 @@ public class PackingValidationV3Util {
                 }
             }
             commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
+        }
+    }
+
+    public String checkForTemperatureHumidityWarnings(PackingV3Request request) {
+        if (!Boolean.TRUE.equals(request.getIsTemperatureControlled())) {
+            return null;
+        }
+        validateHumidityPositiveValues(request);
+        boolean tempWarning = isTemperatureSetPointOutsideRange(request);
+        boolean humidityWarning = isHumiditySetPointOutsideRange(request);
+
+        return buildWarningMessage(tempWarning, humidityWarning);
+    }
+
+    private void validateHumidityPositiveValues(PackingV3Request request) {
+        if (request.getMinHumidity() != null && request.getMinHumidity().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Minimum humidity must be a positive value");
+        }
+        if (request.getMaxHumidity() != null && request.getMaxHumidity().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Maximum humidity must be a positive value");
+        }
+        if (request.getHumiditySetPoint() != null && request.getHumiditySetPoint().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Humidity set point must be a positive value");
+        }
+    }
+
+    private boolean isTemperatureSetPointOutsideRange(PackingV3Request request) {
+        return request.getTempSetPoint() != null && request.getMinTemp() != null && request.getMaxTemp() != null &&
+                (request.getTempSetPoint().compareTo(request.getMinTemp()) < 0 ||
+                        request.getTempSetPoint().compareTo(request.getMaxTemp()) > 0);
+    }
+
+    private boolean isHumiditySetPointOutsideRange(PackingV3Request request) {
+        return request.getHumiditySetPoint() != null && request.getMinHumidity() != null && request.getMaxHumidity() != null &&
+                (request.getHumiditySetPoint().compareTo(request.getMinHumidity()) < 0 ||
+                        request.getHumiditySetPoint().compareTo(request.getMaxHumidity()) > 0);
+    }
+
+    private String buildWarningMessage(boolean tempWarning, boolean humidityWarning) {
+        if (tempWarning && humidityWarning) {
+            return "You have selected the set point beyond the minimum and maximum temperature and humidity % range, kindly check";
+        }
+        if (tempWarning) {
+            return "You have selected the set point beyond the minimum and maximum temperature range, kindly check";
+        }
+        if (humidityWarning) {
+            return "You have selected the set point beyond the minimum and maximum humidity % range, kindly check";
+        }
+        return null;
+    }
+    public void addWarningsToPackingResponses(List<PackingV3Request> requests, List<PackingResponse> responses) {
+        // map of request ID to warning for easy lookup
+        Map<Long, String> requestWarnings = new HashMap<>();
+        for (PackingV3Request request : requests) {
+            String warning = checkForTemperatureHumidityWarnings(request);
+            if (warning != null && request.getId() != null) {
+                requestWarnings.put(request.getId(), warning);
+            }
+        }
+        //  warnings to corresponding responses
+        for (PackingResponse response : responses) {
+            if (response.getId() != null && requestWarnings.containsKey(response.getId())) {
+                response.setWarning(requestWarnings.get(response.getId()));
+            }
         }
     }
 
