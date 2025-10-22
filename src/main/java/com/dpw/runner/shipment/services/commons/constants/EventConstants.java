@@ -79,6 +79,8 @@ public class EventConstants {
     public static final String VSDP  = "VSDP";
     public static final String FHBL  = "FHBL";
     public static final String DHBL =  "DHBL";
+    public static final String DSWB = "DSWB";
+    public static final String FSWB = "FSWB";
     public static final String HAWB  = "HAWB";
     public static final String CANG  = "CANG";
     public static final String ARDP  = "ARDP";
