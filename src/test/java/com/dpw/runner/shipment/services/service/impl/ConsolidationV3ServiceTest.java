@@ -5658,6 +5658,22 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
+  void testNumberOfFreeDaysCutOff_DeletedFromConsolidation_ShouldSetNullInShipment() {
+    ConsolidationDetails oldCon = new ConsolidationDetails();
+    ConsolidationDetails newCon = new ConsolidationDetails();
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
+    shipment.setNumberOfFreeDaysCutOff(5);
+
+    oldCon.setNumberOfFreeDaysCutOff(5);
+    newCon.setNumberOfFreeDaysCutOff(null);
+
+    consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldCon, newCon, List.of(shipment), false);
+
+    assertThat(shipment.getNumberOfFreeDaysCutOff()).isNull();
+  }
+
+  @Test
   void testUpdateConsolidationCargoSummary() throws RunnerException {
     ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
     consolidationV3Service.updateConsolidationCargoSummary(null, oldShipmentWtVolResponse);
