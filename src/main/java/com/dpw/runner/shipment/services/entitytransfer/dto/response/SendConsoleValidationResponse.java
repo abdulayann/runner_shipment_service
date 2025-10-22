@@ -17,4 +17,5 @@ public class SendConsoleValidationResponse implements IRunnerResponse {
     private String consoleErrorMessage;
     private String shipmentErrorMessage;
     private List<Long> shipmentIds;
+    private List<String> missingKeys;
 }

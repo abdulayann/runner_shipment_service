@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entitytransfer.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.springframework.http.ResponseEntity;
@@ -14,4 +16,8 @@ public interface IEntityTransferV3Service {
     List<Integer> sendConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException;
     List<String> getTenantName(List<Integer> tenantIds);
+    ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel);
+    SendShipmentValidationResponse automaticTransferShipmentValidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel);
+    SendConsoleValidationResponse automaticTransferConsoleValidation(CommonRequestModel commonRequestModel);
 }

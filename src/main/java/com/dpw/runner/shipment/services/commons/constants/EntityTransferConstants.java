@@ -32,6 +32,14 @@ public class EntityTransferConstants {
     public static final String IMPORT_CONSOLIDATION_SUCCESSFUL = "Consolidation is imported successfully";
     public static final String SEND_SHIPMENT_NO_SHIPMENT_FOUND = "No Shipment Present With Shipment Id: ";
     public static final String SEND_CONSOLIDATION_NO_CONSOLIDATION_FOUND = "No Consolidation Present With Consolidation Id: ";
+    public static final String VALIDATE_SEND_SHIPMENT = "/shipment/validate-send";
+    public static final String VALIDATE_SEND_SHIPMENT_SUCCESSFUL = "Shipment validation successful";
+    public static final String VALIDATE_AUTOMATIC_TRANSFER_SHIPMENT = "/shipment/validate-automatic-transfer";
+    public static final String VALIDATE_AUTOMATIC_TRANSFER_SHIPMENT_SUCCESSFUL = "Automatic transfer shipment validation successful";
+    public static final String VALIDATE_SEND_CONSOLIDATION = "/consolidation/validate-send";
+    public static final String VALIDATE_SEND_CONSOLIDATION_SUCCESSFUL = "Consolidation validation successful";
+    public static final String VALIDATE_AUTOMATIC_TRANSFER_CONSOLIDATION = "/consolidation/validate-automatic-transfer";
+    public static final String VALIDATE_AUTOMATIC_TRANSFER_CONSOLIDATION_SUCCESSFUL = "Automatic transfer consolidation validation successful";
     public static final String UNLOCATION_CODE = "LocCode";
     public static final String LOCATION_SERVICE_GUID = "LocationsReferenceGUID";
     public static final String ITEM_VALUE = "ItemValue";
@@ -101,5 +109,6 @@ public class EntityTransferConstants {
 
     public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 
-    public static final Set<String> validDirectionForNetworkTransfer = new HashSet<>(Arrays.asList(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS));
+    public static final Set<String> validDirectionForNetworkTransfer = new HashSet<>(Arrays.asList(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS, Constants.DIRECTION_IMP));
+    public static final String MAWB_NUMBER = "MAWB Number";
 }

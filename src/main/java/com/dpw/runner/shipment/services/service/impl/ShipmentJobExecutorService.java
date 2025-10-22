@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolida
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -67,6 +69,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         this.commonErrorLogsDao = commonErrorLogsDao;
         this.documentManagerRestClient = documentManagerRestClient;
     }
+
     @Transactional
     @Override
     public void executeJob(JobExecutionContext jobExecutionContext) {
@@ -107,41 +110,123 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             v1Service.clearAuthContext();
             log.info("Job Finished: {}", jobId);
         }
-
     }
-
 
     public void processSendShipment(QuartzJobInfo quartzJobInfo) {
         var shipment = shipmentDao.findById(quartzJobInfo.getEntityId());
-        if(shipment.isPresent()) {
-            List<Long> sendToBranch = new ArrayList<>();
-            if(shipment.get().getReceivingBranch() != null)
-                sendToBranch.add(shipment.get().getReceivingBranch());
-            if(!CommonUtils.listIsNullOrEmpty(shipment.get().getTriangulationPartnerList()))
-                sendToBranch.addAll(shipment.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
-            SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
-                    .shipId(quartzJobInfo.getEntityId())
-                    .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
-                    .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.SHIPMENTS_WITH_SQ_BRACKETS))
-                    .isAutomaticTransfer(Boolean.TRUE)
-                    .build();
-            ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
-            try {
-                var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
-                log.info("Completed Shipment Validation check.");
-                if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
-                    sendShipment(quartzJobInfo, sendShipmentRequest, shipment.get());
-                } else {
-                    quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
-                    commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
-                }
-                quartzJobInfoDao.save(quartzJobInfo);
-            } catch (ValidationException | RunnerException ex) {
-                log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
+        if(shipment.isEmpty()) {
+            return;
+        }
+
+        List<Long> sendToBranch = new ArrayList<>();
+        if(shipment.get().getReceivingBranch() != null)
+            sendToBranch.add(shipment.get().getReceivingBranch());
+        if(!CommonUtils.listIsNullOrEmpty(shipment.get().getTriangulationPartnerList()))
+            sendToBranch.addAll(shipment.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
+
+        SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
+                .shipId(quartzJobInfo.getEntityId())
+                .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
+                .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.SHIPMENTS_WITH_SQ_BRACKETS))
+                .isAutomaticTransfer(Boolean.TRUE)
+                .build();
+
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
+
+        try {
+            ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            validateAndSendShipment(quartzJobInfo, sendShipmentRequest, request, shipment.get(), shipmentSettings);
+            quartzJobInfoDao.save(quartzJobInfo);
+        } catch (ValidationException | RunnerException ex) {
+            log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
+            quartzJobInfo.setJobStatus(JobState.ERROR);
+            quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
+            quartzJobInfoDao.save(quartzJobInfo);
+        }
+    }
+
+    private void validateAndSendShipment(QuartzJobInfo quartzJobInfo, SendShipmentRequest sendShipmentRequest,
+                                         ValidateSendShipmentRequest request, ShipmentDetails shipment,
+                                         ShipmentSettingsDetails shipmentSettings) throws RunnerException {
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+            var validationResponse = entityTransferV3Service.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
+            log.info("V3 Shipment Validation check completed.");
+            if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
+                sendShipment(quartzJobInfo, sendShipmentRequest, shipment);
+            } else {
                 quartzJobInfo.setJobStatus(JobState.ERROR);
-                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
-                quartzJobInfoDao.save(quartzJobInfo);
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
+                commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.getId());
+            }
+        } else {
+            var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
+            log.info("V2 Shipment Validation check completed.");
+            if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
+                sendShipment(quartzJobInfo, sendShipmentRequest, shipment);
+            } else {
+                quartzJobInfo.setJobStatus(JobState.ERROR);
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
+                commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.getId());
+            }
+        }
+    }
+
+    public void processSendConsolidation(QuartzJobInfo quartzJobInfo) {
+        var consolidation = consolidationDao.findById(quartzJobInfo.getEntityId());
+        if(consolidation.isEmpty()) {
+            return;
+        }
+
+        List<Long> sendToBranch = new ArrayList<>();
+        if(consolidation.get().getReceivingBranch() != null)
+            sendToBranch.add(consolidation.get().getReceivingBranch());
+        if(!CommonUtils.listIsNullOrEmpty(consolidation.get().getTriangulationPartnerList()))
+            sendToBranch.addAll(consolidation.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
+
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .consolId(quartzJobInfo.getEntityId())
+                .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
+                .isAutomaticTransfer(Boolean.TRUE)
+                .build();
+
+        fetchConsoleAndShipmentDocs(consolidation.get(), sendConsolidationRequest);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(quartzJobInfo.getEntityId()).build();
+
+        try {
+            List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
+            ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            validateAndSendConsolidation(quartzJobInfo, sendConsolidationRequest, request, consolidation.get(), shipmentIds, shipmentSettings);
+            quartzJobInfoDao.save(quartzJobInfo);
+        } catch (ValidationException | RunnerException ex) {
+            log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
+            quartzJobInfo.setJobStatus(JobState.ERROR);
+            quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
+            quartzJobInfoDao.save(quartzJobInfo);
+        }
+    }
+
+    private void validateAndSendConsolidation(QuartzJobInfo quartzJobInfo, SendConsolidationRequest sendConsolidationRequest,
+                                              ValidateSendConsolidationRequest request, ConsolidationDetails consolidation,
+                                              List<Long> shipmentIds, ShipmentSettingsDetails shipmentSettings) throws RunnerException {
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+            var response = entityTransferV3Service.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
+            log.info("V3 Console Validation check completed.");
+            if(!Boolean.TRUE.equals(response.getIsError())) {
+                sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation, shipmentIds);
+            } else {
+                quartzJobInfo.setJobStatus(JobState.ERROR);
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
+                commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.getId(), shipmentIds);
+            }
+        } else {
+            var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
+            log.info("V2 Console Validation check completed.");
+            if(!Boolean.TRUE.equals(response.getIsError())) {
+                sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation, shipmentIds);
+            } else {
+                quartzJobInfo.setJobStatus(JobState.ERROR);
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
+                commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.getId(), shipmentIds);
             }
         }
     }
@@ -209,44 +294,6 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.SHIPMENTS_WITH_SQ_BRACKETS))
                     .collect(Collectors.groupingBy(DocumentManagerEntityFileResponse::getEntityId, Collectors.mapping(DocumentManagerEntityFileResponse::getGuid, Collectors.toList())));
             sendConsolidationRequest.setShipAdditionalDocs(shipDocs);
-        }
-    }
-
-    public void processSendConsolidation(QuartzJobInfo quartzJobInfo) {
-        var consolidation = consolidationDao.findById(quartzJobInfo.getEntityId());
-        if(consolidation.isPresent()) {
-            List<Long> sendToBranch = new ArrayList<>();
-            if(consolidation.get().getReceivingBranch() != null)
-                sendToBranch.add(consolidation.get().getReceivingBranch());
-            if(!CommonUtils.listIsNullOrEmpty(consolidation.get().getTriangulationPartnerList()))
-                sendToBranch.addAll(consolidation.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
-
-            SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
-                    .consolId(quartzJobInfo.getEntityId())
-                    .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
-                    .isAutomaticTransfer(Boolean.TRUE)
-                    .build();
-            fetchConsoleAndShipmentDocs(consolidation.get(), sendConsolidationRequest);
-            ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(quartzJobInfo.getEntityId()).build();
-            try {
-                List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
-                var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
-                log.info("Completed Console Validation check.");
-                if(!Boolean.TRUE.equals(response.getIsError())) {
-                    sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation.get(), shipmentIds);
-                }
-                else{
-                    quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
-                    commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
-                }
-                quartzJobInfoDao.save(quartzJobInfo);
-            } catch (ValidationException | RunnerException ex) {
-                log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
-                quartzJobInfo.setJobStatus(JobState.ERROR);
-                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
-                quartzJobInfoDao.save(quartzJobInfo);
-            }
         }
     }
 
