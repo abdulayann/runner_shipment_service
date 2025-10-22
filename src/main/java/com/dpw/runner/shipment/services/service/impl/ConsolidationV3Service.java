@@ -4306,10 +4306,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
   }
 
     @Override
-    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
+    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId, Long shipmentId) {
         try {
             if (enableFlag == null) {
                 throw new IllegalArgumentException("enableFlag cannot be null");
+            }
+            if (null == consolidationId && null == shipmentId) {
+                throw new IllegalArgumentException("consolidationId or shipmentId is mandatory");
+            }
+            if (null == consolidationId) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+                if (shipmentDetails.isPresent() && !CollectionUtils.isEmpty(shipmentDetails.get().getConsolidationList())) {
+                    consolidationId = shipmentDetails.get().getConsolidationList().stream().toList().get(0).getId();
+                }
             }
             consolidationDetailsDao.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
         } catch (Exception e) {

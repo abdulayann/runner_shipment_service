@@ -66,7 +66,7 @@ public interface IConsolidationV3Service {
     String getBookingNumberFromConsol(Long consolidationId);
     void checkSciForDetachConsole(Long consoleId) throws RunnerException;
 
-    void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
+    void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId, Long shipmentId);
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;

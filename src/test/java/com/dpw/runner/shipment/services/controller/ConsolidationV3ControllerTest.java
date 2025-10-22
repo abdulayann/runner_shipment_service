@@ -1,14 +1,12 @@
 package com.dpw.runner.shipment.services.controller;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -356,6 +354,30 @@ class ConsolidationV3ControllerTest {
     );
     assertEquals("Error during creation", ex.getMessage());
     verify(consolidationV3Service).createConsoleDetailsAndAttachShipment(any());
+  }
+
+  @Test
+  void testUpdateConsolidationAttachmentFlag_success() {
+    Boolean enableFlag = true;
+    Long consolId = 1L;
+    Long shipmentId = 2L;
+    doNothing().when(consolidationV3Service)
+            .updateConsolidationAttachmentFlag(enableFlag, consolId, shipmentId);
+    ResponseEntity<IRunnerResponse> response = controller.updateConsolidationAttachmentFlag(enableFlag, consolId, shipmentId);
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).updateConsolidationAttachmentFlag(enableFlag, consolId, shipmentId);
+  }
+
+  @Test
+  void testUpdateConsolidationAttachmentFlag_optionalParamsNull_success() {
+    Boolean enableFlag = false;
+    doNothing().when(consolidationV3Service)
+            .updateConsolidationAttachmentFlag(enableFlag, null, null);
+    ResponseEntity<IRunnerResponse> response = controller.updateConsolidationAttachmentFlag(enableFlag, null, null);
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    verify(consolidationV3Service).updateConsolidationAttachmentFlag(enableFlag, null, null);
   }
 
 }

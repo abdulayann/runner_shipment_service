@@ -623,4 +623,6 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_restore_running")
     private Boolean isRestoreRunning;
 
+    @Column(name = "is_allow_package_edit_in_console")
+    private Boolean isAllowPackageEditInConsole;
 }

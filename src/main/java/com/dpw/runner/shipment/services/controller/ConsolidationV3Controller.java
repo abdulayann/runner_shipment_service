@@ -155,8 +155,8 @@ public class ConsolidationV3Controller {
             @ApiResponse(code = 400, message = "Invalid input - enableFlag cannot be null")
     })
     @PostMapping(value = ApiConstants.ATTACHMENT_FLAG)
-    public ResponseEntity<IRunnerResponse> updateConsolidationAttachmentFlag(@RequestParam Boolean enableFlag, @RequestParam Long consolId) {
-        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolId);
+    public ResponseEntity<IRunnerResponse> updateConsolidationAttachmentFlag(@RequestParam Boolean enableFlag, @RequestParam(required = false) Long consolId, @RequestParam(required = false) Long shipmentId) {
+        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolId, shipmentId);
         return ResponseHelper.buildSuccessResponse();
     }
 

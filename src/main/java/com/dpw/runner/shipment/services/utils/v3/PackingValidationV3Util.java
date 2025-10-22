@@ -151,7 +151,7 @@ public class PackingValidationV3Util {
         return customerBooking.get();
     }
 
-    private ConsolidationDetails validateConsolidation(PackingV3Request packingRequest) {
+    public ConsolidationDetails validateConsolidation(PackingV3Request packingRequest) {
         if (packingRequest.getConsolidationId() == null || packingRequest.getConsolidationId() <= 0) {
             throw new ValidationException("Consolidation id is empty");
         }
