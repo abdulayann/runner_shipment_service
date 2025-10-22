@@ -602,6 +602,10 @@ class ContainerV3UtilTest extends CommonMocks {
         Field parserField = ContainerV3Util.class.getDeclaredField("parserV3");
         parserField.setAccessible(true);
         parserField.set(containerV3Util, parserMock);
+        CSVParsingUtilV3<Containers> parserMock = Mockito.mock(CSVParsingUtilV3.class);
+        Field parserField = ContainerV3Util.class.getDeclaredField("parserV3");
+        parserField.setAccessible(true);
+        parserField.set(containerV3Util, parserMock);
         when(parserMock.parseExcelFile(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         )).thenReturn(Collections.emptyList());
@@ -612,7 +616,6 @@ class ContainerV3UtilTest extends CommonMocks {
 
         verify(containerV3FacadeService, never()).createUpdateContainer(any(), any());
     }
-
     @Test
     void syncCommodityAndHsCode_shouldSyncCodes() {
         Containers container1 = new Containers();
@@ -1320,6 +1323,73 @@ class ContainerV3UtilTest extends CommonMocks {
         assertEquals("5", container.getPacks());
         assertEquals("PKG", container.getPacksType());
     }
+
+    @Test
+    void testProcessErrorListThrowsMultiValidationException() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Arrays.asList(
+                "Row 2: ContainerNumber is invalid",
+                "Row 3: Type is invalid",
+                "Row 2: ContainerNumber is invalid" // duplicate to test distinct()
+        );
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        InvocationTargetException wrappedException = assertThrows(InvocationTargetException.class,
+                () -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+        Throwable cause = wrappedException.getCause();
+        assertTrue(cause instanceof MultiValidationException);
+        MultiValidationException mvException = (MultiValidationException) cause;
+        assertEquals("2 out of 3 Container Details contain errors, Please rectify and upload.", mvException.getMessage());
+        assertEquals(2, mvException.getErrors().size()); // distinct and sorted
+        assertTrue(mvException.getErrors().contains("Row 2: ContainerNumber is invalid"));
+        assertTrue(mvException.getErrors().contains("Row 3: Type is invalid"));
+    }
+
+    @Test
+    void testProcessErrorListDoesNotThrowWhenNoErrors() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Collections.emptyList();
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        assertDoesNotThrow(() -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+    }
+
+    @Test
+    void testExtractHeaderOrderReturnsCorrectIndex() throws Exception {
+        Map<String, Integer> headerOrder = new HashMap<>();
+        headerOrder.put("containernumber", 0);
+        headerOrder.put("type", 1);
+        headerOrder.put("weight", 2);
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractHeaderOrder", String.class, Map.class);
+        method.setAccessible(true);
+        int index1 = (int) method.invoke(containerV3Util, "Row 2: ContainerNumber is invalid", headerOrder);
+        assertEquals(0, index1);
+        int index2 = (int) method.invoke(containerV3Util, "Row 3: Type is invalid", headerOrder);
+        assertEquals(1, index2);
+        int index3 = (int) method.invoke(containerV3Util, "Row 4: Weight is missing", headerOrder);
+        assertEquals(2, index3);
+        int indexUnknown = (int) method.invoke(containerV3Util, "Row 5: UnknownField is invalid", headerOrder);
+        assertEquals(Integer.MAX_VALUE, indexUnknown);
+    }
+
+    @Test
+    void testExtractRowNumCatchBlock() throws Exception {
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractRowNum", String.class);
+        method.setAccessible(true);
+        int result1 = (int) method.invoke(containerV3Util, "Some invalid message without row info");
+        assertEquals(-1, result1);
+        int result2 = (int) method.invoke(containerV3Util, "Row#ABC: ContainerNumber invalid");
+        assertEquals(Integer.MAX_VALUE, result2);
+        int result3 = (int) method.invoke(containerV3Util, "Row#5 ContainerNumber invalid");
+        assertEquals(-1, result3);
+    }
+
 
     @Test
     void testProcessErrorListThrowsMultiValidationException() throws Exception {
