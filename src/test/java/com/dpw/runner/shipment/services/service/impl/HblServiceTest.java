@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -8,6 +9,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -28,13 +31,16 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.dto.response.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.MdmTaskException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -57,10 +63,12 @@ import java.util.*;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -108,6 +116,8 @@ class HblServiceTest extends CommonMocks {
     private PartialFetchUtils partialFetchUtils;
     @Mock
     private ConsolidationService consolidationService;
+    @Mock
+    private MDMServiceAdapter mdmServiceAdapter;
     @Mock
     private HblService self;
     private ShipmentDetails shipmentDetail;
@@ -1535,7 +1545,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithEmptyHbl() {
+    void retrieveByShipmentIdTestWithEmptyHbl() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1545,7 +1555,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithHblInResponse() {
+    void retrieveByShipmentIdTestWithHblInResponse() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictBLEdit(true).build());
 
@@ -1557,7 +1567,26 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithError() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
+        assertThrows(RunnerException.class, () -> hblService.retrieveByShipmentId(commonRequestModel));
+    }
+
+    @Test
+    void retrieveByShipmentIdTestWithHblInResponseWithGuid() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
+        var shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipment));
+        when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(mockHbl));
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class));
+        var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
+        // Test
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveByShipmentIdTestWithAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(true).build());
 
@@ -1569,7 +1598,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() {
+    void retrieveByShipmentIdTestWithoutAutoUpdateShipmentBL() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoUpdateShipmentBL(false).restrictBLEdit(false).build());
 
@@ -1581,7 +1610,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByShipmentIdWithShipmentDetailsNull() {
+    void retrieveByShipmentIdWithShipmentDetailsNull() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
 
         var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
@@ -2344,5 +2373,118 @@ class HblServiceTest extends CommonMocks {
         assertNotNull(resultParty.getZipCode());
         assertNotNull(resultParty.getCountry());
     }
+
+    @Nested
+    class CreateHblTaskForApprovalTests {
+
+        @Test
+        void shouldCreateTaskSuccessfully() throws RunnerException {
+            //given
+            Long shipmentId = 100L;
+            ShipmentDetails shipment = jsonTestUtility.getTestShipment();
+            shipment.setId(shipmentId);
+            shipment.setShipmentId("SHP-2025-000100");
+            shipment.setGuid(UUID.randomUUID());
+            CarrierDetails carrier = new CarrierDetails();
+            carrier.setOrigin("AEJEA");
+            carrier.setDestination("USNYC");
+            shipment.setCarrierDetails(carrier);
+
+            ConsolidationDetails consol = new ConsolidationDetails();
+            consol.setId(555L);
+            consol.setConsolidationNumber("CONS-2025-555");
+            shipment.setConsolidationList(Set.of(consol));
+
+            // mdm returns no existing pending tasks
+            when(mdmServiceAdapter.getTaskList(String.valueOf(shipment.getGuid()),
+                    SHIPMENTS_WITH_SQ_BRACKETS,
+                    PENDING_ACTION_TASK,
+                    ORIGINAL_BL_APPROVAL)).thenReturn(Collections.emptyList());
+
+            // mock location cache data
+            EntityTransferUnLocations originLoc = new EntityTransferUnLocations();
+            originLoc.LocCode = "AEJEA";
+            originLoc.Name = "Jebel Ali";
+            EntityTransferUnLocations destLoc = new EntityTransferUnLocations();
+            destLoc.LocCode = "USNYC";
+            destLoc.Name = "New York";
+            Map<String, EntityTransferUnLocations> locs = new HashMap<>();
+            locs.put("AEJEA", originLoc);
+            locs.put("USNYC", destLoc);
+
+            when(masterDataUtils.getLocationDataFromCache(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+                    .thenReturn(locs);
+
+            // ensure shipment is returned
+            when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+            when(commonUtils.getShipmentSettingFromContext()).thenReturn(
+                    ShipmentSettingsDetails.builder()
+                            .restrictBlApprovalRole(1)
+                            .build());
+
+            // mock MDM create response
+            MdmTaskCreateResponse mdmResp = new MdmTaskCreateResponse();
+            mdmResp.setId(999);
+            mdmResp.setUuid("uuid-999");
+            when(mdmServiceAdapter.createTask(any())).thenReturn(mdmResp);
+
+            when(jsonHelper.convertToJson(any())).thenReturn(
+                    "{\"transportMode\":\"Sea\",\"shipmentType\":\"BCN\",\"origin\":\"AEJEA - Jebel Ali\",\"destination\":\"USNYC - New York\","
+                            + "\"masterBill\":null,\"houseBill\":null,\"shipmentId\":\"SHP-2025-000100\","
+                            + "\"consolidationNumber\":\"CONS-2025-555\",\"consoleIdPk\":555,\"shipmentIdPk\":100}"
+            );
+
+            //when
+            ResponseEntity<IRunnerResponse> response = hblService.createHblTaskForApproval(CommonRequestModel.buildRequest(shipmentId));
+
+            //then
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+
+            ArgumentCaptor<MdmTaskCreateRequest> captor = ArgumentCaptor.forClass(MdmTaskCreateRequest.class);
+            verify(mdmServiceAdapter, times(1)).createTask(captor.capture());
+            MdmTaskCreateRequest captured = captor.getValue();
+
+            assertEquals(String.valueOf(shipment.getGuid()), captured.getEntityUuid());
+            assertEquals(shipment.getShipmentId(), captured.getReferenceFileNumber());
+            assertTrue(captured.getTaskInfoJson().contains("\"transportMode\""));
+            assertTrue(captured.getTaskInfoJson().contains("\"origin\":\"AEJEA - Jebel Ali\""));
+            assertTrue(captured.getTaskInfoJson().contains("\"destination\":\"USNYC - New York\""));
+        }
+
+        @Test
+        void shouldThrowWhenTaskAlreadyPending() {
+            //given
+            Long shipmentId = 200L;
+            ShipmentDetails shipment = jsonTestUtility.getTestShipment();
+            shipment.setId(shipmentId);
+            shipment.setGuid(UUID.randomUUID());
+
+            when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+            // return a non-empty list to simulate an existing pending task
+            when(mdmServiceAdapter.getTaskList(String.valueOf(shipment.getGuid()),
+                    SHIPMENTS_WITH_SQ_BRACKETS, PENDING_ACTION_TASK,
+                    ORIGINAL_BL_APPROVAL)).thenReturn(List.of(Map.of("id", "1")));
+
+            //when //then
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentId);
+            assertThrows(MdmTaskException.class, () ->
+                    hblService.createHblTaskForApproval(commonRequestModel));
+        }
+
+        @Test
+        void shouldThrowWhenShipmentNotFound() {
+            //given
+            Long shipmentId = 300L;
+            when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+            //when //then
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentId);
+            assertThrows(DataRetrievalFailureException.class, () ->
+                    hblService.createHblTaskForApproval(commonRequestModel));
+        }
+    }
+
 
 }

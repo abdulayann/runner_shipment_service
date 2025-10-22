@@ -280,7 +280,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -1489,9 +1488,28 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testGetAllMasterData_whenShipmentNotFound_shouldThrow() {
+        var request = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            shipmentServiceImplV3.getAllMasterData(1L, "source");
+        assertThrows(ValidationException.class, () -> {
+            shipmentServiceImplV3.getAllMasterData(request, "source");
+        });
+    }
+
+    @Test
+    void testGetAllMasterData_throwError() {
+        var request = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
+        assertThrows(ValidationException.class, () -> {
+            shipmentServiceImplV3.getAllMasterData(request, "source");
+        });
+    }
+
+
+    @Test
+    void testGetAllMasterData_throwErrorWithNoMessage() {
+        var request = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        when(shipmentDao.findById(anyLong())).thenThrow(new ValidationException(""));
+        assertThrows(ValidationException.class, () -> {
+            shipmentServiceImplV3.getAllMasterData(request, "source");
         });
     }
 
@@ -1630,12 +1648,39 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
         doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
 
-        Map<String, Object> result = spyService.getAllMasterData(shipmentId, xSource);
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(shipmentId).build()), xSource);
 
         assertNotNull(result);
         assertEquals("value1", result.get("key1"));
 
         verify(shipmentDao).findById(shipmentId);
+        verify(commonUtils).setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class));
+        verify(spyService).fetchAllMasterDataByKey(shipmentDetailsEntity, shipmentDetailsResponse);
+    }
+
+    @Test
+    void testGetAllMasterData_whenShipmentExists_shouldReturnMasterDataMapWithGuid() {
+        // Given
+        UUID guid = UUID.randomUUID();
+        String xSource = "testSource";
+
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        Map<String, Object> dummyMasterData = Map.of("key1", "value1");
+
+        when(shipmentDao.findByGuid(guid)).thenReturn(Optional.of(shipmentDetailsEntity));
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class)))
+                .thenReturn(shipmentDetailsResponse);
+
+        ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
+
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid.toString()).build()), xSource);
+
+        assertNotNull(result);
+        assertEquals("value1", result.get("key1"));
+
+        verify(shipmentDao).findByGuid(guid);
         verify(commonUtils).setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class));
         verify(spyService).fetchAllMasterDataByKey(shipmentDetailsEntity, shipmentDetailsResponse);
     }
@@ -1657,12 +1702,39 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
         doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
 
-        Map<String, Object> result = spyService.getAllMasterData(shipmentId, xSource);
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(shipmentId).build()), xSource);
 
         assertNotNull(result);
         assertEquals("value1", result.get("key1"));
 
         verify(shipmentDao).findShipmentByIdWithQuery(shipmentId);
+        verify(commonUtils).setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class));
+        verify(spyService).fetchAllMasterDataByKey(shipmentDetailsEntity, shipmentDetailsResponse);
+    }
+
+    @Test
+    void testGetAllMasterData_whenShipmentExists_shouldReturnMasterDataMap_ForNteWithGuid() {
+        // Given
+        Long shipmentId = 123L;
+        String xSource = "network_transfer";
+
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        Map<String, Object> dummyMasterData = Map.of("key1", "value1");
+
+        when(shipmentDao.findShipmentByGuidWithQuery(any())).thenReturn(Optional.of(shipmentDetailsEntity));
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class)))
+                .thenReturn(shipmentDetailsResponse);
+
+        ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetailsEntity), eq(shipmentDetailsResponse));
+
+        Map<String, Object> result = spyService.getAllMasterData(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build()), xSource);
+
+        assertNotNull(result);
+        assertEquals("value1", result.get("key1"));
+
+        verify(shipmentDao).findShipmentByGuidWithQuery(any());
         verify(commonUtils).setIncludedFieldsToResponse(eq(shipmentDetailsEntity), anySet(), any(ShipmentDetailsResponse.class));
         verify(spyService).fetchAllMasterDataByKey(shipmentDetailsEntity, shipmentDetailsResponse);
     }

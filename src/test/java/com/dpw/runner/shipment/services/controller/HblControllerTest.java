@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -95,31 +96,31 @@ class HblControllerTest {
     }
 
     @Test
-    void retrieveByShipmentId() {
+    void retrieveByShipmentId() throws RunnerException {
         // Mock
         when(hblService.retrieveByShipmentId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = hblController.retrieveByShipmentId(123L);
+        var responseEntity = hblController.retrieveByShipmentId(Optional.of(123L), Optional.empty());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void retrieveByShipmentId2() {
+    void retrieveByShipmentId2() throws RunnerException {
         // Mock
         when(hblService.retrieveByShipmentId(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = hblController.retrieveByShipmentId(123L);
+        var responseEntity = hblController.retrieveByShipmentId(Optional.of(123L), Optional.empty());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void retrieveByShipmentId3() {
+    void retrieveByShipmentId3() throws RunnerException {
         // Mock
         when(hblService.retrieveByShipmentId(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = hblController.retrieveByShipmentId(123L);
+        var responseEntity = hblController.retrieveByShipmentId(Optional.of(123L), Optional.empty());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -232,6 +233,19 @@ class HblControllerTest {
         var responseEntity = hblController.retrieveById(111L, List.of());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createHblApprovalTask() throws RunnerException {
+        // Given
+        when(hblService.createHblTaskForApproval(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        //When
+        var responseEntity = hblController.createHblApprovalTask(112L);
+
+        // Then
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
     }
 
 }

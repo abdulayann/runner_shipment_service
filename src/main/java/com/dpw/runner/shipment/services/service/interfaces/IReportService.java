@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.response.HouseBillValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.itextpdf.text.DocumentException;
@@ -19,5 +20,5 @@ public interface IReportService {
     EmailBodyResponse getPreAlertEmailTemplateData(Long shipmentId, Long emailTemplateId) throws RunnerException;
     EmailBodyResponse getDefaultEmailTemplateData(DefaultEmailTemplateRequest defaultEmailTemplateRequest) throws RunnerException;
 
-    void validateHouseBill(ReportRequest request);
+    HouseBillValidationResponse validateHouseBill(ReportRequest request);
 }

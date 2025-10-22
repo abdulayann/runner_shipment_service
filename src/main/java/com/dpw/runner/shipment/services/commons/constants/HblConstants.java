@@ -11,7 +11,9 @@ public class HblConstants {
     public static final String HBLS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful HBLs Data Retrieval By Id";
     public static final String HBL_ID = "HBLs Id";
     public static final String HBL_SHIPMENT_ID = "HBL Shipment Id";
+    public static final String CREATE_HBL_TASK = "/createApprovalTask";
     public static final String HBL_GENERATION_SUCCESS = "HBL generated successfully !";
+    public static final String HBL_TASK_CREATION_SUCCESS = "HBL approval task created successfully !";
     public static final String HBL_RESET_SUCCESSFULL = "HBL reset successfully !";
     public static final String HBL_DATA_FOUND = "Existing HBL data found for given shipment id - %s.";
     public static final String HBL_NO_DATA_FOUND_SHIPMENT = "No HBL data found for given shipment id - %s.";

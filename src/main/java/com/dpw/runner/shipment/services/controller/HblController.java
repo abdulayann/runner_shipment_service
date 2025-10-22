@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -96,10 +98,12 @@ public class HblController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(HblConstants.API_RETRIEVE_BY_SHIPMENT_ID)
-    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(@ApiParam(value = HblConstants.HBL_SHIPMENT_ID, required = true) @RequestParam Long shipmentId) {
+    public ResponseEntity<IRunnerResponse> retrieveByShipmentId(@ApiParam(value = HblConstants.HBL_SHIPMENT_ID) @RequestParam Optional<Long> shipmentId, @ApiParam(value = HblConstants.HBL_SHIPMENT_ID) @RequestParam Optional<String> shipmentGuid) {
         String responseMsg;
         try {
-            CommonGetRequest request = CommonGetRequest.builder().id(shipmentId).build();
+            CommonGetRequest request = CommonGetRequest.builder().build();
+            shipmentId.ifPresent(request::setId);
+            shipmentGuid.ifPresent(request::setGuid);
             return hblService.retrieveByShipmentId(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -153,6 +157,12 @@ public class HblController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_TASK_CREATION_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(HblConstants.CREATE_HBL_TASK)
+    public ResponseEntity<IRunnerResponse> createHblApprovalTask(@RequestParam Long shipmentId) throws RunnerException {
+        return hblService.createHblTaskForApproval(CommonRequestModel.buildRequest(shipmentId));
     }
 
 }
