@@ -156,6 +156,8 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerListRes
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.HouseBillValidationResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -194,6 +196,7 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -205,6 +208,9 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.request.TagsData;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -268,6 +274,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 @Service
 @Slf4j
@@ -3081,7 +3101,7 @@ public class ReportService implements IReportService {
     }
 
     @Override
-    public void validateHouseBill(ReportRequest reportRequest) {
+    public HouseBillValidationResponse validateHouseBill(ReportRequest reportRequest) {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
         ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
@@ -3102,6 +3122,14 @@ public class ReportService implements IReportService {
                     + errors.stream().map(msg -> "- " + msg).collect(Collectors.joining("\n"));
             throw new ValidationException(finalMessage);
         }
+
+        boolean approvalRequired = Boolean.FALSE.equals(
+                isValidForRegeneration(Long.parseLong(reportRequest.getReportId()), shipmentSettings)
+        );
+
+        return HouseBillValidationResponse.builder()
+                .isApprovalRequired(approvalRequired)
+                .build();
     }
 
     private void validateOriginalHbl(ShipmentDetails shipment,
@@ -3170,6 +3198,74 @@ public class ReportService implements IReportService {
         } catch (Exception e) {
             errors.add(e.getMessage());
         }
+    }
+
+
+
+
+    private boolean isValidForRegeneration(Long shipmentId,
+                                           ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(Boolean.FALSE.equals(shipmentSettingsDetails.getRestrictBlRelease())) {
+            log.info("Release flag is disabled for shipmentId {}", shipmentId);
+            return true;
+        }
+        Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
+        if(shipment.isEmpty()) {
+            log.info("Invalid shipment id: {}", shipmentId);
+            return true;
+        }
+        ShipmentDetails shipmentDetails = shipment.get();
+        AdditionalDetails additionalDetails = shipmentDetails.getAdditionalDetails();
+        List<EntityTransferMasterLists> entityTransferMasterLists = masterDataUtils.fetchMultipleMasterData(
+                createMasterListRequest(additionalDetails.getReleaseType()));
+        if(entityTransferMasterLists == null || entityTransferMasterLists.isEmpty()) {
+            log.info("Master data not present for release type {}", additionalDetails.getReleaseType());
+            return true;
+        }
+        EntityTransferMasterLists transferMasterLists = entityTransferMasterLists.get(0);
+
+        if(!isValidPermittedCount(transferMasterLists.getIdentifier1(),additionalDetails)) {
+            return true;
+        }
+
+        List<Hbl> hblOptional = hblDao.findByShipmentId(shipmentId);
+        if (hblOptional == null || hblOptional.isEmpty()) {
+            log.info("No HBL entity present for shipmentId : {}", shipmentId);
+            return true;
+        }
+        Hbl hbl = hblOptional.get(0);
+        List<HblReleaseTypeMapping> hblReleaseTypeMappingList = hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(hbl.getId(),
+                additionalDetails.getReleaseType());
+
+        return hblReleaseTypeMappingList.isEmpty() ||
+                hblReleaseTypeMappingList.get(0).getCopiesPrinted() < Integer.parseInt(transferMasterLists.getIdentifier1());
+    }
+
+    private MasterListRequestV2 createMasterListRequest(String releaseTypeValue) {
+        List<MasterListRequest> masterListRequestList = List.of(
+                MasterListRequest.builder()
+                        .ItemType(MasterDataType.RELEASE_TYPE.getDescription())
+                        .ItemValue(releaseTypeValue)
+                        .build()
+        );
+       return MasterListRequestV2.builder()
+               .MasterListRequests(masterListRequestList)
+               .build();
+    }
+
+    private boolean isValidPermittedCount(String permittedCount, AdditionalDetails additionalDetails) {
+        if (permittedCount == null || permittedCount.isEmpty()) {
+            log.info("Master data max print allowed is not set for release type {}", additionalDetails.getReleaseType());
+            return false;
+        }
+        try {
+            Integer.parseInt(permittedCount);
+        } catch (NumberFormatException e) {
+            log.info("Invalid master data value '{}' for release type {}, expected a numeric permitted count",
+                    permittedCount, additionalDetails.getReleaseType());
+            return false;
+        }
+        return true;
     }
 
 
