@@ -489,7 +489,7 @@ public class PackingV3Service implements IPackingV3Service {
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote) throws RunnerException {
         updatePackingRequestOnDgAndTemperatureFlag(packingRequestList);
         packingValidationV3Util.validateSameParentId(packingRequestList, module);
-        String warning = packingValidationV3Util.checkForBulkTemperatureHumidityWarnings(packingRequestList);
+        String warning = getWarningFromBulkRequests(packingRequestList);
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -586,6 +586,16 @@ public class PackingV3Service implements IPackingV3Service {
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .warning(warning)
                 .build();
+    }
+
+    private String getWarningFromBulkRequests(List<PackingV3Request> requests) {
+        for (PackingV3Request request : requests) {
+            String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(request);
+            if (warning != null) {
+                return warning; // Return first warning found
+            }
+        }
+        return null;
     }
 
     private void validateCommodity(List<PackingV3Request> packingRequestList, String module, boolean isFromQuote, ShipmentDetails shipmentDetails) {

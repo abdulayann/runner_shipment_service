@@ -218,35 +218,24 @@ public class PackingValidationV3Util {
         }
     }
 
-    public String checkForBulkTemperatureHumidityWarnings(List<PackingV3Request> requests) {
-        for (PackingV3Request request : requests) {
-            String warning = checkForTemperatureHumidityWarnings(request);
-            if (warning != null) {
-                return warning; // Return first warning found
-            }
-        }
-        return null;
-    }
-
     public String checkForTemperatureHumidityWarnings(PackingV3Request request) {
         if (!Boolean.TRUE.equals(request.getIsTemperatureControlled())) {
             return null;
         }
         boolean tempWarning = false;
         boolean humidityWarning = false;
-        // temperature set point
-        if (request.getTempSetPoint() != null && request.getMinTemp() != null && request.getMaxTemp() != null) {
-            if (request.getTempSetPoint().compareTo(request.getMinTemp()) < 0 ||
-                    request.getTempSetPoint().compareTo(request.getMaxTemp()) > 0) {
-                tempWarning = true;
-            }
+
+        // Check temperature set point
+        if (request.getTempSetPoint() != null && request.getMinTemp() != null && request.getMaxTemp() != null &&
+                (request.getTempSetPoint().compareTo(request.getMinTemp()) < 0 ||
+                        request.getTempSetPoint().compareTo(request.getMaxTemp()) > 0)) {
+            tempWarning = true;
         }
-        // humidity set point
-        if (request.getHumiditySetPoint() != null && request.getMinHumidity() != null && request.getMaxHumidity() != null) {
-            if (request.getHumiditySetPoint().compareTo(request.getMinHumidity()) < 0 ||
-                    request.getHumiditySetPoint().compareTo(request.getMaxHumidity()) > 0) {
-                humidityWarning = true;
-            }
+        // Check humidity set point
+        if (request.getHumiditySetPoint() != null && request.getMinHumidity() != null && request.getMaxHumidity() != null &&
+                (request.getHumiditySetPoint().compareTo(request.getMinHumidity()) < 0 ||
+                        request.getHumiditySetPoint().compareTo(request.getMaxHumidity()) > 0)) {
+            humidityWarning = true;
         }
         if (request.getMinHumidity() != null && request.getMinHumidity().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Minimum humidity must be a positive value");

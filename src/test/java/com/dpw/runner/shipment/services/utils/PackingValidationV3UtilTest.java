@@ -739,32 +739,21 @@ class PackingValidationV3UtilTest {
     }
 
     @Test
-    void testCheckForBulkTemperatureHumidityWarnings_NoWarning() {
-        List<PackingV3Request> requests = Arrays.asList(
-                PackingV3Request.builder()
-                        .isTemperatureControlled(true)
-                        .minTemp(new BigDecimal("2.0"))
-                        .maxTemp(new BigDecimal("8.0"))
-                        .tempSetPoint(new BigDecimal("5.0"))
-                        .minHumidity(new BigDecimal("30.0"))
-                        .maxHumidity(new BigDecimal("60.0"))
-                        .humiditySetPoint(new BigDecimal("45.0"))
-                        .build(),
-                PackingV3Request.builder()
-                        .isTemperatureControlled(true)
-                        .minTemp(new BigDecimal("-5.0"))
-                        .maxTemp(new BigDecimal("5.0"))
-                        .tempSetPoint(new BigDecimal("0.0"))
-                        .minHumidity(new BigDecimal("40.0"))
-                        .maxHumidity(new BigDecimal("70.0"))
-                        .humiditySetPoint(new BigDecimal("50.0")) // Within range
-                        .build()
-        );
+    void testCheckForTemperatureHumidityWarnings_ValidSetPoints_ReturnsNull() {
+        PackingV3Request request = PackingV3Request.builder()
+                .isTemperatureControlled(true)
+                .minTemp(new BigDecimal("2.0"))
+                .maxTemp(new BigDecimal("8.0"))
+                .tempSetPoint(new BigDecimal("5.0"))
+                .minHumidity(new BigDecimal("30.0"))
+                .maxHumidity(new BigDecimal("60.0"))
+                .humiditySetPoint(new BigDecimal("45.0"))
+                .build();
 
-        // Execute method
-        String warning = packingValidationV3Util.checkForBulkTemperatureHumidityWarnings(requests);
+        String warning = packingValidationV3Util.checkForTemperatureHumidityWarnings(request);
 
-        // Verify no warning is returned
         Assertions.assertNull(warning);
     }
+
+
 }
