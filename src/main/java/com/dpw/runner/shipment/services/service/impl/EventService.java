@@ -1598,7 +1598,8 @@ public class EventService implements IEventService {
         saveFunction.accept(entities);
     }
 
-    private EventProgressStatus calculateProgressStatus(Events event) {
+    @Override
+    public EventProgressStatus calculateProgressStatus(Events event) {
         LocalDateTime plannedDate = event.getPlannedDate();
         LocalDateTime estimatedDate = event.getEstimated();
         LocalDateTime predictedDate = event.getPredictedDate();
@@ -1698,7 +1699,8 @@ public class EventService implements IEventService {
         return predicate;
     }
 
-    private void handleDuplicationForExistingEvents(Events event) {
+    @Override
+    public void handleDuplicationForExistingEvents(Events event) {
 
         Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
         Page<Events> duplicateEventPage = eventDao.findAllWithoutTenantFilter(duplicateEventSpecification, Pageable.unpaged());

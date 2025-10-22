@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
 import java.util.List;
@@ -30,4 +31,8 @@ public interface IEventService extends ICommonService {
     void populateBranchNames(List<EventsResponse> eventResponses);
     ResponseEntity<IRunnerResponse> pushTrackingEvents(@Valid Container request);
     void saveAllEvent(List<EventsRequest> eventsRequests);
+
+    EventProgressStatus calculateProgressStatus(Events event);
+
+    void handleDuplicationForExistingEvents(Events event);
 }
