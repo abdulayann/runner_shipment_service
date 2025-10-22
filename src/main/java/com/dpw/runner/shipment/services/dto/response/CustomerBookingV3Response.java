@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteDateType;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -90,6 +91,10 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String consigneeCountry;
     private String notifyPartyCountry;
     private String parentContractId;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime quoteDate;
+    private CustomerBookingQuoteDateType quoteDateType;
     private String salesBranch;
     private Boolean isNotifyConsigneeEqual;
     private Boolean isShipperClientEqual;
@@ -105,6 +110,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Integer tenantId;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime updatedAt;
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
@@ -183,4 +190,11 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private Boolean isWeightEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse shipmentSummaryWarningsResponse;
     private MigrationStatus migrationStatus;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime carrierDocCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReceiptWHCutOff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime lastFreeDateCutOff;
+    private Integer numberOfFreeDaysCutOff;
 }

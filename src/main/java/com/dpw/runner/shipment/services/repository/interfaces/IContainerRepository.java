@@ -32,6 +32,8 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
 
     List<Containers> findByGuid(UUID guid);
 
+    List<Containers> findAllByGuidIn(List<UUID> guid);
+
     default Optional<Containers> findById(Long id) {
         Specification<Containers> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

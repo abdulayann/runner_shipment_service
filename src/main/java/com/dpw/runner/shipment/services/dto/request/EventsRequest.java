@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -61,4 +62,7 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String branch;
     private String referenceNumber;
     private String direction;
+    private LocalDateTime plannedDate;
+    private LocalDateTime predictedDate;
+    private EventProgressStatus progressStatus;
 }

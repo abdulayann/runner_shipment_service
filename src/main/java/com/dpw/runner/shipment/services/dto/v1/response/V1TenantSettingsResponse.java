@@ -78,10 +78,16 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean shipmentTransportModeRail;
     @JsonProperty("ShipmentTransportModeRoad")
     private Boolean shipmentTransportModeRoad;
+    @JsonProperty("DisableDirectShipment")
+    private Boolean disableDirectShipment;
     @JsonProperty("FileTransferConfigurations")
     private List<FileTransferConfigurations> fileTransferConfigurations;
     @JsonProperty("CountryAirCargoSecurity")
     private Boolean countryAirCargoSecurity;
+    @JsonProperty("BookingPrefix")
+    private String bookingPrefix;
+    @JsonProperty("BookingNumberGeneration")
+    private Integer bookingNumberGeneration;
     @JsonProperty("TaskServiceV2Enabled")
     private Boolean taskServiceV2Enabled;
 

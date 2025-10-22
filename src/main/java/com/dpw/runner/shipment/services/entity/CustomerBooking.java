@@ -2,9 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.entity.enums.BookingSource;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
@@ -247,6 +245,13 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "parent_contract_id")
     private String parentContractId;
 
+    @Column(name = "quote_date")
+    private LocalDateTime quoteDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quote_date_type")
+    private CustomerBookingQuoteDateType quoteDateType;
+
     @Column(name = "primary_sales_agent_email")
     private String primarySalesAgentEmail;
 
@@ -405,6 +410,18 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "reefer_cut_off")
     private LocalDateTime reeferCutoff;
+
+    @Column(name = "carrier_doc_cut_off")
+    private LocalDateTime carrierDocCutOff;
+
+    @Column(name = "cargo_receipt_w_h_cut_off")
+    private LocalDateTime cargoReceiptWHCutOff;
+
+    @Column(name = "last_free_date_cut_off")
+    private LocalDateTime lastFreeDateCutOff;
+
+    @Column(name = "number_of_free_days_cut_off")
+    private Integer numberOfFreeDaysCutOff;
 
     @Column(name = "earliest_empty_equipment_pickup")
     private LocalDateTime earliestEmptyEquipmentPickUp;

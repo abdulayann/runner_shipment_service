@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -147,5 +148,15 @@ public class Events extends MultiTenancy {
 
     @Column(name = "reference_number")
     private String referenceNumber;
+
+    @Column(name = "planned_date")
+    private LocalDateTime plannedDate;
+
+    @Column(name = "predicted_date")
+    private LocalDateTime predictedDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "progress_status")
+    private EventProgressStatus progressStatus;
 
 }

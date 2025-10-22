@@ -30,6 +30,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -89,6 +90,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long bondedWarehouseId;
     private Long warehouseId;
     private Long sourceTenantId;
+    private Long parentTenantId;
     private String ediTransactionId;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
@@ -141,6 +143,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
+    private UUID parentGuid;
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
@@ -177,4 +180,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String partner;
     private Boolean reefer;
     private MigrationStatus migrationStatus;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
 }

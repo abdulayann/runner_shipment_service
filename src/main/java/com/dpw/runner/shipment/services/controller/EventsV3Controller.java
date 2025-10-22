@@ -54,7 +54,7 @@ public class EventsV3Controller {
             @RequestHeader(value = "x-source", required = false) String xSource) {
         String responseMsg;
         try {
-            List<EventsResponse> eventsResponseList = eventService.listV2(CommonRequestModel.buildRequest(request), xSource);
+            List<EventsResponse> eventsResponseList = eventService.listWithoutTenantFilter(request, xSource);
             return ResponseHelper.buildSuccessResponse(eventsResponseList);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : EventConstants.ERROR_FETCHING_EVENTS_MSG;

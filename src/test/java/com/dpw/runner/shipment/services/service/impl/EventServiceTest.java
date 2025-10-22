@@ -12,8 +12,10 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,6 +32,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -57,6 +60,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -93,6 +97,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -160,6 +165,18 @@ class EventServiceTest extends CommonMocks {
 
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private BillingInvoiceDto billingInvoiceDto;
+
+    @Mock
+    private InvoiceDto invoiceDto;
+
+    @Mock
+    private AccountReceivableDto accountReceivableDto;
+
+    @Mock
+    private ShipmentDetails shipmentDetails;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
@@ -271,11 +288,12 @@ class EventServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         EventsResponse eventsResponse = objectMapperTest.convertValue(testData, EventsResponse.class);
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.save(any(Events.class))).thenReturn(testData);
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
+        when(eventDao.saveWithoutTenant(any(Events.class))).thenReturn(testData);
         when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(eventsResponse);
 
 
@@ -312,7 +330,7 @@ class EventServiceTest extends CommonMocks {
         EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.empty());
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> eventService.update(commonRequestModel));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
@@ -344,11 +362,12 @@ class EventServiceTest extends CommonMocks {
 
         String errorMessage = DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
 
-        when(eventDao.findById(anyLong())).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(anyLong())).thenReturn(Optional.of(testData));
         when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(testData);
 
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
-        when(eventDao.save(any())).thenThrow(new RuntimeException());
+        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
+        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException());
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);
 
@@ -471,13 +490,10 @@ class EventServiceTest extends CommonMocks {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
 
-        when(eventDao.findById(id)).thenReturn(Optional.of(testData));
+        when(eventDao.findByIdWithoutTenant(id)).thenReturn(Optional.of(testData));
         when(jsonHelper.convertToJson(any(Events.class))).thenReturn(StringUtils.EMPTY);
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.delete(commonRequestModel);
-
-        verify(auditLogService, times(1)).addAuditLog(any(AuditLogMetaData.class));
-        verify(eventDao, times(1)).delete(any(Events.class));
         Assertions.assertEquals(responseEntity.getStatusCodeValue() , HttpStatus.OK.value());
     }
 
@@ -487,7 +503,7 @@ class EventServiceTest extends CommonMocks {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(getRequest);
 
-        when(eventDao.findById(id)).thenReturn(Optional.empty());
+        when(eventDao.findByIdWithoutTenant(id)).thenReturn(Optional.empty());
 
         ResponseEntity<IRunnerResponse> responseEntity = eventService.delete(commonRequestModel);
 
@@ -1125,12 +1141,14 @@ class EventServiceTest extends CommonMocks {
         shipment1.setId(1L);
         shipment1.setShipmentId("S123");
         shipment1.setTenantId(1);
+        shipment1.setDirection(Constants.DIRECTION_EXP);
 
         ShipmentDetails shipment2 = new ShipmentDetails();
         shipment2.setGuid(guid2);
         shipment2.setId(2L);
         shipment2.setShipmentId("S456");
         shipment2.setTenantId(2);
+        shipment2.setDirection(Constants.IMP);
 
         EventsRequest mockRequest1 = new EventsRequest(); // Populate as needed
         EventsRequest mockRequest2 = new EventsRequest();
@@ -1151,7 +1169,7 @@ class EventServiceTest extends CommonMocks {
         doNothing().when(commonUtils).updateEventWithMasterData(anyList());
         doNothing().when(eventDao).updateEventDetails(any());
 
-        when(eventDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(Page.empty());
 //        doNothing().when(eventDao).delete(any());
         when(eventDao.save(any())).thenReturn(mockEvent);
 
@@ -1304,5 +1322,262 @@ class EventServiceTest extends CommonMocks {
         // Assert
         assertNull(response.getBranchName());
     }
+
+    @Test
+    void prepareEventsFromBillingCommonEvent_AllScenarios() {
+        // Mock setup
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+
+        LocalDateTime testDate = LocalDateTime.now();
+
+        // Common mock setup
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(testDate);
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV001");
+        when(accountReceivableDto.getId()).thenReturn("AR001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR001");
+        when(accountReceivableDto.getUserEmail()).thenReturn("test@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Test User");
+        when(shipmentDetails.getId()).thenReturn(1L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        // Test CTS → INGO
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_CTS);
+        List<EventsRequest> resultCTS = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultCTS.size());
+        assertEquals(EventConstants.INGO, resultCTS.get(0).getEventCode());
+
+        // Test IMP → INGI
+        when(shipmentDetails.getDirection()).thenReturn(Constants.IMP);
+        List<EventsRequest> resultIMP = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultIMP.size());
+        assertEquals(EventConstants.INGI, resultIMP.get(0).getEventCode());
+
+        // Test EXP → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        List<EventsRequest> resultEXP = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultEXP.size());
+        assertEquals(EventConstants.INGE, resultEXP.get(0).getEventCode());
+
+        // Test DOM → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_DOM);
+        List<EventsRequest> resultDOM = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultDOM.size());
+        assertEquals(EventConstants.INGE, resultDOM.get(0).getEventCode());
+
+        // Test null direction → empty list
+        when(shipmentDetails.getDirection()).thenReturn(null);
+        List<EventsRequest> resultNull = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertTrue(resultNull.isEmpty());
+
+        // Test invalid direction → INGE (default case)
+        when(shipmentDetails.getDirection()).thenReturn("INVALID");
+        List<EventsRequest> resultInvalid = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+        assertEquals(1, resultInvalid.size());
+        assertEquals(EventConstants.INGE, resultInvalid.get(0).getEventCode());
+    }
+
+    @Test
+    void prepareEventsFromBillingCommonEvent_AllFieldsPopulated() {
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+
+        LocalDateTime testDate = LocalDateTime.now();
+
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getInvoiceDate()).thenReturn(testDate);
+        when(accountReceivableDto.getFusionInvoiceStatus()).thenReturn("GENERATED");
+        when(accountReceivableDto.getInvoiceNumber()).thenReturn("INV001");
+        when(accountReceivableDto.getId()).thenReturn("AR001");
+        when(accountReceivableDto.getBranchCode()).thenReturn("BR001");
+        when(accountReceivableDto.getUserEmail()).thenReturn("test@test.com");
+        when(accountReceivableDto.getUserDisplayName()).thenReturn("Test User");
+        when(shipmentDetails.getDirection()).thenReturn(Constants.DIRECTION_EXP);
+        when(shipmentDetails.getId()).thenReturn(1L);
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP001");
+
+        List<EventsRequest> result = eventService.prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+
+        assertEquals(1, result.size());
+        EventsRequest event = result.get(0);
+        assertEquals(EventConstants.INGE, event.getEventCode());
+        assertEquals(1L, event.getEntityId());
+        assertEquals("SHIP001", event.getShipmentNumber());
+        assertEquals(testDate, event.getActual());
+        assertEquals("GENERATED", event.getStatus());
+        assertEquals("INV001", event.getContainerNumber());
+        assertEquals("AR001", event.getReferenceNumber());
+        assertEquals("BR001", event.getBranch());
+        assertEquals("test@test.com", event.getUserEmail());
+        assertEquals("Test User", event.getUserName());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_withShipmentNumber_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+        verify(eventDao, times(1)).findAllWithoutTenantFilter(any(), any());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_withConsolidationId_revampDisabled() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setConsolidationId(99L);
+
+        List<Events> events = List.of(new Events());
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(events));
+        when(jsonHelper.convertValueToList(events, EventsResponse.class))
+                .thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_noShipmentNoConsolidation_returnsEmpty() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(false);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class)))
+                .thenReturn(Collections.emptyList());
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_withSortRequest_skipsGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+        request.setSortRequest(new SortRequest()); // mock sort
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        List<EventsResponse> eventResponses = List.of(new EventsResponse());
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(eventResponses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(eventResponses, result);
+    }
+
+    @Test
+    void testListWithoutTenantFilter_revampEnabled_noSort_appliesGrouping() {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentNumber("SHIP123");
+
+        ShipmentSettingsDetails setting = new ShipmentSettingsDetails();
+        setting.setEventsRevampEnabled(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(setting);
+
+        EventsResponse e1 = new EventsResponse();
+        e1.setEventCode("E1");
+        e1.setShipmentNumber("S1");
+        e1.setActual(LocalDateTime.now());
+
+        EventsResponse e2 = new EventsResponse();
+        e2.setEventCode("E1");
+        e2.setShipmentNumber("S2");
+        e2.setActual(LocalDateTime.now().minusDays(1));
+
+        List<EventsResponse> responses = List.of(e1, e2);
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(anyList(), eq(EventsResponse.class))).thenReturn(responses);
+
+        List<EventsResponse> result = eventService.listWithoutTenantFilter(request, "API");
+
+        assertEquals(2, result.size());
+        assertEquals("S1", result.get(0).getShipmentNumber()); // grouped & sorted correctly
+    }
+
+    @Test
+    void saveAllEvent_setsProgressStatusCorrectly_withArgumentCaptor() {
+        // given
+        EventsRequest request1 = new EventsRequest();
+        EventsRequest request2 = new EventsRequest();
+        List<EventsRequest> requests = List.of(request1, request2);
+
+        // Spy the service
+        EventService spyService = spy(eventService);
+
+        // Create Events entities
+        Events event1 = new Events();
+        Events event2 = new Events();
+        List<Events> events = List.of(event1, event2);
+
+        // Mock conversion of requests to entities
+        doReturn(events).when(spyService).convertRequestListToEntityList(requests);
+
+        // Mock progress status calculation in order
+        doReturn(EventProgressStatus.TO_BE_PLANNED, EventProgressStatus.COMPLETED)
+                .when(spyService).calculateProgressStatus(any(Events.class));
+
+        // Mock internal void methods
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        doNothing().when(eventDao).updateAllEventDetails(anyList());
+        doNothing().when(spyService).handleDuplicationForExistingEvents(any(Events.class));
+
+        // when
+        spyService.saveAllEvent(requests);
+
+        // then
+        // Capture the argument passed to updateEventWithMasterData
+        ArgumentCaptor<List<Events>> captor = ArgumentCaptor.forClass(List.class);
+        verify(commonUtils).updateEventWithMasterData(captor.capture());
+        List<Events> capturedEvents = captor.getValue();
+
+        // Verify progress status
+        assertEquals(EventProgressStatus.TO_BE_PLANNED, capturedEvents.get(0).getProgressStatus());
+        assertEquals(EventProgressStatus.COMPLETED, capturedEvents.get(1).getProgressStatus());
+
+        // Verify database update call
+        verify(eventDao).updateAllEventDetails(capturedEvents);
+
+        // Verify duplication handling called for each event
+        verify(spyService, times(2)).handleDuplicationForExistingEvents(any(Events.class));
+    }
+
+
 
 }

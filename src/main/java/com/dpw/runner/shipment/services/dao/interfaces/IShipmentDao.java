@@ -29,6 +29,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
     List<ShipmentDetails> findByGuids(List<UUID> guids);
+    List<ShipmentDetails> findByParentGuid(UUID parentGuid);
 
     Optional<ShipmentDetails> findByGuid(UUID id);
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
@@ -43,6 +44,7 @@ public interface IShipmentDao {
     void saveEntityTransfer(Long id, Boolean entityTransfer);
     List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
+    List<ShipmentDetails> findShipmentsByParentGuids(Set<UUID> sourceGuid);
     List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
     Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id);

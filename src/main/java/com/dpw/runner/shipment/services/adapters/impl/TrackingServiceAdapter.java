@@ -971,6 +971,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 //    }
 
     @Override
+    @SuppressWarnings({"java:S125", "java:S3776"})
     public String convertTrackingEventCodeToShortCode(Event event, Container container) {
         String safeEventType = StringUtils.defaultString(event.getEventType());
         String safeLocationRole = StringUtils.defaultString(event.getLocationRole());

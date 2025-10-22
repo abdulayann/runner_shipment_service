@@ -4,16 +4,12 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentOrderService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +50,9 @@ class PackingValidationV3UtilTest {
 
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private IShipmentOrderService shipmentOrderService;
 
     @InjectMocks
     private PackingValidationV3Util packingValidationV3Util;
@@ -243,6 +242,49 @@ class PackingValidationV3UtilTest {
     }
 
     @Test
+    void testValidateModule_SHIPMENT_ORDER_shipmentOrderIdNull() {
+        PackingV3Request fakeRequest = PackingV3Request.builder().build();
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateModule(fakeRequest, Constants.SHIPMENT_ORDER)
+        );
+        assertEquals("Shipment Order Id is empty", ex.getMessage());
+    }
+
+    @Test
+    void testValidateModule_SHIPMENT_ORDER_shipmentOrderIdNegative() {
+        PackingV3Request fakeRequest = PackingV3Request.builder()
+                .shipmentOrderId(-1L)
+                .build();
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateModule(fakeRequest, Constants.SHIPMENT_ORDER)
+        );
+        assertEquals("Shipment Order Id is empty", ex.getMessage());
+    }
+
+    @Test
+    void testValidateModule_SHIPMENT_ORDER_shipmentOrderIsNull() {
+        PackingV3Request fakeRequest = PackingV3Request.builder()
+                .shipmentOrderId(1L)
+                .build();
+        when(shipmentOrderService.findById(1L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateModule(fakeRequest, Constants.SHIPMENT_ORDER)
+        );
+        assertEquals("Please provide the valid Shipment Order id", ex.getMessage());
+    }
+
+    @Test
+    void testValidateModule_SHIPMENT_ORDER_shipmentOrderPresent() {
+        PackingV3Request fakeRequest = PackingV3Request.builder()
+                .shipmentOrderId(1L)
+                .build();
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        when(shipmentOrderService.findById(1L)).thenReturn(Optional.of(shipmentOrder));
+        assertDoesNotThrow(() -> packingValidationV3Util.validateModule(fakeRequest, Constants.SHIPMENT_ORDER));
+    }
+
+    @Test
     void testValidateSameParentId_withNullList_shouldPass() {
         assertThrows(RunnerException.class, () -> packingValidationV3Util.validateSameParentId(null, "SHIPMENT"));
     }
@@ -322,6 +364,31 @@ class PackingValidationV3UtilTest {
         );
 
         assertTrue(ex.getMessage().contains("have the shipmentId"));
+    }
+
+    @Test
+    void testValidateSameParentId_SHIPMENT_ORDER_shouldPass() throws RunnerException {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setShipmentOrderId(100L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setShipmentOrderId(100L);
+
+        packingValidationV3Util.validateSameParentId(List.of(req1, req2), Constants.SHIPMENT_ORDER);
+    }
+
+    @Test
+    void testValidateSameParentId_SHIPMENT_ORDER_shouldFail() {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setShipmentOrderId(100L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setShipmentOrderId(101L);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                packingValidationV3Util.validateSameParentId(List.of(req1, req2), Constants.SHIPMENT_ORDER)
+        );
+        assertEquals("All packing requests must have the same shipmentOrderId.", ex.getMessage());
     }
 
     @Test

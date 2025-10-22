@@ -25,6 +25,7 @@ public interface IContainerDao {
 
     Optional<Containers> findById(Long id);
     List<Containers> findByGuid(UUID guid);
+    List<Containers> findAllByGuid(List<UUID> guid);
 
     void delete(Containers containers);
 

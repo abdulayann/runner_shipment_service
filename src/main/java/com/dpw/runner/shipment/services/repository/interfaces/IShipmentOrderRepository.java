@@ -20,6 +20,7 @@ import java.util.UUID;
 public interface IShipmentOrderRepository extends JpaRepository<ShipmentOrder, Long> {
 
     List<ShipmentOrder> findByShipmentId(Long shipmentId);
+    List<ShipmentOrder> findByOrderGuidIn(List<UUID> orderGuidList);
 
     Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid);
 

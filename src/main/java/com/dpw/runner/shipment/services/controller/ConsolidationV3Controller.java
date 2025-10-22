@@ -38,8 +38,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
-
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
 @Slf4j
@@ -84,26 +82,6 @@ public class ConsolidationV3Controller {
         CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveById(request, xSource));
-    }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT)
-    public ResponseEntity<IRunnerResponse> retrieveByIdExternal(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam (required = false) Long id,
-                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam (required = false) String guid,
-                                                        @RequestHeader(value = SOURCE_SERVICE_TYPE) String xSource
-    ) throws RunnerException, AuthenticationException {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
-        log.info("Received Consolidation External retrieve request with Source: {} RequestId: {} and payload: {}", xSource, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternal(request));
-    }
-
-
-    @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
-    @PostMapping(ApiConstants.API_RETRIEVE_BY_ID_EXT_PARTIAL)
-    public ResponseEntity<IRunnerResponse> retrieveByIdExternalPartial(@RequestBody @Valid CommonGetRequest request, @RequestHeader(value = SOURCE_SERVICE_TYPE) String source
-    ) throws RunnerException, AuthenticationException {
-        log.info("Received Consolidation External Partial retrieve request with Source: {} RequestId: {} and payload: {}", source, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveByIdExternalPartial(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
@@ -256,6 +234,25 @@ public class ConsolidationV3Controller {
     public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
         ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
         return ResponseHelper.buildSuccessResponse(defaultConsolidation);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.CONSOLE_DETAILS_FETCHED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_CONSOLE_FROM_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> getNewConsoleDataFromShipmentId(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException, AuthenticationException {
+        log.info("Received getNewConsoleDataFromShipmentId: {}" , id);
+        ConsolidationDetailsV3Response defaultConsolidation = consolidationV3Service.getDefaultConsolidation();
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getNewConsoleDataFromShipment(id, defaultConsolidation));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL, response = ConsolidationV3Controller.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_CONSOLE_ATTACH_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> createConsoleAndAttachShipment(@RequestBody @Valid @NonNull ConsolidationDetailsV3Request request) throws RunnerException {
+        log.info("Received Consolidation createConsoleAndAttachShipment request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = consolidationV3Service.createConsoleDetailsAndAttachShipment(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }

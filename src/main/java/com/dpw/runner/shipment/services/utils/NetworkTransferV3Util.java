@@ -1,8 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferShipmentsMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -10,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +50,20 @@ public class NetworkTransferV3Util {
     @Autowired
     private CommonUtils commonUtils;
 
+    @Autowired
+    private INetworkTransferShipmentsMappingDao networkTransferShipmentsMappingDao;
+    @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private ShipmentDao shipmentDao;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
+
 
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || !isNetworkTransferEntityEnabled)
+            if(consolidationDetails.getShipmentType()==null || !(Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) || DIRECTION_CTS.equals(consolidationDetails.getShipmentType())) || !isNetworkTransferEntityEnabled)
                 return;
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
             boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(oldEntity.getInterBranchConsole());
@@ -57,14 +71,16 @@ public class NetworkTransferV3Util {
                 processInterBranchEntityCase(consolidationDetails, oldEntity);
             if(!isInterBranchConsole && oldIsInterBranchConsole)
                 processOldEntityInterBranch(consolidationDetails);
-
-            if (consolidationDetails.getTransportMode()!=null && !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) {
+            boolean isRaiTransferEnabled = Boolean.parseBoolean(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED));
+            if (consolidationDetails.getTransportMode() != null && (!isRaiTransferEnabled && Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))) {
+                return; // if transport mode is RAI and RAIL transfer flag is disabled, skip processing else process
+            }
+            if(Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP))
                 processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
                         reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
 
-                processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
-            }
+            processTriangulationPartnersForConsole(consolidationDetails, oldEntity);
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
@@ -141,6 +157,87 @@ public class NetworkTransferV3Util {
             }
         }
         return false;
+    }
+
+    public void syncNetworkTransferShipmentMappingsForConsolOrShipment(String entityType, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
+            processNetworkTransferToUpdateNetworkTransferShipmentMapping(shipmentDetails.getId(), shipmentDetails.getShipmentId(), SHIPMENT, List.of(shipmentDetails.getShipmentId()));
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
+            Set<Long> consoleShipmentIds = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId()).stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toSet());
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(consoleShipmentIds);
+            updateNetworkTransferShipmentMappingForConsolidation(consolidationDetails, shipmentDetailsList);
+        }
+    }
+
+    private void updateNetworkTransferShipmentMappingForConsolidation(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
+        List<String> shipmentNumbers = shipmentDetailsList.stream().map(ShipmentDetails::getShipmentId).toList();
+        processNetworkTransferToUpdateNetworkTransferShipmentMapping(consolidationDetails.getId(), consolidationDetails.getConsolidationNumber(), CONSOLIDATION, shipmentNumbers);
+
+        if(Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails1.getReceivingBranch()), shipmentDetails1.getId(), SHIPMENT);
+                if(optionalNetworkTransfer.isPresent()) {
+                    processNetworkTransferToUpdateNetworkTransferShipmentMapping(shipmentDetails1.getId(), shipmentDetails1.getShipmentId(), SHIPMENT, List.of(shipmentDetails1.getShipmentId()));
+                }
+            }
+        }
+    }
+
+    private void processNetworkTransferToUpdateNetworkTransferShipmentMapping(Long entityId, String entityNumber, String entityType, List<String> shipmentNumbersList) {
+        List<NetworkTransfer> networkTransferList = networkTransferDao.findByEntityIdsAndEntityType(Set.of(entityId), entityType);
+        if (networkTransferList.isEmpty()) {
+            return;
+        }
+        for(NetworkTransfer networkTransfer : networkTransferList) {
+
+            if (shouldUpdateNetworkShipmentMappings(networkTransfer)) {
+                createOrUpdateNetworkTransferShipmentMappings(networkTransfer, entityType, entityNumber, shipmentNumbersList);
+            }
+        }
+    }
+
+    private boolean shouldUpdateNetworkShipmentMappings(NetworkTransfer networkTransfer) {
+        NetworkTransferStatus status = networkTransfer.getStatus();
+        return List.of(NetworkTransferStatus.SCHEDULED, NetworkTransferStatus.REQUESTED_TO_TRANSFER).contains(status)
+                || (NetworkTransferStatus.REASSIGNED.equals(status)
+                && networkTransfer.getEntityPayload() != null
+                && !networkTransfer.getEntityPayload().isEmpty())
+                || (NetworkTransferStatus.ACCEPTED.equals(status)
+                && !Objects.equals(networkTransfer.getSourceBranchId(), TenantContext.getCurrentTenant()));
+    }
+
+    private void createOrUpdateNetworkTransferShipmentMappings(NetworkTransfer networkTransfer, String entityType, String entityNumber, List<String> shipmentNumbersList) {
+        log.info("Updating NetworkTransferShipmentMappings for NetworkTransfer Id {}", networkTransfer.getId());
+        Long networkTransferId = networkTransfer.getId();
+
+        List<String> existingShipmentNumbers = networkTransferShipmentsMappingDao.findShipmentNumbersByNetworkTransferId(networkTransferId);
+        Set<String> existingShipmentNumbersSet = new HashSet<>(existingShipmentNumbers);
+        Set<String> newShipmentNumbersSet = new HashSet<>(shipmentNumbersList);
+
+        Set<String> shipmentsNumbersToInsert = new HashSet<>(newShipmentNumbersSet);
+        shipmentsNumbersToInsert.removeAll(existingShipmentNumbersSet);
+
+        Set<String> shipmentNumbersToDelete = new HashSet<>(existingShipmentNumbersSet);
+        shipmentNumbersToDelete.removeAll(newShipmentNumbersSet);
+
+        if (!shipmentNumbersToDelete.isEmpty()) {
+            log.info("Removing {} NetworkTransferShipmentMappings for networkTransferId={}", shipmentNumbersToDelete.size(), networkTransferId);
+            networkTransferShipmentsMappingDao.deleteByNetworkTransferIdAndShipmentNumbers(networkTransferId, new ArrayList<>(shipmentNumbersToDelete));
+        }
+
+        if (!shipmentsNumbersToInsert.isEmpty()) {
+            log.info("Adding {} nNetworkTransferShipmentMappings for networkTransferId={}", shipmentsNumbersToInsert.size(), networkTransferId);
+
+            List<NetworkTransferShipmentsMapping> newMappings = shipmentsNumbersToInsert.stream()
+                    .map(shipmentNumber -> new NetworkTransferShipmentsMapping()
+                            .setNetworkTransferId(networkTransferId)
+                            .setEntityType(entityType)
+                            .setEntityNumber(entityNumber)
+                            .setShipmentNumber(shipmentNumber))
+                    .toList();
+
+            networkTransferShipmentsMappingDao.saveAll(newMappings);
+        }
     }
 
     private void processOldEntityInterBranch(ConsolidationDetails consolidationDetails){
@@ -555,12 +652,9 @@ public class NetworkTransferV3Util {
                 return;
 
             // Check if the shipment is eligible for network transfer
-            if (isEligibleForNetworkTransfer(shipmentDetails)) {
+            if (isEligibleForNetworkTransferForNTSchedule(shipmentDetails)) {
 
-                // Process the receiving branch for network transfer
-                processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                        oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
-                        reverseDirection(shipmentDetails.getDirection()));
+                processReceivingBranch(shipmentDetails, oldEntity);
 
                 if (shipmentDetails.getTriangulationPartnerList() != null) {
                     processTriangulationPartnerList(shipmentDetails, oldEntity);
@@ -576,6 +670,15 @@ public class NetworkTransferV3Util {
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+        }
+    }
+
+    private void processReceivingBranch(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(Objects.equals(shipmentDetails.getShipmentType(), DIRECTION_EXP)) {
+            // Process the receiving branch for network transfer
+            processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                    reverseDirection(shipmentDetails.getDirection()));
         }
     }
 
@@ -841,6 +944,13 @@ public class NetworkTransferV3Util {
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
         return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
                 && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) && Constants.DIRECTION_EXP.equals(details.getDirection());
+    }
+
+    private boolean isEligibleForNetworkTransferForNTSchedule(ShipmentDetails details) {
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
+                && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) &&
+                (Constants.DIRECTION_EXP.equals(details.getDirection()) || Constants.DIRECTION_CTS.equals(details.getDirection())
+                        || DIRECTION_IMP.equals(details.getDirection()));
     }
 
     private void processInterBranchEntityCase(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

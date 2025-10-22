@@ -1,62 +1,93 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATD_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_REF;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBN_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CNEES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_KEY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_NOS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONT_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH_ADD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_EMAIL_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_PHONE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_ORDER_V3;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DRAFT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DST;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DSTN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DSTN_ERROR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_DOCUMENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HBL_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL_RELEASE_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INCOTERM;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LIST_ALL_DOCUMENTS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MASTER_BILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MBL_NO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NO_SHIPMENT_FOUND;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NO_TEMPLATE_FOUND;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH_ADD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_EMAIL_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_PHONE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OBJECT_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_ERROR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKAGE_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PAYMENT_TERMS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_ORDER_V3;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SALES_BRANCH;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL_RELEASE_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SERVICE_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SUMMARY_DOCUMENTS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SURRENDER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SURRENDER_RELEASE_TYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_INSTRUCTIONS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER_V3;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOYAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
@@ -89,6 +120,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsFor
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -107,6 +139,7 @@ import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -124,6 +157,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.DefaultEmailTemplateRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
@@ -133,9 +167,11 @@ import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -157,8 +193,10 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
@@ -246,6 +284,9 @@ public class ReportService implements IReportService {
     private DocumentService documentService;
 
     @Autowired
+    private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Autowired
     private JsonHelper jsonHelper;
 
     @Autowired
@@ -256,6 +297,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
 
     @Autowired
     private IEventDao eventDao;
@@ -547,9 +591,18 @@ public class ReportService implements IReportService {
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
+
+            // add orgIds to fetch firmsCode for legs
+            Set<String> orgIds = new HashSet<>();
+            for(TiLegs tiLegs: tiLegsList){
+                addOrgIdIfNotNull(orgIds, tiLegs.getOrigin());
+                addOrgIdIfNotNull(orgIds, tiLegs.getDestination());
+            }
+            Map<String, String> orgIdToFirmsCodeMap = mdmServiceAdapter.getFirmsCodeListFromCache(orgIds);
+
             for (TiLegs tilegs : tiLegsList) {
                 Map<String, Object> legsDictionary = new HashMap<>(dictionary);
-                transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
+                transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary, orgIdToFirmsCodeMap);
                 transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
@@ -570,6 +623,12 @@ public class ReportService implements IReportService {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             return mainDocPage;
+        }
+    }
+
+    public void addOrgIdIfNotNull(Set<String> orgIds,  Parties party){
+        if(party != null && party.getOrgId() != null) {
+            orgIds.add(party.getOrgId());
         }
     }
 
@@ -1009,9 +1068,9 @@ public class ReportService implements IReportService {
         validateReleaseTypeForReport(reportRequest);
         dataRetrieved = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
         if(ObjectUtils.isNotEmpty(reportRequest.getPrintType()) && reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
-            createEvent(reportRequest, EventConstants.DHBL);
+            createEvent(reportRequest, EventConstants.DSWB);
         } else {
-            createEvent(reportRequest, EventConstants.FHBL);
+            createEvent(reportRequest, EventConstants.FSWB);
         }
         return dataRetrieved;
     }
@@ -1044,7 +1103,14 @@ public class ReportService implements IReportService {
             String documentName,
             String discrepancyNote) {
 
-        List<Packing> packingList = shipment.getPackingList();
+        List<Packing> packingList = Stream.concat(
+                Optional.ofNullable(shipment.getPackingList())
+                        .orElseGet(List::of).stream(),
+                Optional.ofNullable(shipment.getShipmentOrders()).orElseGet(List::of)
+                        .stream()
+                        .flatMap(order -> Optional.ofNullable(order.getOrderPackings()).orElseGet(List::of).stream())
+        ).toList();
+
         Set<Containers> containersList = shipment.getContainersList();
 
         if (ObjectUtils.isEmpty(packingList)) {
@@ -1332,7 +1398,7 @@ public class ReportService implements IReportService {
             } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
                 long shipmentId = Long.parseLong(reportRequest.getReportId());
                 ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                        .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
+                        .orElseThrow(() -> new ValidationException(NO_SHIPMENT_FOUND + shipmentId));
 
                 // Check if the shipment type is DRT and has a DPS implication (MAWBPR)
                 if (Constants.SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType()) &&
@@ -1420,17 +1486,21 @@ public class ReportService implements IReportService {
         return null;
     }
 
+
+    private Long fetchReportIdFromReportRequest(ReportRequest reportRequest) throws IllegalArgumentException {
+        try {
+            return Long.parseLong(reportRequest.getReportId());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid report ID format.", ex);
+        }
+    }
+
     private void createEvent(ReportRequest reportRequest, String eventCode) {
         if (reportRequest == null || reportRequest.getReportId() == null) {
             throw new IllegalArgumentException("Invalid report request or report ID.");
         }
 
-        Long reportId;
-        try {
-            reportId = Long.parseLong(reportRequest.getReportId());
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Invalid report ID format.", ex);
-        }
+        Long reportId = fetchReportIdFromReportRequest(reportRequest);
 
         // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
@@ -1460,7 +1530,10 @@ public class ReportService implements IReportService {
         }
 
         // Set reference number based on event code
-        if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
+        if (EventConstants.DHBL.equalsIgnoreCase(eventCode)
+                || EventConstants.DSWB.equalsIgnoreCase(eventCode)
+                || EventConstants.FSWB.equalsIgnoreCase(eventCode)
+                || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
             shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
                     eventsRequest.setContainerNumber(shipmentDetails.getHouseBill())
             );
@@ -2693,10 +2766,10 @@ public class ReportService implements IReportService {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
-                .orElseThrow(() -> new DataRetrievalFailureException("No Shipment found with Id: " + shipmentId));
+                .orElseThrow(() -> new DataRetrievalFailureException(NO_SHIPMENT_FOUND + shipmentId));
         populateTagsAndEmailTemplate(shipmentDetails, map, emailTemplateId, emailTemplatesRequests, toEmailIds, ccEmailIds);
         if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
-            throw new RunnerException("No Template Found!");
+            throw new RunnerException(NO_TEMPLATE_FOUND);
 
         response.setSubject(commonUtils.replaceTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
         response.setBody(commonUtils.replaceTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
@@ -2710,30 +2783,404 @@ public class ReportService implements IReportService {
         return response;
     }
 
+    public  EmailBodyResponse getDefaultEmailTemplateData(DefaultEmailTemplateRequest defaultEmailTemplateRequest) throws RunnerException{
+        EmailBodyResponse response = new EmailBodyResponse();
+        Map<String, Object> map = new HashMap<>();
+        List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        if(defaultEmailTemplateRequest.getModule().equalsIgnoreCase("Shipment")){
+
+            ShipmentDetails shipmentDetails = shipmentDao.findById(defaultEmailTemplateRequest.getId())
+                    .orElseThrow(() -> new DataRetrievalFailureException(NO_SHIPMENT_FOUND + defaultEmailTemplateRequest.getId()));
+
+            populateShipmentsTagsAndEmailTemplate(shipmentDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
+            if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
+                throw new RunnerException(NO_TEMPLATE_FOUND);
+
+            response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
+            response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
+        } else if (defaultEmailTemplateRequest.getModule().equalsIgnoreCase("Consolidations")) {
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(defaultEmailTemplateRequest.getId()).orElseThrow(
+                    () -> new DataRetrievalFailureException("No Consolidation found with Id: "+ defaultEmailTemplateRequest.getId())
+            );
+
+            populateConsolTagsAndEmailTemplate(consolidationDetails, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
+            if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
+                throw new RunnerException(NO_TEMPLATE_FOUND);
+
+            response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
+            response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
+        }
+        else{
+            CustomerBooking booking = customerBookingDao.findById(defaultEmailTemplateRequest.getId()).orElseThrow(
+                    () -> new DataRetrievalFailureException("No Booking found with Id: "+ defaultEmailTemplateRequest.getId()));
+            populateBookingTagsAndEmailTemplate(booking, map, defaultEmailTemplateRequest, emailTemplatesRequests, ccEmailIds);
+            if(CommonUtils.listIsNullOrEmpty(emailTemplatesRequests))
+                throw new RunnerException(NO_TEMPLATE_FOUND);
+
+            response.setSubject(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getSubject()));
+            response.setBody(commonUtils.replaceDefaultTagsFromData(map, emailTemplatesRequests.get(0).getBody()));
+            response.setCc(ccEmailIds.isEmpty() ? null : String.join(",", ccEmailIds));
+        }
+        return response;
+    }
+
+    public void populateShipmentsTagsAndEmailTemplate(ShipmentDetails shipmentDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
+        map.put(CBN_NUMBER, shipmentDetails.getBookingReference());
+        map.put(MODE, shipmentDetails.getTransportMode());
+        map.put(LOAD, shipmentDetails.getShipmentType());
+        map.put(SHIPPER, getPartyString(shipmentDetails.getConsigner()));
+        map.put(CNEES, getPartyString(shipmentDetails.getConsignee()));
+        map.put(ETD_CAPS, shipmentDetails.getCarrierDetails().getEtd());
+        map.put(ETA_CAPS, shipmentDetails.getCarrierDetails().getEta());
+        map.put(ATD_CAPS, shipmentDetails.getCarrierDetails().getAtd());
+        map.put(ATA_CAPS, shipmentDetails.getCarrierDetails().getAta());
+        map.put(HBL_NO, shipmentDetails.getHouseBill());
+        map.put(MBL_NO, shipmentDetails.getMasterBill());
+        map.put(CONTAINER_NOS, getContNums(shipmentDetails));
+        map.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
+        map.put(CBR, shipmentDetails.getBookingNumber());
+        map.put(COMMODITY, shipmentDetails.getCommodity());
+        map.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        map.put(CONSOL_NUMBER, shipmentDetails.getConsolRef());
+        map.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
+        map.put(SERVICE_TYPE, shipmentDetails.getServiceType());
+        map.put(PAYMENT_TERMS, shipmentDetails.getPaymentTerms());
+        map.put(INCOTERM, shipmentDetails.getIncoterms());
+        map.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
+        map.put(FLIGHT_NUMBER, shipmentDetails.getCarrierDetails().getVoyageOrFlightNumber());
+        map.put(AIRLINE, shipmentDetails.getCarrierDetails().getShippingLine());
+        map.put(CARRIER_REF, shipmentDetails.getCarrierDetails().getShippingLine());
+        map.put(HAWB_NO, shipmentDetails.getHouseBill());
+        map.put(MAWB_NO, shipmentDetails.getMasterBill());
+        map.put(PACKAGE_COUNT, shipmentDetails.getNoOfPacks());
+        map.put(WEIGHT, shipmentDetails.getWeight());
+        map.put(VOLUME, shipmentDetails.getVolume());
+        map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        String notifyPartyName = Optional.of(shipmentDetails).map(ShipmentDetails::getAdditionalDetails)
+                .map(AdditionalDetails::getNotifyParty)
+                .map(Parties::getOrgData)
+                .map(orgData -> (String) orgData.get(FULL_NAME))
+                .orElse("");
+
+        if (!notifyPartyName.isEmpty()) {
+            map.put(NOTIFY_PARTY, notifyPartyName);
+        }
+        try {
+            map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
+            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
+            map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
+            map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
+            map.put(OA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
+        } catch (Exception e) {
+            log.error(ORIGIN_ERROR);
+        }
+        try {
+            map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
+            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
+            map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
+            map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
+            map.put(DA_EMAIL_CAPS, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
+        } catch (Exception e) {
+            log.error(DSTN_ERROR);
+        }
+        Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
+        Set<String> usernamesList = getUsernamesList(shipmentDetails);
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
+                shipmentDetails.getCarrierDetails().getDestinationPort(),
+                shipmentDetails.getCarrierDetails().getOrigin(),
+                shipmentDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
+        var tenantsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getTenantDataFromCache(Set.of(UserContext.getUser().getTenantId().toString()),tenantModelMap )), executorService);
+        var vesselsFuture = Optional.ofNullable(shipmentDetails.getCarrierDetails())
+                .map(CarrierDetails::getVessel)
+                .filter(Objects::nonNull)
+                .map(vessel -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() ->
+                                masterDataUtils.getVesselDataFromCache(Set.of(vessel), vesselMap)
+                        ),
+                        executorService
+                ))
+                .orElse(CompletableFuture.completedFuture(null));
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, tenantsFuture, vesselsFuture, userEmailsFuture).join();
+        if (tenantModelMap.get(UserContext.getUser().getTenantId().toString()) != null) {
+            map.put(SALES_BRANCH, tenantModelMap.get(UserContext.getUser().getTenantId().toString()).tenantName);
+        }
+        if (vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()) != null) {
+            map.put(VESSEL, vesselMap.get(shipmentDetails.getCarrierDetails().getVessel()).Name);
+        }
+
+        processUnlocationData(shipmentDetails, map, unLocMap);
+
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCreatedBy()) && usernameEmailsMap.containsKey(shipmentDetails.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(shipmentDetails.getCreatedBy()));
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getAssignedTo()) && usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
+            cc.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+    }
+
+    private static void processUnlocationData(ShipmentDetails shipmentDetails, Map<String, Object> map, Map<String, EntityTransferUnLocations> unLocMap) {
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOrigin()))
+            map.put(ORIGIN, unLocMap.get(shipmentDetails.getCarrierDetails().getOrigin()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestination()))
+            map.put(DST, unLocMap.get(shipmentDetails.getCarrierDetails().getDestination()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort()))
+            map.put(POL, unLocMap.get(shipmentDetails.getCarrierDetails().getOriginPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getDestinationPort()))
+            map.put(POD, unLocMap.get(shipmentDetails.getCarrierDetails().getDestinationPort()).getName());
+    }
+
+    public void populateConsolTagsAndEmailTemplate(ConsolidationDetails consolidationDetails, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
+        map.put(MODE, consolidationDetails.getTransportMode());
+        map.put(LOAD, consolidationDetails.getConsolidationType());
+        map.put(ETD_CAPS, consolidationDetails.getCarrierDetails().getEtd());
+        map.put(ETA_CAPS, consolidationDetails.getCarrierDetails().getEta());
+        map.put(ATD_CAPS, consolidationDetails.getCarrierDetails().getAtd());
+        map.put(ATA_CAPS, consolidationDetails.getCarrierDetails().getAta());
+        map.put(CONTAINER_NOS, consolidationDetails.getAchievedQuantities().getContainerCount());
+        map.put(CARRIER, consolidationDetails.getCarrierDetails().getShippingLine());
+        map.put(CONSOL_NUMBER, consolidationDetails.getConsolidationNumber());
+        map.put(SHIPMENT_TYPE, consolidationDetails.getShipmentType());
+        map.put(SERVICE_TYPE, consolidationDetails.getDeliveryMode());
+        map.put(PAYMENT_TERMS, consolidationDetails.getPayment());
+        map.put(INCOTERM, consolidationDetails.getIncoterms());
+        map.put(VOYAGE, consolidationDetails.getCarrierDetails().getVoyage());
+        map.put(FLIGHT_NUMBER, consolidationDetails.getCarrierDetails().getVoyageOrFlightNumber());
+        map.put(AIRLINE, consolidationDetails.getCarrierDetails().getShippingLine());
+        map.put(CARRIER_REF, consolidationDetails.getBookingNumber());
+        map.put(PACKAGE_COUNT, consolidationDetails.getAchievedQuantities().getPacks());
+        map.put(WEIGHT, consolidationDetails.getAchievedQuantities().getConsolidatedWeight());
+        map.put(VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume());
+        map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        try {
+            map.put(OA_BRANCH, consolidationDetails.getSendingAgent().getOrgData().get(FULL_NAME));
+            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getSendingAgent(), PartiesModel.class))));
+            map.put(OA_NAME, consolidationDetails.getSendingAgent().getAddressData().get(CONTACT_PERSON));
+            map.put(OA_PHONE, consolidationDetails.getSendingAgent().getOrgData().get(PHONE));
+            map.put(OA_EMAIL_CAPS, consolidationDetails.getSendingAgent().getOrgData().get(EMAIL));
+        } catch (Exception e) {
+            log.error(ORIGIN_ERROR);
+        }
+        try {
+            map.put(DA_BRANCH, consolidationDetails.getReceivingAgent().getOrgData().get(FULL_NAME));
+            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(consolidationDetails.getReceivingAgent(), PartiesModel.class))));
+            map.put(DA_NAME, consolidationDetails.getReceivingAgent().getAddressData().get(CONTACT_PERSON));
+            map.put(DA_PHONE, consolidationDetails.getReceivingAgent().getOrgData().get(PHONE));
+            map.put(DA_EMAIL_CAPS, consolidationDetails.getReceivingAgent().getOrgData().get(EMAIL));
+        } catch (Exception e) {
+            log.error(DSTN_ERROR);
+        }
+        Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
+        Map<String, EntityTransferVessels> vesselMap = new HashMap<>();
+        Set<String> usernamesList = getConsolUsernamesList(consolidationDetails);
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(),
+                consolidationDetails.getCarrierDetails().getDestinationPort(),
+                consolidationDetails.getCarrierDetails().getOrigin(),
+                consolidationDetails.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
+        var vesselsFuture = Optional.ofNullable(consolidationDetails.getCarrierDetails())
+                .map(CarrierDetails::getVessel)
+                .filter(Objects::nonNull)
+                .map(vessel -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() ->
+                                masterDataUtils.getVesselDataFromCache(Set.of(vessel), vesselMap)
+                        ),
+                        executorService
+                ))
+                .orElse(CompletableFuture.completedFuture(null));
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, vesselsFuture, userEmailsFuture).join();
+        if (vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()) != null) {
+            map.put(VESSEL, vesselMap.get(consolidationDetails.getCarrierDetails().getVessel()).Name);
+        }
+
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOrigin()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOrigin()))
+            map.put(ORIGIN, unLocMap.get(consolidationDetails.getCarrierDetails().getOrigin()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestination()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestination()))
+            map.put(DST, unLocMap.get(consolidationDetails.getCarrierDetails().getDestination()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort()))
+            map.put(POL, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort()))
+            map.put(POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()) && usernameEmailsMap.containsKey(consolidationDetails.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(consolidationDetails.getCreatedBy()));
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()) && usernameEmailsMap.containsKey(consolidationDetails.getAssignedTo()))
+            cc.add(usernameEmailsMap.get(consolidationDetails.getAssignedTo()));
+
+    }
+
+    public void populateBookingTagsAndEmailTemplate(CustomerBooking booking, Map<String, Object> map, DefaultEmailTemplateRequest defaultEmailTemplateRequest, List<EmailTemplatesRequest> emailTemplatesRequests, Set<String> cc) {
+        map.put(CBN_NUMBER, booking.getBookingNumber());
+        map.put(MODE, booking.getTransportType());
+        map.put(LOAD, booking.getCargoType());
+        map.put(SHIPPER, getPartyString(booking.getConsignor()));
+        map.put(CNEES, getPartyString(booking.getConsignee()));
+        map.put(ETD_CAPS, booking.getCarrierDetails().getEtd());
+        map.put(ETA_CAPS, booking.getCarrierDetails().getEta());
+        map.put(ATD_CAPS, booking.getCarrierDetails().getAtd());
+        map.put(ATA_CAPS, booking.getCarrierDetails().getAta());
+        map.put(CONTAINER_NOS, booking.getContainers());
+        map.put(CARRIER, booking.getCarrierDetails().getShippingLine()); //doubt
+        map.put(SHIPMENT_TYPE, booking.getDirection());
+        map.put(SERVICE_TYPE, booking.getServiceMode());
+        map.put(PAYMENT_TERMS, booking.getPaymentTerms());
+        map.put(INCOTERM, booking.getIncoTerms());
+        map.put(VESSEL, booking.getCarrierDetails().getVessel());
+        map.put(VOYAGE, booking.getCarrierDetails().getVoyage());
+        map.put(FLIGHT_NUMBER, booking.getCarrierDetails().getVoyageOrFlightNumber());
+        map.put(COMMODITY, "");
+//        map.put(AIRLINE, ""); // shippingline from carrier master data
+        map.put(CARRIER_REF, booking.getCarrierBookingNumber());
+        map.put(WEIGHT, booking.getGrossWeight());
+        map.put(VOLUME, booking.getVolume());
+        map.put(PACKAGE_COUNT, booking.getPackages());
+        map.put(SUMMARY_DOCUMENTS, getSummaryDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        map.put(LIST_ALL_DOCUMENTS, getListAllDocs(defaultEmailTemplateRequest.getDocumentsList()));
+        String notifyPartyName = Optional.of(booking).map(CustomerBooking::getNotifyParty).map(Parties::getOrgData).map(orgData -> (String) orgData.get(FULL_NAME))
+                .orElse("");
+
+        if (!notifyPartyName.isEmpty()) {
+            map.put(NOTIFY_PARTY, notifyPartyName);
+        }
+        Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
+        Map<String, EntityTransferCarrier> carrierMap = new HashMap<>();
+        Set<String> usernamesList = getBookingUsernamesList(booking);
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(booking.getCarrierDetails().getOriginPort(),
+                booking.getCarrierDetails().getDestinationPort(),
+                booking.getCarrierDetails().getOrigin(),
+                booking.getCarrierDetails().getDestination()).filter(Objects::nonNull).collect(Collectors.toSet()), unLocMap)));
+        var templatesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(defaultEmailTemplateRequest.getEmailTemplateId(), emailTemplatesRequests)), executorService);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getCarrierDataFromCache(Set.of(booking.getCarrierDetails().getShippingLine()), carrierMap)));
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(unlocationsFuture, templatesFuture, carrierFuture, userEmailsFuture).join();
+        if(carrierMap.get(booking.getCarrierDetails().getShippingLine()) != null) {
+            map.put(AIRLINE, carrierMap.get(booking.getCarrierDetails().getShippingLine()).getItemValue());
+        }
+
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOrigin()) && unLocMap.containsKey(booking.getCarrierDetails().getOrigin()))
+            map.put(ORIGIN, unLocMap.get(booking.getCarrierDetails().getOrigin()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestination()) && unLocMap.containsKey(booking.getCarrierDetails().getDestination()))
+            map.put(DST, unLocMap.get(booking.getCarrierDetails().getDestination()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(booking.getCarrierDetails().getOriginPort()))
+            map.put(POL, unLocMap.get(booking.getCarrierDetails().getOriginPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(booking.getCarrierDetails().getDestinationPort()))
+            map.put(POD, unLocMap.get(booking.getCarrierDetails().getDestinationPort()).getName());
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()) && usernameEmailsMap.containsKey(booking.getCreatedBy()))
+            cc.add(usernameEmailsMap.get(booking.getCreatedBy()));
+
+    }
+
     @Override
     public void validateHouseBill(ReportRequest reportRequest) {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
-
         ShipmentDetails shipment = getValidatedShipment(reportRequest, reportRequest.getReportInfo());
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+
+        List<String> errors = new ArrayList<>();
 
         if (report instanceof HblReport) {
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "BL",
-                    "BL for possible cargo discrepancies."
-            );
-
+            validateOriginalHbl(shipment, reportRequest, shipmentSettings, errors);
         } else if (report instanceof SeawayBillReport) {
-            validateUnassignedPackagesInternal(
-                    shipment,
-                    shipmentSettingsDetails,
-                    "Seaway Bill",
-                    "Seaway for possible cargo discrepancies."
-            );
+            validateSeawayBill(shipment, shipmentSettings, errors);
         } else {
-            throw new ValidationException("Report Info not supported: " + reportRequest.getReportInfo());
+            throw new ValidationException("Unsupported report type: " + reportRequest.getReportInfo());
+        }
+
+        if (!errors.isEmpty()) {
+            String reportType = (report instanceof HblReport) ? "Original HBL" : "Seaway Bill";
+            String finalMessage = "The following information are mandatory for " + reportType + " generation:\n"
+                    + errors.stream().map(msg -> "- " + msg).collect(Collectors.joining("\n"));
+            throw new ValidationException(finalMessage);
+        }
+    }
+
+    private void validateOriginalHbl(ShipmentDetails shipment,
+            ReportRequest reportRequest,
+            ShipmentSettingsDetails settings,
+            List<String> errors) {
+
+        // Release Type validation (only for ORIGINAL)
+        if (ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType()) &&
+                shipment.getAdditionalDetails().getReleaseType() == null) {
+            errors.add("Select the Release Type in BL Section under Shipment Details");
+        }
+
+        // Controlled field validation
+        validateControlledFields(shipment, errors);
+
+        // Container validation
+        validateContainers(shipment, errors);
+
+        // Package validation
+        validatePackages(shipment, settings, "BL", "BL for possible cargo discrepancies.", errors);
+    }
+
+    private void validateSeawayBill(ShipmentDetails shipment,
+            ShipmentSettingsDetails settings,
+            List<String> errors) {
+
+        // ETD/ETA validation
+        if (shipment.getCarrierDetails().getEtd() == null || shipment.getCarrierDetails().getEta() == null) {
+            errors.add("Update the ETD & ETA in the shipment");
+        }
+
+        // Controlled field validation
+        validateControlledFields(shipment, errors);
+
+        // Container validation
+        validateContainers(shipment, errors);
+
+        // Package validation
+        validatePackages(shipment, settings, "Seaway Bill", "Seaway for possible cargo discrepancies.", errors);
+    }
+
+    private void validateControlledFields(ShipmentDetails shipment, List<String> errors) {
+        try {
+            validateControlledFieldsForBlGeneration(shipment);
+        } catch (Exception e) {
+            errors.add(e.getMessage());
+        }
+    }
+
+    private void validateContainers(ShipmentDetails shipment, List<String> errors) {
+        boolean missingContainer = shipment.getContainersList().stream()
+                .anyMatch(c -> c.getContainerNumber() == null);
+        if (missingContainer) {
+            errors.add("Assign the Container Number to all Containers");
+        }
+    }
+
+    private void validatePackages(ShipmentDetails shipment,
+            ShipmentSettingsDetails settings,
+            String reportName,
+            String messageContext,
+            List<String> errors) {
+        try {
+            validateUnassignedPackagesInternal(shipment, settings, reportName, messageContext);
+        } catch (Exception e) {
+            errors.add(e.getMessage());
+        }
+    }
+
+
+    private void validateControlledFieldsForBlGeneration(ShipmentDetails shipment) {
+        if(ObjectUtils.isNotEmpty(shipment)
+                && !Boolean.TRUE.equals(shipment.getControlled())) {
+            throw new ValidationException("Update the Shipment as Controlled - YES and Controlled Ref No.");
         }
     }
 
@@ -2773,7 +3220,7 @@ public class ReportService implements IReportService {
             map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
             map.put(OA_EMAIL, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting origin Agent Data");
+            log.error(ORIGIN_ERROR);
         }
         try {
             map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
@@ -2782,7 +3229,7 @@ public class ReportService implements IReportService {
             map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
             map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {
-            log.error("Error while getting destination Agent Data");
+            log.error(DSTN_ERROR);
         }
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
         Set<String> usernamesList = getUsernamesList(shipmentDetails);
@@ -2820,6 +3267,21 @@ public class ReportService implements IReportService {
             usernamesList.add(shipmentDetails.getAssignedTo());
         return usernamesList;
     }
+    private Set<String> getConsolUsernamesList(ConsolidationDetails consolidationDetails) {
+        Set<String> usernamesList = new HashSet<>();
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getCreatedBy()))
+            usernamesList.add(consolidationDetails.getCreatedBy());
+        if (!CommonUtils.isStringNullOrEmpty(consolidationDetails.getAssignedTo()))
+            usernamesList.add(consolidationDetails.getAssignedTo());
+        return usernamesList;
+    }
+
+    private Set<String> getBookingUsernamesList(CustomerBooking booking) {
+        Set<String> usernamesList = new HashSet<>();
+        if (!CommonUtils.isStringNullOrEmpty(booking.getCreatedBy()))
+            usernamesList.add(booking.getCreatedBy());
+        return usernamesList;
+    }
 
     private String getPartyString(Parties parties) {
         if (Objects.isNull(parties))
@@ -2833,6 +3295,34 @@ public class ReportService implements IReportService {
             shipmentDetails.getContainersList().stream().filter(e -> !CommonUtils.isStringNullOrEmpty(e.getContainerNumber())).forEach(e -> response.add(e.getContainerNumber()));
         }
         return String.join(", ", response);
+    }
+    private String getSummaryDocs(List<String> documentsList) {
+        if (CommonUtils.listIsNullOrEmpty(documentsList)) {
+            return "";
+        }
+        List<String> firstTwo = documentsList.stream()
+                .limit(2)
+                .collect(Collectors.toList());
+        String result = String.join(", ", firstTwo);
+        if (documentsList.size() > 2) {
+            int remainingCount = documentsList.size() - 2;
+            result += " + (" + remainingCount + ")";
+        }
+        return result;
+    }
+
+    private String getListAllDocs(List<String> documentsList) {
+        if (CommonUtils.listIsNullOrEmpty(documentsList)) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        result.append("Documents:").append(System.lineSeparator());
+        for (String document : documentsList) {
+            if (!CommonUtils.isStringNullOrEmpty(document)) {
+                result.append("•").append(document).append(System.lineSeparator());
+            }
+        }
+        return result.toString();
     }
 
     public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
@@ -2888,6 +3378,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setFileName(filename);
                 var response =  this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
                 log.info("{} | Time Taken to process document to Runner Doc Master: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+                saveDocDetailsAfterPushToDocumentMaster(reportRequest, response);
                 return response;
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
@@ -2897,6 +3388,58 @@ public class ReportService implements IReportService {
             log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
         }
         return null;
+    }
+
+    public void saveDocDetailsAfterPushToDocumentMaster(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        log.info("Save doc details in DB after push to Document Master with request ID {}", LoggerHelper.getRequestIdFromMDC());
+        if (reportRequest.getReportInfo().equals(HOUSE_BILL) || reportRequest.getReportInfo().equals(SEAWAY_BILL)) {
+            saveDocDetailsIfHblOrSeawayBill(reportRequest, documentServiceResponse);
+        }
+    }
+
+    private void saveDocDetailsIfHblOrSeawayBill(ReportRequest reportRequest, Map<String, Object> documentServiceResponse) {
+        log.info("Save doc details when reportInfo is {} with request ID {}", reportRequest.getReportInfo(), LoggerHelper.getRequestIdFromMDC());
+        if (documentServiceResponse.get("fileId") == null) {
+            log.info("Did not save file id is null with request ID {}", LoggerHelper.getRequestIdFromMDC());
+            return;
+        }
+        Long reportId = fetchReportIdFromReportRequest(reportRequest);
+        saveDocDetailsWithFileIdAndShipmentBLCheck(reportId, documentServiceResponse.get("fileId").toString(), reportRequest.getReportInfo());
+    }
+
+    private void saveDocDetailsWithFileIdAndShipmentBLCheck(Long reportId, String fileId, String reportInfo) {
+        log.info("Save doc details with reportId: {}, fileId: {}, reportInfo: {} with request ID {}", reportId, fileId, reportInfo, LoggerHelper.getRequestIdFromMDC());
+        Optional<ShipmentDetails> shipmentDetailsOpt = shipmentDao.findById(reportId);
+        if (shipmentDetailsOpt.isEmpty()) {
+            log.info("Shipment details not found for reportId: {} with request ID {}", reportId, LoggerHelper.getRequestIdFromMDC());
+            return;
+        }
+        ShipmentDetails shipmentDetails = shipmentDetailsOpt.get();
+        boolean isShipmentBLRated = shipmentDetails.getAdditionalDetails() != null &&
+                                    Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsRatedBL());
+        DocDetailsTypes docDetailsType = fetchDocDetailsTypeFor(reportInfo, isShipmentBLRated);
+        DocDetails docDetail = docDetailsDao.findByFileId(fileId);
+
+        if (docDetail != null) {
+            log.info("Doc detail for fileId: {} exists in DB with request ID {}", fileId, LoggerHelper.getRequestIdFromMDC());
+            docDetail.setType(docDetailsType);
+        } else {
+            docDetail = DocDetails.builder()
+                    .type(docDetailsType)
+                    .entityId(reportId)
+                    .fileId(fileId)
+                    .build();
+        }
+        log.info("Doc detail for fileId: {}, docDetailsType: {} saved in DB with request ID {}", fileId, docDetailsType, LoggerHelper.getRequestIdFromMDC());
+        docDetailsDao.save(docDetail);
+    }
+
+    private DocDetailsTypes fetchDocDetailsTypeFor(String reportInfo, boolean isShipmentBLRated) {
+        return switch (reportInfo) {
+            case HOUSE_BILL -> isShipmentBLRated ? DocDetailsTypes.RATED_HOUSE_BILL : DocDetailsTypes.NOT_RATED_HOUSE_BILL;
+            case SEAWAY_BILL -> isShipmentBLRated ? DocDetailsTypes.RATED_SEAWAY_BILL : DocDetailsTypes.NOT_RATED_SEAWAY_BILL;
+            default -> null;
+        };
     }
 
     String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String entityGuid, String identifier) {

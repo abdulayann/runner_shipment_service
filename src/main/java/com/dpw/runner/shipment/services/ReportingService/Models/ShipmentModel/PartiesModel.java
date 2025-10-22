@@ -25,6 +25,8 @@ public class PartiesModel implements IDocumentModel {
     private String type;
     @JsonProperty("OrgCode")
     private String orgCode;
+    @JsonProperty("OrgId")
+    private String orgId;
     @JsonProperty("TenantId")
     private Integer tenantId;
     @JsonProperty("AddressCode")

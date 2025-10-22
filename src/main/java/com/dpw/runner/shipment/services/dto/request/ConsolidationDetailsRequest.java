@@ -26,6 +26,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    private String assignedTo;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     private String serviceLevel;

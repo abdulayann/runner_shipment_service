@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
@@ -22,7 +23,6 @@ import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {MasterDataController.class})
@@ -93,6 +93,36 @@ class NPMControllerTest {
         when(npmService.fetchContracts(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchContractsWithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchContracts2WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchContracts3WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsWithFilters(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = npmController.fetchContractsWithFilters(ListContractsWithFilterRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -188,6 +218,36 @@ class NPMControllerTest {
     }
 
     @Test
+    void getNPMOffersWithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getNPMOffers2WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getNPMOffers3WithFilters() throws RunnerException {
+        // Mock
+        when(npmService.fetchOffersWithFilter(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = npmController.getNPMOffersWithFilters(NPMFetchOffersRequestFromUI.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     void getAwbAutoSell() throws RunnerException {
         // Mock
         when(npmService.awbAutoSell(any())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -243,6 +303,26 @@ class NPMControllerTest {
         when(npmService.awbImportRates(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = npmController.getAwbImportRates(new NPMImportRatesRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContractsCountForParties() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsCountForParties(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = npmController.fetchContractsCountForParties(new GetContractsCountForPartiesRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContractsCountForParties_throwsException() throws RunnerException {
+        // Mock
+        when(npmService.fetchContractsCountForParties(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = npmController.fetchContractsCountForParties(new GetContractsCountForPartiesRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

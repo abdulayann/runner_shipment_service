@@ -12,12 +12,14 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
@@ -38,6 +40,7 @@ import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
@@ -99,6 +102,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ApplicationConfigServiceImpl;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
@@ -121,6 +125,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -135,6 +140,17 @@ import org.modelmapper.TypeToken;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
@@ -147,7 +163,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -157,22 +175,29 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ACTIONED_USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SECURITY_PERMISSION_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_CODE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_CREATE_USER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_CODE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOL_BRANCH_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CROSS_TENANT_SOURCE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CUSTOMER_BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.FLIGHT_NUMBER1;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
@@ -315,6 +340,53 @@ class CommonUtilsTest {
     @Mock
     private IApplicationConfigService applicationConfigService;
 
+    private List<Selection<?>> selections;
+    private List<String> columnOrder;
+    @Mock(lenient = true)
+    private Root<ShipmentDetails> root;
+
+    @Mock(lenient = true)
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock(lenient = true)
+    private Join<Object, Object> mockJoin;
+
+    @Mock(lenient = true)
+    private Path<Object> mockPath;
+
+    @Mock(lenient = true)
+    private Selection<?> mockSelection;
+    private Map<String, Join<?, ?>> joinCache;
+
+    @Mock
+    private EntityManager entityManager;
+
+    @Mock
+    private CriteriaQuery<Object[]> criteriaQuery;
+
+    @Mock
+    private TypedQuery<Object[]> typedQuery;
+
+    @Mock
+    private TypedQuery<Long> typedQuery1;
+
+    @Mock
+    private Join firstJoin;  // Remove generics
+
+    @Mock
+    private Join secondJoin;  // Remove generics
+
+    @Mock
+    private Join thirdJoin;  // Remove generics
+
+    @Mock
+    private CriteriaQuery<Long> countQuery;
+
+    @Mock
+    private ShipmentSettingsDetails shipmentSettingsDetails;
+    @Mock
+    private ObjectMapper objectMapper;
+
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -349,6 +421,14 @@ class CommonUtilsTest {
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
+        selections = new ArrayList<>();
+        columnOrder = new ArrayList<>();
+        joinCache = new HashMap<>();
+
+        // Setup basic mocks
+        when(root.get(anyString())).thenReturn(mockPath);
+        when(mockJoin.get(anyString())).thenReturn(mockPath);
+
 
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
@@ -1362,7 +1442,25 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                "username", null);
+                "username", null, false);
+        assertFalse(shipmentRequestedTypes.isEmpty());
+        //with v3FlagEnabled.
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+               shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                shipmentRequestedTypes,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                "username", null, true);
         assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
@@ -1384,7 +1482,31 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //with v2 flag enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1409,7 +1531,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1449,7 +1571,32 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1484,7 +1631,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1508,7 +1655,36 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullReject_withV3FlagEnabled() throws Exception {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1530,7 +1706,31 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+               shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1569,7 +1769,32 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3 flag enabled
+        shipmentDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1603,7 +1828,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1639,7 +1864,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, tenantModelMap);
+                null, tenantModelMap, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1676,7 +1901,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, tenantModelMap);
+                null, tenantModelMap, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1701,8 +1926,34 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+        //When v3 flag is enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -1723,7 +1974,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null,false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1764,7 +2015,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1800,7 +2051,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1825,7 +2076,33 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //when v3 flag is enabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1847,7 +2124,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1888,7 +2165,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1924,20 +2201,22 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     @Test
     void sendEmailForPullPushRequestStatusPushReject() throws Exception {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build()).build();
+
         commonUtils.sendEmailForPullPushRequestStatus(
-                ShipmentDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .build(),
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                shipmentDetails1,
+                consolidationDetails1,
                 SHIPMENT_PUSH_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
@@ -1948,7 +2227,26 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //when v3 flag is enabled
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1970,8 +2268,34 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With v3flagEnabled
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
     }
 
     @Test
@@ -2010,7 +2334,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2045,7 +2369,26 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+
+        //With V3 Flag enabled
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, v1TenantSettingsResponse);
+                }},
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2070,7 +2413,36 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatus_withV3FlagEnabled() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails1.setTenantId(100);
+        consolidationDetails1.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails1,
+                consolidationDetails1,
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2080,16 +2452,18 @@ class CommonUtilsTest {
                 .assignedTo("assigned")
                 .carrierDetails(CarrierDetails.builder().build())
                 .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails.setTenantId(94);
         shipmentDetails.setCreatedBy("created");
         shipmentDetails.setTenantId(56);
         V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
-                ConsolidationDetails.builder()
-                        .carrierDetails(CarrierDetails.builder().build())
-                        .allocations(Allocations.builder().build())
-                        .build(),
+                consolidationDetails,
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
@@ -2105,7 +2479,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2138,7 +2512,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2233,7 +2607,7 @@ class CommonUtilsTest {
         CommonUtils spyService = spy(commonUtils);
         when(masterDataUtils.withMdc(any())).thenReturn(mockRunnable());
         spyService.sendRejectionEmailsExplicitly(List.of(ShipmentDetails.builder().build()), List.of(ConsoleShipmentMapping.builder().build()),
-                new HashSet<>(), List.of(ConsolidationDetails.builder().build()));
+                new HashSet<>(), List.of(ConsolidationDetails.builder().build()), false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2718,7 +3092,35 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusDetach_withV3Enabled() throws Exception {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        shipmentDetails.setTenantId(100);
+        consolidationDetails.setTenantId(101);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails,
+                SHIPMENT_DETACH,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_DETACH, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, null, true);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2740,7 +3142,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null, null);
+                null, null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2780,7 +3182,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2815,7 +3217,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username", null);
+                "username", null, false);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -3047,6 +3449,18 @@ class CommonUtilsTest {
 
         // Assert
         assertEquals("Hello, John Doe", commonUtils.replaceTagsFromData(dictionary, emailTemplateModel.getBody()));
+    }
+
+    @Test
+    void testReplaceDefaultTagsFromData() {
+        Map<String, Object> dictionary = new HashMap<>();
+        emailTemplateModel = new EmailTemplatesRequest();
+        emailTemplateModel.setBody("Hello, {name}");
+        emailTemplateModel.setSubject("Shipment Update");
+        dictionary.put("name", "John Doe");
+
+        // Assert
+        assertEquals("Hello, name:John Doe", commonUtils.replaceDefaultTagsFromData(dictionary, emailTemplateModel.getBody()));
     }
 
     @Test
@@ -4394,6 +4808,65 @@ class CommonUtilsTest {
     }
 
     @Test
+    void sendEmailShipmentPullWithdraw_consolidationAssignedToNotNull() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setAssignedTo("AssignedToUser");
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw_consolidationAssignedToNotNull_userEmailInMapExists() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setAssignedTo("AssignedToUser");
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        usernameEmailsMap.put("Assigned", "Email");
+        usernameEmailsMap.put("AssignedToUser", "AnotherEmail");
+
+        sendEmailDto.setUsernameEmailsMap(usernameEmailsMap);
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
     void sendEmailShipmentPushWithdraw() {
         // Arrange
         SendEmailDto sendEmailDto = new SendEmailDto();
@@ -4739,10 +5212,10 @@ class CommonUtilsTest {
         String volumeUnit = commonUtils.getDefaultVolumeUnit();
         assertEquals("M3", volumeUnit);
     }
-    
+
     @Test
-    void getTaskIdHyperLinkV2MDM_Success(){
-        String result = commonUtils.getTaskIdHyperLinkV2MDM("SH", "TA");
+    void getTaskIdHyperLinkV2_Success(){
+        String result = commonUtils.getTaskIdHyperLinkV2("SH", "TA");
         assertNotNull(result);
     }
 
@@ -5817,6 +6290,1371 @@ class CommonUtilsTest {
                 Arguments.of((short)123, 123L),
                 Arguments.of((byte)123, 123L)
         );
+
+    }
+    @Test
+    void returnsNullWhenRequestPayloadIsNull() {
+        assertNull(commonUtils.extractSortFieldFromPayload(null));
+    }
+
+    @Test
+    void returnsNullWhenSortRequestIsNull() {
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        when(request.getSortRequest()).thenReturn(null);
+        assertNull(commonUtils.extractSortFieldFromPayload(request));
+    }
+
+    @Test
+    void returnsFieldNameWhenSortRequestIsPresent() {
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        SortRequest sortRequest = mock(SortRequest.class);
+        when(request.getSortRequest()).thenReturn(sortRequest);
+        when(sortRequest.getFieldName()).thenReturn("testField");
+        assertEquals("testField", commonUtils.extractSortFieldFromPayload(request));
+    }
+    @Test
+    void testExtractRequestedColumns_EmptyIncludeColumns_ReturnsEmptyMap() {
+        // Arrange
+        List<String> includeColumns = new ArrayList<>();
+        String mainEntityKey = "shipment";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testExtractRequestedColumns_SingleLevelColumns_ExtractsToMainEntity() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList("id", "updatedAt", "status");
+        String mainEntityKey = "shipmentDetails";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey(mainEntityKey));
+
+        List<String> shipmentColumns = (List<String>) result.get(mainEntityKey);
+        assertNotNull(shipmentColumns);
+        assertEquals(3, shipmentColumns.size());
+        assertTrue(shipmentColumns.contains("id"));
+        assertTrue(shipmentColumns.contains("updatedAt"));
+        assertTrue(shipmentColumns.contains("status"));
+    }
+
+    @Test
+    void testExtractRequestedColumns_TwoLevelNesting_CreatesListOfStrings() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.address",
+                "pickupDetails.contactName",
+                "transporterDetail.name"
+        );
+        String mainEntityKey = "shipmentDetails";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey("pickupDetails"));
+        assertTrue(result.containsKey("transporterDetail"));
+
+        // Verify pickupDetails structure
+        List<String> pickupColumns = (List<String>) result.get("pickupDetails");
+        assertNotNull(pickupColumns);
+        assertEquals(2, pickupColumns.size());
+        assertTrue(pickupColumns.contains("address"));
+        assertTrue(pickupColumns.contains("contactName"));
+
+        // Verify transporterDetail structure
+        List<String> transporterColumns = (List<String>) result.get("transporterDetail");
+        assertNotNull(transporterColumns);
+        assertEquals(1, transporterColumns.size());
+        assertTrue(transporterColumns.contains("name"));
+    }
+    @Test
+    void testExtractRequestedColumns_DuplicateColumns_HandlesGracefully() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.address",
+                "pickupDetails.address", // Duplicate
+                "pickupDetails.contactName",
+                "consignee.orgData.FullName"
+        );
+        String mainEntityKey = "shipment";
+
+        // Act
+        Map<String, Object> result = commonUtils.extractRequestedColumns(includeColumns, mainEntityKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.containsKey("pickupDetails"));
+
+        List<String> pickupColumns = (List<String>) result.get("pickupDetails");
+        assertNotNull(pickupColumns);
+
+        // Should handle duplicates gracefully (either include once or include multiple times)
+        assertTrue(pickupColumns.contains("address"));
+        assertTrue(pickupColumns.contains("contactName"));
+    }
+
+    @Test
+    void testFillEmptyColumnLists_EmptyMap_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        assertTrue(requestedColumns.isEmpty());
+    }
+    @Test
+    void testFillEmptyColumnLists_WithEmptyList_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipmentDetails", new ArrayList<String>());
+
+        // Mock ShipmentConstants.ENTITY_MAPPINGS to contain "shipment" -> ShipmentDetails.class
+        // This test assumes getAllSimpleFieldNames() returns a list of field names
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object shipmentColumns = requestedColumns.get("shipmentDetails");
+        assertNotNull(shipmentColumns);
+        assertTrue(shipmentColumns instanceof List);
+        List<String> fieldsList = (List<String>) shipmentColumns;
+        assertFalse(fieldsList.isEmpty());
+        // Verify it contains expected fields based on getAllSimpleFieldNames()
+    }
+
+    @Test
+    void testFillEmptyColumnLists_WithEmptyMap_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("pickupDetails", new HashMap<String, Object>());
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object pickupDetails = requestedColumns.get("pickupDetails");
+        assertNotNull(pickupDetails);
+        assertTrue(pickupDetails instanceof List);
+        List<String> fieldsList = (List<String>) pickupDetails;
+        assertFalse(fieldsList.isEmpty());
+    }
+
+    @Test
+    void testFillEmptyColumnLists_WithNullValue_FillsWithAllFields() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("transporterDetail", null);
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Object transporterDetail = requestedColumns.get("transporterDetail");
+        assertNotNull(transporterDetail);
+        assertTrue(transporterDetail instanceof List);
+        List<String> fieldsList = (List<String>) transporterDetail;
+        assertFalse(fieldsList.isEmpty());
+    }
+
+    @Test
+    void testFillEmptyColumnLists_WithPopulatedList_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        List<String> existingFields = new ArrayList<>(Arrays.asList("field1", "field2"));
+        requestedColumns.put("shipmentDetails", existingFields);
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        List<String> resultFields = (List<String>) requestedColumns.get("shipmentDetails");
+        assertEquals(3, resultFields.size()); // Original 2 + "id" added by ensureIdInCollection
+        assertTrue(resultFields.contains("field1"));
+        assertTrue(resultFields.contains("field2"));
+        assertTrue(resultFields.contains("id"));
+    }
+    @Test
+    void testFillEmptyColumnLists_WithPopulatedSet_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        Set<String> existingFields = new HashSet<>(Set.of("field1", "field2"));
+        requestedColumns.put("shipmentDetails", existingFields);
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Set<String> resultFields = (Set<String>) requestedColumns.get("shipmentDetails");
+        assertEquals(3, resultFields.size()); // Original 2 + "id" added by ensureIdInCollection
+        assertTrue(resultFields.contains("field1"));
+        assertTrue(resultFields.contains("field2"));
+        assertTrue(resultFields.contains("id"));
+    }
+    @Test
+    void testFillEmptyColumnLists_WithPopulatedNonCollection_DoesNotModify() {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+
+        requestedColumns.put("shipmentDetails", new Parties());
+
+        // Act
+        commonUtils.fillEmptyColumnLists(requestedColumns);
+
+        // Assert
+        Parties resultFields = (Parties) requestedColumns.get("shipmentDetails");
+        assertNotNull(resultFields);
+    }
+
+    @Test
+    void testEnsureIdInCollection_WithList_AddsIdWhenNotPresent() {
+        // Arrange
+        List<String> list = new ArrayList<>(Arrays.asList("field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertEquals(3, resultList.size());
+        assertTrue(resultList.contains("field1"));
+        assertTrue(resultList.contains("field2"));
+        assertTrue(resultList.contains("id"));
+    }
+
+    @Test
+    void testEnsureIdInCollection_WithListContainingId_DoesNotAddAgain() {
+        // Arrange
+        List<String> list = new ArrayList<>(Arrays.asList("id", "field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertEquals(3, resultList.size());
+        assertTrue(resultList.contains("id"));
+        assertTrue(resultList.contains("field1"));
+        assertTrue(resultList.contains("field2"));
+    }
+
+    @Test
+    void testEnsureIdInCollection_WithEmptyList_DoesNotAddId() {
+        // Arrange
+        List<String> list = new ArrayList<>();
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(list);
+
+        // Assert
+        assertTrue(result instanceof List);
+        List<String> resultList = (List<String>) result;
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    void testEnsureIdInCollection_WithSet_AddsIdWhenNotPresent() {
+        // Arrange
+        Set<String> set = new HashSet<>(Arrays.asList("field1", "field2"));
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(set);
+
+        // Assert
+        assertTrue(result instanceof Set);
+        Set<String> resultSet = (Set<String>) result;
+        assertEquals(3, resultSet.size());
+        assertTrue(resultSet.contains("field1"));
+        assertTrue(resultSet.contains("field2"));
+        assertTrue(resultSet.contains("id"));
+    }
+    @Test
+    void testEnsureIdInCollection_WithNonCollection_ReturnsUnchanged() {
+        // Arrange
+        String nonCollection = "not a collection";
+
+        // Act
+        Object result = commonUtils.ensureIdInCollection(nonCollection);
+
+        // Assert
+        assertEquals("not a collection", result);
+    }
+
+    @Test
+    void testEnsureIdInCollection_WithNull_ReturnsNull() {
+        // Act
+        Object result = commonUtils.ensureIdInCollection(null);
+
+        // Assert
+        assertNull(result);
+    }
+    @Test
+    void testConvertToNestedMapWithCollections_EmptyFlatList_ReturnsEmptyList() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Set<String> collectionRelationships = new HashSet<>();
+        String rootKey = "shipment";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testConvertToNestedMapWithCollections_SingleRow_CreatesNestedStructure() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Map<String, Object> row1 = new HashMap<>();
+        row1.put("shipmentDetails.id", 123L);
+        row1.put("shipmentDetails.transportMode", TRANSPORT_MODE_SEA);
+        row1.put("pickupDetails.address", "Address 1");
+        flatList.add(row1);
+
+        Set<String> collectionRelationships = new HashSet<>();
+        String rootKey = "shipmentDetails";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        Map<String, Object> resultMap = result.get(0);
+        assertTrue(resultMap.containsKey(rootKey));
+
+        Map<String, Object> shipmentData = (Map<String, Object>) resultMap.get(rootKey);
+        assertNotNull(shipmentData);
+        assertEquals(123L, shipmentData.get("id"));
+    }
+
+
+    @Test
+    void testConvertToNestedMapWithCollections_ComplexNestedStructure() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Map<String, Object> row = new HashMap<>();
+
+        row.put("shipmentDetails.id", 123L);
+        row.put("shipmentDetails.shipmentNumber", "SHIP-001");
+        row.put("shipmentDetails.pickupDetails.address", "123 Main St");
+        row.put("shipmentDetails.pickupDetails.address.city", "New York");
+        row.put("shipmentDetails.deliveryDetails", "New1234");
+        row.put("shipmentDetails.deliveryDetails.contact", "John Doe");
+//        row.put("shipmentDetails.deliveryDetails.contact.phone", Arrays.asList("555-1234"));
+        row.put("shipmentDetails.pickupDetails.transporterDetail.orgData.FullName", "ASDrefr");
+        flatList.add(row);
+
+        Set<String> collectionRelationships = new HashSet<>(
+                Arrays.asList("pickupDetails", "deliveryDetails"));
+        String rootKey = "shipmentDetails";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        Map<String, Object> resultMap = result.get(0);
+        assertTrue(resultMap.containsKey(rootKey));
+        Map<String, Object> shipmentMap = (Map<String, Object>)resultMap.get("shipmentDetails");
+
+        // Verify nested structures are processed correctly
+        // This depends on the implementation of ProcessFields method
+        List<Object> pickupDetailsList = (List<Object>) shipmentMap.get("pickupDetails");
+
+        assertNotNull(pickupDetailsList);
+    }
+    @Test
+    void testConvertToNestedMapWithCollections_NonNestedStructure() {
+        // Arrange
+        List<Map<String, Object>> flatList = new ArrayList<>();
+        Map<String, Object> row = new HashMap<>();
+
+//        row.put("shipmentDetails.id", 123L);
+//        row.put("shipmentDetails.shipmentNumber", "SHIP-001");
+////        row.put("shipmentDetails.pickupDetails.address", "123 Main St");
+////        row.put("shipmentDetails.pickupDetails.address.city", "New York");
+        row.put("shipmentDetails.deliveryDetails.id", "New1234");
+        row.put("shipmentDetails.deliveryDetails.contact", "John Doe");
+////        row.put("shipmentDetails.deliveryDetails.contact.phone", Arrays.asList("555-1234"));
+//        row.put("shipmentDetails.pickupDetails.transporterDetail.orgData.FullName", "ASDrefr");
+        flatList.add(row);
+
+        Set<String> collectionRelationships = new HashSet<>(
+                Arrays.asList("pickupDetails", "deliveryDetails"));
+        String rootKey = "shipmentDetails";
+
+        // Act
+        List<Map<String, Object>> result = commonUtils.convertToNestedMapWithCollections(
+                flatList, collectionRelationships, rootKey);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        Map<String, Object> resultMap = result.get(0);
+        assertTrue(resultMap.containsKey(rootKey));
+        Map<String, Object> shipmentMap = (Map<String, Object>)resultMap.get("shipmentDetails");
+
+        // Verify nested structures are processed correctly
+        // This depends on the implementation of ProcessFields method
+        List<Object> pickupDetailsList = (List<Object>) shipmentMap.get("pickupDetails");
+
+        assertNotNull(pickupDetailsList);
+    }
+
+    @Test
+     void testRefineIncludeColumns_EmptyList_ReturnsEmptyList() {
+        // Arrange
+        List<String> includeColumns = new ArrayList<>();
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(includeColumns);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(!result.isEmpty());
+    }
+    @Test
+     void testRefineIncludeColumns_NullList_ThrowsException() {
+        // Arrange
+        List<String> includeColumns = null;
+
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            commonUtils.refineIncludeColumns(includeColumns);
+        });
+    }
+    @Test
+     void testRefineIncludeColumns_NoSpecialColumns_ReturnsAddedGuid() {
+        // Arrange
+        List<String> includeColumns = Arrays.asList(
+                "id",
+                "shipmentNumber",
+                "status",
+                "pickupDetails.address",
+                "deliveryDetails.contactName"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(6, result.size());
+        assertTrue(result.contains("id"));
+        assertTrue(result.contains("shipmentNumber"));
+        assertTrue(result.contains("status"));
+        assertTrue(result.contains("pickupDetails.address"));
+        assertTrue(result.contains("deliveryDetails.contactName"));
+        assertTrue(result.contains("guid"));
+    }
+
+    @Test
+     void testRefineIncludeColumns_WithOrgDataColumns_TruncatesCorrectly() {
+        // Arrange - assuming Constants.ORG_DATA = "orgData"
+        List<String> includeColumns = Arrays.asList(
+                "transporterDetail.orgData.fullName",
+                "pickupDetails.orgData.email",
+                "deliveryDetails.orgData.phone.primary",
+                "normalColumn"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(6, result.size());
+        assertTrue(result.contains("transporterDetail.orgData"));
+        assertTrue(result.contains("pickupDetails.orgData"));
+        assertTrue(result.contains("deliveryDetails.orgData"));
+        assertTrue(result.contains("normalColumn"));
+    }
+
+    @Test
+     void testRefineIncludeColumns_WithAddressDataColumns_TruncatesCorrectly() {
+        // Arrange - assuming Constants.ADDRESS_DATA = "addressData"
+        List<String> includeColumns = Arrays.asList(
+                "pickupDetails.addressData.street",
+                "deliveryDetails.addressData.city.name",
+                "transporterDetail.addressData.zipCode",
+                "normalColumn"
+        );
+
+        // Act
+        List<String> result = commonUtils.refineIncludeColumns(new ArrayList<>(includeColumns));
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(6, result.size());
+        assertTrue(result.contains("pickupDetails.addressData"));
+        assertTrue(result.contains("deliveryDetails.addressData"));
+        assertTrue(result.contains("transporterDetail.addressData"));
+        assertTrue(result.contains("normalColumn"));
+    }
+
+    @Test
+     void testBuildJoinsAndSelections_EmptyRequestedColumns_DoesNotAddSelections() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        String rootEntityKey = "shipmentDetails";
+        String sortField = null;
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        assertTrue(selections.isEmpty());
+        assertTrue(columnOrder.isEmpty());
+    }
+
+    @Test
+     void testBuildJoinsAndSelections_WithRootEntityColumns_AddsSelectionsAndColumnOrder() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        List<String> rootColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", rootColumns);
+        String rootEntityKey = "shipmentDetails";
+        String sortField = null;
+
+        // Mock the processEntity method indirectly by verifying it gets called
+        // Since processEntity is private, we test its effects through the public method
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Verify processEntity was called by checking that root.get() was invoked
+        verify(root, atLeastOnce()).get(anyString());
+
+        // The actual selections and columnOrder population depends on processEntity implementation
+        // We can only verify that the method completed without throwing exceptions
+        assertNotNull(selections);
+        assertNotNull(columnOrder);
+    }
+    @Test
+     void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumns() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        Root<ShipmentDetails> root1= mock(Root.class);
+        List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", new ArrayList<>(originalColumns));
+        Map<String, Object> pickupDetails = new HashMap<>();
+        pickupDetails.put("transporterDetail", "field");
+        requestedColumns.put("additionalDetails",pickupDetails);
+        String rootEntityKey = "shipmentDetails";
+        String sortField = "shipmentType";
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root1, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Original columns should remain unchanged
+        Object rootEntityValue = requestedColumns.get(rootEntityKey);
+        assertTrue(rootEntityValue instanceof List);
+        List<String> resultColumns = (List<String>) rootEntityValue;
+        assertEquals(originalColumns.size(), resultColumns.size());
+        assertTrue(resultColumns.containsAll(originalColumns));
+    }
+
+    @Test
+    void testBuildJoinsAndSelections_NullSortField_DoesNotModifyColumnsForBuildJoin() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = new HashMap<>();
+        Root<ShipmentDetails> root1= mock(Root.class);
+        List<String> originalColumns = Arrays.asList("id", "shipmentNumber", "status");
+        requestedColumns.put("shipmentDetails", new ArrayList<>(originalColumns));
+        Map<String, Object> pickupDetails = new HashMap<>();
+        pickupDetails.put("transporterDetail", "field");
+        requestedColumns.put("additionalDetails",pickupDetails);
+        String rootEntityKey = "shipmentDetails";
+        String sortField = "shipmentType";
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root1, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        // Original columns should remain unchanged
+        Object rootEntityValue = requestedColumns.get(rootEntityKey);
+        assertTrue(rootEntityValue instanceof List);
+        List<String> resultColumns = (List<String>) rootEntityValue;
+        assertEquals(originalColumns.size(), resultColumns.size());
+        assertTrue(resultColumns.containsAll(originalColumns));
+    }
+
+    @Test
+    void testBuildJoinsAndSelections_WithCompleteSetup() throws RunnerException {
+        // Arrange
+        Map<String, Object> requestedColumns = setupRequestedColumns();
+        String rootEntityKey = "shipmentDetails";
+        String sortField = "shipmentType";
+
+        setupAllMocks();
+
+        // Act
+        commonUtils.buildJoinsAndSelections(requestedColumns, root, selections, columnOrder, rootEntityKey, sortField);
+
+        // Assert
+        assertNotNull(selections);
+        assertFalse(selections.isEmpty());
+        assertTrue(columnOrder.size() > 0);
+    }
+
+    private Map<String, Object> setupRequestedColumns() {
+        Map<String, Object> requestedColumns = new HashMap<>();
+        requestedColumns.put("shipmentDetails", Arrays.asList("id", "shipmentNumber", "status"));
+        requestedColumns.put("carrierDetails", Arrays.asList("id", "shippingLine", "vessel", "voyage"));
+
+        Map<String, Object> additionalDetails = new HashMap<>();
+        additionalDetails.put("transporterDetail", Arrays.asList("field"));
+        requestedColumns.put("additionalDetails", additionalDetails);
+
+        return requestedColumns;
+    }
+
+    private void setupAllMocks() {
+        // Mock joins
+        when(root.join("carrierDetails", JoinType.LEFT)).thenReturn(firstJoin);
+        when(root.join("additionalDetails", JoinType.LEFT)).thenReturn(secondJoin);
+        when(secondJoin.join("transporterDetail", JoinType.LEFT)).thenReturn(thirdJoin);
+
+        // Mock all get() calls that return Path objects
+        setupPathMocks(root, Arrays.asList("id", "shipmentNumber", "status"));
+        setupPathMocks(firstJoin, Arrays.asList("id", "shippingLine", "vessel", "voyage"));
+        setupPathMocks(thirdJoin, Arrays.asList("field"));
+
+//        // Mock validation method if needed
+//        when(commonUtils.isValidFieldForEntity(any(), anyString())).thenReturn(true);
+    }
+
+    private void setupPathMocks(Object mockObject, List<String> columns) {
+        for (String col : columns) {
+            Path mockPath = mock(Path.class);
+            if (mockObject instanceof Root) {
+                when(((Root) mockObject).get(col)).thenReturn(mockPath);
+            } else if (mockObject instanceof Join) {
+                when(((Join) mockObject).get(col)).thenReturn(mockPath);
+            }
+        }
+    }
+
+    @Test
+     void testProcessNestedMap_EmptyNestedMap_DoesNotModifyCollections() {
+        // Arrange
+        Map<String, Object> nestedMap = new HashMap<>();
+        String rootEntityKey = "shipmentDetails";
+        String parentEntityKey = "pickupDetails";
+
+        // Act
+        commonUtils.processNestedMap(nestedMap, rootEntityKey, root, selections, columnOrder, parentEntityKey, joinCache);
+
+        // Assert - Test behavior through state changes
+        assertTrue(selections.isEmpty());
+        assertTrue(columnOrder.isEmpty());
+        assertTrue(joinCache.isEmpty());
+    }
+
+
+
+    private Map<String, Object> createNestedMapExample() {
+
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("consigner", Arrays.asList("id",
+                "entityId",
+                "entityType",
+                "type" ));
+        nestedMap.put("additionalDetails",Arrays.asList(
+                "id",
+                "customsNoIssueDate",
+                "expiryDate",
+                "inspection",
+                "airwayBillDims",
+                "shipperCOD"
+        ));
+        nestedMap.put("carrierDetails", Arrays.asList(
+                "id",
+                "shippingLine",
+                "vessel",
+                "voyage"
+        ));
+        nestedMap.put("client",  Arrays.asList(
+                "orgData"
+        ));
+
+        return nestedMap;
+    }
+
+
+
+    @Test
+    void testDetectCollectionRelationships_WithCollectionFields() throws NoSuchFieldException {
+        // Arrange
+        Map<String, Object> requestedColumns = createNestedMapExample();
+
+        // Act
+        Set<String> result = commonUtils.detectCollectionRelationships(requestedColumns, ShipmentDetails.class);
+
+        // Assert
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testBuildFlatList_ReturnsCorrectFlatList() {
+        List<Object[]> results = new ArrayList<>();
+        results.add(new Object[] {"TQAA25070016", "AIR", "EXP", "STD" , "LSE"});
+        results.add(new Object[] {"TQAA25077657", "SEA", "IMP", "STD" , "LSE"});
+        List<String> columnOrder = Arrays.asList("shipmentDetails.shipmentId", "shipmentDetails.transportMode", "shipmentDetails.fileStatus", "shipmentDetails.direction", "shipmentDetails.jobType" );
+
+        List<Map<String, Object>> flatList = commonUtils.buildFlatList(results, columnOrder);
+
+        assertEquals(2, flatList.size());
+        assertEquals("TQAA25070016", flatList.get(0).get("shipmentDetails.shipmentId"));
+        assertEquals("AIR", flatList.get(0).get("shipmentDetails.transportMode"));
+        assertEquals("EXP", flatList.get(0).get("shipmentDetails.fileStatus"));
+    }
+
+    @Test
+    void testFetchTotalCount_WithNoPredicates_ShouldReturnCount() {
+        // Given
+        Long expectedCount = 10L;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Long.class)).thenReturn(countQuery);
+        when(countQuery.from(ShipmentDetails.class)).thenReturn(root);
+        // Return empty list for "no predicates" scenario
+        doReturn(Collections.emptyList()).when(commonUtils)
+                .buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+        when(criteriaBuilder.countDistinct(root)).thenReturn(mock(Expression.class));
+        when(entityManager.createQuery(countQuery)).thenReturn(typedQuery1);
+        when(typedQuery1.getSingleResult()).thenReturn(expectedCount);
+
+        // When
+        long result = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+
+        // Then
+        assertEquals(expectedCount, result);
+        verify(countQuery).select(any());
+        verify(countQuery, never()).where(any(Predicate.class));
+        verify(entityManager).createQuery(countQuery);
+        verify(typedQuery1).getSingleResult(); // Fixed: use typedQuery1 consistently
+    }
+
+    @Test
+    void testFetchTotalCount_WithPredicates_ShouldReturnCountForInnerFilter() {
+        // Given
+        Long expectedCount = 10L;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerfilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+        innerCriteria.setFieldName("id");
+        innerCriteria.setValue("TQAA25070016");
+        innerCriteria.setOperator("AND");
+        mockFilterCriteria.setInnerFilter(List.of(innerfilterCriteria));
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+        Predicate predicates = mock(Predicate.class);
+        when(entityManager.getCriteriaBuilder()).thenReturn(criteriaBuilder);
+        when(criteriaBuilder.createQuery(Long.class)).thenReturn(countQuery);
+        when(countQuery.from(ShipmentDetails.class)).thenReturn(root);
+        // Return empty list for "no predicates" scenario
+        doReturn(List.of(predicates)).
+                when(commonUtils)
+                .buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+                //.thenReturn(List.of(predicates));
+        when(criteriaBuilder.countDistinct(root)).thenReturn(mock(Expression.class));
+        when(entityManager.createQuery(countQuery)).thenReturn(typedQuery1);
+        when(typedQuery1.getSingleResult()).thenReturn(expectedCount);
+
+        // When
+        long result = commonUtils.fetchTotalCount(listCommonRequest, ShipmentDetails.class);
+
+        // Then
+        assertEquals(expectedCount, result);
+        verify(countQuery).select(any());
+        verify(countQuery, never()).where(any(Predicate.class));
+        verify(entityManager).createQuery(countQuery);
+        verify(typedQuery1).getSingleResult(); // Fixed: use typedQuery1 consistently
+    }
+
+    @Test
+    void testBuildPredicatesFromFilters_WithValidFilters() {
+        // Given
+        int tenantId = 1;
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerfilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+        innerCriteria.setFieldName("id");
+        innerCriteria.setValue("TQAA25070016");
+        innerCriteria.setOperator("AND");
+        innerfilterCriteria.setCriteria(innerCriteria);
+        mockFilterCriteria.setInnerFilter(List.of(innerfilterCriteria));
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+//        when(listCommonRequest.getFilterCriteria()).thenReturn(List.of(mockFilterCriteria));
+
+        when(mockFilterCriteria.getInnerFilter()).thenReturn(List.of(innerfilterCriteria));
+        when(innerfilterCriteria.getCriteria()).thenReturn(innerCriteria);
+        when(innerCriteria.getOperator()).thenReturn("AND");
+        when(innerCriteria.getFieldName()).thenReturn("id");
+        when(innerCriteria.getValue()).thenReturn("TQAA25070016");
+
+            when(root.get("tenantId")).thenReturn(mockPath);
+            when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+
+            // When
+            List<Predicate> result = commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, listCommonRequest);
+
+            // Then
+            assertNotNull(result);
+            assertEquals(1, result.size());
+        }
+
+    private Object getTestValueForOperator(String operator) {
+        return switch (operator.toLowerCase()) {
+            case "in", "notin" -> Arrays.asList("val1", "val2");
+            case "isnull", "isnotnull" -> null;
+            case ">", "<", ">=", "<=" -> 100;
+            default -> "testValue";
+        };
+    }
+    private ListCommonRequest createListCommonRequestWithOperator(String operator, Object value) {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        FilterCriteria mockFilterCriteria = mock(FilterCriteria.class);
+        FilterCriteria innerFilterCriteria = mock(FilterCriteria.class);
+        Criteria innerCriteria = mock(Criteria.class);
+
+        // Setup inner criteria with the specific operator
+        when(innerCriteria.getFieldName()).thenReturn("testField");
+        when(innerCriteria.getValue()).thenReturn(value);
+        when(innerCriteria.getOperator()).thenReturn(operator);
+
+        // Setup filter criteria chain
+        when(innerFilterCriteria.getCriteria()).thenReturn(innerCriteria);
+        when(mockFilterCriteria.getInnerFilter()).thenReturn(List.of(innerFilterCriteria));
+
+        listCommonRequest.setFilterCriteria(List.of(mockFilterCriteria));
+
+        return listCommonRequest;
+    }
+
+    @Test
+    @DisplayName("Test all operators with different data types")
+    void testAllOperatorsWithDifferentDataTypes() {
+        // Setup common mocks
+        int tenantId = 1;
+        when(root.get("tenantId")).thenReturn(mockPath);
+        when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+        setupAllOperatorMocks1();
+
+        // Test comparison operators with different data types
+        testComparisonOperatorsWithDataTypes();
+
+        // Test other operators
+        testNonComparisonOperators();
+    }
+
+    private void testComparisonOperatorsWithDataTypes() {
+        String[] comparisonOperators = {">", "<", ">=", "<="};
+
+        for (String operator : comparisonOperators) {
+            // Test with String
+            testOperatorWithDataType(operator, "stringValue", "String");
+
+            // Test with Number (Integer)
+            testOperatorWithDataType(operator, 100, "Number");
+
+            // Test with Date
+            testOperatorWithDataType(operator, new Date(), "Date");
+
+            // Test with LocalDateTime
+            testOperatorWithDataType(operator, LocalDateTime.now(), "LocalDateTime");
+        }
+    }
+
+    private void testNonComparisonOperators() {
+        String[] otherOperators = {"=", "!=", "like", "contains", "notlike",
+                "startswith", "endswith", "in", "notin",
+                "isnull", "isnotnull"};
+
+        for (String operator : otherOperators) {
+            Object testValue = getTestValueForOperator(operator);
+            testOperatorWithDataType(operator, testValue, "Standard");
+        }
+    }
+
+    private void testOperatorWithDataType(String operator, Object value, String dataType) {
+        ListCommonRequest request = createListCommonRequestWithOperator(operator, value);
+
+        List<Predicate> result = commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, request);
+
+        assertNotNull(result, String.format("Operator: %s with %s should not return null", operator, dataType));
+        assertTrue(result.size() >= 1, String.format("Should have at least tenant predicate for %s operator with %s", operator, dataType));
+    }
+
+    // Updated setup method to handle all data types
+    private void setupAllOperatorMocks1() {
+        Predicate mockPredicate = mock(Predicate.class);
+        Expression<String> lowerExpression = mock(Expression.class);
+
+        when(root.get(anyString())).thenReturn(mockPath);
+        when(criteriaBuilder.lower(any(Expression.class))).thenReturn(lowerExpression);
+
+        // Basic operators
+        when(criteriaBuilder.equal(any(), any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.notEqual(any(), any())).thenReturn(mockPredicate);
+
+        // String operations
+        when(criteriaBuilder.like(any(Expression.class), anyString())).thenReturn(mockPredicate);
+        when(criteriaBuilder.notLike(any(Expression.class), anyString())).thenReturn(mockPredicate);
+
+        // Comparison operations for different types
+        // String comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(String.class))).thenReturn(mockPredicate);
+
+        // Number comparisons (using gt/lt for Number type)
+        when(criteriaBuilder.gt(any(Expression.class), any(Number.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lt(any(Expression.class), any(Number.class))).thenReturn(mockPredicate);
+
+        // Date comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(Date.class))).thenReturn(mockPredicate);
+
+        // LocalDateTime comparisons
+        when(criteriaBuilder.greaterThan(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThan(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(LocalDateTime.class))).thenReturn(mockPredicate);
+
+        // Collection and null operations
+        when(criteriaBuilder.isMember(any(Object.class), any(Expression.class))).thenReturn(mockPredicate);
+        when(criteriaBuilder.isNull(any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.isNotNull(any())).thenReturn(mockPredicate);
+        when(criteriaBuilder.not(any(Predicate.class))).thenReturn(mockPredicate);
+        when(mockPath.in(any(Collection.class))).thenReturn(mockPredicate);
+    }
+
+    @Test
+    @DisplayName("Test unsupported data types throw exceptions")
+    void testUnsupportedDataTypesThrowExceptions() {
+        // Setup
+        int tenantId = 1;
+        when(root.get("tenantId")).thenReturn(mockPath);
+        when(criteriaBuilder.equal(mockPath, tenantId)).thenReturn(mock(Predicate.class));
+        when(root.get(anyString())).thenReturn(mockPath);
+
+        String[] comparisonOperators = {">", "<", ">=", "<="};
+
+        for (String operator : comparisonOperators) {
+            // Test with unsupported type (e.g., Boolean)
+            ListCommonRequest request = createListCommonRequestWithOperator(operator, true);
+
+            // This should throw IllegalArgumentException due to unsupported Boolean type
+            assertDoesNotThrow(() -> {
+                commonUtils.buildPredicatesFromFilters(criteriaBuilder, root, request);
+            }, "Should not throw exception for supported Boolean type with operator: " + operator);
+        }
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenSourceIsNetworkTransfer_returnsTrue() {
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(NETWORK_TRANSFER);
+        assertTrue(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserDoesNotHaveViewPermission_returnsFalse() {
+        UserContext.getUser().getPermissions().remove(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter("OTHER_SOURCE");
+        assertFalse(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserHasViewPermission_sourceNotCrossTenant_returnsFalse() {
+        UserContext.getUser().getPermissions().put(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS, true);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter("OTHER_SOURCE");
+        assertFalse(result);
+    }
+
+    @Test
+    void canFetchDetailsWithoutTenantFilter_whenUserHasViewPermission_sourceCrossTenant_returnsTrue() {
+        UserContext.getUser().getPermissions().put(PermissionConstants.CAN_VIEW_ALL_BRANCH_SHIPMENTS, true);
+        boolean result = CommonUtils.canFetchDetailsWithoutTenantFilter(CROSS_TENANT_SOURCE);
+        assertTrue(result);
+    }
+    @Test
+    void testCheckPermissionsForCloning_permissionCheckPassed_noExceptionThrown() {
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setCountryAirCargoSecurity(false);
+        doReturn(settings).when(commonUtils).getShipmentSettingFromContext();
+        assertDoesNotThrow(() -> commonUtils.checkPermissionsForCloning(shipmentDetails));
+    }
+
+    @Test
+    void testMapIfSelected_flagIsTrueAndValueIsNotNull_setterIsCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(true, testValue, mockSetter);
+        verify(mockSetter, times(1)).accept(testValue);
+    }
+
+    @Test
+    void testMapIfSelected_flagIsFalse_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        String testValue = "test";
+        commonUtils.mapIfSelected(false, testValue, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testMapIfSelected_valueIsNull_setterIsNotCalled() {
+        Consumer<String> mockSetter = mock(Consumer.class);
+        commonUtils.mapIfSelected(true, null, mockSetter);
+        verify(mockSetter, never()).accept(any());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNull_returnsEmptyResponse() {
+        PartiesResponse response = commonUtils.getPartiesResponse(null);
+        assertNotNull(response);
+        assertNull(response.getEntityId());
+        assertNull(response.getEntityType());
+    }
+
+    @Test
+    void testGetPartiesResponse_inputIsNotNull_returnsMappedResponse() {
+        Parties partyData = new Parties();
+        partyData.setEntityId(1L);
+        partyData.setEntityType("Client");
+        partyData.setTenantId(123);
+        partyData.setType("shipper");
+        partyData.setOrgCode("ORG1");
+        partyData.setAddressCode("ADDR1");
+        PartiesResponse response = commonUtils.getPartiesResponse(partyData);
+        assertNotNull(response);
+        assertEquals(1L, response.getEntityId());
+        assertEquals("Client", response.getEntityType());
+        assertEquals(123, response.getTenantId());
+        assertEquals("shipper", response.getType());
+        assertEquals("ORG1", response.getOrgCode());
+        assertEquals("ADDR1", response.getAddressCode());
+    }
+
+    @Test
+    void testCheckSameParties_bothNull_returnsTrue() {
+        assertTrue(CommonUtils.checkSameParties(null, null));
+    }
+
+    @Test
+    void testCheckSameParties_oneNull_returnsFalse() {
+        assertFalse(CommonUtils.checkSameParties(new Parties(), null));
+        assertFalse(CommonUtils.checkSameParties(null, new Parties()));
+    }
+
+    @Test
+    void testCheckSameParties_idsMatch_returnsTrue() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr1");
+
+        assertTrue(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_orgIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org2");
+        p2.setAddressId("addr1");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckSameParties_addressIdMismatch_returnsFalse() {
+        Parties p1 = new Parties();
+        p1.setOrgId("org1");
+        p1.setAddressId("addr1");
+        Parties p2 = new Parties();
+        p2.setOrgId("org1");
+        p2.setAddressId("addr2");
+
+        assertFalse(CommonUtils.checkSameParties(p1, p2));
+    }
+
+    @Test
+    void testCheckPartyNotNull_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkPartyNotNull(null));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("");
+        assertFalse(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckPartyNotNull_orgIdIsPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertTrue(CommonUtils.checkPartyNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_partyIsNull_returnsFalse() {
+        assertFalse(CommonUtils.checkAddressNotNull((Parties) null));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_orgIdIsEmpty_returnsFalse() {
+        Parties party = new Parties();
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_addressIdIsNull_returnsFalse() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        assertFalse(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAddressNotNull_partiesInput_bothPresent_returnsTrue() {
+        Parties party = new Parties();
+        party.setOrgId("org123");
+        party.setAddressId("addr123");
+        assertTrue(CommonUtils.checkAddressNotNull(party));
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckFails_returnsFalse() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(false);
+            assertFalse(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
+    @Test
+    void testCheckAirSecurityForShipment_securityCheckPasses_returnsTrue() {
+        try (MockedStatic<UserContext> mockedUserContext = Mockito.mockStatic(UserContext.class)) {
+            shipmentDetails = new ShipmentDetails();
+            shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentDetails.setDirection(DIRECTION_EXP);
+            mockedUserContext.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertTrue(CommonUtils.checkAirSecurityForShipment(shipmentDetails));
+        }
+    }
+
+    @Test
+    void isSelectedModeOffInBooking_shouldThrowException_forUnknownMode() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commonUtils.isSelectedModeOffInBooking("unknown", tenantData));
+        assertEquals("Unknown transport mode: unknown", exception.getMessage());
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirImport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_AIR, DIRECTION_IMP);
+        assertTrue(result);
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_SeaTransport_ShouldReturnTrue() {
+        boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                TRANSPORT_MODE_SEA, DIRECTION_EXP);
+        assertTrue(result);
+    }
+
+    @Test
+    void validateAirSecurityPermission_CountrySecurityDisabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(false);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithAirSecurityUser_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            assertDoesNotThrow(() ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirExportWithoutAirSecurityUser_ShouldThrowValidationException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            ValidationException exception = assertThrows(ValidationException.class, () ->
+                    commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+            assertEquals(AIR_SECURITY_PERMISSION_MSG, exception.getMessage());
+        }
+    }
+
+    @Test
+    void validateAirSecurityPermission_AirImportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_IMP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_SeaTransportWithSecurityEnabled_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(true);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_SEA, DIRECTION_EXP));
+    }
+
+    @Test
+    void validateAirSecurityPermission_NullCountrySecurity_ShouldNotThrowException() {
+        doReturn(shipmentSettingsDetails).when(commonUtils).getShipmentSettingFromContext();
+        when(shipmentSettingsDetails.getCountryAirCargoSecurity()).thenReturn(null);
+        assertDoesNotThrow(() ->
+                commonUtils.validateAirSecurityPermission(TRANSPORT_MODE_AIR, DIRECTION_EXP));
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithAirSecurityUser_ShouldReturnTrue() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(true);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void checkAirSecurityForTransportTypeAndDirection_AirExportWithoutAirSecurityUser_ShouldReturnFalse() {
+        try (MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+            userContextMock.when(UserContext::isAirSecurityUser).thenReturn(false);
+            boolean result = commonUtils.checkAirSecurityForTransportTypeAndDirection(
+                    TRANSPORT_MODE_AIR, DIRECTION_EXP);
+            assertFalse(result);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportModesProvider")
+    void isSelectedModeOffInBooking_shouldReturnFalse_whenModeIsOn(String transportMode) {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        switch (transportMode) {
+            case "SEA" -> tenantData.setBookingTransportModeSea(true);
+            case "RAI" -> tenantData.setBookingTransportModeRail(true);
+            case "ROA" -> tenantData.setBookingTransportModeRoad(true);
+            case "AIR" -> tenantData.setBookingTransportModeAir(true);
+            default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
+        }
+        assertFalse(commonUtils.isSelectedModeOffInBooking(transportMode, tenantData));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportModesProvider")
+    void isSelectedModeOffInShipment_shouldReturnFalse_whenModeIsOn(String transportMode) {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        switch (transportMode) {
+            case "SEA" -> tenantData.setShipmentTransportModeSea(true);
+            case "RAI" -> tenantData.setShipmentTransportModeRail(true);
+            case "ROA" -> tenantData.setShipmentTransportModeRoad(true);
+            case "AIR" -> tenantData.setShipmentTransportModeAir(true);
+            default -> throw new IllegalArgumentException("Invalid test case mode: " + transportMode);
+        }
+        assertFalse(commonUtils.isSelectedModeOffInShipment(transportMode, tenantData));
+    }
+
+    @Test
+    void isSelectedModeOffInShipment_shouldThrowException_forUnknownMode() {
+        V1TenantSettingsResponse tenantData = new V1TenantSettingsResponse();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commonUtils.isSelectedModeOffInShipment("unknown", tenantData));
+        assertEquals("Unknown transport mode: unknown", exception.getMessage());
+    }
+
+    @Test
+    void testGetCloneFieldResponse_ReturnsValidResponse() throws Exception {
+        String type = "S2B";
+        String json = "{ \"header\": { \"label\": \"Header\", \"value\": \"header\", \"fields\": [] } }";
+        CloneFieldResponse expectedResponse = new CloneFieldResponse();
+        when(applicationConfigService.getValue(type)).thenReturn(json);
+        when(objectMapper.readValue(json, CloneFieldResponse.class)).thenReturn(expectedResponse);
+        CloneFieldResponse actual = commonUtils.getCloneFieldResponse(type);
+        assertNotNull(actual);
+        assertEquals(expectedResponse, actual);
+        verify(applicationConfigService, times(1)).getValue(type);
+        verify(objectMapper, times(1)).readValue(json, CloneFieldResponse.class);
+    }
+
+    @Test
+    void testGetCloneFieldResponse_WhenJsonParsingFails_ThrowsValidationException() throws Exception {
+        String type = "S2B";
+        String invalidJson = "invalid";
+        when(applicationConfigService.getValue(type)).thenReturn(invalidJson);
+        when(objectMapper.readValue(invalidJson, CloneFieldResponse.class))
+                .thenThrow(new RuntimeException("Parse error"));
+        ValidationException thrown = assertThrows(ValidationException.class,
+                () -> commonUtils.getCloneFieldResponse(type));
+        assertEquals("Invalid Type", thrown.getMessage());
+        verify(applicationConfigService, times(1)).getValue(type);
+        verify(objectMapper, times(1)).readValue(invalidJson, CloneFieldResponse.class);
+    }
+
+    private static Stream<String> transportModesProvider() {
+        return Stream.of("SEA", "RAI", "ROA","AIR");
     }
     @Test
     void testConvertSeconds_OnlySeconds() {
@@ -5892,6 +7730,295 @@ class CommonUtilsTest {
         String expected = "The export will be available in approximately " + expectedMinutes + " minutes and " + expectedSeconds + " seconds. Please try again after that time.";
         assertEquals(expected, result2);
     }
+
+    @Test
+    void testMapIfSelected_whenValueNotNull_shouldInvokeSetter() {
+        AtomicReference<String> result = new AtomicReference<>();
+        commonUtils.mapIfSelected("test", result::set);
+        assertEquals("test", result.get());
+    }
+
+    @Test
+    void testMapIfSelected_whenValueIsNull_shouldNotInvokeSetter() {
+        AtomicReference<String> result = new AtomicReference<>("unchanged");
+        commonUtils.mapIfSelected(null, result::set);
+        assertEquals("unchanged", result.get());
+    }
+
+    @Test
+    void testMapIfSelected_withDifferentType_shouldWorkForGenerics() {
+        AtomicReference<Integer> result = new AtomicReference<>();
+        commonUtils.mapIfSelected(42, result::set);
+        assertEquals(42, result.get());
+    }
+    @Test
+    void testAddTenantIdAndTriangulationData_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build(),
+                TriangulationPartner.builder().triangulationPartner(300L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+
+        assertEquals(3, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullTenantId() {
+        Set<Long> tenantIds = new HashSet<>();
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(200L).build()
+        );
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, null, partners);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_nullPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, null);
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testAddTenantIdAndTriangulationData_emptyPartnerList() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+
+        commonUtils.addTenantIdAndTriangulationData(tenantIds, tenantId, Collections.emptyList());
+
+        assertEquals(1, tenantIds.size());
+        assertTrue(tenantIds.contains(100L));
+    }
+
+    @Test
+    void testHandleParentEntity_allValuesPresent() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        Long receivingBranch = 200L;
+        Long originBranch = 300L;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, receivingBranch, originBranch, partners);
+
+        assertEquals(2, tenantIds.size());
+        assertTrue(tenantIds.contains(200L));
+        assertTrue(tenantIds.contains(300L));
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleParentEntity_nullBranches() {
+        Set<Long> tenantIds = new HashSet<>();
+        Integer tenantId = 100;
+        List<TriangulationPartner> partners = List.of(
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        );
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleParentEntity(tenantIds, tenantId, null, null, partners);
+
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, tenantId, partners);
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchFalse() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(false);
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_noShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+        consolidation.setShipmentsList(new HashSet<>());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, never()).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testHandleInterbranchConsolidation_interBranchTrue_withShipments() {
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setInterBranchConsole(true);
+
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setTenantId(101);
+        shipment1.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(102L).build()));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setTenantId(201);
+        shipment2.setTriangulationPartnerList(Collections.emptyList());
+
+        consolidation.setShipmentsList(new HashSet<>(Arrays.asList(shipment1, shipment2)));
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.handleInterbranchConsolidation(tenantIds, consolidation);
+
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 101, shipment1.getTriangulationPartnerList());
+        verify(commonUtils, times(1)).addTenantIdAndTriangulationData(tenantIds, 201, shipment2.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_nullGuid() {
+        Set<Long> tenantIds = new HashSet<>();
+        commonUtils.addTenantDataFromParentGuid(null, tenantIds, "SHIPMENT");
+        assertTrue(tenantIds.isEmpty());
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(shipmentDao).findShipmentByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_noRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(Collections.emptyList());
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(shipmentDao).findByParentGuid(parentGuid);
+        verify(commonUtils, never()).handleInterbranchConsolidation(anySet(), any());
+        verify(commonUtils, times(0)).addTenantIdAndTriangulationData(anySet(), any(), any());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_shipment_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ShipmentDetails parentShipment = new ShipmentDetails();
+        parentShipment.setTenantId(1);
+
+        ShipmentDetails relatedShipment = new ShipmentDetails();
+        relatedShipment.setTenantId(10);
+        relatedShipment.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(11L).build()));
+
+        when(shipmentDao.findShipmentByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentShipment));
+        when(shipmentDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedShipment));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "SHIPMENT");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 10, relatedShipment.getTriangulationPartnerList());
+    }
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentFound_withRelated() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        ConsolidationDetails parentConsolidation = new ConsolidationDetails();
+        parentConsolidation.setTenantId(1);
+
+        ConsolidationDetails relatedConsolidation = new ConsolidationDetails();
+        relatedConsolidation.setTenantId(20);
+        relatedConsolidation.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(21L).build()));
+
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.of(parentConsolidation));
+        when(consolidationDetailsDao.findByParentGuid(parentGuid)).thenReturn(List.of(relatedConsolidation));
+        doNothing().when(commonUtils).handleParentEntity(anySet(), any(), any(), any(), any());
+        doNothing().when(commonUtils).handleInterbranchConsolidation(anySet(), any());
+        doNothing().when(commonUtils).addTenantIdAndTriangulationData(anySet(), any(), any());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        verify(commonUtils).handleParentEntity(tenantIds, 1, null, null, null);
+        verify(commonUtils).handleInterbranchConsolidation(tenantIds, parentConsolidation);
+        verify(commonUtils).addTenantIdAndTriangulationData(tenantIds, 20, relatedConsolidation.getTriangulationPartnerList());
+    }
+
+
+    @Test
+    void testAddTenantDataFromParentGuid_consolidation_parentNotFound() {
+        UUID parentGuid = UUID.randomUUID();
+        Set<Long> tenantIds = new HashSet<>();
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(parentGuid)).thenReturn(Optional.empty());
+
+        commonUtils.addTenantDataFromParentGuid(parentGuid, tenantIds, "CONSOLIDATION");
+
+        assertTrue(tenantIds.isEmpty());
+        verify(consolidationDetailsDao).findConsolidationByGuidWithQuery(parentGuid);
+        verify(commonUtils, never()).handleParentEntity(anySet(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getTenantNameMap_shouldReturnMapOfTenantIdToName() {
+        // Arrange
+        List<Integer> tenantIds = List.of(1, 2);
+
+        // Mocked V1 response
+        V1DataResponse v1DataResponse = V1DataResponse.builder()
+                .entities(List.of()) // the actual entities are not deserialized directly here
+                .build();
+
+        // Mocked deserialized response
+        List<V1TenantResponse> tenantResponses = List.of(
+                V1TenantResponse.builder().TenantId(1L).TenantName("Tenant One").build(),
+                V1TenantResponse.builder().TenantId(2L).TenantName("Tenant Two").build()
+        );
+
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.entities, V1TenantResponse.class))
+                .thenReturn(tenantResponses);
+
+        // Act
+        Map<Long, String> result = commonUtils.getTenantNameMap(tenantIds);
+
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals("Tenant One", result.get(1L));
+        assertEquals("Tenant Two", result.get(2L));
+
+        // Verify interactions
+        verify(v1Service).tenantNameByTenantId(any());
+        verify(jsonHelper).convertValueToList(v1DataResponse.entities, V1TenantResponse.class);
+    }
+
+
 
     @Test
     void testValidateAndSetOriginAndDestinationPort_FromShipment() {

@@ -4,12 +4,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -25,12 +27,14 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +50,8 @@ import javax.persistence.EntityManager;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NON_DG_MARKING_ERROR_MSG;
@@ -93,6 +99,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private EntityManager entityManager;
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -874,6 +883,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
     }
 
+    @Override
+    public List<ConsolidationDetails> findByParentGuid(UUID parentGuid) {
+        return consolidationRepository.findByParentGuid(parentGuid);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
         if (!errors.isEmpty())
@@ -929,6 +943,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         addOriginDestinationValidationsError(request, errors);
         addPolPodValidationsErrors(request, errors);
 
+        addRailTransferValidationsErrors(request, errors);
 
         return errors;
     }
@@ -1022,6 +1037,90 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
         }
         return false;
+    }
+
+    private void addRailTransferValidationsErrors(ConsolidationDetails request, Set<String> errors) {
+        boolean isRailTransferEnabled = Boolean.parseBoolean(applicationConfigService.getValue(Constants.IS_RAIL_TRANSFER_ENABLED));
+        if (!isRailTransferEnabled || request.getTransportMode() == null || !Constants.TRANSPORT_MODE_RAI.equals(request.getTransportMode())) {
+            return;
+        }
+
+        List<Long> triangulationBranchIds = Optional.ofNullable(request.getTriangulationPartnerList())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(TriangulationPartner::getTriangulationPartner)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Long receivingBranchId = request.getReceivingBranch();
+
+        boolean validateDestination = Constants.DIRECTION_EXP.equals(request.getShipmentType());
+        boolean validateTriangulation = Constants.DIRECTION_EXP.equals(request.getShipmentType()) ||
+                Constants.DIRECTION_IMP.equals(request.getShipmentType()) ||
+                Constants.DIRECTION_CTS.equals(request.getShipmentType());
+
+        validateBranchSettingsForRailTransfer(receivingBranchId, triangulationBranchIds, validateDestination, validateTriangulation, errors);
+    }
+
+    private void validateBranchSettingsForRailTransfer(Long receivingBranchId, List<Long> triangulationBranchIds, boolean checkDestination, boolean checkTriangulation, Set<String> errors) {
+        List<Integer> allTenantIds = Stream.concat(
+                checkDestination && receivingBranchId != null ? Stream.of(receivingBranchId) : Stream.empty(),
+                checkTriangulation && triangulationBranchIds != null
+                        ? triangulationBranchIds.stream().filter(Objects::nonNull) : Stream.empty())
+                .map(Long::intValue).
+                collect(Collectors.toList());
+
+        if (allTenantIds.isEmpty()) return;
+
+        // Fetch settings for all involved branches
+        List<ShipmentSettingsDetails> settingsList = shipmentSettingsDao.getSettingsByTenantIds(allTenantIds);
+        // Fetch tenant display names
+        Map<Long, String> tenantNameMap = commonUtils.getTenantNameMap(allTenantIds);
+
+        // Identify disabled branches
+        Set<Integer> v3DisabledBranchIds = settingsList.stream()
+                .filter(setting -> Boolean.FALSE.equals(setting.getIsRunnerV3Enabled()))
+                .map(ShipmentSettingsDetails::getTenantId)
+                .collect(Collectors.toSet());
+
+        // Determine disabled branches
+        List<String> disabledTriangulationBranches = new ArrayList<>();
+        String disabledReceivingBranch = null;
+
+        if (checkDestination && receivingBranchId != null && v3DisabledBranchIds.contains(receivingBranchId.intValue())) {
+            disabledReceivingBranch = tenantNameMap.get(receivingBranchId);
+        }
+
+        if (checkTriangulation && triangulationBranchIds != null) {
+            for (Long tid : triangulationBranchIds) {
+                if (tid != null && v3DisabledBranchIds.contains(tid.intValue())) {
+                    disabledTriangulationBranches.add(tenantNameMap.get(tid));
+                }
+            }
+        }
+
+        generateErrorMessages(disabledReceivingBranch, disabledTriangulationBranches, errors);
+    }
+
+    private void generateErrorMessages(String disabledReceivingBranch, List<String> disabledTriangulationBranches, Set<String> errors) {
+        // Generate error messages
+        if (disabledReceivingBranch != null && !disabledTriangulationBranches.isEmpty()) {
+            // Both receiving and triangulation branches are disabled
+            errors.add(disabledReceivingBranch + " branch and " +
+                    String.join(", ", disabledTriangulationBranches) +
+                    " branch" + (disabledTriangulationBranches.size() > 1 ? "es don't" : " doesn't") +
+                    " have rail module enabled so please remove them from the destination branch and triangulation branch selections");
+        } else if (disabledReceivingBranch != null) {
+            // Only receiving branch disabled
+            errors.add(disabledReceivingBranch + " branch doesn't have rail module enabled so please remove it from the destination branch selection");
+        } else if (!disabledTriangulationBranches.isEmpty()) {
+            // Only triangulation branches disabled
+            errors.add(String.join(", ", disabledTriangulationBranches) +
+                    " branch" + (disabledTriangulationBranches.size() > 1 ? "es don't" : " doesn't") +
+                    " have rail module enabled so please remove " +
+                    (disabledTriangulationBranches.size() > 1 ? "them" : "it") +
+                    " from the triangulation branch selection");
+        }
     }
 
 }

@@ -45,6 +45,11 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
     }
 
     @Override
+    public List<ShipmentOrder> findByOrderGuidIn(List<UUID> orderGuidList) {
+        return shipmentOrderRepository.findByOrderGuidIn(orderGuidList);
+    }
+
+    @Override
     public Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid) {
         return shipmentOrderRepository.findByShipmentIdAndOrderGuid(shipmentId, orderGuid);
     }
