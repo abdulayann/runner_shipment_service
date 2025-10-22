@@ -4370,6 +4370,37 @@ public class ShipmentService implements IShipmentService {
         log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
     }
 
+    @Override
+    public void exportExcel2(HttpServletResponse response, CommonRequestModel commonRequestModel, ExportExcelResponse exportExcelResponse) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+        }
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+        request.setPageSize(exportExcelLimit);
+
+        Page<ShipmentDetails> shipmentDetailsPage = fetchShipmentsPage(request);
+        long shipmentCount = shipmentDetailsPage.getTotalElements();
+
+        if(shipmentCount <= exportExcelLimit){
+            downloadShipmentListExcel(response, shipmentDetailsPage);
+        } else {
+            exportExcelResponse.setEmailSent(true);
+            request.setPageSize(Integer.MAX_VALUE);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
+                TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+                txTemplate.execute(status -> {
+                    emailShipmentListExcel(response, request);
+                    return null;
+                });
+            }), executorService);
+        }
+        log.info("Export-Excel done. Request ID : {}", LoggerHelper.getRequestIdFromMDC());
+    }
+
     private void downloadShipmentListExcel(HttpServletResponse response, Page<ShipmentDetails> shipmentDetailsPage) {
         log.info("Starting download of shipment list Excel. Request Id {}", LoggerHelper.getRequestIdFromMDC());
 
@@ -4584,7 +4615,6 @@ public class ShipmentService implements IShipmentService {
         itemRow.createCell(headerMap.get("20s Count")).setCellValue(String.valueOf(shipment.getContainer20Count()));
         itemRow.createCell(headerMap.get("40s Count")).setCellValue(String.valueOf(shipment.getContainer40Count()));
         itemRow.createCell(headerMap.get("TEU Count")).setCellValue(shipment.getTeuCount() != null ? shipment.getTeuCount().toString() : null);
-        itemRow.createCell(headerMap.get("CreatedBy")).setCellValue(shipment.getCreatedBy());
         itemRow.createCell(headerMap.get("POL")).setCellValue(originPort);
         itemRow.createCell(headerMap.get("POD")).setCellValue(destinationPort);
         itemRow.createCell(headerMap.get("Waybill Number")).setCellValue(String.valueOf(shipment.getWayBillNumber()));

@@ -1813,10 +1813,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockAddress.setCity("TestCity");
         when(commonUtils.getEntityTransferAddress(anyString())).thenReturn(mockAddress);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(getMockListContractResponse());
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> shipmentServiceImplV3.create(commonRequestModel));
     }
@@ -1851,10 +1849,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setId(2L);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(getMockListContractResponse());
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
@@ -1869,7 +1865,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
         when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
-        when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -1912,10 +1907,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setId(2L);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(getMockListContractResponse());
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
@@ -1930,7 +1923,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
         when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
-        when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -1977,10 +1969,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setId(2L);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(getMockListContractResponse());
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
@@ -1997,7 +1987,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
         BulkPackingResponse bulkPackingResponse = new BulkPackingResponse();
         bulkPackingResponse.setPackingResponseList(List.of(new PackingResponse()));
-        when(packingV3Service.updateBulk(any(), any(), anyBoolean())).thenReturn(bulkPackingResponse);
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);

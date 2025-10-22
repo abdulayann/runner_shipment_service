@@ -53,7 +53,7 @@ public class DbAccessHelper {
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
-
+        log.info("RequestId {}, sortRequest {}", LoggerHelper.getRequestIdFromMDC(), sortRequest);
         Specification<T> specification = null;
         Map<String, Join<Class<T>, T>> map = new HashMap<>();
         if(filterCriteria.isEmpty()) {
@@ -143,6 +143,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, List<String> tableName, Map<String, RunnerEntityMapping> tableNames) {
+        log.info("Inside getSpecificationFromFilters with RequestId {}, sortRequest {}", LoggerHelper.getRequestIdFromMDC(), sortRequest);
         if (filter == null || filter.isEmpty()) {
             return createSpecificationWithoutFilter(tableName);
         }
@@ -164,6 +165,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromLogicalOperator(Map<String, Join<Class<T>, T>> map, String className, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        log.info("Inside getSpecificationFromLogicalOperator with RequestId {}, className {}", LoggerHelper.getRequestIdFromMDC(), className);
         if (input.getLogicOperator().equalsIgnoreCase("OR")) {
             specification = specification.or(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
         } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
@@ -173,6 +175,7 @@ public class DbAccessHelper {
     }
 
     private static <T> Specification<T> getSpecificationFromInnerFilter(SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, List<String> tableName, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        log.info("Inside getSpecificationFromInnerFilter with RequestId {}, sortRequest {}", LoggerHelper.getRequestIdFromMDC(), sortRequest);
         if (input.getLogicOperator() != null) {
             if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                 specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));

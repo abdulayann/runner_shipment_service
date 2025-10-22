@@ -29,6 +29,7 @@ public class V1Config {
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.add("SourceServiceType", "Shipment");
+            headers.add("X-Requested-With", "XMLHttpRequest");
             return execution.execute(request, body);
         });
 

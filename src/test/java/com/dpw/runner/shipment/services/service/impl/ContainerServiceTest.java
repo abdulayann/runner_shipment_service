@@ -1547,9 +1547,7 @@ class ContainerServiceTest extends CommonMocks {
     @Test
     void testPushContainersToDependentServices() {
         // Arrange
-        int tenantId = 1;
-        TenantContext.setCurrentTenant(tenantId);
-
+        TenantContext.setCurrentTenant(1);
         Containers c1 = new Containers();
         c1.setId(1L);
         c1.setConsolidationId(1L);

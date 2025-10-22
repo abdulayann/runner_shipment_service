@@ -397,7 +397,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETPayload);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipmentDetails);
-        when(shipmentMigrationService.mapShipmentV2ToV3(any(), eq(null), eq(false))).thenReturn(mockShipmentDetails);
+        when(shipmentMigrationService.mapShipmentV2ToV3(any(), eq(null), eq(false), eq(false))).thenReturn(mockShipmentDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
 
         ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
@@ -549,7 +549,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
         Map<String, BigDecimal> codeTeuMap = new HashMap<>();
-        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap),any(), any())).thenReturn(consolidationDetails);
+        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap),any(), any(), eq(false))).thenReturn(consolidationDetails);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(ConsolidationDetailsResponse.builder().build());
@@ -615,7 +615,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
         Map<String, BigDecimal> codeTeuMap = new HashMap<>();
-        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap),any(), any())).thenReturn(consolidationDetails);
+        when(consolidationMigrationV3Service.mapConsoleV2ToV3(any(), any(), eq(false), eq(codeTeuMap),any(), any(), eq(false))).thenReturn(consolidationDetails);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(ConsolidationDetailsResponse.builder().build());

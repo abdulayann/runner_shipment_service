@@ -95,6 +95,25 @@ class PartiesV3ServiceTest {
         verify(partiesDao).save(partyEntity);
         verify(jsonHelper).convertValue(savedEntity, PartiesResponse.class);
     }
+
+//    @Test
+//    void testGet_success() {
+//        // Arrange
+//        PartiesRequest request = new PartiesRequest();
+//        request.setOrgCode("FRC0012345");
+//        Parties savedEntity = new Parties();
+//        savedEntity.setId(123L); // set ID after "saving"
+//        PartiesResponse expectedResponse = new PartiesResponse();
+//        expectedResponse.setId(123L);
+//        when(partiesDao.findByOrgCode(request.getOrgCode())).thenReturn(savedEntity);
+//        when(jsonHelper.convertValue(savedEntity, PartiesResponse.class)).thenReturn(expectedResponse);
+//        // Act
+//        PartiesResponse actual = partiesV3Service.get(request);
+//        // Assert
+//        assertNotNull(actual);
+//        assertEquals(expectedResponse.getId(), actual.getId());
+//    }
+
     @Test
     void testUpdate_success() {
         // Arrange
