@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -16,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.MultiValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
@@ -32,12 +32,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -104,7 +105,6 @@ class ContainerV3ControllerTest {
   @Test
   void testUpdatePatchBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
-    BulkContainerResponse response = new BulkContainerResponse();
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulk(requestList);
 
@@ -114,7 +114,6 @@ class ContainerV3ControllerTest {
   @Test
   void testUpdatePatchBulkShipment() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
-    BulkContainerResponse response = new BulkContainerResponse();
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.updatePatchBulkShipment(requestList);
 
@@ -267,19 +266,36 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException {
-    MultipartFile file = new BASE64DecodedMultipartFile("dummy content".getBytes());
-    BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
+  void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
+    MultipartFile file = new MockMultipartFile(
+            "file",
+            "test.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "dummy content".getBytes()
+    );
+    BulkUploadRequest request = BulkUploadRequest.builder()
+            .file(file)
+            .build();
     doThrow(new RuntimeException("RuntimeException"))
-            .when(containerV3Util).uploadContainers(any(), eq(CONSOLIDATION));
+            .when(containerV3Util).uploadContainers(any(), anyString());
     ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
+
     assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
   }
 
+
   @Test
-  void uploadCSV2() throws IOException, RunnerException {
-    MultipartFile file = new BASE64DecodedMultipartFile(StringUtility.getRandomString(11).getBytes());
-    BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
+  void uploadCSV3() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
+    MultipartFile file = new MockMultipartFile(
+            "file",
+            "test.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            StringUtility.getRandomString(11).getBytes()
+    );
+    BulkUploadRequest request = BulkUploadRequest.builder()
+            .file(file)
+            .build();
+
     doNothing().when(containerV3Util).uploadContainers(any(), anyString());
     var responseEntity = containerV3Controller.uploadCSV(request, "SHIPMENT");
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -322,6 +338,37 @@ class ContainerV3ControllerTest {
     assertNotNull(body);
   }
 
+  @Test
+  void uploadCSV_shouldReturnBadRequest_forInvalidFilename() throws IOException {
+    MultipartFile file = new MockMultipartFile(
+            "file",
+            "invalid.txt",
+            "text/plain",
+            "dummy content".getBytes()
+    );
+    BulkUploadRequest request = BulkUploadRequest.builder()
+            .file(file)
+            .build();
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void uploadCSV_shouldReturnExpectationFailed_onMultiValidationException() throws IOException, RunnerException, InvocationTargetException, NoSuchMethodException {
+    MultipartFile file = new MockMultipartFile(
+            "file",
+            "test.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "dummy content".getBytes()
+    );
+    BulkUploadRequest request = BulkUploadRequest.builder()
+            .file(file)
+            .build();
+    doThrow(new MultiValidationException("Validation Failed", List.of("error1", "error2")))
+            .when(containerV3Util).uploadContainers(any(), anyString());
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
+    assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
+  }
 
 }
 

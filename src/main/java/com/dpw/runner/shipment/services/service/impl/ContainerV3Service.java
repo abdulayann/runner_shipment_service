@@ -2032,7 +2032,7 @@ public class ContainerV3Service implements IContainerV3Service {
             if(Objects.equals(shipmentDetails.getContainerAssignedToShipmentCargo(), container.getId()))
                 addShipmentCargoToContainer(container, shipmentDetails);
         }
-        containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        containerV3Util.setContainerNetWeight(Collections.singletonList(container)); // set container gross weight from cargo weight (net weight) and tare weight
         return shipmentIdsForAttachment;
     }
     public void assignContainerOnlyToShipment(ShipmentDetails shipmentDetails, Containers container,
@@ -2249,7 +2249,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 addExistingShipmentAndPackagesToContainer(shipmentDetails, container, packingList);
             }
         }
-        containerV3Util.setContainerNetWeight(container); // set container net weight from gross weight and tare weight
+        containerV3Util.setContainerNetWeight(Collections.singletonList(container)); // set container net weight from gross weight and tare weight
         return shipmentIdsForDetachment;
     }
 
@@ -2459,7 +2459,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
         for(Containers containers1: containers) {
-            containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
+            containerV3Util.setContainerNetWeight(Collections.singletonList(containers1)); // set container net weight from gross weight and tare weight
         }
         containerDao.saveAll(containers.stream().toList());
     }
