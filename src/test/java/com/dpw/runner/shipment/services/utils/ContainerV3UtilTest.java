@@ -597,7 +597,7 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void uploadContainers_shouldCompleteSuccessfully_whenExcelIsEmpty() throws Exception {
+    void uploadContainers_shouldThrowValidationException_whenExcelIsEmpty() throws Exception {
         CSVParsingUtilV3<Containers> parserMock = Mockito.mock(CSVParsingUtilV3.class);
         Field parserField = ContainerV3Util.class.getDeclaredField("parserV3");
         parserField.setAccessible(true);
@@ -605,10 +605,11 @@ class ContainerV3UtilTest extends CommonMocks {
         when(parserMock.parseExcelFile(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
         )).thenReturn(Collections.emptyList());
-        DependentServiceResponse mockResponse = new DependentServiceResponse();
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mockResponse);
         requestData.setConsolidationId(123L);
-        containerV3Util.uploadContainers(requestData, CONSOLIDATION);
+        assertThrows(ValidationException.class,
+                () -> containerV3Util.uploadContainers(requestData, CONSOLIDATION),
+                "Expected ValidationException for empty Excel data");
+
         verify(containerV3FacadeService, never()).createUpdateContainer(any(), any());
     }
 

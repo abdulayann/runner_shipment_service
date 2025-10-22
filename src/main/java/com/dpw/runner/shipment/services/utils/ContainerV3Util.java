@@ -625,6 +625,9 @@ public class ContainerV3Util {
         List<String> excelHeaders = new ArrayList<>();
         List<String> errorList = new ArrayList<>();
         List<Containers> containersList = parserV3.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModelV3.class, null, null, locCodeToLocationReferenceGuidMap, errorList, excelHeaders);
+        if (CollectionUtils.isEmpty(containersList)) {
+            throw new ValidationException("No details found. Please add at least one Container Line item.");
+        }
         parserV3.validateHeaders(excelHeaders, errorList);
         Map<UUID, Map<String, Object>> postData = validationContainerUploadInShipment(containersList);
         this.validateIfPacksOrVolume(prevData, postData, request, module, containersList, errorList, guidToIdMap);
