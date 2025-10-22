@@ -4281,9 +4281,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void updateIfChanged(Integer oldValue, Integer newValue, IntConsumer setter) {
-        if (newValue != null && !Objects.equals(oldValue, newValue)) {
-            setter.accept(newValue.intValue());
+    private void updateIfChanged(Integer oldValue, Integer newValue, Consumer<Integer> setter) {
+        if (!Objects.equals(oldValue, newValue)) {
+            setter.accept(newValue);
         }
     }
 
