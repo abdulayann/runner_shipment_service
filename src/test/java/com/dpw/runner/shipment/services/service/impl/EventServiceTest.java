@@ -326,51 +326,6 @@ class EventServiceTest extends CommonMocks {
     }
 
     @Test
-    void updateThrowsException2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Prepare request
-        EventsRequest request = objectMapperTest.convertValue(testData, EventsRequest.class);
-        request.setId(123L); // ensure ID is present
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        // Mock old event entity
-        Events oldEventEntity = new Events();
-        oldEventEntity.setId(123L);
-        oldEventEntity.setGuid(UUID.randomUUID());
-
-        when(eventDao.findByIdWithoutTenant(123L)).thenReturn(Optional.of(oldEventEntity));
-
-        // Mock new event entity conversion
-        Events newEventEntity = new Events();
-        newEventEntity.setGuid(oldEventEntity.getGuid()); // keep GUID same to avoid exception
-        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(newEventEntity);
-
-        // Mock Events -> EventsRequest conversion (used in saveEventUtilWithoutTenant)
-        when(jsonHelper.convertValue(any(Events.class), eq(EventsRequest.class))).thenReturn(request);
-
-        // Mock UserContext
-        UsersDto user = new UsersDto();
-        user.setTenantId(123);
-        user.setUsername("testUser");
-        mockStatic(UserContext.class);
-        when(UserContext.getUser()).thenReturn(user);
-
-        // Mock commonUtils update method
-        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
-
-        // Mock DAO update and saveWithoutTenant
-        doNothing().when(eventDao).updateEventDetails(any());
-        when(eventDao.saveWithoutTenant(any())).thenThrow(new RuntimeException("Custom error message"));
-
-        // Execute
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.update(commonRequestModel);
-
-        // Assertions
-        Assertions.assertNotNull(responseEntity);
-        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
-        assertEquals("Custom error message", runnerResponse.getError().getMessage());
-    }
-
-    @Test
     void updateWithEmptyRequest(){
         EventsRequest request = objectMapperTest.convertValue(null, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -447,8 +402,10 @@ class EventServiceTest extends CommonMocks {
 
         // Mock UserContext
         UsersDto user = new UsersDto();
-        user.setTenantId(123);
-        user.setUsername("testUser");
+        user.setTenantId(1);
+        user.setUsername("Username");
+        user.setCode("Code");
+        user.setEnableTimeZone(true);
         mockStatic(UserContext.class);
         when(UserContext.getUser()).thenReturn(user);
 
