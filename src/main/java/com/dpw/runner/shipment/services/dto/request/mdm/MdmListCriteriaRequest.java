@@ -29,6 +29,7 @@ public class MdmListCriteriaRequest implements IRunnerRequest {
         private String field;
         private String operator;
         private String value;
+        private List<Object> values;
     }
 
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -13,13 +14,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.npm.GetContractsCountForPartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -60,8 +60,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
@@ -110,6 +114,9 @@ class NPMServiceAdapterTest {
 
     @MockBean(name = "restTemplateForNPM")
     private RestTemplate restTemplate3;
+
+    @MockBean(name = "executorService")
+    private ExecutorService executorService;
 
     /**
      * Method under test:
@@ -1387,6 +1394,7 @@ class NPMServiceAdapterTest {
         dgContract.setDestination("Destination1");
         dgContract.setValidTill(LocalDateTime.now().plusDays(1));
         dgContract.setDgClass(List.of("3"));
+
         NPMContractsResponse.NPMContractResponse nonDgContract = new NPMContractsResponse.NPMContractResponse();
         nonDgContract.setProduct_type("CargoType2");
         nonDgContract.setOrigin("Origin2");
@@ -1412,6 +1420,7 @@ class NPMServiceAdapterTest {
         listContractsWithFilterRequest.setCargoType("CargoType1");
         listContractsWithFilterRequest.setOrigin("Origin1");
         listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder()
                 .data(listContractsWithFilterRequest)
@@ -1441,6 +1450,571 @@ class NPMServiceAdapterTest {
         assertEquals("Origin1", contracts.get(0).getOrigin());
         assertEquals("Destination1", contracts.get(0).getDestination());
         assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    static Stream<SortRequest> provideSortRequests() {
+        return Stream.of(
+                SortRequest.builder().fieldName("validTill").order("ASC").build(),
+                SortRequest.builder().fieldName("destination").order("ASC").build(),
+                SortRequest.builder().fieldName("origin").order("ASC").build(),
+                SortRequest.builder().fieldName("cargoType").order("ASC").build(),
+                SortRequest.builder().fieldName("maxTransitDays").order("ASC").build(),
+                SortRequest.builder().fieldName("minTransitDays").order("ASC").build()
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSortRequests")
+    void testFetchContractsWithSortRequests(SortRequest sortRequest) throws RunnerException {
+        // Mock JSON helper conversion
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        // Prepare contract response object
+        NPMContractsResponse.NPMContractResponse dgContract = new NPMContractsResponse.NPMContractResponse();
+        dgContract.setProduct_type("CargoType1");
+        dgContract.setOrigin("Origin1");
+        dgContract.setDestination("Destination1");
+        dgContract.setValidTill(LocalDateTime.now().plusDays(1));
+        dgContract.setDgClass(List.of("3"));
+        dgContract.setMeta(ListContractResponse.Meta.builder()
+                // Set transit hours based on sort field if related
+                .maxTransitHours(sortRequest.getFieldName().equals("maxTransitDays") ? "20" : null)
+                .minTransitHours(sortRequest.getFieldName().equals("minTransitDays") ? "20" : null)
+                .build());
+        if (sortRequest.getFieldName().equals("cargoType")) {
+            dgContract.setLoadTypes(List.of("FCL"));
+        }
+
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        npmContractsResponse.setContracts(List.of(dgContract));
+
+        // Mock REST call returning the contract response
+        when(restTemplate3.exchange(any(RequestEntity.class), any(Class.class)))
+                .thenReturn(new ResponseEntity<>(npmContractsResponse, HttpStatus.OK));
+
+        // Mock unlocation response for dependent service
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+
+        // Prepare filter request
+        ListContractsWithFilterRequest listContractsWithFilterRequest = new ListContractsWithFilterRequest();
+        listContractsWithFilterRequest.setIsDgEnabled(true);
+        listContractsWithFilterRequest.setCargoType("CargoType1");
+        listContractsWithFilterRequest.setOrigin("Origin1");
+        listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setParentContractId("DPWP-0001-2345");
+        listContractsWithFilterRequest.setMaxTransitDays(2L);
+        listContractsWithFilterRequest.setMinTransitDays(1L);
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
+        listContractsWithFilterRequest.setSortRequest(sortRequest);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(listContractsWithFilterRequest)
+                .guid("1234")
+                .id(1L)
+                .dependentData("Dependent Data")
+                .build();
+
+        // Call method under test
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel);
+
+        // Verify interactions
+        verify(restTemplate3).exchange(any(RequestEntity.class), any(Class.class));
+        verify(jsonHelper, atLeastOnce()).convertToJson(any());
+
+        // Assert response
+        assertNotNull(result);
+        DependentServiceResponse response = (DependentServiceResponse) result.getBody();
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        List<NPMContractsRunnerResponse> responseList = (List<NPMContractsRunnerResponse>) response.getData();
+        assertNotNull(responseList);
+        assertFalse(responseList.isEmpty());
+
+        List<NPMContractsResponse.NPMContractResponse> contracts = responseList.get(0).getContracts();
+        assertEquals(1, contracts.size());
+        assertEquals("CargoType1", contracts.get(0).getProduct_type());
+        assertEquals("Origin1", contracts.get(0).getOrigin());
+        assertEquals("Destination1", contracts.get(0).getDestination());
+        assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    @Test
+    void testFetchContractsWithNewFilters() throws RunnerException {
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        NPMContractsResponse.NPMContractResponse dgContract = new NPMContractsResponse.NPMContractResponse();
+        dgContract.setProduct_type("CargoType1");
+        dgContract.setOrigin("Origin1");
+        dgContract.setDestination("Destination1");
+        dgContract.setValidTill(LocalDateTime.now().plusDays(1));
+        dgContract.setDgClass(List.of("3"));
+
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        npmContractsResponse.setContracts(Arrays.asList(dgContract));
+
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(new ResponseEntity(npmContractsResponse, HttpStatus.OK));
+
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+
+        ListContractsWithFilterRequest listContractsWithFilterRequest = new ListContractsWithFilterRequest();
+        listContractsWithFilterRequest.setIsDgEnabled(true);
+        listContractsWithFilterRequest.setCargoType("CargoType1");
+        listContractsWithFilterRequest.setOrigin("Origin1");
+        listContractsWithFilterRequest.setDestination("Destination1");
+        listContractsWithFilterRequest.setParentContractId("DPWP-0001-2345");
+        listContractsWithFilterRequest.setMaxTransitDays(2L);
+        listContractsWithFilterRequest.setMinTransitDays(1L);
+        listContractsWithFilterRequest.setListContractRequest(new ListContractRequest());
+        listContractsWithFilterRequest.setSortRequest(SortRequest.builder().fieldName("minTransitDays").order("ASC").build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(listContractsWithFilterRequest)
+                .guid("1234")
+                .id(1L)
+                .dependentData("Dependent Data")
+                .build();
+
+        ResponseEntity<IRunnerResponse> result = nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel);
+
+        // Verify
+        verify(restTemplate3).exchange(isA(RequestEntity.class), isA(Class.class));
+        verify(jsonHelper, atLeastOnce()).convertToJson(any());
+
+        DependentServiceResponse response = (DependentServiceResponse) result.getBody();
+        assertNotNull(response);
+        assertTrue(response.isSuccess());
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        List<NPMContractsRunnerResponse> responseList = (List<NPMContractsRunnerResponse>) response.getData();
+        assertNotNull(responseList);
+        assertFalse(responseList.isEmpty());
+
+        List<NPMContractsResponse.NPMContractResponse> contracts = responseList.get(0).getContracts();
+        assertEquals(1, contracts.size());
+        assertEquals("CargoType1", contracts.get(0).getProduct_type());
+        assertEquals("Origin1", contracts.get(0).getOrigin());
+        assertEquals("Destination1", contracts.get(0).getDestination());
+        assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    @Test
+    void testGetContractCountForParties_NullResponseBody() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        // Mock response with null body
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(null))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        ListContractRequest listContractRequest = new ListContractRequest();
+
+        GetContractsCountForPartiesRequest request = new GetContractsCountForPartiesRequest();
+        request.setContractsCountRequest(listContractRequest);
+        request.setCustomerOrgIds(List.of("FRC0000678"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(request)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(1, actualData.getPartyContractsCount().size());
+        assertEquals(0, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties_DuplicateCustomerOrgIds() {
+        // Mock executor to run synchronously
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest = new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000123", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(getContractsCountForPartiesRequest)
+                .build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(2, actualData.getPartyContractsCount().size());
+        assertEquals(4, actualData.getTotalContractCount());
+    }
+
+    @Test
+    void testGetContractCountForParties() {
+        doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
+
+        when(masterDataUtils.withMdcSupplier(any(Supplier.class)))
+                .thenAnswer(invocation -> {
+                    Supplier<?> supplier = invocation.getArgument(0);
+                    return supplier;
+                });
+
+        List<NPMContractsRunnerResponse> mockContracts = Arrays.asList(
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build(),
+                NPMContractsRunnerResponse.builder().build()
+        );
+
+        DependentServiceResponse dependentResponse = new DependentServiceResponse();
+        dependentResponse.setData(mockContracts);
+
+        NPMServiceAdapter spyService = spy(nPMServiceAdapter);
+        doReturn(ResponseEntity.ok(dependentResponse))
+                .when(spyService).fetchContracts(any(CommonRequestModel.class));
+
+        when(jsonHelper.convertValueToList(any(), eq(NPMContractsRunnerResponse.class)))
+                .thenReturn(mockContracts);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("Convert To Json");
+
+        GetContractsCountForPartiesRequest getContractsCountForPartiesRequest =
+                new GetContractsCountForPartiesRequest();
+        getContractsCountForPartiesRequest.setDestination("destination");
+        getContractsCountForPartiesRequest.setOrigin("origin");
+        getContractsCountForPartiesRequest.setCargoType("FCL");
+        getContractsCountForPartiesRequest.setIsDgEnabled(Boolean.TRUE);
+        getContractsCountForPartiesRequest.setContractsCountRequest(new ListContractRequest());
+        getContractsCountForPartiesRequest.setCustomerOrgIds(List.of("FRC0000123", "FRC0000678", "FRC0000456"));
+
+        CommonRequestModel commonRequestModel =
+                CommonRequestModel.builder().data(getContractsCountForPartiesRequest).build();
+
+        var responseEntity = spyService.fetchContractsCountForParties(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        assertNotNull(responseEntity.getBody());
+        DependentServiceResponse actualResponse = (DependentServiceResponse) responseEntity.getBody();
+        assertNotNull(actualResponse.getData());
+
+        GetContractsCountForPartiesResponse actualData =
+                (GetContractsCountForPartiesResponse) actualResponse.getData();
+
+        assertEquals(3, actualData.getPartyContractsCount().size());
+
+        assertEquals(9, actualData.getTotalContractCount());
+
+        List<PartyContractsCountResponse> partyResponses = actualData.getPartyContractsCount();
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000123".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000456".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+        assertTrue(partyResponses.stream()
+                .anyMatch(p -> "FRC0000678".equals(p.getCustomerOrgId()) && p.getContractCount() == 3));
+    }
+
+    @Test
+    void testFetchContractsWithFilterException() {
+        // Arrange
+        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
+        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
+                .thenReturn(buildResult);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        when(commonRequestModel.getData()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+
+        // Act and Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchContractsWithFilters(commonRequestModel));
+        verify(commonRequestModel).getData();
+        verify(jsonHelper).convertToJson(isA(NpmErrorResponse.class));
+        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSortParams")
+    void sortNpmOffers_variousSortFields_sortedCorrectly(String sortField, String order, String requestSource) throws RunnerException {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName(sortField).order(order).build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), eq(FetchOffersResponse.class)))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse result = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        // Assert
+
+        assertEquals(2, result.getOffers().size());
+        boolean ascending = !"desc".equalsIgnoreCase(order);
+        FetchOffersResponse.Offer first = result.getOffers().get(0);
+        FetchOffersResponse.Offer second = result.getOffers().get(1);
+
+        switch (sortField) {
+            case "fastest" -> {
+                long firstHours = Long.parseLong(first.getMaxTransitHours());
+                long secondHours = Long.parseLong(second.getMaxTransitHours());
+                assertTrue(ascending ? firstHours <= secondHours : firstHours >= secondHours,
+                        () -> "FASTEST sort failed: " + firstHours + " vs " + secondHours);
+            }
+
+            case "departure" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getProposedPickupDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getProposedPickupDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "DEPARTURE sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "arrival" -> {
+                LocalDate firstDate = LocalDate.parse(first.getScheduleInfo().getEstimatedArrivalDate());
+                LocalDate secondDate = LocalDate.parse(second.getScheduleInfo().getEstimatedArrivalDate());
+                assertTrue(ascending ? !firstDate.isAfter(secondDate) : !firstDate.isBefore(secondDate),
+                        () -> "ARRIVAL sort failed: " + firstDate + " vs " + secondDate);
+            }
+
+            case "freightRate" -> {
+                BigDecimal firstRate = "AUTO_SELL".equals(requestSource)
+                        ? first.getGroupTotals().getFreightCharges().getTotal()
+                        : first.getGroupTotals().getFreightCharges().getTotalCost();
+                BigDecimal secondRate = "AUTO_SELL".equals(requestSource)
+                        ? second.getGroupTotals().getFreightCharges().getTotal()
+                        : second.getGroupTotals().getFreightCharges().getTotalCost();
+                assertTrue(ascending ? firstRate.compareTo(secondRate) <= 0 : firstRate.compareTo(secondRate) >= 0,
+                        () -> "FREIGHT_RATE sort failed: " + firstRate + " vs " + secondRate);
+            }
+
+            case "totalRate" -> {
+                BigDecimal firstTotal = "AUTO_SELL".equals(requestSource)
+                        ? first.getTotalRoutePrice()
+                        : first.getTotalRouteCost();
+                BigDecimal secondTotal = "AUTO_SELL".equals(requestSource)
+                        ? second.getTotalRoutePrice()
+                        : second.getTotalRouteCost();
+                assertTrue(ascending ? firstTotal.compareTo(secondTotal) <= 0 : firstTotal.compareTo(secondTotal) >= 0,
+                        () -> "TOTAL_RATE sort failed: " + firstTotal + " vs " + secondTotal);
+            }
+
+            default -> fail("Unsupported sort field: " + sortField);
+        }
+    }
+
+    private static Stream<Arguments> provideSortParams() {
+        return Stream.of(
+                Arguments.of("fastest", "asc", "AUTO_SELL"),
+                Arguments.of("fastest", "desc", "AUTO_SELL"),
+                Arguments.of("departure", "asc", "AUTO_SELL"),
+                Arguments.of("arrival", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_SELL"),
+                Arguments.of("freightRate", "asc", "AUTO_COST"),
+                Arguments.of("totalRate", "desc", "AUTO_SELL"),
+                Arguments.of("totalRate", "asc", "AUTO_COST")
+        );
+    }
+
+    @Test
+    void fetchOffersWithFilter_successfulResponse_sortsFiltersPaginates() throws Exception {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        // Arrange
+        NPMFetchOffersRequestFromUI requestData = NPMFetchOffersRequestFromUI.builder()
+                .carrier("EVERGREEN LINE")
+                .minTransitDays(1L)
+                .maxTransitDays(3L)
+                .sortRequest(SortRequest.builder().fieldName("fastest").order("asc").build())
+                .pageNo(1)
+                .pageSize(2)
+                .requestSource("AUTO_SELL")
+                .origin("OriginA")
+                .build();
+        CommonRequestModel request = CommonRequestModel.builder().data(requestData).build();
+
+        // Mock json serialization
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+
+        // Prepare sample offers
+        FetchOffersResponse.Offer offer1 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("24")
+                .maxTransitHours("48")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("100"))
+                                .totalCost(new BigDecimal("80"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-15")
+                        .estimatedArrivalDate("2025-10-18")
+                        .build())
+                .totalRoutePrice(new BigDecimal("150"))
+                .totalRouteCost(new BigDecimal("120"))
+                .build();
+
+        FetchOffersResponse.Offer offer2 = FetchOffersResponse.Offer.builder()
+                .minTransitHours("48")
+                .maxTransitHours("72")
+                .carrier("EVERGREEN LINE")
+                .groupTotals(FetchOffersResponse.GroupTotals.builder()
+                        .freightCharges(FetchOffersResponse.ChargeGroup.builder()
+                                .total(new BigDecimal("200"))
+                                .totalCost(new BigDecimal("180"))
+                                .build())
+                        .build())
+                .scheduleInfo(FetchOffersResponse.ScheduleInfo.builder()
+                        .proposedPickupDate("2025-10-14")
+                        .estimatedArrivalDate("2025-10-20")
+                        .build())
+                .totalRoutePrice(new BigDecimal("250"))
+                .totalRouteCost(new BigDecimal("230"))
+                .build();
+
+        FetchOffersResponse fetchOffersResponse = new FetchOffersResponse();
+        fetchOffersResponse.setOffers(List.of(offer1, offer2));
+
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = nPMServiceAdapter.fetchOffersWithFilter(request);
+
+        // Assert
+        assertNotNull(response);
+        DependentServiceResponse dependentServiceResponse = (DependentServiceResponse) response.getBody();
+        assertNotNull(dependentServiceResponse);
+        FetchOffersResponse fetchOffersResponse1 = (FetchOffersResponse) dependentServiceResponse.getData();
+
+        assertEquals(2, fetchOffersResponse1.getOffers().size());
+
+        assertTrue(Double.parseDouble(fetchOffersResponse1.getOffers().get(0).getMaxTransitHours()) <= Double.parseDouble(fetchOffersResponse1.getOffers().get(1).getMaxTransitHours()));
+        verify(restTemplate3, times(1)).exchange(any(RequestEntity.class), eq(FetchOffersResponse.class));
+    }
+
+    @Test
+    void fetchOffersWithFilter_httpException_throwsNPMException() {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        NpmErrorResponse buildResult = NpmErrorResponse.builder().errorMessage("An error occurred").success(true).build();
+        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<NpmErrorResponse>>any()))
+                .thenReturn(buildResult);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(mock);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new NPMFetchOffersRequestFromUI()).build();
+        // Act and Assert
+        assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffersWithFilter(commonRequestModel));
     }
 
     private static Stream<Arguments> provideDgContractTestData() {

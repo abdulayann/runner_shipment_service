@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.v3.ReferenceNumbersValidationUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +37,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -169,7 +168,7 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         Page<ReferenceNumbers> referenceNumbersPage;
 
         //Fetch all party list from db
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             referenceNumbersPage = referenceNumbersDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -188,7 +187,7 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         Page<ReferenceNumbers> referenceNumbersPage;
 
         //Fetch all party list from db
-        if (Objects.equals(xSource, NETWORK_TRANSFER))
+        if (CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             referenceNumbersPage = referenceNumbersDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());

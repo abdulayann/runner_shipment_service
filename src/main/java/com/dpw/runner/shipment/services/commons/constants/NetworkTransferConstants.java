@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+
+import java.util.EnumSet;
+import java.util.Set;
+
 public class NetworkTransferConstants {
     private NetworkTransferConstants() {}
 
@@ -10,6 +15,7 @@ public class NetworkTransferConstants {
     public static final String NETWORK_TRANSFER_MASTER_DATA = "/get/master-data";
     public static final String NETWORK_TRANSFER_DESTINATION_BRANCH_EMAILS = "/get/destination-branch-emails";
     public static final String LIST_SUCCESSFUL = "Successful List";
+    public static final String SHIPMENT_NUMBER = "shipmentNumber";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Network Transfer Data Retrieval By Id";
     public static final String NETWORK_TRANSFER_ID = "Network Transfer Id";
     public static final String NETWORK_TRANSFER_GUID = "Network Transfer Guid";
@@ -22,5 +28,8 @@ public class NetworkTransferConstants {
     public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
     public static final String FETCH_EMAILS_STATUS_SUCCESSFUL = "Fetch Emails Status Successful";
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL = "/create/external";
+
+    public static final Set<NetworkTransferStatus> TRANSFER_RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.TRANSFERRED);
     public static final String NETWORK_TRANSFER_CREATE_EXTERNAL_BRIDGE = "/create/external/bridge";
+
 }

@@ -6,14 +6,14 @@ import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.PackCategory;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 @ApiModel(value = "Packing response model")
@@ -111,6 +111,14 @@ public class PackingResponse implements IRunnerResponse {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
     private String shipmentType;
+    private PackCategory packCategory;
+    private BigDecimal lineNo;
+    private BigDecimal subLineNo;
+    private String productCode;
+    private Long shipmentOrderId;
+    private Long orderLineId;
+    private UUID orderGuid;
+    private String orderLineGuid;
 
     public boolean getAssigned() {return containerId != null;}
 }

@@ -31,6 +31,7 @@ public class ConsolidationConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Consolidation Data Retrieval By Id";
 
     public static final String CONSOLIDATION_ID = "Consolidation Id";
+    public static final String SHIPMENT_ID = "Shipment Id";
     public static final String CONSOLIDATION_GUID = "Consolidation Guid";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
@@ -67,8 +68,11 @@ public class ConsolidationConstants {
     public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
     public static final String CONSOLIDATION_RETRIEVE_EMPTY_REQUEST = "Request is empty for Consolidation retrieve with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_NULL = "Consolidation Details is null for Guid {} with Request Id {}";
+    public static final String CONSOLIDATION_DETAILS_IS_NULL_MESSAGE_DR = "Consolidation Details is null for Id/Guid {} with Request Id {}";
     public static final String PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE = "Existing Shipment Push Request already in place, Cannot initiate a new request.";
     public static final String CONSOLIDATION_RETRIEVE_NULL_REQUEST =  "Request Id is null for Consolidation retrieve with Request Id {}";
     public static final String CONSOLIDATION_REQUEST_NULL_ID_AND_GUID_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String AIR_DRT_CONSOLIDATION_CREATION_ERROR = "Cannot create consolidation with transportMode as AIR and consolidationType as DRT";
+    public static final String CONSOLE_DETAILS_FETCHED_SUCCESSFULLY = "Consolidation details fetched successfully";
+    public static final String CREATE_CONSOLE_AND_ATTACHED_SHIPMENT_SUCCESSFUL = "Consolidation Data Creation and Attach Shipment Successful";
 }

@@ -196,4 +196,15 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         var response = restClient.storeDocument(request.getDependentData());
         ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> searchDocumentTypes(CommonRequestModel commonRequestModel) {
+        log.info("{} | Processing document search request", LoggerHelper.getRequestIdFromMDC());
+        var response = restClient.searchDocuments(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(
+                response.getData(),
+                response.getPageNo(),
+                response.getCount()
+        );
+    }
 }

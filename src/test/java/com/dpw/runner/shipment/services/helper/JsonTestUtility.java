@@ -189,6 +189,9 @@ public class JsonTestUtility {
     public ShipmentDetails getTestShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
         return shipmentDetails;
+    }public ShipmentDetails getTestShipmentForAutoDetach() {
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT2"), ShipmentDetails.class);
+        return shipmentDetails;
     }
     public ShipmentDetails getCompleteShipment() {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("COMPLETE_SHIPMENT"), ShipmentDetails.class);
@@ -461,6 +464,15 @@ public class JsonTestUtility {
     public ListCommonRequest getListRequest13() {
         return objectMapper.convertValue(payload.get("LIST_REQUEST_13"), ListCommonRequest.class);
     }
+    public ListCommonRequest getListRequest14() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_14"), ListCommonRequest.class);
+    }
+    public ListCommonRequest getListRequest15() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_15"), ListCommonRequest.class);
+    }
+    public ListCommonRequest getListRequest16() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_16"), ListCommonRequest.class);
+    }
 
     public QuoteContracts getQuoteContracts() {
         return objectMapper.convertValue(payload.get("QUOTE_CONTRACTS"), QuoteContracts.class);
@@ -491,5 +503,10 @@ public class JsonTestUtility {
 
     public Notification getNotification() {
         return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
+    }
+
+    public ShippingInstruction getTestShippingInstruction() {
+        ShippingInstruction si = objectMapper.convertValue(payload.get("SI"), ShippingInstruction.class);
+        return si;
     }
 }

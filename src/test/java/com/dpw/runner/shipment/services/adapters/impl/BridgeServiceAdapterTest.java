@@ -3,16 +3,12 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.bridgeService.AuthLoginRequest;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.BridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.AuthLoginResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,11 +27,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,32 +52,19 @@ class BridgeServiceAdapterTest {
     @InjectMocks
     BridgeServiceAdapter bridgeServiceAdapter;
 
-    private static JsonTestUtility jsonTestUtility;
-    private static ObjectMapper objectMapper;
-
-
-    @BeforeAll
-    static void init() throws IOException {
-        jsonTestUtility = new JsonTestUtility();
-        objectMapper = JsonTestUtility.getMapper();
-    }
-
-
     @Test
     void testRequestTactResponse() throws RunnerException {
         TactBridgePayload tactBridgePayload = TactBridgePayload.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(tactBridgePayload);
 
-
-        AuthLoginRequest authLoginRequest = new AuthLoginRequest();
         AuthLoginResponse authLoginResponse = new AuthLoginResponse();
         authLoginResponse.setAccessToken("accessToken");
         BridgeServiceResponse bridgeServiceResponse = new BridgeServiceResponse();
 
         when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-            .thenReturn(ResponseEntity.ok(authLoginResponse));
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(BridgeServiceResponse.class)))
-            .thenReturn(ResponseEntity.ok(bridgeServiceResponse));
+                .thenReturn(ResponseEntity.ok(bridgeServiceResponse));
 
         var res = bridgeServiceAdapter.requestTactResponse(commonRequestModel);
 
@@ -86,41 +72,32 @@ class BridgeServiceAdapterTest {
     }
 
     @Test
-    void testRequestTactResponseTokenGenerateThrowsError() throws RunnerException {
+    void testRequestTactResponseTokenGenerateThrowsError() {
         TactBridgePayload tactBridgePayload = TactBridgePayload.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(tactBridgePayload);
-
-
-        AuthLoginRequest authLoginRequest = new AuthLoginRequest();
         AuthLoginResponse authLoginResponse = new AuthLoginResponse();
         authLoginResponse.setAccessToken("accessToken");
-        BridgeServiceResponse bridgeServiceResponse = new BridgeServiceResponse();
-
         when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-            .thenThrow(new RuntimeException("error"));
+                .thenThrow(new RuntimeException("error"));
 
         assertThrows(RunnerException.class, () ->
-            bridgeServiceAdapter.requestTactResponse(commonRequestModel));
+                bridgeServiceAdapter.requestTactResponse(commonRequestModel));
     }
 
     @Test
-    void testRequestTactResponseBridgeServiceThrowsError() throws RunnerException {
+    void testRequestTactResponseBridgeServiceThrowsError() {
         TactBridgePayload tactBridgePayload = TactBridgePayload.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(tactBridgePayload);
 
-
-        AuthLoginRequest authLoginRequest = new AuthLoginRequest();
         AuthLoginResponse authLoginResponse = new AuthLoginResponse();
         authLoginResponse.setAccessToken("accessToken");
-        BridgeServiceResponse bridgeServiceResponse = new BridgeServiceResponse();
-
         when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-            .thenReturn(ResponseEntity.ok(authLoginResponse));
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(BridgeServiceResponse.class)))
-            .thenThrow(new RuntimeException("error"));
+                .thenThrow(new RuntimeException("error"));
 
         assertThrows(RunnerException.class, () ->
-            bridgeServiceAdapter.requestTactResponse(commonRequestModel));
+                bridgeServiceAdapter.requestTactResponse(commonRequestModel));
     }
 
     @Test
@@ -279,4 +256,39 @@ class BridgeServiceAdapterTest {
         verify(restTemplate).postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class));
     }
 
+    @Test
+    void testBridgeIntegration() throws RunnerException {
+        String payload = "{}";
+        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
+        authLoginResponse.setAccessToken("accessToken");
+        BridgeServiceResponse bridgeServiceResponse = new BridgeServiceResponse();
+
+        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(BridgeServiceResponse.class)))
+                .thenReturn(ResponseEntity.ok(bridgeServiceResponse));
+
+        var res = bridgeServiceAdapter.bridgeApiIntegration(payload, "TEST_CREATE", "123-324", "123-234");
+
+        assertEquals(bridgeServiceResponse, res);
+    }
+
+    @Test
+    void testBridgeIntegrationThrowsException() {
+        String payload = "{}";
+        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
+        authLoginResponse.setAccessToken("accessToken");
+        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
+        // Arrange
+        RestClientException exception = new RestClientException("exception");
+
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
+                .thenThrow(exception);
+        // Act & Assert
+        assertThrows(RunnerException.class, () -> {
+            bridgeServiceAdapter.bridgeApiIntegration(payload, "TEST_CREATE", "123-324", "123-234");
+        });
+
+    }
 }

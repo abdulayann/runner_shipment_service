@@ -213,6 +213,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ConsolidationCommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
@@ -396,6 +397,9 @@ public class ConsolidationService implements IConsolidationService {
     private IPackingService packingService;
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private ConsolidationCommonUtils consolidationCommonUtils;
 
     @Autowired
     private IDpsEventService dpsEventService;
@@ -872,7 +876,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
-        generateConsolidationNumber(consolidationDetails);
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, creatingFromDgShipment);
 
         // audit logs
@@ -892,79 +896,6 @@ public class ConsolidationService implements IConsolidationService {
             throw new RunnerException(e.getMessage());
         }
 
-    }
-
-    /**
-     * Method that generates consol and bol number
-     * @param consolidationDetails
-     */
-    @Override
-    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
-        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
-
-        if(consolidationDetails.getConsolidationNumber() == null) {
-            if(Boolean.TRUE.equals(customisedSequence)) {
-                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
-                if(consoleNumber != null && !consoleNumber.isEmpty())
-                    consolidationDetails.setConsolidationNumber(consoleNumber);
-                setConsolidationNumber(consolidationDetails);
-                setReferenceNumber(consolidationDetails);
-            }
-            else {
-                consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-                setReferenceNumber(consolidationDetails);
-            }
-        }
-
-        setBolConsolidation(consolidationDetails);
-    }
-
-    private void setConsolidationNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
-            consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-    }
-
-    private void setReferenceNumber(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
-            consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
-    }
-
-    private void setBolConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException {
-        if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
-            if (StringUtility.isEmpty(bol)) {
-                bol = generateCustomBolNumber();
-            }
-            if (StringUtility.isNotEmpty(bol)) {
-                consolidationDetails.setBol(bol);
-            }
-        }
-    }
-
-    private String getConsolidationSerialNumber() {
-        return v1Service.getMaxConsolidationId();
-    }
-
-    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
-        List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts();
-        if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
-            // to check the commmon sequence
-            var sequenceNumber = productEngine.getCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
-            if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
-                return sequenceNumber;
-            }
-        }
-        var identifiedProduct = productEngine.identifyProduct(consolidationDetails, enabledTenantProducts);
-        if (identifiedProduct == null){
-            return "";
-        }
-        var sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessTypes);
-        if(sequenceSettings == null){
-            return "";
-        }
-        String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
-        var user = UserContext.getUser();
-        return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), true, null, false);
     }
 
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
@@ -1073,7 +1004,7 @@ public class ConsolidationService implements IConsolidationService {
 
         for(Long shipmentId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_PULL_REQUESTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, null, null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_PULL_REQUESTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, null, null, false);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }
@@ -1107,7 +1038,7 @@ public class ConsolidationService implements IConsolidationService {
 
         for(Long shipmentId : interbranchShipIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_DETACH, remarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_DETACH, remarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, null, false);
             } catch (Exception e) {
                 log.error("Error while sending email");
             }
@@ -1220,7 +1151,7 @@ public class ConsolidationService implements IConsolidationService {
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
             List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
-            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails, false);
         }
     }
 
@@ -4988,7 +4919,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
-        setReceivingAndTriangulationBranch(consolidationDetails);
+        consolidationCommonUtils.setReceivingAndTriangulationBranch(consolidationDetails);
         saveAwb(consolidationDetails, oldEntity);
         if (Boolean.TRUE.equals(isCreate))
             consolidationDetails.setOpenForAttachment(true);
@@ -5011,21 +4942,6 @@ public class ConsolidationService implements IConsolidationService {
                         throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
                 }
             }
-        }
-    }
-
-    private void setReceivingAndTriangulationBranch(ConsolidationDetails consolidationDetails) {
-        if(consolidationDetails.getReceivingBranch() != null && consolidationDetails.getReceivingBranch() == 0)
-            consolidationDetails.setReceivingBranch(null);
-        if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartnerList())
-                && consolidationDetails.getTriangulationPartnerList().size() == 1) {
-            TriangulationPartner triangulationPartner = consolidationDetails.getTriangulationPartnerList().get(0);
-            if (triangulationPartner != null && Long.valueOf(0).equals(triangulationPartner.getTriangulationPartner()))
-                consolidationDetails.setTriangulationPartnerList(null);
-        } else if (consolidationDetails.getTriangulationPartnerList() == null
-                && consolidationDetails.getTriangulationPartner() != null
-                && consolidationDetails.getTriangulationPartner() == 0) {
-            consolidationDetails.setTriangulationPartner(null);
         }
     }
 
@@ -5937,6 +5853,11 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
+        consolidationCommonUtils.generateConsolidationNumber(consolidationDetails);
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId) {
         ConsolidationDetailsResponse consol;
         Optional<ShipmentDetails> shipmentRes = shipmentDao.findById(shipmentId);
@@ -6068,7 +5989,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String getDefaultBol(String transportMode) {
-        return (transportMode == null || !transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null;
+        return (transportMode == null || !transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? consolidationCommonUtils.generateCustomBolNumber() : null;
     }
 
     private CarrierDetailResponse getCarrierDetailsForConsolidationDetailsResponse(CarrierDetailResponse shipmentCarrierDetails) {
@@ -6564,7 +6485,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
             response.setContainerCategory(tenantSettings.getDefaultContainerType());
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
-            response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
+            response.setBol(shouldGenerateBol(response.getTransportMode()) ? consolidationCommonUtils.generateCustomBolNumber() : null);
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
                 response.setModeOfBooking(Constants.INTTRA);
             }
@@ -6746,32 +6667,10 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException {
         try {
-            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomBolNumber()).build());
+            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(consolidationCommonUtils.generateCustomBolNumber()).build());
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
         }
-    }
-
-    public String generateCustomBolNumber() {
-        String res = null;
-        ShipmentSettingsDetails tenantSetting = commonUtils.getShipmentSettingFromContext();
-
-        if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite() && tenantSetting.getBolNumberGeneration() == null) {
-            return  res;
-        }
-
-        if(tenantSetting.getBolNumberGeneration() != null) {
-            res = tenantSetting.getBolNumberPrefix() != null ? tenantSetting.getBolNumberPrefix() : "";
-            if (tenantSetting.getBolNumberGeneration() == Random) {
-                res += StringUtility.getRandomString(10);
-            } else {
-                String serialNumber = v1Service.getMaxConsolidationId();
-                res += serialNumber;
-            }
-
-        }
-
-        return res;
     }
 
     // Create Auto event
@@ -6780,25 +6679,9 @@ public class ConsolidationService implements IConsolidationService {
         if (consolidationDetails.getEventsList() == null) {
             consolidationDetails.setEventsList(new ArrayList<>());
         }
-        consolidationDetails.getEventsList().add(createEvent(consolidationDetails, EventConstants.COCR));
+        consolidationDetails.getEventsList().add(consolidationCommonUtils.createEvent(consolidationDetails, EventConstants.COCR));
     }
 
-    private Events createEvent(ConsolidationDetails consolidationDetails, String eventCode) {
-        Events events = new Events();
-        // Set event fields from consolidation
-        events.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
-        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        events.setIsPublicTrackingEvent(true);
-        events.setEntityType(Constants.CONSOLIDATION);
-        events.setEntityId(consolidationDetails.getId());
-        events.setTenantId(TenantContext.getCurrentTenant());
-        events.setEventCode(eventCode);
-        events.setConsolidationId(consolidationDetails.getId());
-        events.setDirection(consolidationDetails.getShipmentType());
-        // Persist the event
-        eventDao.save(events);
-        return events;
-    }
     public ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel) {
         ValidateMawbNumberRequest request = (ValidateMawbNumberRequest) commonRequestModel.getData();
         ValidateMawbNumberResponse response = ValidateMawbNumberResponse.builder().success(true).build();

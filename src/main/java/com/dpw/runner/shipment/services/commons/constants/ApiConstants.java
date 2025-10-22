@@ -4,6 +4,7 @@ public class ApiConstants {
 
     public static final String API_DEFAULT_BOOKING = "/getDefaultBooking";
     public static final String SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS = "/update/transport-status";
+    public static final String CONSOLIDATED_API_LIST = "/consolidatedList";
 
     private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
@@ -40,6 +41,7 @@ public class ApiConstants {
 
     public static final String API_UPDATE = "/update";
     public static final String API_UPDATE_BULK = "/update/bulk";
+    public static final String API_PATCH_UPDATE_BULK = "/patch/update/bulk";
 
     public static final String API_RETRIEVE = "/retrieve";
 
@@ -48,6 +50,7 @@ public class ApiConstants {
     public  static final String API_RETRIEVE_BY_ID_EXT_PARTIAL = "/retrieve/external/partial/id";
     public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
     public static final String API_RETRIEVE_BY_UUID = "/retrieve/mdm/uuid";
+    public static final String SYNC_CONTAINERS = "/syncContainers";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
@@ -81,6 +84,7 @@ public class ApiConstants {
 
     public static final String API_GET = "/get";
     public static final String API_LIST = "/list";
+    public static final String API_SUBMIT_OR_AMEND = "/submitOrAmend";
     public static final String CREATE_NON_BILLABLE_CUSTOMER = "/createNonBillableCustomer";
     public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
@@ -102,6 +106,7 @@ public class ApiConstants {
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
     public static final String STATE_BASED_LIST = "/state-based-list";
     public static final String API_LIST_BILL_CHARGES_SHIPMENTS = "/list-for-bill-charges";
+    public static final String API_ORDER_LINE_UPDATES = "/order-line/updates/bulk";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
@@ -216,4 +221,21 @@ public class ApiConstants {
     public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
     public static final String API_UPDATE_PARTIES = "/update/parties";
+    public static final String API_CLONE_FROM_SHIPMENT = "/cloneFromShipment";
+    public static final String API_CLONE_BOOKING = "/clone/booking";
+    public static final String API_CLONE_SHIPMENT = "/clone/shipment";
+    public static final String API_CLONE_CONFIG = "/getCloneConfig";
+    public static final String API_RESET_QUOTE_FIELDS = "/quote/reset-fields";
+
+    // Dynamic endpoints
+    public static final String API_DYNAMIC_LIST = "/dynamic/list";
+    public static final String API_DYNAMIC_RETRIEVE = "/dynamic/retrieve";
+    public static final String API_BULK_UPDATE = "/containers/bulk-update";
+
+    public static final String API_SUBMIT = "/submit/{id}";
+    public static final String API_AMEND = "/amend/{id}";
+
+    public static final String API_CONSOLE_FROM_SHIPMENT = "console-from-shipment";
+    public static final String API_CREATE_CONSOLE_ATTACH_SHIPMENT = "/create-console-attach-shipment";
+
 }

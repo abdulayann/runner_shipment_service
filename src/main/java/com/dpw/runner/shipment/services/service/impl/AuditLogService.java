@@ -273,7 +273,7 @@ public class AuditLogService implements IAuditLogService {
         }
         Pair<Specification<AuditLog>, Pageable> tuple = fetchData(request, AuditLog.class);
         Page<AuditLog> auditLogPage;
-        if(Objects.equals(xSource, Constants.NETWORK_TRANSFER))
+        if(CommonUtils.canFetchDetailsWithoutTenantFilter(xSource))
             auditLogPage = auditLogDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());

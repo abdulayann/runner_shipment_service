@@ -317,6 +317,9 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "date_of_receipt")
     private LocalDateTime dateOfReceipt;
 
+    @Column(name = "is_rated_bl")
+    private Boolean isRatedBL;
+
     @Column(name = "shipped_onboard")
     private LocalDateTime shippedOnboard;
 

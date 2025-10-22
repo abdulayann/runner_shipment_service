@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,4 +39,5 @@ public class NetworkTransferListResponse implements IRunnerResponse {
     private Boolean isHidden;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime transferredDate;
+    private List<String> shipmentNumbers;
 }
