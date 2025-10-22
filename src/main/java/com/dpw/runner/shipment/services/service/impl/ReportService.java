@@ -1068,9 +1068,9 @@ public class ReportService implements IReportService {
         validateReleaseTypeForReport(reportRequest);
         dataRetrieved = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
         if(ObjectUtils.isNotEmpty(reportRequest.getPrintType()) && reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
-            createEvent(reportRequest, EventConstants.DHBL);
+            createEvent(reportRequest, EventConstants.DSWB);
         } else {
-            createEvent(reportRequest, EventConstants.FHBL);
+            createEvent(reportRequest, EventConstants.FSWB);
         }
         return dataRetrieved;
     }
@@ -1530,7 +1530,10 @@ public class ReportService implements IReportService {
         }
 
         // Set reference number based on event code
-        if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
+        if (EventConstants.DHBL.equalsIgnoreCase(eventCode)
+                || EventConstants.DSWB.equalsIgnoreCase(eventCode)
+                || EventConstants.FSWB.equalsIgnoreCase(eventCode)
+                || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
             shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
                     eventsRequest.setContainerNumber(shipmentDetails.getHouseBill())
             );
