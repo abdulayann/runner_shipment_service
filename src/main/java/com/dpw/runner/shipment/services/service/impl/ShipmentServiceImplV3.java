@@ -121,6 +121,7 @@ import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.dto.request.CloneRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
@@ -131,30 +132,34 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest.OrderDetails;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
+import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CloneFieldResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetField;
+import com.dpw.runner.shipment.services.dto.response.QuoteResetRulesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveExternalResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
-import com.dpw.runner.shipment.services.dto.request.orderManagement.AttachDetachOrderRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -166,13 +171,13 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.CarrierPatchV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentPatchV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.AdditionalDetailV3LiteResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
@@ -192,14 +197,14 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
@@ -214,13 +219,13 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
-import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
@@ -255,13 +260,13 @@ import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
-import com.dpw.runner.shipment.services.utils.ShipmentCommonUtils;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -414,7 +419,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IV1Service v1Service;
     @Autowired
     private ProductIdentifierUtility productEngine;
-
     @Autowired
     private ShipmentCommonUtils shipmentCommonUtils;
     @Autowired
@@ -481,7 +485,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.logsHistoryService = logsHistoryService;
         this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.consolidationDetailsDao = consolidationDetailsDao;
-        this.additionalDetailDao = additionalDetailDao;
         this.partiesDao = partiesDao;
         this.routingsV3Dao = routingsDao;
         this.orderManagementAdapter = orderManagementAdapter;
@@ -508,6 +511,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.notificationService = notificationService;
         this.mdmServiceAdapter = mdmServiceAdapter;
         this.networkTransferDao = networkTransferDao;
+        this.additionalDetailDao = additionalDetailDao;
     }
 
     @Override
@@ -997,7 +1001,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
         Root<ShipmentDetails> root = cq.from(ShipmentDetails.class);
         // Step 3: Parse filterCriteria into predicates
-        List<Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
+        List<javax.persistence.criteria.Predicate> predicates = commonUtils.buildPredicatesFromFilters(cb, root, listCommonRequest);
 
         // Step 4: Parse sortRequest
         Order sortOrder = DbAccessHelper.buildSortOrder(cb, root, listCommonRequest);
@@ -1010,7 +1014,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         // Add where
         if (!predicates.isEmpty()) {
-            cq.where(cb.and(predicates.toArray(new Predicate[0])));
+            cq.where(cb.and(predicates.toArray(new javax.persistence.criteria.Predicate[0])));
         }
 
         // Add sorting
@@ -3305,6 +3309,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                                          LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         Events events = initializeAutomatedEvents(shipmentDetails, eventCode, actualDateTime, estimatedDateTime);
         commonUtils.updateEventWithMasterData(List.of(events));
+
+        if (events.getEventCode().equalsIgnoreCase(EventConstants.SHCR)) {
+            events.setContainerNumber(shipmentDetails.getShipmentId());
+            events.setLocationRole(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+            events.setProgressStatus(EventProgressStatus.COMPLETED);
+        }
+
         // Persist the event
         eventDao.save(events);
         return events;
