@@ -317,7 +317,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Map.entry("packages", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Integer.class).fieldName("packages").build()),
             Map.entry("packageType", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("packageType").build()),
             Map.entry("isReefer", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Boolean.class).fieldName("isReefer").build()),
-            Map.entry("isDg", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(Boolean.class).fieldName("isDg").build())
+            Map.entry("isDg", RunnerEntityMapping.builder().tableName(CUSTOMER_BOOKING).dataType(Boolean.class).build())
     );
 
     @Autowired
