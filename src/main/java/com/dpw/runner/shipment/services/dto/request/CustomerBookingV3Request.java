@@ -7,14 +7,14 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerBookingQuoteDateType;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import javax.validation.constraints.Digits;
+import jakarta.validation.constraints.Digits;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Customer Booking V3 Request Model")
+@Schema(description = "Customer Booking V3 Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

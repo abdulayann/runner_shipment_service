@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Customer Booking Response Model")
+@Schema(description = "Customer Booking Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

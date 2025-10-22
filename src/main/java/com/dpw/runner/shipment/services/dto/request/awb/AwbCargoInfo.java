@@ -2,18 +2,18 @@ package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@ApiModel("AWB Cargo Info Model")
+@Schema(description = "AWB Cargo Info Model")
 @ToString
 @Builder
 @NoArgsConstructor

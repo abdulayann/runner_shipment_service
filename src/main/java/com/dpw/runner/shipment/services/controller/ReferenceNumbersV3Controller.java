@@ -14,20 +14,17 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @Slf4j
@@ -44,16 +41,16 @@ public class ReferenceNumbersV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
-    private static class MyResponseClass extends RunnerResponse<ReferenceNumbersResponse> {
+    private static class MyReferenceNumberResponseClass extends RunnerResponse<ReferenceNumbersResponse> {
     }
 
-    private static class MyListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {
+    private static class MyReferenceNumberListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {
     }
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull ReferenceNumbersRequest request) {
         log.info("Received Reference Number Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -61,7 +58,7 @@ public class ReferenceNumbersV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyReferenceNumberResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull ReferenceNumbersRequest request) {
@@ -70,7 +67,7 @@ public class ReferenceNumbersV3Controller {
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, response = BulkReferenceNumbersResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkReferenceNumbersResponse.class)))})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ReferenceNumbersRequest> request) {
         BulkReferenceNumbersResponse response = referenceNumbersV3Service.updateBulk(request);
@@ -79,15 +76,14 @@ public class ReferenceNumbersV3Controller {
         return ResponseHelper.buildListSuccessResponse(runnerResponseList);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ReferenceNumbersConstants.REFERENCE_NUMBERS_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestBody @Valid ReferenceNumbersRequest request) {
         log.info("Received Reference Number Delete request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.delete(request));
     }
 
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyListResponseClass.class, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,
@@ -98,7 +94,7 @@ public class ReferenceNumbersV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyListResponseClass.class, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyReferenceNumberListResponseClass.class)), description = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST_V3)
     public ResponseEntity<IRunnerResponse> listV3(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,

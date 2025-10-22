@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Network Transfer Response")
+@Schema(description = "Network Transfer Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.hbl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.ToString;
 import java.io.Serializable;
 
 @Data
-@ApiModel("Hbl Freights and Charges Data Model")
+@Schema(description = "Hbl Freights and Charges Data Model")
 @ToString
 @Builder
 @NoArgsConstructor

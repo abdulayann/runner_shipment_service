@@ -1,15 +1,15 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
+import org.hibernate.type.SqlTypes;
 import java.util.List;
 
 @Entity
@@ -20,7 +20,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE quote_contracts SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class QuoteContracts extends BaseEntity {
@@ -29,7 +28,7 @@ public class QuoteContracts extends BaseEntity {
     @Size(max=255, message = "max size is 255 for contract_id")
     private String contractId;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "container_types", columnDefinition = "jsonb")
     private List<String> containerTypes;
 

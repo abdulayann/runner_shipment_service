@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.web.client.RestTemplate;
 
@@ -22,7 +23,12 @@ import java.util.TimeZone;
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
 @Generated
-@ComponentScan(value={"com.dpw.runner.shipment.services", "com.dpw.api"})
+@ComponentScan(value={"com.dpw.runner.shipment.services", "com.dpw.api"}, excludeFilters = {
+        @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = com.dpw.api.commons.base.PlatformExceptionHandler.class
+        )
+})
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {

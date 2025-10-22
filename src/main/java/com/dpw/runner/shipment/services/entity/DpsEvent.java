@@ -5,25 +5,24 @@ import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,11 +33,11 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.Where;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -48,7 +47,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 @Table(name = "dps_event")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @NoArgsConstructor
 @AllArgsConstructor
 @SQLDelete(sql = "UPDATE dps_event SET is_deleted = true WHERE id=?")
@@ -109,7 +107,7 @@ public class DpsEvent {
     @BatchSize(size = 50)
     private List<String> ruleMatchedFieldList;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "dpsFieldData", columnDefinition = "jsonb")
     private List<DpsFieldData> dpsFieldData;
 
@@ -132,11 +130,11 @@ public class DpsEvent {
     @Column(name = "transaction_id", nullable = false)
     private String transactionId;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "username_list", columnDefinition = "jsonb")
     private List<String> usernameList;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tasks", columnDefinition = "jsonb")
     private List<Object> tasks;
 
@@ -168,7 +166,6 @@ public class DpsEvent {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Embeddable
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DpsFieldData {
         private String key;

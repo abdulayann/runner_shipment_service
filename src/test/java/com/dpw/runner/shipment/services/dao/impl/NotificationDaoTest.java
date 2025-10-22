@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.Notification;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -66,8 +67,8 @@ class NotificationDaoTest {
 
     @Test
     void testDelete(){
-        notificationDao.delete(any());
-        verify(notificationRepository, times(1)).delete(any());
+        notificationDao.delete(notification);
+        verify(notificationRepository, times(1)).delete(Mockito.any(Notification.class));
     }
 
     @Test

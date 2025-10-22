@@ -4,17 +4,17 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
-@ApiModel("Container Request Model")
+@Schema(description = "Container Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

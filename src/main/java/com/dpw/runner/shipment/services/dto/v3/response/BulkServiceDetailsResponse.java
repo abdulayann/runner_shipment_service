@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.v3.response;
 
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.util.List;
 
 @Data
 @Builder
-@ApiModel("Bulk Service Details Response Model")
+@Schema(description = "Bulk Service Details Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

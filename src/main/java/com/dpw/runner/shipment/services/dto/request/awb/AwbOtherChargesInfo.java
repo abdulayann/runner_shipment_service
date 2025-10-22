@@ -5,10 +5,10 @@ import com.dpw.runner.shipment.services.entity.enums.LocationTypeCode;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("AWB Other Charges Info Model")
+@Schema(description = "AWB Other Charges Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

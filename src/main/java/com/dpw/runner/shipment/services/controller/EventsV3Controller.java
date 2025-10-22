@@ -14,23 +14,18 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import java.util.List;
-import javax.validation.Valid;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -46,8 +41,8 @@ public class EventsV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_LIST_SUCCESS),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(EventConstants.LIST_EVENT_DETAILS_V2)
     public ResponseEntity<IRunnerResponse> listEventsV2(@RequestBody @Valid TrackingEventsRequest request,
@@ -64,8 +59,8 @@ public class EventsV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = EventConstants.EVENT_CREATE_SUCCESS),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid EventsRequest request) {
@@ -80,22 +75,22 @@ public class EventsV3Controller {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_DELETE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_DELETE_SUCCESS)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return eventService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = EventConstants.EVENT_ID, required = true) @RequestParam Long id,
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = EventConstants.EVENT_ID, required = true) @RequestParam Long id,
             @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return eventService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_UPDATE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = EventConstants.EVENT_UPDATE_SUCCESS)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid EventsRequest request) {
         String responseMsg;

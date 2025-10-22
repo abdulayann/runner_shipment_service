@@ -2,15 +2,15 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import org.hibernate.type.SqlTypes;
+
 import java.util.Map;
 
 
@@ -22,7 +22,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE views SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 @SuppressWarnings("java:S1948")
@@ -30,11 +29,11 @@ public class Views extends BaseEntity {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "columns", columnDefinition = "jsonb")
     private Map<String, Object> columns;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "criteria", columnDefinition = "jsonb")
     private Map<String, Object> criteria;
 

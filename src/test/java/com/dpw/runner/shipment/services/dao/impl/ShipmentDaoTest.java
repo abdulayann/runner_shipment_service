@@ -59,8 +59,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
-import javax.persistence.EntityManager;
-import javax.validation.ConstraintViolationException;
+import jakarta.persistence.EntityManager;
+import jakarta.validation.ConstraintViolationException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1424,7 +1424,7 @@ class ShipmentDaoTest extends CommonMocks {
     void delete() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDao.delete(shipmentDetails);
-        verify(shipmentRepository, times(1)).delete(any());
+        verify(shipmentRepository, times(1)).delete(Mockito.any(ShipmentDetails.class));
     }
 
     @Test

@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
 
 @Data
 @Builder
-@ApiModel("Bulk Reference Number Response Model")
+@Schema(description = "Bulk Reference Number Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

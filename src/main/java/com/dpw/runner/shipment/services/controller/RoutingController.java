@@ -8,9 +8,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import javax.validation.Valid;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,11 +30,11 @@ public class RoutingController {
     @Autowired
     private IRoutingsService routingsService;
 
-    private class MyListResponseClass extends RunnerListResponse<RoutingsResponse> {}
+    private class MyRoutingsListResponseClass extends RunnerListResponse<RoutingsResponse> {}
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = MyListResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, content = @Content(schema = @Schema(implementation = MyRoutingsListResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping("/update-routings")
     public ResponseEntity<IRunnerResponse> updateRoutings(@RequestBody @Valid RoutingsUpdateRequest routingsUpdateRequest) {

@@ -23,17 +23,19 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
 import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
@@ -56,100 +58,100 @@ public class PackingV3Controller {
         this.packingV3Service = packingV3Service;
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = PackingConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.create(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = PackingConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromConsolidation(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.create(request, Constants.CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = PackingConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromCustomerBooking(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from CustomerBooking with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.create(request, Constants.BOOKING));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateFromShipment(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateFromConsolidation(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @PutMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateFromCustomerBooking(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from CustomerBooking with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.BOOKING));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.SHIPMENT + ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> deleteFromShipment(@RequestParam @Valid Long id) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.delete(id, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> deleteFromConsolidation(@RequestParam @Valid Long id) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.delete(id, Constants.CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> deleteFromCustomerBooking(@RequestParam @Valid Long id) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.delete(id, Constants.BOOKING));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT, false));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromConsolidation(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION, false));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @PutMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.BOOKING, false));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @DeleteMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulkFromConsolidation(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @DeleteMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.BOOKING));
@@ -160,15 +162,15 @@ public class PackingV3Controller {
         packingV3Service.downloadPacking(response, request);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam(required = false) Long id,
-                                                        @ApiParam(value = Constants.GUID) @RequestParam(required = false) String guid,
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = Constants.ID) @RequestParam(required = false) Long id,
+                                                        @Parameter(description = Constants.GUID) @RequestParam(required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = PackingListResponse.class)))})
     @PostMapping(ApiConstants.SHIPMENT_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                  @RequestHeader(value = "x-source", required = false) String xSource) {
@@ -176,7 +178,7 @@ public class PackingV3Controller {
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = PackingListResponse.class)))})
     @PostMapping(ApiConstants.CONSOLIDATION_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchConsolidationPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
             @RequestHeader(value = "x-source", required = false) String xSource) {
@@ -184,7 +186,7 @@ public class PackingV3Controller {
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_SUMMARY_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_SUMMARY_SUCCESSFUL)})
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
     public ResponseEntity<IRunnerResponse> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest,
                                                                 @RequestHeader(value = "x-source", required = false) String xSource) throws AuthenticationException, RunnerException {
@@ -192,47 +194,47 @@ public class PackingV3Controller {
         return ResponseHelper.buildSuccessResponse(packSummaryV3Response);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id,
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@Parameter(description = Constants.ID, required = true) @RequestParam Long id,
                                                             @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.getAllMasterData(id, xSource));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = PackingV3Controller.ContainerResponseClass.class)))})
     @PostMapping(ASSIGN_PACKAGES)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.assignPackagesContainers(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = UN_ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = PackingV3Controller.ContainerResponseClass.class)))})
     @PostMapping(UN_ASSIGN_PACKAGES)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
         packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = PackingV3Controller.ContainerResponseClass.class)))})
     @PostMapping(ASSIGN_PACKAGES_SHIPMENT)
     public ResponseEntity<IRunnerResponse> assignContainersAtShipmentLevel(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.assignShipmentPackagesContainers(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = UN_ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = PackingV3Controller.ContainerResponseClass.class)))})
     @PostMapping(UN_ASSIGN_PACKAGES_SHIPMENT)
     public ResponseEntity<IRunnerResponse> unAssignContainersAtShipmentLevel(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
         packingV3Service.unAssignPackageContainers(request, SHIPMENT_PACKING);
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyResponseClass.class)))})
     @GetMapping(CALCULATE_CARGO_SUMMARY)
-    public ResponseEntity<IRunnerResponse> calculateCargoSummary (@ApiParam(value = Constants.SHIPMENT_ID, required = true) Long shipmentId) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> calculateCargoSummary (@Parameter(description = Constants.SHIPMENT_ID, required = true) Long shipmentId) throws RunnerException {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipmentId).build();
         return ResponseHelper.buildSuccessResponse(packingV3Service.calculateCargoSummary(commonGetRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.ORDER_LINE_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.ORDER_LINE_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkPackingResponse.class)))})
     @PutMapping(value = ApiConstants.API_ORDER_LINE_UPDATES)
     public ResponseEntity<IRunnerResponse> orderLineCreateUpdateDeleteBulk(@Valid @RequestBody OrderLineCreateUpdateDeleteRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.orderLineCreateUpdateDeleteBulk(request, Constants.SHIPMENT_ORDER, false));

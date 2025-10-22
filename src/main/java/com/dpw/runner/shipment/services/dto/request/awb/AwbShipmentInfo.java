@@ -5,13 +5,13 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serializable;
 
 @Data
-@ApiModel("Awb Shipment Info Request Model")
+@Schema(description = "Awb Shipment Info Request Model")
 @ToString
 @Builder
 @NoArgsConstructor

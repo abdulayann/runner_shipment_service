@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PickupDeliveryDetailsConstants;
 import com.dpw.runner.shipment.services.commons.constants.TransportInstructionConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -14,9 +13,11 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsReferenceService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
 
 @SuppressWarnings("ALL")
@@ -41,8 +42,8 @@ public class TransportInstructionReferenceController {
     private ITransportInstructionLegsReferenceService transportInstructionLegsReferenceService;
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid TransportInstructionLegsReferenceRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -50,34 +51,34 @@ public class TransportInstructionReferenceController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE_BULK)
     public ResponseEntity<IRunnerResponse> bulkCreate(@RequestBody @Valid TransportInstructionLegsReferenceListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.bulkCreate(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_DELETE_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<IRunnerResponse> delete(@ApiParam(value = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_ID, required = true) @RequestParam @Valid Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public ResponseEntity<IRunnerResponse> delete(@Parameter(description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_ID, required = true) @RequestParam @Valid Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.delete(id));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         TransportInstructionLegsReferenceListResponse legsListResponse = transportInstructionLegsReferenceService.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildSuccessResponse(legsListResponse, legsListResponse.getTotalPages(), legsListResponse.getTotalCount());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@Parameter(description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_ID, required = true) @RequestParam Long id) {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.retrieveById(id));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))) })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid TransportInstructionLegsReferenceRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.update(request));

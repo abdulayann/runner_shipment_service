@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.INotificationV3Service;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;

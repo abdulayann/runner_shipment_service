@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
 
 @Data
 @Builder
-@ApiModel("Trigger Sync Response Model")
+@Schema(description = "Trigger Sync Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

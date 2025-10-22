@@ -23,16 +23,18 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -62,61 +64,61 @@ public class ContainerV3Controller {
         this.containerV3FacadeService = containerV3FacadeService;
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationDetailsResponse.class))),
+    @ApiResponse(responseCode= "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody ContainerV3Request containerRequest) throws RunnerException {
         log.info("Received Container Create request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(List.of(containerRequest), SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
-        @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ConsolidationDetailsResponse.class))),
+    @ApiResponse(responseCode = "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromConsolidation(@Valid @RequestBody ContainerV3Request containerRequest) throws RunnerException {
         log.info("Received Container Create request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(List.of(containerRequest), CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @PatchMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_PATCH_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updatePatchBulk(@RequestBody @Valid Object request) throws RunnerException {
         ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @PatchMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_PATCH_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updatePatchBulkShipment(@RequestBody @Valid Object request) throws RunnerException {
         ContainerV3PatchBulkUpdateRequest containerV3PatchBulkUpdateRequest = jsonHelper.convertValueWithJsonNullable(request, ContainerV3PatchBulkUpdateRequest.class);
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.updatePatchContainer(containerV3PatchBulkUpdateRequest, SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulkShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, SHIPMENT));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, CONSOLIDATION, isForceDelete));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = BulkContainerResponse.class)))})
     @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request, @RequestParam(required = false, defaultValue = "false") boolean isForceDelete) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT, isForceDelete));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_VALIDATED, content = @Content(schema = @Schema(implementation = ContainerV3Controller.ContainerNumberCheckResponseClass.class)))})
     @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
     public ResponseEntity<IRunnerResponse> validateContainerNumber(@RequestParam String containerNumber) {
         return ResponseHelper.buildSuccessResponse(containerV3Service.validateContainerNumber(containerNumber));
@@ -128,8 +130,8 @@ public class ContainerV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = RunnerResponse.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))),
+            @ApiResponse(responseCode = "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request, @RequestParam String module) throws IOException {
@@ -147,7 +149,7 @@ public class ContainerV3Controller {
         }
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = ContainerConstants.CALCULATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))) })
     @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
     public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestParam (required = false) Long shipmentId,
                                                                      @RequestParam (required = false) Long consolidationId,
@@ -155,7 +157,7 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerV3Service.calculateContainerSummary(shipmentId, consolidationId, xSource));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ContainerListResponse.class)))})
     @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS)
     public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                    @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
@@ -163,7 +165,7 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ContainerListResponse.class)))})
     @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS)
     public ResponseEntity<IRunnerResponse> fetchConsolidationContainers(@RequestBody @Valid ListCommonRequest listCommonRequest,
         @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
@@ -171,7 +173,7 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ContainerListV3Response.class)))})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid @NonNull ListCommonRequest listCommonRequest,
                                                 @RequestParam(required = false, defaultValue = "true") boolean getMasterData,
@@ -182,26 +184,26 @@ public class ContainerV3Controller {
             containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = ContainerResponseClass.class)))})
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_CONTAINER));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = UN_ASSIGN_SUCCESS, content = @Content(schema = @Schema(implementation = ContainerResponseClass.class)))})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams(), null, null, null, Boolean.FALSE, Boolean.FALSE));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ContainerListResponse.class)))})
     @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
     public ResponseEntity<IRunnerResponse> fetchConsolidationContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, CONSOLIDATION);
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ContainerListResponse.class)))})
     @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
     public ResponseEntity<IRunnerResponse> fetchShipmentContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, SHIPMENT);

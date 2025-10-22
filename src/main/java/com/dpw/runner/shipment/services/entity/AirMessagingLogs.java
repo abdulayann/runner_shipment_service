@@ -2,14 +2,12 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import java.util.UUID;
 
 @Entity
@@ -20,7 +18,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AirMessagingLogs extends MultiTenancy {
     @Column(name = "entity_guid")

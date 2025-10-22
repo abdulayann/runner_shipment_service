@@ -9,8 +9,11 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,8 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping(EntityTransferConstants.ENTITY_TRANSFER_API_HANDLE)
@@ -41,7 +42,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = SendShipmentResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendShipment(@RequestBody @Valid SendShipmentRequest request) {
         String responseMsg;
@@ -57,7 +58,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, response = SendConsolidationResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.SEND_CONSOLIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = SendConsolidationResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendConsolidation(@RequestBody @Valid @NonNull SendConsolidationRequest request) {
         String responseMsg;
@@ -73,7 +74,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_ENTITY_TO_EXTERNAL_SYSTEM)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = SendShipmentResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(@RequestBody @Valid SendFileToExternalRequest request) {
         String responseMsg;
@@ -88,7 +89,7 @@ public class EntityTransferController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponse.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ImportShipmentResponse.class)))
     })
     @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
     public ResponseEntity<IRunnerResponse> importShipment(@RequestBody ImportShipmentRequest request) {
@@ -103,7 +104,7 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, response = ImportConsolidationResponse.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ImportConsolidationResponse.class)))
     })
     @PostMapping(EntityTransferConstants.IMPORT_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> importConsolidation(@RequestBody ImportConsolidationRequest request) {
@@ -120,7 +121,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.VALIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ValidationResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
         String responseMsg;
@@ -136,7 +137,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.SEND_SHIPMENT_VALIDATION)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = ValidationResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.VALIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ValidationResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
         String responseMsg;
@@ -153,7 +154,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.CHECK_TASK_SUCCESSFUL, content = @Content(schema = @Schema(implementation = CheckTaskExistResponseClass.class)))
     })
     public ResponseEntity<IRunnerResponse> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
         String responseMsg;
@@ -168,7 +169,7 @@ public class EntityTransferController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.VALIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = CheckTaskExistResponseClass.class)))
     })
     @PostMapping(EntityTransferConstants.POST_AR_VALIDATION)
     public ResponseEntity<IRunnerResponse> postArValidation(@RequestBody @Valid PostArValidationRequest request) {
@@ -185,7 +186,7 @@ public class EntityTransferController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = CheckEntityExistResponse.class)
+            @ApiResponse(responseCode = "200", description = EntityTransferConstants.VALIDATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = CheckEntityExistResponse.class)))
     })
     @PostMapping(EntityTransferConstants.CHECK_ENTIRY_EXIST)
     public ResponseEntity<IRunnerResponse> checkEntityExists(@RequestBody @Valid CheckEntityExistRequest request) {
@@ -202,7 +203,7 @@ public class EntityTransferController {
 
     @PostMapping(EntityTransferConstants.CHECK_RETRANSFER_ACCEPTED)
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = EntityTransferConstants.RETRANSFER_ACCEPTED, response = AcceptedFileResponse.class)
+        @ApiResponse(responseCode = "200", description = EntityTransferConstants.RETRANSFER_ACCEPTED, content = @Content(schema = @Schema(implementation = AcceptedFileResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> checkAcceptedFiles(@RequestBody @Valid AcceptedFileRequest request) {
         String responseMsg;

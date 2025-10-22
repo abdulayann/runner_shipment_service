@@ -4,14 +4,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@ApiModel("Product Sequence Config Request Model")
+@Schema(description = "Product Sequence Config Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -19,16 +19,18 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -39,8 +41,8 @@ import java.util.Objects;
 public class PackingController {
     private final IPackingService packingService;
 
-    private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
-    private static class MyListResponseClass extends RunnerListResponse<PackingResponse>{}
+    private static class MyPackingResponseClass extends RunnerResponse<PackingResponse>{}
+    private static class MyPackingListResponseClass extends RunnerListResponse<PackingResponse>{}
 
     @Autowired
     public PackingController(IPackingService packingService) {
@@ -48,8 +50,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = RunnerResponse.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))),
+            @ApiResponse(responseCode = "404", description = ContainerConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
@@ -78,8 +80,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = PackingConstants.PACKING_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = PackingConstants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(value = ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody PackingRequest request) {
@@ -95,13 +97,13 @@ public class PackingController {
         return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingListResponseClass.class)))})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return packingService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPackingResponseClass.class)))})
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody PackingRequest request) {
         String responseMessage;
@@ -113,7 +115,7 @@ public class PackingController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PackingConstants.PACKING_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         String responseMessage;
@@ -139,8 +141,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = PackingConstants.PACKING_LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_LIST_PACKS_TO_DETACH)
     public ResponseEntity<IRunnerResponse> listPacksToDetach(@RequestBody @Valid DetachPacksListDto request) {
@@ -156,8 +158,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.SYNC)
     @ExcludeTimeZone
@@ -174,8 +176,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.BULK_SYNC)
     @ExcludeTimeZone
@@ -192,8 +194,8 @@ public class PackingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CALCULATION_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.AUTO_CALCULATE_PACKS_DATA)
     public ResponseEntity<IRunnerResponse> autoCalculatePacksData(@RequestBody AutoCalculatePackingRequest request) {

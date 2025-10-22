@@ -8,8 +8,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.IntegrationResponseRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IIntegrationResponseService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -34,8 +35,8 @@ public class IntegrationResponseController {
 
     @PostMapping(IntegrationResponseConstants.FETCH_INTEGRATION_RESPONSES)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = IntegrationResponseConstants.FETCH_RESPONSES_SUCCESSFUL, response = RunnerResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = IntegrationResponseConstants.FETCH_RESPONSES_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
 
     public ResponseEntity<IRunnerResponse> fetchIntegrationResponses(@RequestBody @Valid IntegrationResponseRequest request) {

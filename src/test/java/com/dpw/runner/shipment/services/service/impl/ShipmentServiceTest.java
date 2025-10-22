@@ -235,7 +235,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
@@ -272,8 +272,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -2854,7 +2854,7 @@ ShipmentServiceTest extends CommonMocks {
             }
 
             @Override
-            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+            public void setWriteListener(jakarta.servlet.WriteListener writeListener) {}
         };
         when(response.getOutputStream()).thenReturn(servletOutputStream);
 
@@ -4576,7 +4576,7 @@ ShipmentServiceTest extends CommonMocks {
             }
 
             @Override
-            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+            public void setWriteListener(jakarta.servlet.WriteListener writeListener) {}
         };
         when(response.getOutputStream()).thenReturn(servletOutputStream);
 
@@ -11086,7 +11086,7 @@ ShipmentServiceTest extends CommonMocks {
             }
 
             @Override
-            public void setWriteListener(javax.servlet.WriteListener writeListener) {}
+            public void setWriteListener(jakarta.servlet.WriteListener writeListener) {}
         };
         when(response.getOutputStream()).thenReturn(servletOutputStream);
 

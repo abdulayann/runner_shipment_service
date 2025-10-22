@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.OrderLineV3Response;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
-@ApiModel("Order Number Request Model")
+@Schema(description = "Order Number Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

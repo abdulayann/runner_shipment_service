@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.dto.v3.request;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
 
 @Getter
 @Setter
-@ApiModel(value = "OrderLine create update delete request model")
+@Schema(description = "OrderLine create update delete request model")
 @ToString
 @Builder
 @AllArgsConstructor

@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Getter

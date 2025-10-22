@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.billing;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

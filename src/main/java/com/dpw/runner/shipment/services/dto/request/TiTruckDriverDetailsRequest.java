@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 @Data

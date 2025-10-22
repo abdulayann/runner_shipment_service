@@ -19,8 +19,11 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IVerifiedGrossMassService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.ApiConstants.API_BULK_UPDATE;
@@ -56,8 +59,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid VerifiedGrossMassRequest request) {
@@ -68,8 +71,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_RETRIEVE_BY_ID_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_RETRIEVE_BY_ID_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam Long id) {
@@ -86,8 +89,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_UPDATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_UPDATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid VerifiedGrossMassRequest request) {
@@ -98,8 +101,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_DELETE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_DELETE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam Long id) {
@@ -109,21 +112,24 @@ public class VerifiedGrossMassController {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = VerifiedGrossMassConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long vgmId) {
         return verifiedGrossMassService.getAllMasterData(vgmId);
     }
 
     @GetMapping
-    @ApiResponses(value = {@ApiResponse(code = 200, message = VerifiedGrossMassConstants.RETRIEVE_DEFAULT_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = VerifiedGrossMassConstants.RETRIEVE_DEFAULT_SUCCESS)})
     public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
         VerifiedGrossMassResponse response = verifiedGrossMassService.getDefaultVerifiedGrossMassValues(type, entityId);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL, response = CommonContainerResponse.class, responseContainer = "List")})
+            @ApiResponse(
+                    responseCode = "200",
+                    description = VERIFIED_GROSS_MASS_BULK_UPDATE_SUCCESSFUL,
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CommonContainerResponse.class))))})
     @PutMapping(API_BULK_UPDATE)
     public ResponseEntity<IRunnerResponse> bulkUpdateContainers(@RequestBody @Valid VerifiedGrossMassBulkUpdateRequest request) {
         log.info("Received container bulk update request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
@@ -142,8 +148,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL, response = VerifiedGrossMassController.MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = VerifiedGrossMassController.MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_OPERATION_SUCCESSFUL, content = @Content(schema = @Schema(implementation = VerifiedGrossMassController.MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = VerifiedGrossMassController.MyResponseClass.class)))
     })
     @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND)
     public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody SubmitAmendInttraRequest submitAmendInttraRequest) {
@@ -162,8 +168,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_SYNC_CONTAINERS_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.VERIFIED_GROSS_MASS_SYNC_CONTAINERS_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.SYNC_CONTAINERS)
     public ResponseEntity<IRunnerResponse> syncContainersByIds(@RequestBody List<Long> commonContainerIds) {
@@ -174,8 +180,8 @@ public class VerifiedGrossMassController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = VerifiedGrossMassConstants.CANCELLED),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = VerifiedGrossMassConstants.CANCELLED),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.CANCEL)
     public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid VgmCancelRequest vgmCancelRequest ) {

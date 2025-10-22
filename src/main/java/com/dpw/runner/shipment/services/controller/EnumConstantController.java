@@ -7,8 +7,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.response.EnumResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IEnumConstantService;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +27,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnumConstantController {
 
     private final IEnumConstantService enumConstantService;
-    private static class MyListResponseClass extends RunnerListResponse<EnumResponse> {}
+    private static class MyEnumListResponseClass extends RunnerListResponse<EnumResponse> {}
 
     @Autowired
     public EnumConstantController(IEnumConstantService enumConstantService) {
         this.enumConstantService = enumConstantService;
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyEnumListResponseClass.class))), description = ShipmentConstants.LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> list(@RequestParam(required = false, defaultValue = "false") Boolean isFromV3) {

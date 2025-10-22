@@ -2,17 +2,16 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import org.hibernate.type.SqlTypes;
 import java.util.Map;
 
 @Entity
@@ -26,7 +25,6 @@ import java.util.Map;
 @Builder
 @SQLDelete(sql = "UPDATE audit_log SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class AuditLog extends MultiTenancy {
     @Column(name = "operation")
     private String operation;
@@ -38,7 +36,7 @@ public class AuditLog extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "changes", columnDefinition = "jsonb")
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, AuditLogChanges> changes;
 
     @Column(name = "parent_type")

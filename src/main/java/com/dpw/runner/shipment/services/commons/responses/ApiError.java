@@ -1,23 +1,25 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;
 import java.util.List;
 
 @SuppressWarnings("unused")
-@ApiModel(description = "Api Error Model")
+@JsonPropertyOrder({ "status", "message", "errors" })
+@Schema(description = "Api Error Model")
 public class ApiError implements Serializable {
 
-    @ApiModelProperty(position = 1, name = "status")
+    @Schema(name = "status")
     private HttpStatus status;
 
-    @ApiModelProperty(position = 2, name = "message")
+    @Schema(name = "message")
     private String message;
 
-    @ApiModelProperty(position = 3, name = "errors")
+    @Schema(name = "errors")
     private List<String> errors;
 
     public ApiError() {

@@ -8,10 +8,9 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
-import javax.persistence.*;
-import javax.validation.constraints.Size;
-
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;

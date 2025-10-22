@@ -7,12 +7,10 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAuditLogRepositor
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.jpa.TypedParameterValue;
-import org.hibernate.type.StandardBasicTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,13 +45,13 @@ public class AuditLogDao implements IAuditLogDao {
             .setParameter(5, auditLog.getTenantId())
             .setParameter(6, auditLog.getIsDeleted())
             .setParameter(7, auditLog.getUpdatedBy())
-            .setParameter(8, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getUpdatedAt())))
+            .setParameter(8, Timestamp.valueOf(auditLog.getUpdatedAt()))
             .setParameter(9, jsonHelper.convertToJson(auditLog.getChanges()))
-            .setParameter(10, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getCreatedAt())))
+            .setParameter(10, Timestamp.valueOf(auditLog.getCreatedAt()))
             .setParameter(11, auditLog.getCreatedBy())
             .setParameter(12, auditLog.getFlow())
             .setParameter(13, auditLog.getDataType())
-            .setParameter(14, new TypedParameterValue(StandardBasicTypes.BOOLEAN, auditLog.getIsIntegrationLog()));
+            .setParameter(14, auditLog.getIsIntegrationLog());
 
         log.info("Executing native query for AuditLog save");
         query.executeUpdate();

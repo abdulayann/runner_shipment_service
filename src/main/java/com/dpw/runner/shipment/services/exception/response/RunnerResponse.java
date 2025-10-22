@@ -1,8 +1,9 @@
 package com.dpw.runner.shipment.services.exception.response;
 
 import com.dpw.runner.shipment.services.utils.Generated;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.SchemaProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,12 +17,13 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor @Generated
-@ApiModel(description= "Runner Response Model")
+@Schema(description= "Runner Response Model")
+@JsonPropertyOrder({"success", "error"})
 public class RunnerResponse {
-    @ApiModelProperty(position = 1, name = "success")
+    @SchemaProperty(name = "success")
     private boolean success;
 
-    @ApiModelProperty(position = 6, name = "error")
+    @SchemaProperty(name = "error")
     private ApiError error;
 
 }

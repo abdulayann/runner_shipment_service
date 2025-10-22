@@ -1,12 +1,12 @@
 package com.dpw.runner.shipment.services.dto;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Getter
 @Setter
-@ApiModel("Decline Notification Request Model")
+@Schema(description = "Decline Notification Request Model")
 @ToString
 @Builder
 @AllArgsConstructor

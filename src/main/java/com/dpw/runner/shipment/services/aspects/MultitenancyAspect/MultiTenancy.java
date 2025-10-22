@@ -10,18 +10,18 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.Filters;
 import org.hibernate.annotations.ParamDef;
 
-import javax.persistence.Column;
-import javax.persistence.EntityListeners;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
 
 @SuppressWarnings({"java:S1710", "ALL"})
 @Data
 @MappedSuperclass
 @FilterDef(name = MultiTenancy.TENANT_FILTER_NAME,
-        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = "long"),
+        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = Long.class),
         defaultCondition = MultiTenancy.TENANT_COLUMN + " = :" + "tenant_id")
 @FilterDef(name = MultiTenancy.MULTI_BRANCH_FILTER_NAME,
-        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = "long"),
+        parameters = @ParamDef(name = MultiTenancy.TENANT_PARAMETER_NAME, type = Long.class),
         defaultCondition = MultiTenancy.TENANT_COLUMN + " IN (:" + MultiTenancy.TENANT_PARAMETER_NAME + ")")
 @Filters({@Filter(name = MultiTenancy.TENANT_FILTER_NAME),@Filter(name = MultiTenancy.MULTI_BRANCH_FILTER_NAME)})
 @EntityListeners(TenantEntityListener.class)

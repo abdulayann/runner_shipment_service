@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.Perm
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -182,7 +184,7 @@ class ELDetailsDaoTest {
         List<ELDetails> elDetailsList = Arrays.asList(testData);
 
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        doNothing().when(elDetailsRepository).delete(any());
+        doNothing().when(elDetailsRepository).delete(Mockito.any(ELDetails.class));
 
         assertEquals(new ArrayList<>(), dao.updateEntityFromShipment(new ArrayList<>(), 5L, elDetailsList));
     }

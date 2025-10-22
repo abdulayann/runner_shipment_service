@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Getter
 @Setter
-@ApiModel("Hbl Terms Condition Template Request Model")
+@Schema(description = "Hbl Terms Condition Template Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

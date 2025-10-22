@@ -49,11 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.mockito.Mock;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.mail.MessagingException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;

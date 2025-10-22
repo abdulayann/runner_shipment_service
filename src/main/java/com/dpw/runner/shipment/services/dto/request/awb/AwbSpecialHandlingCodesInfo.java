@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 @Data
 @Builder
-@ApiModel("AWB Special handling Codes Info Model")
+@Schema(description = "AWB Special handling Codes Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

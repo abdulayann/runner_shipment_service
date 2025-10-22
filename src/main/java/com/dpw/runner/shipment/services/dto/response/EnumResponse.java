@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 @Data
 @Builder
-@ApiModel("Enum Response Model")
+@Schema(description = "Enum Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serializable;
@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Hbl Parties Model")
+@Schema(description = "Hbl Parties Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

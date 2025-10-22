@@ -18,8 +18,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(CarrierBookingConstants.CARRIER_BOOKING_API_HANDLE)
@@ -54,8 +58,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = CarrierBookingConstants.CARRIER_BOOKING_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = CarrierBookingConstants.CARRIER_BOOKING_CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(value = ApiConstants.API_CREATE)
     // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CREATE + "')")
@@ -67,8 +71,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = CarrierBookingConstants.CARRIER_BOOKING_RETRIEVE_BY_ID_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = CarrierBookingConstants.CARRIER_BOOKING_RETRIEVE_BY_ID_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_VIEW + "')")
@@ -87,8 +91,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyResponseClass.class, message = CarrierBookingConstants.CARRIER_BOOKING_UPDATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = MyResponseClass.class)), description = CarrierBookingConstants.CARRIER_BOOKING_UPDATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_MODIFY + "')")
@@ -100,8 +104,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CarrierBookingConstants.CARRIER_BOOKING_DELETE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = CarrierBookingConstants.CARRIER_BOOKING_DELETE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam Long id) {
@@ -112,8 +116,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CarrierBookingConstants.CANCELLED),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = CarrierBookingConstants.CANCELLED),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PutMapping(ApiConstants.CANCEL)
     // @PreAuthorize("hasAuthority('" + PermissionConstants.CARRIER_BOOKING_CANCEL + "')")
@@ -124,7 +128,7 @@ public class CarrierBookingController {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CarrierBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long carrierBookingId) {
         String responseMsg = "failure executing :(";
@@ -139,8 +143,8 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CarrierBookingConstants.CARRIER_BOOKING_SYNC_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = CarrierBookingConstants.CARRIER_BOOKING_SYNC_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(ApiConstants.SYNC)
     public ResponseEntity<IRunnerResponse> syncCarrierBookingToService(@RequestBody @Valid SyncBookingToService syncBookingToService) throws RunnerException {
@@ -151,7 +155,7 @@ public class CarrierBookingController {
     }
 
     @GetMapping
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.RETRIEVE_DEFAULT_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CarrierBookingConstants.RETRIEVE_DEFAULT_SUCCESS)})
     public ResponseEntity<IRunnerResponse> getDefault(@RequestParam Long entityId, @RequestParam EntityType type) {
         try {
             CarrierBookingResponse response = carrierBookingService.getDefaultCarrierBookingValues(type, entityId);
@@ -165,8 +169,8 @@ public class CarrierBookingController {
 
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CarrierBookingConstants.SUBMIT_AMEND_SUCCESSFUL, response = CarrierBookingController.MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = CarrierBookingController.MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = CarrierBookingConstants.SUBMIT_AMEND_SUCCESSFUL, content = @Content(schema = @Schema(implementation = CarrierBookingController.MyResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = CarrierBookingController.MyResponseClass.class)))
     })
     @PostMapping(ApiConstants.API_SUBMIT_OR_AMEND)
     public ResponseEntity<IRunnerResponse> submitOrAmend(@RequestBody SubmitAmendInttraRequest submitAmendInttraRequest) throws RunnerException {
@@ -178,7 +182,7 @@ public class CarrierBookingController {
     }
 
     @GetMapping(value = ApiConstants.API_CLONE)
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.CLONE_CARRIER_BOOKING_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = CarrierBookingConstants.CLONE_CARRIER_BOOKING_SUCCESS)})
     public ResponseEntity<IRunnerResponse> cloneCarrierBooking(@RequestParam Long entityId) {
         try {
             CarrierBookingCloneResponse response = carrierBookingService.cloneBooking(entityId);

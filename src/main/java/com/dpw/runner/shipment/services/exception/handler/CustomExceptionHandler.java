@@ -25,12 +25,13 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -114,14 +115,14 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(
-            NoHandlerFoundException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+            NoHandlerFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
         return handleExceptionInternal(ex, "Path URL does not exist, Please check the URL", headers, status, request);
     }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers,
-                                                                  HttpStatus status, WebRequest request) {
+                                                                  HttpStatusCode status, WebRequest request) {
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -137,7 +138,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @Override
     public final ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
-                                                                     HttpStatus status, WebRequest request) {
+                                                                     HttpStatusCode status, WebRequest request) {
         ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }

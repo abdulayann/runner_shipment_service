@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 
 @Entity

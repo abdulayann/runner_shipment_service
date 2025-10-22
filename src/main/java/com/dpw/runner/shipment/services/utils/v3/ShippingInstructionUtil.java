@@ -15,7 +15,7 @@ import com.dpw.runner.shipment.services.projection.ShippingConsoleNoProjection;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serializable;
@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("AWB Packing Info Model")
+@Schema(description = "AWB Packing Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

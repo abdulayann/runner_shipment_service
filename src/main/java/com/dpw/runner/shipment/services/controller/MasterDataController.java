@@ -9,14 +9,15 @@ import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtReque
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping(MasterDataConstants.MASTER_DATA_API_HANDLE)
@@ -31,8 +32,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid Object request) {
@@ -48,8 +49,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid Object request) {
@@ -65,8 +66,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid Object request) {
@@ -82,8 +83,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = ShipmentConstants.NON_BILLABLE_CUSTOMER_SUCCESSFUL),
-        @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+        @ApiResponse(responseCode = "200", description = ShipmentConstants.NON_BILLABLE_CUSTOMER_SUCCESSFUL),
+        @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.CREATE_NON_BILLABLE_CUSTOMER)
     public ResponseEntity<IRunnerResponse> createNonBillableCustomer(@RequestBody @Valid Object request) {
@@ -99,8 +100,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CARRIER + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createCarrier(@RequestBody @Valid Object request) {
@@ -116,8 +117,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CARRIER + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateCarrier(@RequestBody @Valid Object request) {
@@ -133,8 +134,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response =  DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CARRIER + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> carrierList(@RequestBody @Valid CarrierListObject request) {
@@ -150,8 +151,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CONTAINER_TYPE + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createContainerType(@RequestBody @Valid Object request) {
@@ -167,8 +168,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CONTAINER_TYPE + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateContainerType(@RequestBody @Valid Object request) {
@@ -184,8 +185,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CONTAINER_TYPE + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listContainerType(@RequestBody @Valid Object request, @RequestParam(name = "quoteId", required = false) String quoteId) {
@@ -201,8 +202,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.VESSEL + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createVessel(@RequestBody @Valid Object request) {
@@ -218,8 +219,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.VESSEL + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateVessel(@RequestBody @Valid Object request) {
@@ -235,8 +236,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.VESSEL + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listVessel(@RequestBody @Valid Object request) {
@@ -252,8 +253,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ROUTING_MASTER + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createRoutingMaster(@RequestBody @Valid Object request) {
@@ -269,8 +270,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ROUTING_MASTER + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateRoutingMaster(@RequestBody @Valid Object request) {
@@ -286,8 +287,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ROUTING_MASTER + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listRoutingMaster(@RequestBody @Valid Object request) {
@@ -303,8 +304,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CURRENCIES + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createCurrencies(@RequestBody @Valid Object request) {
@@ -320,8 +321,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CURRENCIES + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateCurrencies(@RequestBody @Valid Object request) {
@@ -337,8 +338,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CURRENCIES + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listCurrencies(@RequestBody @Valid Object request) {
@@ -354,8 +355,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.DANGEROUS_GOOD + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createDangerousGood(@RequestBody @Valid Object request) {
@@ -371,8 +372,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.DANGEROUS_GOOD + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateDangerousGood(@RequestBody @Valid Object request) {
@@ -388,8 +389,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.DANGEROUS_GOOD + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listDangerousGood(@RequestBody @Valid Object request) {
@@ -405,8 +406,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.WAREHOUSE + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createWarehouse(@RequestBody @Valid Object request) {
@@ -422,8 +423,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.WAREHOUSE + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateWarehouse(@RequestBody @Valid Object request) {
@@ -439,8 +440,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.WAREHOUSE + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listWarehouse(@RequestBody @Valid Object request) {
@@ -456,8 +457,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.PORTS + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createPorts(@RequestBody @Valid Object request) {
@@ -473,8 +474,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.PORTS + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updatePorts(@RequestBody @Valid Object request) {
@@ -490,8 +491,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.PORTS + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listPorts(@RequestBody @Valid Object request) {
@@ -507,8 +508,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.COMMODITY + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createCommodity(@RequestBody @Valid Object request) {
@@ -524,8 +525,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.COMMODITY + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateCommodity(@RequestBody @Valid Object request) {
@@ -541,8 +542,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.COMMODITY + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listCommodity(@RequestBody @Valid Object request) {
@@ -558,8 +559,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SALES_AGENT + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createSalesAgent(@RequestBody @Valid Object request) {
@@ -575,8 +576,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SALES_AGENT + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateSalesAgent(@RequestBody @Valid Object request) {
@@ -592,8 +593,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SALES_AGENT + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listSalesAgent(@RequestBody @Valid Object request) {
@@ -609,8 +610,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createUnlocation(@RequestBody @Valid Object request) {
@@ -626,8 +627,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateUnlocation(@RequestBody @Valid Object request) {
@@ -643,8 +644,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listUnlocation(@RequestBody @Valid Object request) {
@@ -659,8 +660,8 @@ public class MasterDataController {
         return   ResponseHelper.buildFailedResponse(responseMsg);
     }
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.STATE_BASED_LIST)
     public ResponseEntity<IRunnerResponse> stateBasedList(@RequestBody @Valid Object request) {
@@ -676,8 +677,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ORGANIZATION + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createOrganization(@RequestBody @Valid Object request) {
@@ -693,8 +694,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ORGANIZATION + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateOrganization(@RequestBody @Valid Object request) {
@@ -710,8 +711,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ORGANIZATION + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listOrgnization(@RequestBody @Valid Object request) {
@@ -727,8 +728,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.USER + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> userList(@RequestBody @Valid Object request) {
@@ -744,8 +745,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.GRID_COLOR_CODE + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createGridColorCode(@RequestBody @Valid Object request) {
@@ -761,8 +762,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.UPDATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.GRID_COLOR_CODE + ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> updateGridColorCOde(@RequestBody @Valid Object request) {
@@ -778,8 +779,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.GRID_COLOR_CODE + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> gridColorList(@RequestBody @Valid Object request) {
@@ -795,8 +796,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH)
     public ResponseEntity<IRunnerResponse> listCousinBranch(@RequestBody @Valid Object request) {
@@ -812,8 +813,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH_WITHOUT_CURRENT)
     public ResponseEntity<IRunnerResponse> listCousinBranchWithoutCurrent(@RequestBody @Valid Object request) {
@@ -829,8 +830,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SCHEDULE + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> scheduleList(@RequestBody @Valid Object request) {
@@ -846,8 +847,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SCHEDULE + MasterDataConstants.IMPORT_SCHEDULE)
     public ResponseEntity<IRunnerResponse> importSchedule(@RequestBody @Valid Object request) {
@@ -863,8 +864,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SCHEDULE + MasterDataConstants.IMPORT_FLIGHT_SCHEDULE)
     public ResponseEntity<IRunnerResponse> importFlightSchedule(@RequestBody @Valid Object request) {
@@ -880,8 +881,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.SCHEDULE + MasterDataConstants.FETCH_FLIGHT_STATUS)
     public ResponseEntity<IRunnerResponse> fetchFlightStatus(@RequestBody @Valid Object request) {
@@ -897,8 +898,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.TENANT_NAME_BY_ID)
     public ResponseEntity<IRunnerResponse> tenantNameByid(@RequestBody @Valid Object request) {
@@ -914,8 +915,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ORGANIZATION + MasterDataConstants.ADDRESS_LIST)
     public ResponseEntity<IRunnerResponse> addressList(@RequestBody @Valid Object request) {
@@ -931,8 +932,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + MasterDataConstants.UNLOCATION_ORIGIN_DESTINATION)
     public ResponseEntity<IRunnerResponse> fetchUnlocationOriginAndDestinationList(@RequestBody @Valid Object request) {
@@ -948,8 +949,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.UNLOCATION + MasterDataConstants.UNLOCATION_WITH_TRANSPORT_MODE)
     public ResponseEntity<IRunnerResponse> fetchListUnlocationTransportModeBased(@RequestBody @Valid Object request) {
@@ -965,8 +966,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.ACTIVITY_MASTER + ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> fetchActivityMaster(@RequestBody @Valid Object request) {
@@ -982,8 +983,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT_SETTINGS + MasterDataConstants.RETRIEVE_TENANT_SETTINGS)
     public ResponseEntity<IRunnerResponse> tenantSettings() {
@@ -999,8 +1000,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.OWN_TYPE)
     public ResponseEntity<IRunnerResponse> listOwnType(@RequestBody @Valid Object request) {
@@ -1016,8 +1017,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.CARRIER_FILTER_LIST)
     public ResponseEntity<IRunnerResponse> carrierFilterList(@RequestBody @Valid Object request) {
@@ -1033,8 +1034,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.LIST_MAIN_PAGE_TEMPLATE)
     public ResponseEntity<IRunnerResponse> getMainPageTemplate(@RequestBody @Valid Object request) {
@@ -1050,8 +1051,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.LIST_ROLES)
     public ResponseEntity<IRunnerResponse> listRole(@RequestBody @Valid Object request) {
@@ -1067,8 +1068,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.LIST_CHARGE_TYPES)
     public ResponseEntity<IRunnerResponse> fetchChargeTypes(@RequestBody @Valid Object request) {
@@ -1084,8 +1085,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @GetMapping(MasterDataConstants.DEFAULT_ORG)
     public ResponseEntity<IRunnerResponse> getDefaultOrg() {
@@ -1101,8 +1102,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.LIST_ORGS)
     public ResponseEntity<IRunnerResponse> listOrgs(@RequestBody @Valid Object request) {
@@ -1117,7 +1118,7 @@ public class MasterDataController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = AwbConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @PostMapping(MasterDataConstants.MULTIPLE_MASTER_DATA)
     public ResponseEntity<IRunnerResponse> fetchMultipleMasterData(@RequestBody MasterListRequestV2 request) {
         String responseMsg;
@@ -1132,8 +1133,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.TENANT_DATA_RETRIEVAL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.TENANT_DATA_RETRIEVAL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS)
     public ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(@RequestBody @Valid Object request) {
@@ -1149,8 +1150,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH_FOR_NTE_REASSIGN)
     public ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(@RequestBody @Valid ListCousinBranchesForEtRequest request) {
@@ -1167,8 +1168,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.LIST_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH_FOR_ET)
     public ResponseEntity<IRunnerResponse> listCousinBranchForEt(@RequestBody @Valid ListCousinBranchesForEtRequest request) {
@@ -1183,8 +1184,8 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.TENANT_DATA_RETRIEVAL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = ShipmentConstants.TENANT_DATA_RETRIEVAL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.FETCH_TENANT_DATA_WITH_TENANT_ID)
     public ResponseEntity<IRunnerResponse> getDefaultOrgAddressFromTenant(@RequestBody @Valid Object request) {

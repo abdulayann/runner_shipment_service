@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Data
 @Builder
-@ApiModel("Shipment Detach Response")
+@Schema(description = "Shipment Detach Response")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

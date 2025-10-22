@@ -53,10 +53,10 @@ public class PushToDownstreamConsumer {
             containerFactory = "documentKafkaListenerContainerFactory")
     public void consume(@Payload String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-            @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) long offset,
             @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
-            @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String transactionId,
+            @Header(KafkaHeaders.RECEIVED_KEY) String transactionId,
             Acknowledgment acknowledgment) {
 
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);

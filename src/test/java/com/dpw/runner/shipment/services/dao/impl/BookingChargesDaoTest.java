@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -213,7 +214,7 @@ class BookingChargesDaoTest {
         List<BookingCharges> routingsList = Collections.singletonList(testBookingCharges);
         BookingChargesDao spyService = spy(bookingChargesDao);
         doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        doThrow(new RuntimeException()).when(bookingChargesRepository).delete(any());
+        doThrow(new RuntimeException()).when(bookingChargesRepository).delete(Mockito.any(BookingCharges.class));
         doReturn(routingsList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
         List<BookingCharges> routingsList1 = spyService.updateEntityFromBooking(routingsList, 1L);
         assertNotNull(routingsList1);

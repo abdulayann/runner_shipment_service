@@ -2,18 +2,18 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
-@ApiModel("Booking Container Request Model")
+@Schema(description = "Booking Container Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

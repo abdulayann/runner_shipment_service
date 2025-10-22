@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.document.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DocumentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -13,9 +16,12 @@ import com.dpw.runner.shipment.services.document.service.IDocumentManagerService
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -25,10 +31,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
-import java.util.Optional;
-
 import java.util.Objects;
+import java.util.Optional;
 
 
 @RestController
@@ -53,8 +57,8 @@ public class DocumentManagerController {
 
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.DELETE_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PutMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> deleteDocument(@RequestBody @Valid Object request) {
@@ -70,7 +74,7 @@ public class DocumentManagerController {
     }
 
     @GetMapping(DocumentConstants.FILE_HISTORY)
-    public ResponseEntity<IRunnerResponse> getFileHistory(@ApiParam(value = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
+    public ResponseEntity<IRunnerResponse> getFileHistory(@Parameter(description = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
         String responseMsg;
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
@@ -85,10 +89,10 @@ public class DocumentManagerController {
 
     @GetMapping(DocumentConstants.FILE_DOWNLOAD)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.FETCH_SUCCESSFUL, response = ByteArrayResourceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ByteArrayResourceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
-    public ResponseEntity<IRunnerResponse> downloadDocument(@ApiParam(value = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
+    public ResponseEntity<IRunnerResponse> downloadDocument(@Parameter(description = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
         String responseMsg;
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
@@ -104,8 +108,8 @@ public class DocumentManagerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.ADDED_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.ADDED_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(DocumentConstants.BULK_SAVE_FILES)
     public ResponseEntity<IRunnerResponse> bulkSave(@RequestBody @Valid Object request) {
@@ -121,8 +125,8 @@ public class DocumentManagerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.ADDED_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.ADDED_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(DocumentConstants.TEMPORARY_UPLOAD_FILE)
     public ResponseEntity<IRunnerResponse> temporaryUpload(@RequestBody @Valid Object request) {
@@ -138,13 +142,13 @@ public class DocumentManagerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.ADDED_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.ADDED_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class)))
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listDocuments(@RequestBody @Valid Object request,
-                                                         @ApiParam(value = "page") @RequestParam(required = false) Optional<Long> page,
-                                                         @ApiParam(value = "size") @RequestParam(required = false) Optional<Long> size) {
+                                                         @Parameter(description = "page") @RequestParam(required = false) Optional<Long> page,
+                                                         @Parameter(description = "size") @RequestParam(required = false) Optional<Long> size) {
         String responseMsg;
         try {
             return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request), page.orElse(null), size.orElse(null));
@@ -158,8 +162,8 @@ public class DocumentManagerController {
 
     @PostMapping(DocumentConstants.FETCH_DOC_TYPE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.FETCH_SUCCESSFUL, response = ByteArrayResourceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = ByteArrayResourceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> getDocTypesList(@RequestBody @Valid Object request) {
         String responseMsg;
@@ -174,8 +178,8 @@ public class DocumentManagerController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = DocumentConstants.FETCH_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = DocumentConstants.FETCH_SUCCESSFUL, content = @Content(schema = @Schema(implementation = DependentServiceResponse.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     @PostMapping(DocumentConstants.DOCUMENT_SEARCH)
     public ResponseEntity<IRunnerResponse> searchDocumentsTypes(@RequestBody @Valid Object request) {

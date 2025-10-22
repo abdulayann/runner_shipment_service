@@ -7,10 +7,12 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.*;
-import javax.validation.constraints.Size;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import org.hibernate.type.SqlTypes;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -24,7 +26,6 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @SQLDelete(sql = "UPDATE parties SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 @BatchSize(size = 50)
@@ -55,11 +56,11 @@ public class Parties extends MultiTenancy {
     @Column(name = "address_id")
     private String addressId;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "org_data", columnDefinition = "jsonb")
     private Map<String, Object> orgData;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
 

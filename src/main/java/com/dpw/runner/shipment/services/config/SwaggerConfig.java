@@ -2,33 +2,42 @@ package com.dpw.runner.shipment.services.config;
 
 
 import com.dpw.runner.shipment.services.utils.Generated;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
+import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.builders.ResponseMessageBuilder;
-import springfox.documentation.schema.ModelRef;
-import springfox.documentation.service.*;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spi.service.contexts.SecurityContext;
-import springfox.documentation.spring.web.paths.RelativePathProvider;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.servlet.ServletContext;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-@Profile({"qa","dev"})
+@Profile({"qa", "dev"})
 @Configuration
-@EnableSwagger2
 @Generated
+@OpenAPIDefinition(
+        info = @Info(
+                title = "Shipments API",
+                version = "1.0",
+                description = "Documentation Shipments API v1.0",
+                contact = @Contact(name = "Runner Developers", url = "https://www.dpworld.com/")
+        ),
+        security = @SecurityRequirement(name = "bearerAuth")
+)
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
 public class SwaggerConfig implements WebMvcConfigurer {
 
     public static final String BAD_REQUEST_MSG = "Bad Request!";
@@ -38,102 +47,84 @@ public class SwaggerConfig implements WebMvcConfigurer {
     public static final String NOT_FOUND_MSG = "Not Found!";
 
     @Bean
-    public Docket swaggerShipmentsApi(ServletContext servletContext) {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .pathProvider(new RelativePathProvider(servletContext) {
-                    @Override
-                    public String getApplicationBasePath() {
-                        return "/shipment-service";
-                    }
-                })
-                .useDefaultResponseMessages(false)
-                .globalResponseMessage(RequestMethod.POST, List.of(
-                        new ResponseMessageBuilder()
-                                .code(400)
-                                .message(BAD_REQUEST_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(401)
-                                .message(NOT_AUTHORIZED)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(403)
-                                .message(FORBIDDEN_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(404)
-                                .message(NOT_FOUND_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
-                ))
-                .globalResponseMessage(RequestMethod.GET, List.of(
-                        new ResponseMessageBuilder()
-                                .code(400)
-                                .message(BAD_REQUEST_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(401)
-                                .message(NOT_AUTHORIZED)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(403)
-                                .message(FORBIDDEN_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(404)
-                                .message(NOT_FOUND_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
-                ))
-                .globalResponseMessage(RequestMethod.PUT, List.of(
-                        new ResponseMessageBuilder()
-                                .code(400)
-                                .message(BAD_REQUEST_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(401)
-                                .message(NOT_AUTHORIZED)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(403)
-                                .message(FORBIDDEN_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build(),
-                        new ResponseMessageBuilder()
-                                .code(404)
-                                .message(NOT_FOUND_MSG)
-                                .responseModel(new ModelRef(RUNNER_RESPONSE)).build()
-                ))
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.dpw.runner.shipment"))
-                .paths(PathSelectors.any()).build()
-                .securityContexts(Collections.singletonList(securityContext()))
-                .securitySchemes(Collections.singletonList(apiKey()))
-                .apiInfo(apiInfo());
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSchemas("RunnerResponse", new Schema<>()
+                                .type("object")
+                                .addProperty("code", new StringSchema())
+                                .addProperty("message", new StringSchema())
+                                .addProperty("data", new Schema<>())
+                        )
+                );
     }
 
-    private ApiInfo apiInfo() {
-        return new ApiInfoBuilder()
-                .version("1.0")
-                .title("Shipments API")
-                .description("Documentation Shipments API v1.0")
-                .contact(new Contact("Runner Developers", "https://www.dpworld.com/", "")).build();
+    @Bean
+    public GroupedOpenApi shipmentServiceApi(OpenApiCustomizer globalResponseCustomiser) {
+        return GroupedOpenApi.builder()
+                .group("shipment-service")
+                .packagesToScan("com.dpw.runner.shipment")
+                .pathsToMatch("/**")
+                .addOpenApiCustomizer(globalResponseCustomiser)
+                .build();
     }
 
-    public ApiKey apiKey() {
-        return new ApiKey("JWT", "Authorization", "header");
-    }
+    @Bean
+    public OpenApiCustomizer globalResponseCustomiser() {
+        return openApi -> {
+            if (openApi.getPaths() != null) {
+                openApi.getPaths().values().forEach(pathItem -> {
+                    pathItem.readOperationsMap().forEach((httpMethod, operation) -> {
+                        io.swagger.v3.oas.models.responses.ApiResponses responses = operation.getResponses();
+                        if (responses == null) {
+                            responses = new io.swagger.v3.oas.models.responses.ApiResponses();
+                            operation.setResponses(responses);
+                        }
 
-    private SecurityContext securityContext() {
-        return SecurityContext.builder().securityReferences(defaultAuth()).forPaths(PathSelectors.any()).build();
-    }
+                        // Add global responses for all HTTP methods
+                        io.swagger.v3.oas.models.responses.ApiResponse badRequestResponse = new io.swagger.v3.oas.models.responses.ApiResponse()
+                                .description(BAD_REQUEST_MSG)
+                                .content(new io.swagger.v3.oas.models.media.Content()
+                                        .addMediaType("application/json",
+                                                new io.swagger.v3.oas.models.media.MediaType()
+                                                        .schema(new Schema<>().$ref("#/components/schemas/RunnerResponse"))
+                                        )
+                                );
+                        responses.addApiResponse("400", badRequestResponse);
 
-    private List<SecurityReference> defaultAuth() {
-        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
-        AuthorizationScope[] scopes = new AuthorizationScope[1];
+                        io.swagger.v3.oas.models.responses.ApiResponse unauthorizedResponse = new io.swagger.v3.oas.models.responses.ApiResponse()
+                                .description(NOT_AUTHORIZED)
+                                .content(new io.swagger.v3.oas.models.media.Content()
+                                        .addMediaType("application/json",
+                                                new io.swagger.v3.oas.models.media.MediaType()
+                                                        .schema(new Schema<>().$ref("#/components/schemas/RunnerResponse"))
+                                        )
+                                );
+                        responses.addApiResponse("401", unauthorizedResponse);
 
-        scopes[0] = authorizationScope;
-        SecurityReference reference = new SecurityReference("JWT", scopes);
-        List<SecurityReference> auths = new ArrayList<>();
-        auths.add(reference);
-        return auths;
+                        io.swagger.v3.oas.models.responses.ApiResponse forbiddenResponse = new io.swagger.v3.oas.models.responses.ApiResponse()
+                                .description(FORBIDDEN_MSG)
+                                .content(new io.swagger.v3.oas.models.media.Content()
+                                        .addMediaType("application/json",
+                                                new io.swagger.v3.oas.models.media.MediaType()
+                                                        .schema(new Schema<>().$ref("#/components/schemas/RunnerResponse"))
+                                        )
+                                );
+                        responses.addApiResponse("403", forbiddenResponse);
+
+                        io.swagger.v3.oas.models.responses.ApiResponse notFoundResponse = new io.swagger.v3.oas.models.responses.ApiResponse()
+                                .description(NOT_FOUND_MSG)
+                                .content(new io.swagger.v3.oas.models.media.Content()
+                                        .addMediaType("application/json",
+                                                new io.swagger.v3.oas.models.media.MediaType()
+                                                        .schema(new Schema<>().$ref("#/components/schemas/RunnerResponse"))
+                                        )
+                                );
+                        responses.addApiResponse("404", notFoundResponse);
+                    });
+                });
+            }
+        };
     }
 
     @Override
@@ -143,6 +134,9 @@ public class SwaggerConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/webjars/**")
                 .addResourceLocations("classpath:/META-INF/resources/webjars/");
+        registry.addResourceHandler("/swagger-ui/**")
+                .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/");
+
     }
 
 }

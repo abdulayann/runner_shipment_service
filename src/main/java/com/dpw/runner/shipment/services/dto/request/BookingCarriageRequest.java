@@ -2,14 +2,14 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@ApiModel("Booking Carriage Request Model")
+@Schema(description = "Booking Carriage Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

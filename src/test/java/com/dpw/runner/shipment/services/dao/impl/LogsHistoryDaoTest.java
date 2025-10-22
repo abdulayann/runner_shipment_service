@@ -89,7 +89,7 @@ class LogsHistoryDaoTest {
     void testDelete() {
         LogsHistory logsHistory = new LogsHistory();
         logsHistoryDao.delete(logsHistory);
-        verify(logsHistoryRepository, times(1)).delete(any());
+        verify(logsHistoryRepository, times(1)).delete(Mockito.any(LogsHistory.class));
     }
 
     @Test

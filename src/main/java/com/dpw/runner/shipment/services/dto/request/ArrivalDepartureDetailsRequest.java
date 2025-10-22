@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Arrival Departure Request Model")
+@Schema(description = "Arrival Departure Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

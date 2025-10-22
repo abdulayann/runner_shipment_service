@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@ApiModel(value = "Service Details List response model")
+@Schema(description = "Service Details List response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServiceDetailsListResponse implements IRunnerResponse {
     private List<ServiceDetailsResponse> serviceDetailsResponses = new ArrayList<>();

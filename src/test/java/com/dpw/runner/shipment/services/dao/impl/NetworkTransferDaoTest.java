@@ -76,14 +76,14 @@ class NetworkTransferDaoTest {
 
     @Test
     void testDelete(){
-        networkTransferDao.delete(any());
-        verify(networkTransferRepository, times(1)).delete(any());
+        networkTransferDao.delete(networkTransfer);
+        verify(networkTransferRepository, times(1)).delete(Mockito.any(NetworkTransfer.class));
     }
 
     @Test
     void testDeleteAndLog(){
         networkTransferDao.deleteAndLog(networkTransfer, Constants.SHIPMENT);
-        verify(networkTransferRepository, times(1)).delete(any());
+        verify(networkTransferRepository, times(1)).delete(Mockito.any(NetworkTransfer.class));
     }
 
     @Test

@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Routings Request Model")
+@Schema(description = "Routings Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

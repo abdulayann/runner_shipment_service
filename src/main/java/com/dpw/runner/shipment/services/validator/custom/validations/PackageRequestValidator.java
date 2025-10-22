@@ -5,8 +5,8 @@ import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsP
 import com.dpw.runner.shipment.services.validator.annotations.ValidPackageRequest;
 import org.springframework.util.StringUtils;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class PackageRequestValidator implements ConstraintValidator<ValidPackageRequest, TransportInstructionLegsPackagesRequest> {
 

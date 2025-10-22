@@ -5,10 +5,12 @@ import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import org.hibernate.type.SqlTypes;
+
 import java.util.Map;
 
 @Entity
@@ -20,7 +22,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @SuppressWarnings("java:S1948")
 public class Validations extends MultiTenancy {
 
@@ -31,7 +32,7 @@ public class Validations extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private LifecycleHooks lifecycleHook;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "schema_validator", columnDefinition = "jsonb")
     private Map<String, Object> jsonSchema;
 

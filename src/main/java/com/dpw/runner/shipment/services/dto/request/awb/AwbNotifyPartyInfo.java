@@ -6,14 +6,14 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("AWB Notify Party Info Model")
+@Schema(description = "AWB Notify Party Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor

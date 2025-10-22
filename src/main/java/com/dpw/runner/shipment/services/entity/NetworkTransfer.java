@@ -7,14 +7,14 @@ import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.JdbcTypeCode;
 
-import javax.persistence.*;
-import javax.validation.constraints.Size;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "entity_type")
@@ -70,7 +69,7 @@ public class NetworkTransfer extends MultiTenancy {
     @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String jobType;
 
-    @Type(type = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "entity_payload", columnDefinition = "jsonb")
     @SuppressWarnings("java:S1948")
     private Map<String, Object> entityPayload;

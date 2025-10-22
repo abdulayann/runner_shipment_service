@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,7 +17,7 @@ import java.util.List;
 
 @Data
 @Builder
-@ApiModel("Customer Booking Request Model for platform")
+@Schema(description = "Customer Booking Request Model for platform")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

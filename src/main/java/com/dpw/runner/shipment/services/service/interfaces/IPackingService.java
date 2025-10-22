@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface IPackingService extends ICommonService {

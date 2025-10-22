@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import lombok.Setter;
 
 @Data
 @Setter
-@ApiModel("Container Response Model")
+@Schema(description = "Container Response Model")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

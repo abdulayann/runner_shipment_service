@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.HeaderContentCode;
 
 import java.math.BigDecimal;
 import java.util.List;
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

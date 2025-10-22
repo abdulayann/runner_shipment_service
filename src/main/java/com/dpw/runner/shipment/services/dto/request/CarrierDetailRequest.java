@@ -2,17 +2,17 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import io.swagger.annotations.ApiModel;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 
 @Data
 @Builder
-@ApiModel("Carrier Details Request Model")
+@Schema(description = "Carrier Details Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

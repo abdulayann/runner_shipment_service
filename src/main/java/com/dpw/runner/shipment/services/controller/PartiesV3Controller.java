@@ -13,15 +13,19 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesV3Service;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @Slf4j
@@ -38,13 +42,13 @@ public class PartiesV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
-    private static class MyResponseClass extends RunnerResponse<PartiesResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<PartiesResponse> {}
+    private static class MyPartiesResponseClass extends RunnerResponse<PartiesResponse> {}
+    private static class MyPartiesListResponseClass extends RunnerListResponse<PartiesResponse> {}
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = PartiesConstants.PARTIES_CREATE_SUCCESSFUL, response = MyResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_CREATE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = MyPartiesResponseClass.class))),
+            @ApiResponse(responseCode = "404", description = Constants.NO_DATA, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))
     })
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
         log.info("Received Party Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
@@ -52,7 +56,7 @@ public class PartiesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = PartiesConstants.PARTIES_UPDATE_SUCCESSFUL , response = MyResponseClass.class)
+            @ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_UPDATE_SUCCESSFUL , content = @Content(schema = @Schema(implementation = MyPartiesResponseClass.class)))
     })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
@@ -61,7 +65,7 @@ public class PartiesV3Controller {
 
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PartiesConstants.PARTIES_DELETE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = PartiesConstants.PARTIES_DELETE_SUCCESSFUL, content = @Content(schema = @Schema(implementation = RunnerResponse.class)))})
     @PostMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid PartiesRequest partiesRequest) {
         log.info("Received Party Delete request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
@@ -69,7 +73,7 @@ public class PartiesV3Controller {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = MyListResponseClass.class, message = PartiesConstants.PARTIES_LIST_SUCCESSFUL, responseContainer = PartiesConstants.PARTIES_LIST_SUCCESSFUL)
+            @ApiResponse(responseCode = "200", content = @Content( array = @ArraySchema(schema = @Schema(implementation = MyPartiesListResponseClass.class))), description = PartiesConstants.PARTIES_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
