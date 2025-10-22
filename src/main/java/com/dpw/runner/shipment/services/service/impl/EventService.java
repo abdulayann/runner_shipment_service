@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.EventProgressStatus;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -86,6 +87,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1538,46 +1540,93 @@ public class EventService implements IEventService {
     }
 
     public void saveEventUtil(EventsRequest eventsRequest) {
-        Events entity = convertRequestToEntity(eventsRequest);
-
-        // event code and master-data description
-        commonUtils.updateEventWithMasterData(List.of(entity));
-        eventDao.updateEventDetails(entity);
-
-        handleDuplicationForExistingEvents(entity);
-
-        eventDao.save(entity);
-        // auto generate runner events | will remain as it is inside shipment and consolidation
+        saveEventCommon(eventsRequest, eventDao::save);
     }
 
     public void saveEventUtilWithoutTenant(EventsRequest eventsRequest) {
-        Events entity = convertRequestToEntity(eventsRequest);
-
-        // event code and master-data description
-        commonUtils.updateEventWithMasterData(List.of(entity));
-        eventDao.updateEventDetails(entity);
-
-        handleDuplicationForExistingEvents(entity);
-
-        eventDao.saveWithoutTenant(entity);
-        // auto generate runner events | will remain as it is inside shipment and consolidation
+        saveEventCommon(eventsRequest, eventDao::saveWithoutTenant);
     }
 
     @Override
     @Transactional
     public void saveAllEvent(List<EventsRequest> eventsRequests) {
-        if (CommonUtils.listIsNullOrEmpty(eventsRequests))
+        saveAllEventsCommon(eventsRequests, eventDao::saveAll);
+    }
+
+    private void saveEventCommon(EventsRequest eventsRequest, Consumer<Events> saveFunction) {
+        // Convert the incoming request DTO to the entity object
+        Events entity = convertRequestToEntity(eventsRequest);
+
+        // Calculate and set the progress status based on Planned/Estimated/Actual dates
+        entity.setProgressStatus(calculateProgressStatus(entity));
+
+        // Update event code and master-data description for this event
+        commonUtils.updateEventWithMasterData(List.of(entity));
+
+        // Update event details in the database and handle potential duplicate events
+        eventDao.updateEventDetails(entity);
+        handleDuplicationForExistingEvents(entity);
+
+        // Persist the entity using the provided save function (either save or saveWithoutTenant)
+        saveFunction.accept(entity);
+    }
+
+    private void saveAllEventsCommon(List<EventsRequest> eventsRequests, Consumer<List<Events>> saveFunction) {
+        // Return immediately if the list is null or empty
+        if (CommonUtils.listIsNullOrEmpty(eventsRequests)) {
             return;
+        }
+
+        // Convert the list of request DTOs to entity objects
         List<Events> entities = convertRequestListToEntityList(eventsRequests);
 
+        // Calculate and set progress status for each event
+        entities.forEach(event -> event.setProgressStatus(calculateProgressStatus(event)));
+
+        // Update event codes and master-data descriptions for all events
         commonUtils.updateEventWithMasterData(entities);
+
+        // Update event details in bulk
         eventDao.updateAllEventDetails(entities);
 
-        for (Events event: entities) {
+        // Handle duplication for each event individually
+        for (Events event : entities) {
             handleDuplicationForExistingEvents(event);
         }
 
-        eventDao.saveAll(entities);
+        // Persist all events using the provided save function (either saveAll or saveAllWithoutTenant)
+        saveFunction.accept(entities);
+    }
+
+    private EventProgressStatus calculateProgressStatus(Events event) {
+        LocalDateTime plannedDate = event.getPlannedDate();
+        LocalDateTime estimatedDate = event.getEstimated();
+        LocalDateTime predictedDate = event.getPredictedDate();
+        LocalDateTime actualDate = event.getActual();
+
+        // If all dates are null, the event hasn't been planned yet
+        if (plannedDate == null && estimatedDate == null && predictedDate == null && actualDate == null) {
+            return EventProgressStatus.TO_BE_PLANNED;
+        }
+
+        // If an actual completion date exists, determine if it's completed on time or delayed
+        if (actualDate != null) {
+            // Completed on time: actual date is before or equal to estimated date, or estimated date is missing
+            if (estimatedDate == null || !actualDate.isAfter(estimatedDate)) {
+                return EventProgressStatus.COMPLETED;
+            } else {
+                // Delayed completion: actual date is after estimated date
+                return EventProgressStatus.DELAYED_COMPLETION;
+            }
+        }
+
+        // If only estimated or predicted dates exist, the event is planned but not yet completed
+        if (estimatedDate != null || predictedDate != null) {
+            return EventProgressStatus.PLANNED;
+        }
+
+        // Fallback: treat as not yet planned
+        return EventProgressStatus.TO_BE_PLANNED;
     }
 
     public Specification<Events> buildDuplicateEventSpecification(Events event) {
