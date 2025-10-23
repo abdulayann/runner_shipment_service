@@ -41,6 +41,7 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
@@ -114,6 +115,9 @@ public class MigrationV3Service implements IMigrationV3Service {
 
     @Autowired
     private ShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
 
     private Map<String, BigDecimal> initCodeTeuMap() {
@@ -249,6 +253,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<Long, String>  failureMap = new HashMap<>();
 
         List<Future<Long>> shipmentFutures = new ArrayList<>();
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
         log.info("fetched {} shipments for Migrations", shipmentIds.size());
         shipmentIds.forEach(id -> {
             // execute async
@@ -261,7 +266,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Shipment [id={}] and start time: {}", id, System.currentTimeMillis());
-                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id);
+                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id, isUnLocationLocCodeRequired);
                             log.info("Successfully migrated Shipment [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {
@@ -300,7 +305,8 @@ public class MigrationV3Service implements IMigrationV3Service {
         // Queue for async processing of consolidation migrations
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolIds.size());
-        consolIds.forEach(id -> {
+        boolean isUnLocationLocCodeRequired = commonUtils.getBooleanConfigFromAppConfig("ENABLE_CARRIER_ROUTING_MIGRATION_FOR_LOC_CODE");
+            consolIds.forEach(id -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
 
@@ -311,7 +317,7 @@ public class MigrationV3Service implements IMigrationV3Service {
                     return trxExecutor.runInTrx(() -> {
                         try {
                             log.info("Migrating Consolidation [id={}] and start time: {}", id, System.currentTimeMillis());
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id, codeTeuMap, weightDecimal, volumeDecimal);
+                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id, codeTeuMap, weightDecimal, volumeDecimal, isUnLocationLocCodeRequired);
                             log.info("Successfully migrated Consolidation [oldId={}, newId={}] and end time: {}", id, migrated.getId(), System.currentTimeMillis());
                             return migrated.getId();
                         } catch (Exception e) {

@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -134,7 +135,7 @@ public class ConsolidationValidationV3Util {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(
                 Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
-                throw new RunnerException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
+                throw new DpsException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
             }
         }
     }

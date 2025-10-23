@@ -12,6 +12,8 @@ public class PartiesConstants {
 
     public static final String PARTIES_DELETE_SUCCESSFUL = "Successful Parties  Delete";
 
+    public static final String PARTY_GET_SUCCESSFUL = "Successful Party Fetch";
+
     public static final String PARTIES_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Parties Details Retrieval By Id";
     public static final String PARTY_RETRIEVE_BY_ID_ERROR = "Party is null for Id {} with Request Id {}";
 
