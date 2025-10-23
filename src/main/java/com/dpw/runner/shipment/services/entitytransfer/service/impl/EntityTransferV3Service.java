@@ -2037,14 +2037,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())
-                && validDirectionForNetworkTransfer.contains(shipmentDetails.get().getDirection())) {
-            SendShipmentValidationResponse validationResponse = validateNteSendShipmentValidations(shipmentDetails.get());
-            if (Boolean.TRUE.equals(validationResponse.getIsError())) {
-                return ResponseHelper.buildSuccessResponse(validationResponse);
-            }
+        SendShipmentValidationResponse validationResponse = validateNteSendShipmentValidations(shipmentDetails.get());
+        if (Boolean.TRUE.equals(validationResponse.getIsError())) {
+            return ResponseHelper.buildSuccessResponse(validationResponse);
         }
 
         return ResponseHelper.buildSuccessResponse(ValidationResponse.builder().success(true).build());
@@ -2201,53 +2196,13 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             commonUtils.setInterBranchContextForHub();
         }
 
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        SendConsoleValidationResponse validationResponse = performConsolidationValidation(details, shipmentSettingsDetails);
+        SendConsoleValidationResponse validationResponse = validateNteSendConsolidationValidations(details);
 
-        if (validationResponse != null) {
+        if (validationResponse != null && Boolean.TRUE.equals(validationResponse.getIsError())) {
             return ResponseHelper.buildSuccessResponse(validationResponse);
         }
 
         return ResponseHelper.buildSuccessResponse(ValidationResponse.builder().success(true).build());
-    }
-
-    private SendConsoleValidationResponse performConsolidationValidation(ConsolidationDetails details,
-                                                                         ShipmentSettingsDetails shipmentSettingsDetails) {
-        if (isNetworkTransferEnabled(details, shipmentSettingsDetails)) {
-            return validateForNetworkTransfer(details);
-        }
-        return validateForStandardTransfer(details);
-    }
-
-    private boolean isNetworkTransferEnabled(ConsolidationDetails details, ShipmentSettingsDetails shipmentSettingsDetails) {
-        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())
-                && validDirectionForNetworkTransfer.contains(details.getShipmentType());
-    }
-
-    private SendConsoleValidationResponse validateForNetworkTransfer(ConsolidationDetails details) {
-        SendConsoleValidationResponse validationResponse = validateNteSendConsolidationValidations(details);
-        if (Boolean.TRUE.equals(validationResponse.getIsError())) {
-            return validationResponse;
-        }
-        return null;
-    }
-
-    private SendConsoleValidationResponse validateForStandardTransfer(ConsolidationDetails details) {
-        if (!isSeaOrAirTransport(details.getTransportMode())) {
-            return null;
-        }
-
-        SendConsoleValidationResponse fieldValidationResponse = validateConsolidationFields(details);
-        if (fieldValidationResponse != null) {
-            return fieldValidationResponse;
-        }
-
-        SendConsoleValidationResponse shipmentValidationResponse = validateConsolidationShipments(details, details.getReceivingBranch());
-        if (Boolean.TRUE.equals(shipmentValidationResponse.getIsError())) {
-            return shipmentValidationResponse;
-        }
-
-        return null;
     }
 
     private boolean isSeaOrAirTransport(String transportMode) {
