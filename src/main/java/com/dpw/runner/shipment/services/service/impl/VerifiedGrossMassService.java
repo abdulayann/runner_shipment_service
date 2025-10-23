@@ -167,6 +167,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             if (Objects.nonNull(carrierBookingInfo)) {
                 verifiedGrossMassResponse.setBookingStatus(carrierBookingInfo.getBookingStatus() != null ? CarrierBookingStatus.valueOf(carrierBookingInfo.getBookingStatus()) : null);
                 verifiedGrossMassResponse.setSiStatus(carrierBookingInfo.getSiStatus() != null ? ShippingInstructionStatus.valueOf(carrierBookingInfo.getSiStatus()) : null);
+                verifiedGrossMassResponse.setSiId(carrierBookingInfo.getSiId());
             }
         }
 
@@ -453,6 +454,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         verifiedGrossMassResponse.setStatus(VerifiedGrossMassStatus.Draft);
         if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
             verifiedGrossMassResponse.setSiStatus(carrierBooking.getShippingInstruction().getStatus());
+            verifiedGrossMassResponse.setSiId(carrierBooking.getShippingInstruction().getId());
         }
         verifiedGrossMassResponse.setEntityId(carrierBooking.getId());
         verifiedGrossMassResponse.setEntityNumber(carrierBooking.getBookingNo());
@@ -584,9 +586,15 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
         VerifiedGrossMass verifiedGrossMass = verifiedGrossMassOptional.get();
 
         // Set Status to Draft
+        String description = "";
+        if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
+            description = "Booking Requested by : " + UserContext.getUser().getUsername();
+        } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
+            description = "Amend Requested by : " + UserContext.getUser().getUsername();
+        }
         verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Draft);
         sendNotification(verifiedGrossMass);
-        saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
+        saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass, description);
 
         // Creating List of submittedContainers
         List<CommonContainers> submittedContainersList = new ArrayList<>();
@@ -633,7 +641,13 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
             verifiedGrossMass.setStatus(VerifiedGrossMassStatus.Requested);
             // Create single Transaction history for single operation
-            saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass);
+            description = "";
+            if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
+                description = "Booking Requested by : " + UserContext.getUser().getUsername() + " for containerId: " + container.getId();
+            } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
+                description = "Amend Requested by : " + UserContext.getUser().getUsername() + " for containerId: " + container.getId();
+            }
+            saveTransactionHistory(submitAmendInttraRequest, verifiedGrossMass, description);
 
             // Set Response State
             if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
@@ -716,13 +730,7 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
 
     }
 
-    private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, VerifiedGrossMass verifiedGrossMass) {
-        String description = "";
-        if (OperationType.SUBMIT.equals(submitAmendInttraRequest.getOperationType())) {
-            description = "Booking Requested by : " + UserContext.getUser().getUsername();
-        } else if (OperationType.AMEND.equals(submitAmendInttraRequest.getOperationType())) {
-            description = "Amend Requested by : " + UserContext.getUser().getUsername();
-        }
+    private void saveTransactionHistory(SubmitAmendInttraRequest submitAmendInttraRequest, VerifiedGrossMass verifiedGrossMass, String description) {
         carrierBookingInttraUtil.createTransactionHistory(verifiedGrossMass.getStatus().getDescription(),
                 FlowType.Inbound, description, SourceSystem.CargoRunner, submitAmendInttraRequest.getId(), EntityTypeTransactionHistory.VGM);
     }

@@ -683,6 +683,11 @@ class VerifiedGrossMassServiceTest {
             public String getSiStatus() {
                 return "Draft";
             }
+
+            @Override
+            public Long getSiId() {
+                return 1L;
+            }
         };
         when(verifiedGrossMassDao.findById(1L))
                 .thenReturn(Optional.of(testEntity));
@@ -1298,6 +1303,7 @@ class VerifiedGrossMassServiceTest {
             public String getSiStatus() {
                 return "Draft";
             }
+            public Long getSiId() { return 1L; }
         };
 
         when(verifiedGrossMassDao.findById(1L)).thenReturn(Optional.of(testEntity));

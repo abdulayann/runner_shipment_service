@@ -8,6 +8,7 @@ public interface CarrierBookingInfoProjection {
 
     String getBookingNo();
     String getSiStatus();
+    Long getSiId();
 
     class NullCarrierBookingInfoProjection implements CarrierBookingInfoProjection {
 
@@ -26,5 +27,9 @@ public interface CarrierBookingInfoProjection {
             return null;
         }
 
+        @Override
+        public Long getSiId() {
+            return null;
+        }
     }
 }

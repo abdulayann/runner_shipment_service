@@ -17,8 +17,8 @@ public interface ICarrierBookingRepository extends MultiTenancyRepository<Carrie
 
     Page<CarrierBooking> findAll(Specification<CarrierBooking> spec, Pageable pageable);
 
-    @Query(value = "select cb.status as bookingStatus,si.status as siStatus " +
-            "from carrier_booking cb LEFT JOIN shipping_instruction si where cb.id = ?1 and cb.is_deleted = false;", nativeQuery = true)
+    @Query(value = "select cb.status as bookingStatus,si.status as siStatus, si.id as siId " +
+            "from carrier_booking cb LEFT JOIN shipping_instruction si ON cb.shipping_instruction_id = si.id where cb.id = ?1 and cb.is_deleted = false;", nativeQuery = true)
     CarrierBookingInfoProjection findCarrierBookingInfoById(Long id);
 
 }
