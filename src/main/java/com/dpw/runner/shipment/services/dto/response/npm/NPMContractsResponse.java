@@ -29,6 +29,10 @@ public class NPMContractsResponse implements IRunnerResponse {
         private String contract_id;
         @JsonProperty("parent_contract_id")
         private String parent_contract_id;
+        @JsonProperty("contract_type")
+        private String contractType;
+        @JsonProperty("source_of_charges")
+        private String sourceOfCharges;
         @JsonProperty("origin")
         private String origin;
         @JsonProperty("destination")

@@ -45,6 +45,8 @@ public class ListContractResponse implements IRunnerResponse {
         private String source;
         @JsonProperty("source_type")
         private String source_type;
+        @JsonProperty("source_of_charges")
+        private String sourceOfCharges;
         @JsonProperty("customer_org_id")
         private String customer_org_id;
         @JsonProperty("origin")
