@@ -125,10 +125,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "assigned_to")
     private String assignedTo;
 
-    @Column(name = "AssignedToCSO")
+    @Column(name = "assigned_to_cso")
     private Integer assignedToCSO;
 
-    @Column(name = "AssignedToGSC")
+    @Column(name = "assigned_to_gsc")
     private Integer assignedToGSC;
 
     @Column(name = "additional_terms")
