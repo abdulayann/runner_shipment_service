@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContaine
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerV3PatchBulkUpdateRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.MultiValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -34,7 +35,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
@@ -136,10 +139,17 @@ public class ContainerV3Controller {
         if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
+        String filename = request.getFile().getOriginalFilename();
+        if (filename == null || !(filename.endsWith(".xlsx"))) {
+            return ResponseHelper.buildFailedResponse("Invalid file selected, Please select a valid File to upload.", HttpStatus.BAD_REQUEST);
+        }
         try {
             containerV3Util.uploadContainers(request, module);
             return ResponseHelper.buildSuccessResponse(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
         } catch (Exception e) {
+            if (e instanceof MultiValidationException mve) {
+                return ResponseHelper.buildFailedResponse(mve.getMessage(), mve.getErrors(), HttpStatus.EXPECTATION_FAILED);
+            }
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);

@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.MultiValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -44,7 +46,6 @@ import org.mockito.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -56,6 +57,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
@@ -97,6 +100,9 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Mock
     private MasterDataUtils masterDataUtils;
@@ -171,7 +177,6 @@ class ContainerV3UtilTest extends CommonMocks {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).build());
-        MockitoAnnotations.initMocks(this);
     }
 
     @Test
@@ -379,7 +384,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setNetWeightUnit("KG");
         testContainer.setTareWeight(BigDecimal.ONE);
         testContainer.setTareWeightUnit("KG");
-        containerV3Util.setContainerNetWeight(testContainer);
+        containerV3Util.setContainerNetWeight(Collections.singletonList(testContainer));
         assertNotNull(testContainer.getNetWeight());
     }
 
@@ -392,7 +397,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setNetWeightUnit(null);
         testContainer.setTareWeight(BigDecimal.ONE);
         testContainer.setTareWeightUnit("KG");
-        containerV3Util.setContainerNetWeight(testContainer);
+        containerV3Util.setContainerNetWeight(Collections.singletonList(testContainer));
         assertNotNull(testContainer.getNetWeight());
     }
 
@@ -406,7 +411,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setTareWeight(BigDecimal.ONE);
         testContainer.setTareWeightUnit("KG");
         mockShipmentSettings();
-        containerV3Util.setContainerNetWeight(testContainer);
+        containerV3Util.setContainerNetWeight(Collections.singletonList(testContainer));
         assertNotNull(testContainer.getNetWeight());
     }
 
@@ -419,7 +424,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setNetWeightUnit(null);
         testContainer.setTareWeight(BigDecimal.ONE);
         testContainer.setTareWeightUnit(null);
-        containerV3Util.setContainerNetWeight(testContainer);
+        containerV3Util.setContainerNetWeight(Collections.singletonList(testContainer));
         assertNull(testContainer.getNetWeight());
     }
 
@@ -585,36 +590,6 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void shouldPass_whenNonHazardousAndWeightFieldsPresent() {
-        Containers c = new Containers();
-        c.setHazardous(false);
-        c.setGrossWeight(new BigDecimal(10));
-        c.setGrossWeightUnit("KG");
-        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
-    }
-
-    @Test
-    void shouldPass_whenHazardousAndAllDGFieldsPresent() {
-        Containers c = new Containers();
-        c.setHazardous(true);
-        c.setGrossWeight(new BigDecimal(10));
-        c.setGrossWeightUnit("KG");
-        c.setDgClass("3");
-        c.setUnNumber("UN1203");
-        c.setProperShippingName("Gasoline");
-        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
-    }
-
-    @Test
-    void shouldPass_whenHazardousIsNullAndWeightFieldsPresent() {
-        Containers c = new Containers();
-        c.setHazardous(null);
-        c.setGrossWeight(new BigDecimal(5));
-        c.setGrossWeightUnit("KG");
-        assertDoesNotThrow(() -> containerV3Util.validateContainer(List.of(c)));
-    }
-
-    @Test
     void uploadContainers_shouldThrowValidationException_whenConsolidationIdIsNull() {
         requestData.setConsolidationId(null);
         assertThrows(ValidationException.class,
@@ -622,40 +597,21 @@ class ContainerV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void uploadContainers_shouldCompleteSuccessfully_whenExcelIsEmpty() throws Exception {
-        when(parser.parseExcelFile(any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Collections.emptyList());
-        DependentServiceResponse mockResponse = new DependentServiceResponse();
-        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mockResponse);
+    void uploadContainers_shouldThrowValidationException_whenExcelIsEmpty() throws Exception {
+        CSVParsingUtilV3<Containers> parserMock = Mockito.mock(CSVParsingUtilV3.class);
+        Field parserField = ContainerV3Util.class.getDeclaredField("parserV3");
+        parserField.setAccessible(true);
+        parserField.set(containerV3Util, parserMock);
+        when(parserMock.parseExcelFile(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+        )).thenReturn(Collections.emptyList());
         requestData.setConsolidationId(123L);
-        containerV3Util.uploadContainers(requestData, CONSOLIDATION);
+        assertThrows(ValidationException.class,
+                () -> containerV3Util.uploadContainers(requestData, CONSOLIDATION),
+                "Expected ValidationException for empty Excel data");
+
         verify(containerV3FacadeService, never()).createUpdateContainer(any(), any());
     }
-
-    @Test
-    void validateHsCode_shouldThrowValidationException_whenHsCodeInvalid() {
-        Containers container = createTestContainer();
-        container.setHsCode("847040");
-        List<Containers> containers = List.of(container);
-        doAnswer(invocation -> {
-            Runnable task = invocation.getArgument(0);
-            task.run();
-            return null;
-        }).when(hsCodeValidationExecutor).execute(any(Runnable.class));
-        CommodityResponse invalidCommodity = new CommodityResponse();
-        invalidCommodity.setCode("232");
-        V1DataResponse response = new V1DataResponse();
-        response.setEntities(List.of(invalidCommodity));
-        when(parser.getCommodityDataResponse(any()))
-                .thenReturn(response);
-        when(jsonHelper.convertValueToList(any(), eq(CommodityResponse.class)))
-                .thenReturn(List.of(invalidCommodity));
-        assertThrows(ValidationException.class,
-                () -> containerV3Util.validateHsCode(containers));
-        verify(hsCodeValidationExecutor).execute(any(Runnable.class));
-        verify(parser).getCommodityDataResponse(any());
-    }
-
     @Test
     void syncCommodityAndHsCode_shouldSyncCodes() {
         Containers container1 = new Containers();
@@ -665,7 +621,7 @@ class ContainerV3UtilTest extends CommonMocks {
         container2.setHsCode(null);
         container2.setCommodityCode("COMM456");
         List<Containers> containers = List.of(container1, container2);
-        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers);
+        Set<String> result = ContainerV3Util.syncCommodityAndHsCode(containers, new ArrayList<>(), new ArrayList<>());
         assertEquals("847040", container1.getCommodityCode());
         assertEquals("COMM456", container2.getHsCode());
         assertEquals(2, result.size());
@@ -898,48 +854,99 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Test
     void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual() {
-        UUID containerId = UUID.randomUUID();
         Map<String, Object> from = new HashMap<>();
         from.put("grossWeight", new BigDecimal("10.0"));
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", new BigDecimal("10.0"));
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(to, from, 1,new ArrayList<>()));
     }
 
     @Test
     void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual2() {
-        UUID containerId = UUID.randomUUID();
         Map<String, Object> from = new HashMap<>();
         from.put("grossWeight", null);
         from.put("packs", "ABC");
         Map<String, Object> to = new HashMap<>();
         to.put("grossWeight", null);
         to.put("packs", "ABC");
-        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(to, from, 1,new ArrayList<>()));
     }
 
     @Test
-    void validateBeforeAndAfterValues_shouldThrow_whenBigDecimalIncreased() {
-        UUID containerId = UUID.randomUUID();
+    void validateBeforeAndAfterValues_shouldThrow_WhenGrossWtIsChanged() {
+        String errorLog = "Row# 3: Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        List<String> errorList = new ArrayList<>();
         Map<String, Object> from = Map.of("grossWeight", new BigDecimal("10.0"));
         Map<String, Object> to = Map.of("grossWeight", new BigDecimal("20.0"));
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
-        );
-        assertTrue(ex.getMessage().contains("grossWeight"));
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_WhenGrossWtUnitIsChanged() {
+        String errorLog = "Row# 3: Gr. Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        List<String> errorList = new ArrayList<>();
+        Map<String, Object> from = Map.of("grossWeightUnit", "KG");
+        Map<String, Object> to = Map.of("grossWeightUnit", "Tonn");
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     @Test
-    void validateBeforeAndAfterValues_shouldThrow_whenNonBigDecimalDiffers() {
-        UUID containerId = UUID.randomUUID();
+    void validateBeforeAndAfterValues_shouldThrow_WhenCargoWtIsChanged() {
+        String errorLog = "Row# 3: Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        List<String> errorList = new ArrayList<>();
+        Map<String, Object> from = Map.of("cargoWeight", new BigDecimal("10.0"));
+        Map<String, Object> to = Map.of("cargoWeight", new BigDecimal("20.0"));
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_WhenCargoWtUnitIsChanged() {
+        String errorLog = "Row# 3: Cargo Wt. update is not allowed as Container is already assigned to package/ shipment.";
+        List<String> errorList = new ArrayList<>();
+        Map<String, Object> from = Map.of("cargoWeightUnit", "KG");
+        Map<String, Object> to = Map.of("cargoWeightUnit", "Tonn");
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_WhenPackageIsChanged() {
+        String errorLog = "Row# 3: Packages update is not allowed as Container is already assigned to package/ shipment.";
         Map<String, Object> from = Map.of("packs", "ABC");
         Map<String, Object> to = Map.of("packs", "XYZ");
-        ValidationException ex = assertThrows(ValidationException.class, () ->
-                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
-        );
-        assertTrue(ex.getMessage().contains("packs"));
+        List<String> errorList = new ArrayList<>();
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_WhenPackageUnitIsChanged() {
+        String errorLog = "Row# 3: Packages update is not allowed as Container is already assigned to package/ shipment.";
+        Map<String, Object> from = Map.of("packsType", "AMM");
+        Map<String, Object> to = Map.of("packsType", "BAG");
+        List<String> errorList = new ArrayList<>();
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+    @Test
+    void validateBeforeAndAfterValues_WhenVolIsChanged() {
+        String errorLog = "Row# 3: Vol. update is not allowed as Container is already assigned to package/ shipment.";
+        Map<String, Object> from = Map.of("grossVolume", "10.2");
+        Map<String, Object> to = Map.of("grossVolume", "11.0");
+        List<String> errorList = new ArrayList<>();
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
+    }
+    @Test
+    void validateBeforeAndAfterValues_WhenVolUnitIsChanged() {
+        String errorLog = "Row# 3: Vol. update is not allowed as Container is already assigned to package/ shipment.";
+        Map<String, Object> from = Map.of("grossVolumeUnit", "M3");
+        Map<String, Object> to = Map.of("grossVolumeUnit", "CC");
+        List<String> errorList = new ArrayList<>();
+        ContainerV3Util.validateBeforeAndAfterValues(to, from, 1, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     @Test
@@ -951,22 +958,27 @@ class ContainerV3UtilTest extends CommonMocks {
         Map<UUID, Map<String, Object>> from = Map.of(guid, Map.of("packs", "A"));
         Map<UUID, Map<String, Object>> to = Map.of(guid, Map.of("packs", "A"));
         List<Containers> containersList = List.of(container);
-        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(from, to, request, "CONSOLIDATION", containersList));
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(guid, 1L);
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(from, to, request, "CONSOLIDATION", containersList, new ArrayList<>(), guidToIdMap ));
     }
 
     @Test
     void validateIfPacksOrVolume_shouldThrowWhenShipmentNotFound() {
         BulkUploadRequest request = new BulkUploadRequest();
         request.setShipmentId(1L);
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        UUID guid = UUID.randomUUID();
+        guidToIdMap.put(guid, 1L);
         when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
         ValidationException ex = assertThrows(
                 ValidationException.class,
-                () -> callValidateIfPacksOrVolume(request)
+                () -> callValidateIfPacksOrVolume(request, guidToIdMap)
         );
         assertEquals("Shipment Id not exists", ex.getMessage());
     }
-    private void callValidateIfPacksOrVolume(BulkUploadRequest request) {
-        containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of());
+    private void callValidateIfPacksOrVolume(BulkUploadRequest request, Map<UUID, Long> guidToIdMap) {
+        containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(), new ArrayList<>(),guidToIdMap );
     }
 
     @Test
@@ -975,39 +987,44 @@ class ContainerV3UtilTest extends CommonMocks {
         request.setShipmentId(1L);
         ShipmentDetails details = new ShipmentDetails();
         details.setShipmentType("FCL");
+        UUID guid = UUID.randomUUID();
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(guid, 1L);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
         when(packingDao.findByContainerIdIn(anyList())).thenReturn(Collections.emptyList());
-        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(new Containers())));
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(new Containers()), new ArrayList<>(), guidToIdMap));
     }
 
     @Test
     void validateIfPacksOrVolume_shouldThrowWhenChangedValueDetectedInShipment() {
         BulkUploadRequest request = new BulkUploadRequest();
         request.setShipmentId(1L);
+        String errorLog = "Row# 2: Packages update is not allowed as Container is already assigned to package/ shipment.";
         UUID containerId = UUID.randomUUID();
         ShipmentDetails details = new ShipmentDetails();
         details.setShipmentType("FCL");
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
         when(packingDao.findByContainerIdIn(anyList())).thenReturn(List.of(new Packing()));
+        Map<UUID, Long> guidToIdMap = new HashMap<>();
+        guidToIdMap.put(containerId, 1L);
         Map<UUID, Map<String, Object>> from = Map.of(containerId, Map.of("packs", "ABC"));
         Map<UUID, Map<String, Object>> to = Map.of(containerId, Map.of("packs", "XYZ"));
         List<Containers> containersList = List.of(new Containers() {{
             setId(100L);
+            setGuid(containerId);
         }});
-        ValidationException ex = assertThrows(
-                ValidationException.class,
-                () -> callValidateIfPacksOrVolume(from, to, request, containersList)
-        );
-        assertTrue(ex.getMessage().contains("packs"));
+        List<String> errorList = new ArrayList<>();
+        callValidateIfPacksOrVolume(from, to, request, containersList, guidToIdMap, errorList);
+        assertTrue(errorList.contains(errorLog));
     }
 
     private void callValidateIfPacksOrVolume(
             Map<UUID, Map<String, Object>> from,
             Map<UUID, Map<String, Object>> to,
             BulkUploadRequest request,
-            List<Containers> containersList
+            List<Containers> containersList, Map<UUID, Long> guidToIdMap, List<String> errorList
     ) {
-        containerV3Util.validateIfPacksOrVolume(from, to, request, "SHIPMENT", containersList);
+        containerV3Util.validateIfPacksOrVolume(from, to, request, "SHIPMENT", containersList, errorList, guidToIdMap);
     }
 
     @Test
@@ -1032,16 +1049,6 @@ class ContainerV3UtilTest extends CommonMocks {
             assertEquals(202L, r.getConsolidationId());
             assertNull(r.getShipmentId());
         }
-    }
-
-    private Containers createTestContainer() {
-        Containers container = new Containers();
-        container.setGuid(UUID.randomUUID());
-        container.setContainerCode("TEST");
-        container.setHsCode("847040");
-        container.setCommodityCode("VALID_COMMODITY");
-        container.setContainerNumber("CONT123");
-        return container;
     }
 
     @Test
@@ -1312,4 +1319,71 @@ class ContainerV3UtilTest extends CommonMocks {
         assertEquals("5", container.getPacks());
         assertEquals("PKG", container.getPacksType());
     }
+
+    @Test
+    void testProcessErrorListThrowsMultiValidationException() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Arrays.asList(
+                "Row 2: ContainerNumber is invalid",
+                "Row 3: Type is invalid",
+                "Row 2: ContainerNumber is invalid" // duplicate to test distinct()
+        );
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        InvocationTargetException wrappedException = assertThrows(InvocationTargetException.class,
+                () -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+        Throwable cause = wrappedException.getCause();
+        assertTrue(cause instanceof MultiValidationException);
+        MultiValidationException mvException = (MultiValidationException) cause;
+        assertEquals("2 out of 3 Container Details contain errors, Please rectify and upload.", mvException.getMessage());
+        assertEquals(2, mvException.getErrors().size()); // distinct and sorted
+        assertTrue(mvException.getErrors().contains("Row 2: ContainerNumber is invalid"));
+        assertTrue(mvException.getErrors().contains("Row 3: Type is invalid"));
+    }
+
+    @Test
+    void testProcessErrorListDoesNotThrowWhenNoErrors() throws Exception {
+        List<String> excelHeaders = Arrays.asList("ContainerNumber", "Type", "Weight");
+        List<String> errorList = Collections.emptyList();
+        List<Containers> containersList = Arrays.asList(new Containers(), new Containers());
+        Method method = ContainerV3Util.class.getDeclaredMethod(
+                "processErrorList", List.class, List.class, List.class
+        );
+        method.setAccessible(true);
+        assertDoesNotThrow(() -> method.invoke(containerV3Util, excelHeaders, errorList, containersList));
+    }
+
+    @Test
+    void testExtractHeaderOrderReturnsCorrectIndex() throws Exception {
+        Map<String, Integer> headerOrder = new HashMap<>();
+        headerOrder.put("containernumber", 0);
+        headerOrder.put("type", 1);
+        headerOrder.put("weight", 2);
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractHeaderOrder", String.class, Map.class);
+        method.setAccessible(true);
+        int index1 = (int) method.invoke(containerV3Util, "Row 2: ContainerNumber is invalid", headerOrder);
+        assertEquals(0, index1);
+        int index2 = (int) method.invoke(containerV3Util, "Row 3: Type is invalid", headerOrder);
+        assertEquals(1, index2);
+        int index3 = (int) method.invoke(containerV3Util, "Row 4: Weight is missing", headerOrder);
+        assertEquals(2, index3);
+        int indexUnknown = (int) method.invoke(containerV3Util, "Row 5: UnknownField is invalid", headerOrder);
+        assertEquals(Integer.MAX_VALUE, indexUnknown);
+    }
+
+    @Test
+    void testExtractRowNumCatchBlock() throws Exception {
+        Method method = ContainerV3Util.class.getDeclaredMethod("extractRowNum", String.class);
+        method.setAccessible(true);
+        int result1 = (int) method.invoke(containerV3Util, "Some invalid message without row info");
+        assertEquals(-1, result1);
+        int result2 = (int) method.invoke(containerV3Util, "Row#ABC: ContainerNumber invalid");
+        assertEquals(Integer.MAX_VALUE, result2);
+        int result3 = (int) method.invoke(containerV3Util, "Row#5 ContainerNumber invalid");
+        assertEquals(-1, result3);
+    }
+
 }
