@@ -2046,20 +2046,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private SendShipmentValidationResponse validateNteSendShipmentValidations(ShipmentDetails shipmentDetails) {
-        if (isAlreadyTransferredCts(shipmentDetails)) {
-            return SendShipmentValidationResponse.builder()
-                    .isError(true)
-                    .shipmentErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
-                    .build();
-        }
-
         return networkTransferValidationsForShipment(shipmentDetails, false);
-    }
-
-    private boolean isAlreadyTransferredCts(ShipmentDetails shipmentDetails) {
-        return shipmentDetails.getSourceGuid() != null
-                && !Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())
-                && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS);
     }
 
     private SendShipmentValidationResponse networkTransferValidationsForShipment(ShipmentDetails shipmentDetails, boolean isAutomaticTransfer) {
@@ -2167,12 +2154,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
 
         ShipmentDetails shipment = shipmentDetails.get();
-        if (isAlreadyTransferredCts(shipment)) {
-            return SendShipmentValidationResponse.builder()
-                    .isError(true)
-                    .shipmentErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
-                    .build();
-        }
         return networkTransferValidationsForShipment(shipment, true);
     }
 
@@ -2265,25 +2246,12 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private SendConsoleValidationResponse validateNteSendConsolidationValidations(ConsolidationDetails consolidationDetails) {
-        if (isAlreadyTransferredCtsConsole(consolidationDetails)) {
-            return SendConsoleValidationResponse.builder()
-                    .isError(true)
-                    .consoleErrorMessage(ALREADY_TRANSFERRED_ERROR_MESSAGE)
-                    .build();
-        }
-
         if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             return networkTransferValidationsForAirConsolidation(consolidationDetails, false);
         } else if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA)) {
             return networkTransferValidationsForSeaConsolidation(consolidationDetails, false);
         }
         return networkTransferValidationsForOtherTransportConsolidation(consolidationDetails, false);
-    }
-
-    private boolean isAlreadyTransferredCtsConsole(ConsolidationDetails consolidationDetails) {
-        return consolidationDetails.getSourceGuid() != null
-                && !Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid())
-                && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS);
     }
 
     private SendConsoleValidationResponse validateConsolidationShipments(ConsolidationDetails consolidationDetails, Long receivingBranch) {
