@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -16,6 +17,7 @@ import java.util.Map;
 public class SailingInformationResponse implements IRunnerResponse {
 
     private Long id;
+    private UUID guid;
     private String carrierReceiptPlace;
     private String pol;
     private String pod;

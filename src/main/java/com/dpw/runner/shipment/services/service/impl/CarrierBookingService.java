@@ -32,7 +32,6 @@ import com.dpw.runner.shipment.services.dto.response.carrierbooking.ContainerMis
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
-import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.CarrierRouting;
@@ -509,7 +508,7 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     private void setCarrierBookingSyncFields(ConsolidationDetails consolidationDetails, CarrierBooking carrierBooking) {
-        consolidationDetails.setMawb(carrierBooking.getCarrierBlNo());
+        consolidationDetails.setBol(carrierBooking.getCarrierBlNo());
         consolidationDetails.setBookingStatus(carrierBooking.getStatus().name());
         consolidationDetails.setBookingId(carrierBooking.getBookingNo());
         consolidationDetails.setCarrierBookingRef(carrierBooking.getCarrierBookingNo());
@@ -738,10 +737,47 @@ public class CarrierBookingService implements ICarrierBookingService {
             throw new ValidationException("VGM status is " + verifiedGrossMass.getStatus().getDescription() + " Please cancel the submitted booking  along with VGM to clone booking");
         }
         CarrierBookingCloneResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking, CarrierBookingCloneResponse.class);
+        nullifyIdAndGuid(carrierBookingResponse);
         carrierBookingResponse.setStatus(CarrierBookingStatus.Draft.name());
         carrierBookingResponse.setInternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getInternalEmails()));
         carrierBookingResponse.setExternalEmailsList(carrierBookingInttraUtil.parseEmailStringToList(carrierBooking.getExternalEmails()));
+
         return carrierBookingResponse;
+    }
+
+    public void nullifyIdAndGuid(CarrierBookingCloneResponse response) {
+        if (response == null) return;
+
+        nullifyIdAndGuid(response.getRequester());
+        nullifyIdAndGuid(response.getShipper());
+        nullifyIdAndGuid(response.getForwardingAgent());
+        nullifyIdAndGuid(response.getContract());
+        nullifyIdAndGuid(response.getConsignee());
+        nullifyIdAndGuid(response.getSailingInformation());
+
+        if (response.getAdditionalParties() != null) {
+            response.getAdditionalParties().forEach(this::nullifyIdAndGuid);
+        }
+        if (response.getContainersList() != null) {
+            response.getContainersList().forEach(this::nullifyIdAndGuid);
+        }
+        if (response.getReferenceNumbersList() != null) {
+            response.getReferenceNumbersList().forEach(this::nullifyIdAndGuid);
+        }
+    }
+
+    private void nullifyIdAndGuid(Object obj) {
+        if (obj == null) return;
+        try {
+            obj.getClass().getMethod("setId", Long.class).invoke(obj, (Long) null);
+        } catch (Exception ignored) {
+            log.warn(ignored.getMessage());
+        }
+        try {
+            obj.getClass().getMethod("setGuid", UUID.class).invoke(obj, (UUID) null);
+        } catch (Exception ignored) {
+            log.warn(ignored.getMessage());
+        }
     }
 
     @Override
@@ -768,7 +804,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             if (Objects.nonNull(carrierBooking.getVerifiedGrossMass())) {
                 verifiedGrossMassList.add(carrierBooking.getVerifiedGrossMass());
                 vgmCbMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getStatus());
-                if(Objects.nonNull(carrierBooking.getShippingInstruction())) {
+                if (Objects.nonNull(carrierBooking.getShippingInstruction())) {
                     vgmSiMap.put(carrierBooking.getVerifiedGrossMass().getId(), carrierBooking.getShippingInstruction().getStatus());
                 }
             }
@@ -963,15 +999,14 @@ public class CarrierBookingService implements ICarrierBookingService {
                 Location endLocation = transportLeg.getEndLocation();
                 if (Objects.nonNull(startLocation)) {
                     carrierRouting.setPol(startLocation.getIdentifierValue());
+                    List<LocationDate> startLocationLocationDates = startLocation.getLocationDates();
+                    carrierRouting.setEtd(getETD(startLocationLocationDates));
                 }
                 if (Objects.nonNull(endLocation)) {
                     carrierRouting.setPod(endLocation.getIdentifierValue());
+                    List<LocationDate> endLocationLocationDates = endLocation.getLocationDates();
+                    carrierRouting.setEta(getETA(endLocationLocationDates));
                 }
-                List<LocationDate> startLocationLocationDates = startLocation.getLocationDates();
-                List<LocationDate> endLocationLocationDates = endLocation.getLocationDates();
-
-                carrierRouting.setEta(getETA(endLocationLocationDates));
-                carrierRouting.setEtd(getETD(startLocationLocationDates));
                 carrierRoutings.add(carrierRouting);
                 sequence++;
             }

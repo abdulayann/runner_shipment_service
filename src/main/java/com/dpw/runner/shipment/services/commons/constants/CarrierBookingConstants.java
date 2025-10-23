@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.REFERENCE_NUMBERS_LIST;
+
 public class CarrierBookingConstants {
     public static final String CR_BOOKING_ID = "ShipmentID";
     public static final String CARRIER_BL_NO = "BillOfLadingNumber";
@@ -24,8 +26,8 @@ public class CarrierBookingConstants {
     public static final String EMPTY_PICKUP_DATE = "EmptyPickupDate";
     public static final String HAULAGE_PARTY = "haulageParty";
     public static final String MAIN_CARRIAGE = "MainCarriage";
-    public static final String MASTER_DATA_RETRIEVE_SUCCESS =  "Master Data Retrieve Successfully";
-    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList","containersList");
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of("carrierRoutingList", "containersList");
     public static final String RETRIEVE_DEFAULT_SUCCESS = "Successful Default Carrier Booking Retrieval";
     public static final String CLONE_CARRIER_BOOKING_SUCCESS = "Successful Carrier Booking clone Retrieval";
     public static final String CARRIER_BOOKING_ADDITIONAL_PARTIES = "CARRIER_BOOKING_ADDITIONAL_PARTIES";
@@ -35,9 +37,9 @@ public class CarrierBookingConstants {
     public static final String PAYLOAD = "payload";
     public static final String INTTRA_REFERENCE = "inttraReference";
     public static final String CARRIER_REFERENCE_NUMBER = "carrierReferenceNumber";
-    public static final String BOOKING_DETAILS= "bookingDetails";
-    public static final String SERVICE_RESPONSE= "SERVICE_RESPONSE";
-    public static final String SERVICE_HTTP_STATUS_CODE= "SERVICE_HTTP_STATUS_CODE";
+    public static final String BOOKING_DETAILS = "bookingDetails";
+    public static final String SERVICE_RESPONSE = "SERVICE_RESPONSE";
+    public static final String SERVICE_HTTP_STATUS_CODE = "SERVICE_HTTP_STATUS_CODE";
     public static final String ERROR_MESSAGES = "errorMessages";
     public static final String CARRIER_BOOKING_TYPE = "booking";
 
@@ -71,7 +73,7 @@ public class CarrierBookingConstants {
     public static final String CARRIER_LIST_RESPONSE_SUCCESS = "Carrier list from db retrieved successfully for Request Id : {}";
     public static final String INVALID_CARRIER_BOOKING_ID = "Invalid Carrier booking Id: ";
 
-    public static final List<String> serviceTypes = List.of("P2P","P2F","F2P","F2F");
+    public static final List<String> serviceTypes = List.of("P2P", "P2F", "F2P", "F2F");
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(STATUS, RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
@@ -224,7 +226,6 @@ public class CarrierBookingConstants {
                     .tableName(CARRIER_BOOKING_TABLE)
                     .dataType(LocalDateTime.class)
                     .fieldName("updatedAt")
-                    .isContainsText(false)
                     .build()),
             Map.entry("siStatus", RunnerEntityMapping.builder()
                     .tableName(SHIPPING_INSTRUCTION)
@@ -258,6 +259,18 @@ public class CarrierBookingConstants {
                     .fieldName("verifiedGrossMassCutoff")
                     .isContainsText(false)
                     .build()),
+            Map.entry("emptyContainerPickupCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("emptyContainerPickupCutoff")
+                    .isContainsText(false)
+                    .build()),
+            Map.entry("loadedContainerGateInCutoff", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("loadedContainerGateInCutoff")
+                    .isContainsText(false)
+                    .build()),
 
             Map.entry("updatedBy", RunnerEntityMapping.builder()
                     .tableName(CARRIER_BOOKING_TABLE)
@@ -278,13 +291,51 @@ public class CarrierBookingConstants {
                     .fieldName("pol")
                     .isContainsText(true)
                     .build()),
-
+            Map.entry("originPortLocCode", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("originPortLocCode")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("destinationPortLocCode", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("destinationPortLocCode")
+                    .isContainsText(true)
+                    .build()),
             Map.entry("pod", RunnerEntityMapping.builder()
                     .tableName(SAILING_INFORMATION)
                     .dataType(String.class)
                     .fieldName("pod")
                     .isContainsText(true)
                     .build()),
+            Map.entry("voyageNo", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(String.class)
+                    .fieldName("voyageNo")
+                    .isContainsText(true)
+                    .build()),
+            Map.entry("eta", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("eta")
+                    .build()),
+            Map.entry("etd", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("etd")
+                    .build()),
+            Map.entry("carrierReceiptLocCode", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierReceiptLocCode")
+                    .build()),
+            Map.entry("carrierDeliveryLocCode", RunnerEntityMapping.builder()
+                    .tableName(SAILING_INFORMATION)
+                    .dataType(LocalDateTime.class)
+                    .fieldName("carrierDeliveryLocCode")
+                    .build()),
+            Map.entry("contractNo", RunnerEntityMapping.builder().tableName(REFERENCE_NUMBERS_LIST).dataType(String.class).fieldName("referenceNumber").isContainsText(true).build()),
             Map.entry(Constants.SHIPPER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.SHIPPER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("createdAt", RunnerEntityMapping.builder()

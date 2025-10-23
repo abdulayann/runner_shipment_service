@@ -25,6 +25,8 @@ import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeService
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingListResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.CommonContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.ReferenceNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.carrierbooking.SailingInformationResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.ShippingInstructionResponse;
 import com.dpw.runner.shipment.services.dto.response.carrierbooking.VerifiedGrossMassResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -106,6 +108,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.CarrierBookingConstants.CARRIER_LIST_REQUEST_NULL_ERROR;
@@ -1361,5 +1364,43 @@ class CarrierBookingServiceTest extends CommonMocks {
         Assert.assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Assert.assertNotNull(response.getBody());
+    }
+    @Test
+    void testNullifyIdAndGuid_SetsAllIdsAndGuidsToNull() {
+        CarrierBookingCloneResponse response = new CarrierBookingCloneResponse();
+
+        // Setup child objects with non-null id/guid
+        SailingInformationResponse sailingInfo = new SailingInformationResponse();
+        sailingInfo.setId(1L);
+        sailingInfo.setGuid(UUID.randomUUID());
+        response.setSailingInformation(sailingInfo);
+
+        PartiesResponse party = new PartiesResponse();
+        party.setId(2L);
+        party.setGuid(UUID.randomUUID());
+        response.setAdditionalParties(List.of(party));
+
+        CommonContainerResponse container = new CommonContainerResponse();
+        container.setId(3L);
+        container.setGuid(UUID.randomUUID());
+        response.setContainersList(List.of(container));
+
+        ReferenceNumberResponse ref = new ReferenceNumberResponse();
+        ref.setId(4L);
+        ref.setGuid(UUID.randomUUID());
+        response.setReferenceNumbersList(List.of(ref));
+
+        // Call the method
+        carrierBookingService.nullifyIdAndGuid(response);
+
+        // Assert all ids and guids are null
+        assertNull(response.getSailingInformation().getId());
+        assertNull(response.getSailingInformation().getGuid());
+        assertNull(response.getAdditionalParties().get(0).getId());
+        assertNull(response.getAdditionalParties().get(0).getGuid());
+        assertNull(response.getContainersList().get(0).getId());
+        assertNull(response.getContainersList().get(0).getGuid());
+        assertNull(response.getReferenceNumbersList().get(0).getId());
+        assertNull(response.getReferenceNumbersList().get(0).getGuid());
     }
 }
