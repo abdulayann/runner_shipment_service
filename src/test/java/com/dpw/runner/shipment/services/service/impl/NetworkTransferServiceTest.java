@@ -6,9 +6,11 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
@@ -17,8 +19,11 @@ import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferV3Service;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -41,6 +46,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.util.*;
@@ -81,6 +87,13 @@ class NetworkTransferServiceTest extends CommonMocks{
     private IConsolidationDetailsDao consolidationDao;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private ConsolidationV3Service consolidationV3Service;
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    @Mock
+    private EntityTransferV3Service entityTransferV3Service;
+
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -630,6 +643,203 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(jsonHelper.convertCreateValue(any(), eq(NetworkTransfer.class))).thenReturn(NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build());
         var response = networkTransferService.createExternal(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testCreateExternal_NewEntity() {
+        // Arrange
+        NetworkTransferRequest networkTransferRequest = NetworkTransferRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(networkTransferRequest);
+
+        NetworkTransfer newEntity = NetworkTransfer.builder()
+                .entityNumber("ENT123")
+                .status(NetworkTransferStatus.TRANSFERRED)
+                .build();
+
+        when(jsonHelper.convertCreateValue(any(), eq(NetworkTransfer.class)))
+                .thenReturn(newEntity);
+
+        // No existing entity
+        when(networkTransferDao.findByEntityNumber("ENT123"))
+                .thenReturn(Optional.empty());
+
+        when(networkTransferDao.save(any(NetworkTransfer.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        var response = networkTransferService.createExternal(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(networkTransferDao).findByEntityNumber("ENT123");
+        verify(networkTransferDao).save(any(NetworkTransfer.class));
+    }
+
+    @Test
+    void testCreateExternal_UpdateExistingEntity() {
+        // Arrange
+        NetworkTransferRequest networkTransferRequest = NetworkTransferRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(networkTransferRequest);
+
+        NetworkTransfer incoming = NetworkTransfer.builder()
+                .entityNumber("ENT123")
+                .status(NetworkTransferStatus.TRANSFERRED)
+                .jobType("NewJob")
+                .build();
+
+        NetworkTransfer existing = NetworkTransfer.builder()
+                .entityNumber("ENT123")
+                .status(NetworkTransferStatus.SCHEDULED)
+                .jobType("OldJob")
+                .build();
+
+        when(jsonHelper.convertCreateValue(any(), eq(NetworkTransfer.class)))
+                .thenReturn(incoming);
+
+        when(networkTransferDao.findByEntityNumber("ENT123"))
+                .thenReturn(Optional.of(existing));
+
+        when(networkTransferDao.save(any(NetworkTransfer.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        var response = networkTransferService.createExternal(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(networkTransferDao).findByEntityNumber("ENT123");
+        verify(networkTransferDao).save(existing); // ensure the existing entity is updated
+        assertEquals("NewJob", existing.getJobType()); // confirm field update
+        assertEquals(NetworkTransferStatus.TRANSFERRED, existing.getStatus());
+    }
+
+
+    @Test
+    void testGetAllMasterDataForNT_withConsolidationAndShipments() {
+        // Arrange
+        Map<String, Object> requestPayload = new HashMap<>();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .consolidationNumber("CON123")
+                .shipmentsList(Set.of(
+                        ShipmentDetails.builder().shipmentId("SHIP123").build()
+                ))
+                .build();
+
+        ConsolidationDetailsV3Response consolidationDetailsV3Response =
+                new ConsolidationDetailsV3Response();
+
+        ShipmentDetailsResponse shipmentDetailsResponse1 = new ShipmentDetailsResponse();
+        ShipmentDetailsResponse shipmentDetailsResponse2 = new ShipmentDetailsResponse();
+
+        Map<String, Object> consolMasterData = Map.of("key1", "value1");
+        Map<String, Object> shipmentMasterData1 = Map.of("s1", "v1");
+        Map<String, Object> shipmentMasterData2 = Map.of("s2", "v2");
+
+        when(jsonHelper.convertValue(requestPayload, ConsolidationDetails.class))
+                .thenReturn(consolidationDetails);
+
+//        when(networkTransferService.getAllMasterDataForNT(anyMap())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsV3Response.class)))
+                .thenReturn(consolidationDetailsV3Response);
+
+        when(consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response))
+                .thenReturn(consolMasterData);
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails.getShipmentsList().iterator().next()), anySet(), any(ShipmentDetailsResponse.class)))
+                .thenReturn(shipmentDetailsResponse1)
+                .thenReturn(shipmentDetailsResponse2);
+
+        when(shipmentServiceImplV3.fetchAllMasterDataByKey(any(), any()))
+                .thenReturn(shipmentMasterData1)
+                .thenReturn(shipmentMasterData2);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response =
+                networkTransferService.getAllMasterDataForNT(requestPayload);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // Verify interactions
+        verify(jsonHelper).convertValue(requestPayload, ConsolidationDetails.class);
+        verify(consolidationV3Service).fetchAllMasterDataByKey(consolidationDetailsV3Response);
+        verify(shipmentServiceImplV3, times(1)).fetchAllMasterDataByKey(any(), any());
+    }
+
+    @Test
+    void testGetAllMasterDataForNT_withEmptyShipments() {
+        // Arrange
+        Map<String, Object> requestPayload = new HashMap<>();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .consolidationNumber("CON999")
+                .shipmentsList(Collections.emptySet())
+                .build();
+
+        ConsolidationDetailsV3Response consolidationDetailsV3Response =
+                new ConsolidationDetailsV3Response();
+        Map<String, Object> consolMasterData = Map.of("keyX", "valueX");
+
+        when(jsonHelper.convertValue(requestPayload, ConsolidationDetails.class))
+                .thenReturn(consolidationDetails);
+        when(commonUtils.setIncludedFieldsToResponse(eq(consolidationDetails), anySet(), any(ConsolidationDetailsV3Response.class)))
+                .thenReturn(consolidationDetailsV3Response);
+        when(consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response))
+                .thenReturn(consolMasterData);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response =
+                networkTransferService.getAllMasterDataForNT(requestPayload);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        verify(shipmentServiceImplV3, never()).fetchAllMasterDataByKey(any(), any());
+    }
+
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_ShouldReturnEmailList() {
+        // Arrange
+        Integer destinationBranch = 10;
+        List<String> expectedEmails = List.of("test1@dpworld.com", "test2@dpworld.com");
+
+        when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        )).thenReturn(expectedEmails);
+
+        // Act
+        List<String> actualEmails = networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(expectedEmails, actualEmails);
+        verify(entityTransferV3Service).getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        );
+    }
+
+    @Test
+    void testGetAllDestinationBranchEmailsForNT_WhenEmptyListReturned_ShouldReturnEmptyList() {
+        // Arrange
+        Integer destinationBranch = 20;
+        when(entityTransferV3Service.getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        )).thenReturn(Collections.emptyList());
+
+        // Act
+        List<String> result = networkTransferService.getAllDestinationBranchEmailsForNT(destinationBranch);
+
+        // Assert
+        assertEquals(Collections.emptyList(), result);
+        verify(entityTransferV3Service).getEmailsListByPermissionKeysAndTenantId(
+                Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY),
+                destinationBranch
+        );
     }
 
 }

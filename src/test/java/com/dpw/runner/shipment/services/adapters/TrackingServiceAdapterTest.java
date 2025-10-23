@@ -488,6 +488,20 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void convertTrackingEventCodeToShortCode_FCGI() {
+        Event event = new Event();
+        event.setLocationRole(EventConstants.ORIGIN);
+        event.setEventType(EventConstants.DEPARTED_ORIGIN_PICKUP);
+        event.setDescription(EventConstants.TESLA_HYPHEN_PREFIX);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        assertEquals(EventConstants.FCGI, result);
+    }
+
+    @Test
     void convertTrackingEventCodeToShortCode_NoMatch() {
         Event event = new Event();
         event.setLocationRole("someRole");

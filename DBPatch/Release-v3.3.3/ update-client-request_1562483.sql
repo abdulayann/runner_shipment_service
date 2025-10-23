@@ -1,0 +1,101 @@
+-- Shipment ID : (98186)
+-- Update Parties
+update
+    parties
+set
+    org_code = 'FRC00031278',
+    address_code = 'FRO00032313',
+    org_id = '149099',
+    address_id = '244083',
+    updated_at = NOW(),
+    org_data = '{
+                    "Id": 149099,
+                    "City": "Siek",
+                    "Guid": "b5f445b4-21b9-4cde-91ea-dd28d2e8971c",
+                    "Email": "arlt@omnitrade-hamburg.com",
+                    "IsGSA": false,
+                    "Phone": "41073330012",
+                    "State": "SH",
+                    "label": "OMNITRADE Handelsgesellschaft mbH",
+                    "value": "FRC00031278",
+                    "Broker": false,
+                    "Source": "CRP",
+                    "Carrier": false,
+                    "Country": "DEU",
+                    "Address1": "Jacobsrade 86",
+                    "FullName": "OMNITRADE Handelsgesellschaft mbH",
+                    "IsActive": 1,
+                    "Payables": false,
+                    "Services": false,
+                    "TenantId": 442,
+                    "CompanyId": 372,
+                    "Consignee": true,
+                    "Consigner": true,
+                    "IsParnter": false,
+                    "PANNumber": "HRB 3705",
+                    "TaxVendor": false,
+                    "WareHouse": false,
+                    "AirCarrier": false,
+                    "ExtraParam": "",
+                    "InsertDate": "2025-04-17T22:37:55.000",
+                    "SeaCarrier": false,
+                    "UpdateDate": "2025-05-16T13:42:30.000",
+                    "IsSuspended": false,
+                    "RailCarrier": false,
+                    "Receivables": true,
+                    "RoadCarrier": false,
+                    "ZipPostCode": "22962",
+                    "ActiveClient": true,
+                    "CurrencyCode": "EUR",
+                    "EmailInvoice": false,
+                    "InsertUserId": 1712,
+                    "UpdateUserId": 1712,
+                    "VatRegNumber": "DE811525887",
+                    "ForworderAgent": false,
+                    "IsCreditEnabled": false,
+                    "IsV2PaymentTerm": false,
+                    "TransportClient": false,
+                    "IsWalkInCustomer": false,
+                    "OrganizationCode": "FRC00031278",
+                    "EnableBulkInvoice": false,
+                    "CustomerIdentifier": "1851755_001",
+                    "ReceivableTermsDate": 2,
+                    "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                    "IsClientEInvoiceEnabled": false,
+                    "ImportExportClearanceLock": false,
+                    "FusionCreditlimitOverrideApproved": false
+                }',
+    address_data = '{
+                        "Id": 244083,
+                        "City": "Siek",
+                        "Email": "arlt@omnitrade-hamburg.com",
+                        "State": "SH",
+                        "label": "FRO00032313",
+                        "value": "FRO00032313",
+                        "Country": "DEU",
+                        "OrgGuid": "b5f445b4-21b9-4cde-91ea-dd28d2e8971c",
+                        "Address1": "Jacobsrade 86",
+                        "OrgSource": "CRP",
+                        "AddressType": 2,
+                        "CompanyName": "OMNITRADE Handelsgesellschaft mbH",
+                        "OrgFullName": "OMNITRADE Handelsgesellschaft mbH",
+                        "OrgPayables": false,
+                        "ZipPostCode": "22962",
+                        "TaxRegNumber": "DE811525887",
+                        "OrgReceivables": true,
+                        "OrgActiveClient": true,
+                        "AddressShortCode": "FRO00032313",
+                        "OrgOrganizationCode": "FRC00031278"
+                    }'
+where
+    id = 1562483 and tenant_id = 481;
+
+-- Update Shipments
+UPDATE shipment_details
+SET
+    client_dps_address_id = 115965,
+    updated_at = NOW()
+WHERE
+    id = 98186
+    AND tenant_id = 481;

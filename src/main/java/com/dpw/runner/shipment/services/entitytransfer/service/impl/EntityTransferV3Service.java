@@ -1978,7 +1978,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
 
-    private List<String> getEmailsListByPermissionKeysAndTenantId(List<String> permissionKeys, Integer tenantId) {
+    public List<String> getEmailsListByPermissionKeysAndTenantId(List<String> permissionKeys, Integer tenantId) {
         UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();
         request.setUserTenantId(tenantId);
         request.setPermissionKeys(permissionKeys);

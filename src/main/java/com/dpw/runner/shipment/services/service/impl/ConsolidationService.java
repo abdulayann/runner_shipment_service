@@ -169,6 +169,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubst
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1387,7 +1388,7 @@ public class ConsolidationService implements IConsolidationService {
             // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
             // If true, throw a RunnerException with a detailed error message including the shipment ID.
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
-                throw new RunnerException(DpsConstants.DPS_ERROR_1 + " : " + shipmentDetails.getShipmentId());
+                throw new DpsException(DpsConstants.DPS_ERROR_1 + " : " + shipmentDetails.getShipmentId());
             }
         }
 
@@ -5946,7 +5947,7 @@ public class ConsolidationService implements IConsolidationService {
         // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
         // If true, throw a RuntimeException with a detailed error message including the shipment ID.
         if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
-            throw new GenericException(DpsConstants.DPS_ERROR_1 + " : " + shipmentRes.get().getShipmentId());
+            throw new DpsException(DpsConstants.DPS_ERROR_1 + " : " + shipmentRes.get().getShipmentId());
         }
 
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
