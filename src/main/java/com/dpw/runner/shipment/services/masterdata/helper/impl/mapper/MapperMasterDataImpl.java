@@ -240,6 +240,16 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse fetchCSOUsers(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchGSCUsers(Object request) {
+        return null;
+    }
+
+    @Override
     public DependentServiceResponse fetchGridColorCodeData(Object request) {
         return null;
     }

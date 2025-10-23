@@ -116,6 +116,8 @@ public interface IV1Service {
 
     V1DataResponse fetchUsersData(Object request);
 
+    V1DataResponse listUsersWithPermission(Object request);
+
     V1DataResponse fetchGridColorCodeData(Object request);
 
     V1DataResponse createGridColorCodeData(Object request);

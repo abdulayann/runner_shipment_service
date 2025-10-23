@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +34,10 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     @Size(max=25000, message = "max size is 25000 for additional terms")
     private String additionalTerms;
     private String assignedTo;
+    private Integer assignedToCSO;
+    private Integer assignedToGSC;
+    @JsonProperty("updateRelatedTasks")
+    private Boolean updateRelatedTasks;
     private Boolean autoUpdateWtVol;
     @Size(max = 50, message = "Max size is 50 for bookingNumber")
     private String bookingNumber;

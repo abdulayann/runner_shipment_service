@@ -49,6 +49,10 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String shipmentId;
     private Boolean isDomestic;
     private String assignedTo;
+    private Integer assignedToCSO;
+    private String assignedToCSOName;
+    private Integer assignedToGSC;
+    private String assignedToGSCName;
     private String additionalTerms;
     private String goodsDescription;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
