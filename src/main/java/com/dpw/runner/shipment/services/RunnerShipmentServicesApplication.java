@@ -29,7 +29,7 @@ public class RunnerShipmentServicesApplication {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         log.info("Release-v3.4.0");
         SpringApplication.run(RunnerShipmentServicesApplication.class, args);
-        log.info("--------==========Shipment Service Started==========--------");
+        log.info("--------==========Shipment Service Started==========-------");
     }
 
 
