@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -13,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class ReferenceNumberResponse implements IRunnerResponse {
 
     private Long id;   // from MultiTenancy (or BaseEntity)
+    private UUID guid;
     private String type;
     private String referenceNumber;
     private Long carrierBookingId;

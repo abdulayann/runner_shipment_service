@@ -284,7 +284,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             verifiedGrossMass.setSailingInformation(new SailingInformation());
         }
         verifiedGrossMass.setStatus(verifiedGrossMassEntity.getStatus());
-        verifiedGrossMass.getSailingInformation().setCarrier(verifiedGrossMassEntity.getSailingInformation().getCarrier());
         //Set Internal And External Emails
         verifiedGrossMass.setInternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getInternalEmailsList()));
         verifiedGrossMass.setExternalEmails(carrierBookingInttraUtil.parseEmailListToString(request.getExternalEmailsList()));
@@ -304,9 +303,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             if (Objects.isNull(sailingInformation)) {
                 sailingInformation = new SailingInformation();
             }
-            if (consolidationDetails.getCarrierDetails() != null) {
-                sailingInformation.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-            }
             verifiedGrossMass.setSailingInformation(sailingInformation);
         } else if (EntityType.CARRIER_BOOKING.equals(request.getEntityType())) {
             CarrierBooking carrierBooking = (CarrierBooking) entity;
@@ -317,9 +313,6 @@ public class VerifiedGrossMassService implements IVerifiedGrossMassService {
             SailingInformation sailingInformation = verifiedGrossMass.getSailingInformation();
             if (Objects.isNull(sailingInformation)) {
                 sailingInformation = new SailingInformation();
-            }
-            if (Objects.nonNull(carrierBooking.getSailingInformation())) {
-                sailingInformation.setCarrier(carrierBooking.getSailingInformation().getCarrier());
             }
             verifiedGrossMass.setSailingInformation(sailingInformation);
             carrierBooking.setVerifiedGrossMass(verifiedGrossMass);
