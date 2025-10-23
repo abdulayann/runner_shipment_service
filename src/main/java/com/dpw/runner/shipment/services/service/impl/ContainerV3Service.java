@@ -14,9 +14,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
-import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -244,6 +242,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IPackingV3Service packingService;
 
     @Autowired
+    @Lazy
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
