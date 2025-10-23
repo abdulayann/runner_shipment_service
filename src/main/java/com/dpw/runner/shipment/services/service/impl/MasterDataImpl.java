@@ -260,6 +260,16 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<IRunnerResponse> listCSOUsers(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCSOUsers(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listGSCUsers(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGSCUsers(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public ResponseEntity<IRunnerResponse> createGridColorCode(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createGridColorCodeData(commonRequestModel.getDependentData()));
     }

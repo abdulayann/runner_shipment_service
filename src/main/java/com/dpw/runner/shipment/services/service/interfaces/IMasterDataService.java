@@ -83,6 +83,10 @@ public interface IMasterDataService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel);
 
+    ResponseEntity<IRunnerResponse> listCSOUsers(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> listGSCUsers(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> createGridColorCode(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> updateGridColorCode(CommonRequestModel commonRequestModel);
