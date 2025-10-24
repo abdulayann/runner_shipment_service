@@ -166,4 +166,294 @@ public class IntegrationTest {
         assertTrue(!responseContent.isEmpty());
     }
 
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_Equals() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("=")
+                                                        .value(123)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_GreaterThan() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("DESC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator(">")
+                                                        .value(100)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_LessThan() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("<")
+                                                        .value(500)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_NotEquals() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("!=")
+                                                        .value(999)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_In() throws Exception {
+        List<Integer> assignedToValues = Arrays.asList(100, 200, 300);
+
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("IN")
+                                                        .value(assignedToValues)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToAndTransportModeFilters() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("transportMode")
+                                                        .operator("=")
+                                                        .value("AIR")
+                                                        .build())
+                                                .build(),
+                                        FilterCriteria.builder()
+                                                .logicOperator("and")
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("=")
+                                                        .value(456)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_Range() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator(">")
+                                                        .value(100)
+                                                        .build())
+                                                .build(),
+                                        FilterCriteria.builder()
+                                                .logicOperator("and")
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("<")
+                                                        .value(500)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
+    @Test
+    public void testFetchByQuery_WithAssignedToFilter_OrCondition() throws Exception {
+        Pageable pageable = Pageable.builder()
+                .pageNo(0)
+                .limit(10)
+                .sortRequest(SortRequest.builder()
+                        .fieldName("houseBill")
+                        .order("ASC")
+                        .build())
+                .filterCriteria(Arrays.asList(
+                        FilterCriteria.builder()
+                                .innerFilter(Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("=")
+                                                        .value(100)
+                                                        .build())
+                                                .build(),
+                                        FilterCriteria.builder()
+                                                .logicOperator("or")
+                                                .criteria(Criteria.builder()
+                                                        .fieldName("assignedTo")
+                                                        .operator("=")
+                                                        .value(200)
+                                                        .build())
+                                                .build()
+                                ))
+                                .build()))
+                .build();
+
+        MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pageable)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        RunnerResponse response = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class);
+        assertTrue(response != null);
+    }
+
 }

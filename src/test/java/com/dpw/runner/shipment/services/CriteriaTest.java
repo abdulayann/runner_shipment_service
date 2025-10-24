@@ -72,4 +72,122 @@ class CriteriaTest {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         return FilterCriteria.builder().criteria(criteria).logicOperator(logicalOperator).build();
     }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToFilter_ShouldWork() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        filterCriteriaList.add(constructCriteria("assignedTo", 123, "=", null));
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToFilter_MultipleValues() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        List<FilterCriteria> innerFilters = new ArrayList<>();
+        innerFilters.add(constructCriteria("assignedTo", 100, "=", null));
+        innerFilters.add(constructCriteria("assignedTo", 200, "=", "or"));
+        innerFilters.add(constructCriteria("assignedTo", 300, "=", "or"));
+
+        filterCriteriaList.add(FilterCriteria.builder().innerFilter(innerFilters).build());
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToAndTransportModeFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        List<FilterCriteria> innerFilters = new ArrayList<>();
+        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
+        innerFilters.add(constructCriteria("assignedTo", 456, "=", "and"));
+
+        filterCriteriaList.add(FilterCriteria.builder().innerFilter(innerFilters).build());
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToGreaterThanFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        filterCriteriaList.add(constructCriteria("assignedTo", 100, ">", null));
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToLessThanFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        filterCriteriaList.add(constructCriteria("assignedTo", 500, "<", null));
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToNotEqualsFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        filterCriteriaList.add(constructCriteria("assignedTo", 999, "!=", null));
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToInFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        List<Integer> assignedToValues = List.of(100, 200, 300, 400);
+        filterCriteriaList.add(constructCriteria("assignedTo", assignedToValues, "IN", null));
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
+
+    @Test
+    void beforeFindOfMultiTenancyRepository_WithAssignedToRangeFilter() {
+        Pageable pageable = new Pageable();
+        List<FilterCriteria> filterCriteriaList = new ArrayList<>();
+
+        List<FilterCriteria> innerFilters = new ArrayList<>();
+        innerFilters.add(constructCriteria("assignedTo", 100, ">", null));
+        innerFilters.add(constructCriteria("assignedTo", 500, "<", "and"));
+
+        filterCriteriaList.add(FilterCriteria.builder().innerFilter(innerFilters).build());
+        pageable.setFilterCriteria(filterCriteriaList);
+
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+
+        verify(permissionsContext, times(1)).getPermissions();
+    }
 }
